@@ -2,7 +2,6 @@ import type { Reminder } from "@prisma/client";
 
 import { reminderService } from "../../services/reminder/reminder.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
-import { formatDateId } from "../../utils/format";
 
 export const reminderCommands: CommandDefinition[] = [
   {
@@ -101,10 +100,12 @@ function formatReminderList(reminders: Reminder[]): string {
 }
 
 function formatReminderDate(date: Date): string {
-  const time = new Intl.DateTimeFormat("id-ID", {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Jakarta",
   }).format(date);
-
-  return `${formatDateId(date)} ${time}`;
 }

@@ -6,6 +6,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
 const SECOND_MS = 1000;
+const WIB_OFFSET_MS = 7 * HOUR_MS;
 
 export function addDuration(baseDate: Date, durationText: string): Date {
   const durationMs = parseDurationMs(durationText);
@@ -39,6 +40,11 @@ export function parseDurationMs(durationText: string): number {
 
 export function parseReminderTime(baseDate: Date, timeText: string): Date {
   const trimmedTimeText = timeText.trim();
+  const clockTime = parseClockTime(baseDate, trimmedTimeText);
+  if (clockTime) {
+    return clockTime;
+  }
+
   const dateTime = parseDateTime(trimmedTimeText);
   if (dateTime) {
     return dateTime;
@@ -46,7 +52,9 @@ export function parseReminderTime(baseDate: Date, timeText: string): Date {
 
   const match = REMINDER_DURATION_PATTERN.exec(trimmedTimeText);
   if (!match) {
-    throw new Error("Format waktu tidak valid. Gunakan contoh 10m, 2h, 1d, atau YYYY-MM-DD HH:mm.");
+    throw new Error(
+      "Format waktu tidak valid. Gunakan contoh 21:00, 10m, 2h, 1d, atau YYYY-MM-DD HH:mm.",
+    );
   }
 
   const value = Number(match[1]);
@@ -86,6 +94,30 @@ export function parseReminderTime(baseDate: Date, timeText: string): Date {
   return new Date(baseDate.getTime() + value * DAY_MS);
 }
 
+function parseClockTime(baseDate: Date, clockText: string): Date | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(clockText);
+  if (!match) {
+    return null;
+  }
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const baseWib = getWibDateParts(baseDate);
+  let date = createWibDate(baseWib.year, baseWib.month, baseWib.day, hour, minute);
+  const targetWib = getWibDateParts(date);
+
+  if (targetWib.hour !== hour || targetWib.minute !== minute) {
+    throw new Error("Jam reminder tidak valid.");
+  }
+
+  if (date.getTime() <= baseDate.getTime()) {
+    const tomorrowWib = getWibDateParts(new Date(date.getTime() + DAY_MS));
+    date = createWibDate(tomorrowWib.year, tomorrowWib.month, tomorrowWib.day, hour, minute);
+  }
+
+  return date;
+}
+
 export function parseDateOnly(dateText: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateText.trim());
   if (!match) {
@@ -119,17 +151,48 @@ function parseDateTime(dateTimeText: string): Date | null {
   const day = Number(match[3]);
   const hour = match[4] ? Number(match[4]) : 0;
   const minute = match[5] ? Number(match[5]) : 0;
-  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  const date = createWibDate(year, month, day, hour, minute);
+  const wibDate = getWibDateParts(date);
 
   if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day ||
-    date.getHours() !== hour ||
-    date.getMinutes() !== minute
+    wibDate.year !== year ||
+    wibDate.month !== month ||
+    wibDate.day !== day ||
+    wibDate.hour !== hour ||
+    wibDate.minute !== minute
   ) {
     throw new Error("Tanggal atau jam reminder tidak valid.");
   }
 
   return date;
+}
+
+interface WibDateParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+}
+
+function getWibDateParts(date: Date): WibDateParts {
+  const wibDate = new Date(date.getTime() + WIB_OFFSET_MS);
+
+  return {
+    year: wibDate.getUTCFullYear(),
+    month: wibDate.getUTCMonth() + 1,
+    day: wibDate.getUTCDate(),
+    hour: wibDate.getUTCHours(),
+    minute: wibDate.getUTCMinutes(),
+  };
+}
+
+function createWibDate(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+): Date {
+  return new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0) - WIB_OFFSET_MS);
 }
