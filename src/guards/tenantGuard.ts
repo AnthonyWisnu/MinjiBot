@@ -5,7 +5,7 @@ import { TenantAuditRepository } from "../repositories/tenantAudit.repository";
 import { TenantGroupRepository } from "../repositories/tenantGroup.repository";
 import type { CommandContext } from "../types/command";
 
-const EXPIRED_ALLOWED_COMMANDS = new Set(["menu", "status", "tenantstatus", "owner"]);
+const EXPIRED_ALLOWED_COMMANDS = new Set(["menu", "status", "tenantstatus", "owner", "whoami"]);
 
 interface TenantGroupLookup {
   findByGroupJid(groupJid: string): Promise<TenantGroup | null>;

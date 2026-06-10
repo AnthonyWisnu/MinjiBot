@@ -22,6 +22,10 @@ export const menuCommands: CommandDefinition[] = [
     name: "quotamenu",
     execute: handleQuotaMenu,
   },
+  {
+    name: "whoami",
+    execute: handleWhoami,
+  },
 ];
 
 async function handleMenu(context: CommandContext): Promise<void> {
@@ -58,6 +62,19 @@ async function handleQuotaMenu(context: CommandContext): Promise<void> {
   }
 
   await context.reply(menuService.buildQuotaMenu());
+}
+
+async function handleWhoami(context: CommandContext): Promise<void> {
+  await context.reply(
+    [
+      "[DEBUG AKUN]",
+      "",
+      `Chat JID: ${context.chatJid}`,
+      `Sender JID: ${context.senderJid}`,
+      `Role: ${context.role}`,
+      `Grup: ${context.isGroup ? "ya" : "tidak"}`,
+    ].join("\n"),
+  );
 }
 
 async function ensureSuperOwner(context: CommandContext): Promise<boolean> {
