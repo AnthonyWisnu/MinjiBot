@@ -1,10 +1,7 @@
 import { HeavyFeatureType } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 
-import {
-  downloaderService,
-  type DownloaderKind,
-} from "../../services/media/downloader.service";
+import { downloaderService, type DownloaderKind } from "../../services/media/downloader.service";
 import { heavyFeatureAccessService } from "../../services/quota/heavyFeatureAccess.service";
 import { tenantQuotaService } from "../../services/quota/tenantQuota.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
@@ -22,11 +19,7 @@ export const downloaderCommands: CommandDefinition[] = [
   {
     name: "igstory",
     execute: (context) =>
-      handleDownloader(
-        context,
-        "instagram-story",
-        HeavyFeatureType.INSTAGRAM_STORY_DOWNLOAD,
-      ),
+      handleDownloader(context, "instagram-story", HeavyFeatureType.INSTAGRAM_STORY_DOWNLOAD),
   },
 ];
 

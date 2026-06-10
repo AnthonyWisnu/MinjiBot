@@ -1,4 +1,5 @@
 import { DisconnectReason, type ConnectionState, type WASocket } from "@whiskeysockets/baileys";
+import qrcode from "qrcode-terminal";
 
 import { env } from "../config/env";
 import { logger } from "../config/logger";
@@ -84,7 +85,8 @@ export class BotLifecycle {
 
   private handleConnectionUpdate(update: Partial<ConnectionState>): void {
     if (update.qr) {
-      logger.info("QR login WhatsApp tersedia. Scan QR dari output Baileys atau terminal runtime.");
+      logger.info("QR login WhatsApp tersedia. Scan QR yang tampil di terminal.");
+      qrcode.generate(update.qr, { small: true });
     }
 
     if (update.connection === "open") {

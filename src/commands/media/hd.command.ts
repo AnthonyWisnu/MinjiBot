@@ -19,7 +19,9 @@ export const hdCommands: CommandDefinition[] = [
 
 async function handleHd(context: CommandContext): Promise<void> {
   if (!context.isGroup && context.role !== "TENANT_OWNER" && context.role !== "SUPER_OWNER") {
-    await context.reply("Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.");
+    await context.reply(
+      "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+    );
     return;
   }
 
