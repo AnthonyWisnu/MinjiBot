@@ -124,7 +124,7 @@ export class GameService {
     this.quizSessions.set(context.chatJid, {
       type,
       groupJid: context.chatJid,
-      startedBy: context.senderJid,
+      startedBy: context.senderUserJid,
       question,
       answered: new Set(),
       createdAt: Date.now(),
@@ -170,12 +170,12 @@ export class GameService {
 
       const session: TicTacToeSession = {
         groupJid: context.chatJid,
-        playerJid: context.senderJid,
+        playerJid: context.senderUserJid,
         board: Array<TicTacToeCell>(9).fill(null),
         createdAt: Date.now(),
       };
       this.ticTacToeSessions.set(context.chatJid, session);
-      this.addGamesPlayed(context.chatJid, context.senderJid);
+      this.addGamesPlayed(context.chatJid, context.senderUserJid);
 
       return [
         "Tic tac toe dimulai.",
@@ -192,7 +192,7 @@ export class GameService {
       return "Belum ada tic tac toe aktif. Gunakan .tictactoe untuk mulai.";
     }
 
-    if (session.playerJid !== context.senderJid) {
+    if (session.playerJid !== context.senderUserJid) {
       return "Tic tac toe ini sedang dimainkan oleh member lain.";
     }
 
@@ -228,7 +228,7 @@ export class GameService {
   claimDaily(context: CommandContext): string {
     this.assertGroup(context);
 
-    const profile = this.getProfile(context.chatJid, context.senderJid);
+    const profile = this.getProfile(context.chatJid, context.senderUserJid);
     const dailyKey = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Makassar",
       year: "numeric",
@@ -249,8 +249,8 @@ export class GameService {
   getPoints(context: CommandContext): string {
     this.assertGroup(context);
 
-    const profile = this.getProfile(context.chatJid, context.senderJid);
-    return formatProfile(context.senderJid, profile);
+    const profile = this.getProfile(context.chatJid, context.senderUserJid);
+    return formatProfile(context.senderUserJid, profile);
   }
 
   getProfileText(context: CommandContext): string {
@@ -306,7 +306,7 @@ export class GameService {
     }
 
     session.answered.add(normalizedAnswer);
-    this.awardWin(context.chatJid, context.senderJid, session.question.reward);
+    this.awardWin(context.chatJid, context.senderUserJid, session.question.reward);
 
     if (session.type !== "family100" || session.answered.size >= session.question.answers.length) {
       this.quizSessions.delete(context.chatJid);
@@ -325,7 +325,7 @@ export class GameService {
     this.quizSessions.set(context.chatJid, {
       type: "tebakangka",
       groupJid: context.chatJid,
-      startedBy: context.senderJid,
+      startedBy: context.senderUserJid,
       question: {
         prompt: "Tebak angka dari 1 sampai 20.",
         answers: [String(target)],
@@ -355,7 +355,7 @@ export class GameService {
     }
 
     this.quizSessions.delete(context.chatJid);
-    this.awardWin(context.chatJid, context.senderJid, session.question.reward);
+    this.awardWin(context.chatJid, context.senderUserJid, session.question.reward);
 
     return `Benar. Angkanya ${String(target)}.\nPoin bertambah: ${String(session.question.reward)}`;
   }
@@ -369,7 +369,7 @@ export class GameService {
       this.ticTacToeSessions.delete(context.chatJid);
 
       if (mark === "X") {
-        this.awardWin(context.chatJid, context.senderJid, 15);
+        this.awardWin(context.chatJid, context.senderUserJid, 15);
         return ["Kamu menang.", "Poin bertambah: 15", "", formatBoard(session.board)].join("\n");
       }
 

@@ -19,7 +19,7 @@ async function handleFeature(context: CommandContext): Promise<void> {
   }
 
   const tenantGroup = await tenantFeatureService.resolveManagedTenant({
-    actorJid: context.senderJid,
+    actorJid: context.senderUserJid,
     actorRole: context.role,
     tenantGroup: context.tenantGroup,
     isGroup: context.isGroup,
@@ -27,7 +27,7 @@ async function handleFeature(context: CommandContext): Promise<void> {
   const feature = tenantFeatureService.parseFeatureKey(featureText);
   const enabled = tenantFeatureService.parseFeatureEnabled(enabledText);
   const setting = await tenantFeatureService.updateFeature({
-    actorJid: context.senderJid,
+    actorJid: context.senderUserJid,
     actorRole: context.role,
     tenantGroup,
     feature,

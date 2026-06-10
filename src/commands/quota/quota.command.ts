@@ -42,7 +42,7 @@ async function handleAddQuota(context: CommandContext): Promise<void> {
   const ownerJid = normalizeUserJid(ownerNumber);
   const ownerQuota = await tenantQuotaService.addOwnerQuota({
     ownerJid,
-    actorJid: context.senderJid,
+    actorJid: context.senderUserJid,
     amount,
   });
 
@@ -66,7 +66,7 @@ async function handleSetOwnerQuota(context: CommandContext): Promise<void> {
   const ownerJid = normalizeUserJid(ownerNumber);
   const ownerQuota = await tenantQuotaService.setOwnerQuota({
     ownerJid,
-    actorJid: context.senderJid,
+    actorJid: context.senderUserJid,
     amount,
   });
 
@@ -140,7 +140,7 @@ async function handlePrivateQuota(context: CommandContext): Promise<void> {
     return;
   }
 
-  const ownerQuota = await tenantQuotaService.getOwnerQuota(context.senderJid);
+  const ownerQuota = await tenantQuotaService.getOwnerQuota(context.senderUserJid);
   if (!ownerQuota) {
     await context.reply("Kuota fitur berat kamu belum terdaftar.");
     return;

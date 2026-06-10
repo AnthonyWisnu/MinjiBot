@@ -3,11 +3,12 @@ import { logger } from "../config/logger";
 import { TenantAdminRepository } from "../repositories/tenantAdmin.repository";
 import { TenantGroupRepository } from "../repositories/tenantGroup.repository";
 import type { Role } from "../types/role";
-import { normalizeUserJid } from "../utils/jid";
+import { getIdentityCandidateJids, normalizeUserJid } from "../utils/jid";
 
 export interface RoleResolutionInput {
   chatJid: string;
   senderJid: string;
+  senderAltJids?: string[];
   isGroup: boolean;
 }
 
@@ -23,17 +24,18 @@ export class RoleGuard {
 
   async resolveRole(input: RoleResolutionInput): Promise<Role> {
     const senderJid = normalizeUserJid(input.senderJid);
+    const senderJids = this.getSenderCandidateJids(input);
 
-    if (this.isSuperOwner(senderJid)) {
+    if (senderJids.some((jid) => this.isSuperOwner(jid))) {
       return "SUPER_OWNER";
     }
 
     try {
       if (input.isGroup) {
-        return await this.resolveGroupRole(input.chatJid, senderJid);
+        return await this.resolveGroupRole(input.chatJid, senderJids);
       }
 
-      return await this.resolvePrivateRole(senderJid);
+      return await this.resolvePrivateRole(senderJids);
     } catch (error: unknown) {
       logger.error(
         {
@@ -63,25 +65,36 @@ export class RoleGuard {
     }
   }
 
-  private async resolveGroupRole(groupJid: string, senderJid: string): Promise<Role> {
+  private async resolveGroupRole(groupJid: string, senderJids: string[]): Promise<Role> {
     const tenantGroup = await this.tenantGroupRepository.findByGroupJid(groupJid);
 
-    if (tenantGroup?.ownerJid && normalizeUserJid(tenantGroup.ownerJid) === senderJid) {
+    if (tenantGroup?.ownerJid && senderJids.includes(normalizeUserJid(tenantGroup.ownerJid))) {
       return "TENANT_OWNER";
     }
 
-    const isTenantAdmin = await this.tenantAdminRepository.exists(groupJid, senderJid);
-    if (isTenantAdmin) {
-      return "TENANT_ADMIN";
+    for (const senderJid of senderJids) {
+      const isTenantAdmin = await this.tenantAdminRepository.exists(groupJid, senderJid);
+      if (isTenantAdmin) {
+        return "TENANT_ADMIN";
+      }
     }
 
     return "MEMBER";
   }
 
-  private async resolvePrivateRole(senderJid: string): Promise<Role> {
-    const isTenantOwner = await this.tenantGroupRepository.ownerExists(senderJid);
+  private async resolvePrivateRole(senderJids: string[]): Promise<Role> {
+    for (const senderJid of senderJids) {
+      const isTenantOwner = await this.tenantGroupRepository.ownerExists(senderJid);
+      if (isTenantOwner) {
+        return "TENANT_OWNER";
+      }
+    }
 
-    return isTenantOwner ? "TENANT_OWNER" : "MEMBER";
+    return "MEMBER";
+  }
+
+  private getSenderCandidateJids(input: RoleResolutionInput): string[] {
+    return getIdentityCandidateJids(input.senderJid, input.senderAltJids);
   }
 }
 

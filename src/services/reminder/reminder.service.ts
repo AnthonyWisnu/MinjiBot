@@ -53,13 +53,13 @@ export class ReminderService {
         groupJid: context.tenantGroup?.groupJid ?? context.chatJid,
         message: trimmedMessage,
         remindAt,
-        createdBy: context.senderJid,
+        createdBy: context.senderUserJid,
         mentionAll,
       });
 
       await tenantAuditRepository.create({
         groupJid: reminder.groupJid,
-        actorJid: context.senderJid,
+        actorJid: context.senderUserJid,
         action: TenantAuditAction.REMINDER_CREATED,
         metadata: {
           reminderId: reminder.id,
@@ -102,7 +102,7 @@ export class ReminderService {
       throw new Error("Reminder tidak ditemukan.");
     }
 
-    if (reminder.createdBy !== context.senderJid) {
+    if (reminder.createdBy !== context.senderUserJid) {
       this.assertCanManageReminder(context.role);
     }
 
@@ -116,7 +116,7 @@ export class ReminderService {
 
       await tenantAuditRepository.create({
         groupJid: deletedReminder.groupJid,
-        actorJid: context.senderJid,
+        actorJid: context.senderUserJid,
         action: TenantAuditAction.REMINDER_DELETED,
         metadata: {
           reminderId: deletedReminder.id,

@@ -15,6 +15,8 @@ export interface CommandContext {
   message: WAMessage;
   chatJid: string;
   senderJid: string;
+  senderUserJid: string;
+  senderAltJids: string[];
   isGroup: boolean;
   commandName: string;
   args: string[];

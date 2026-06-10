@@ -42,7 +42,7 @@ async function handleHdAi(context: CommandContext): Promise<void> {
 
   const reservation = {
     ownerJid: quotaContext.ownerJid,
-    actorJid: context.senderJid,
+    actorJid: context.senderUserJid,
     groupJid: quotaContext.groupJid,
     source: quotaContext.source,
     feature,

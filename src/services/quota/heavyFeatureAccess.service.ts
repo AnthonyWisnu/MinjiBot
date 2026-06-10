@@ -78,14 +78,14 @@ export class HeavyFeatureAccessService {
     if (context.role === "SUPER_OWNER") {
       return {
         allowed: true,
-        ownerJid: context.senderJid,
+        ownerJid: context.senderUserJid,
         source: TenantQuotaSource.PRIVATE_COMMAND,
         skipQuota: true,
       };
     }
 
     const activeTenantGroups = await this.tenantGroupRepository.listActiveByOwnerJid(
-      context.senderJid,
+      context.senderUserJid,
     );
     if (activeTenantGroups.length === 0) {
       return {
@@ -95,7 +95,7 @@ export class HeavyFeatureAccessService {
       };
     }
 
-    const ownerQuota = await tenantQuotaService.getOwnerQuota(context.senderJid);
+    const ownerQuota = await tenantQuotaService.getOwnerQuota(context.senderUserJid);
     if (!hasUsableQuota(ownerQuota)) {
       return {
         allowed: false,
@@ -105,7 +105,7 @@ export class HeavyFeatureAccessService {
 
     return {
       allowed: true,
-      ownerJid: context.senderJid,
+      ownerJid: context.senderUserJid,
       groupJid: activeTenantGroups[0]?.groupJid,
       source: TenantQuotaSource.PRIVATE_COMMAND,
       skipQuota: false,

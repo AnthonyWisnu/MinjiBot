@@ -71,6 +71,8 @@ async function handleWhoami(context: CommandContext): Promise<void> {
       "",
       `Chat JID: ${context.chatJid}`,
       `Sender JID: ${context.senderJid}`,
+      `User JID: ${context.senderUserJid}`,
+      `Alias JID: ${context.senderAltJids.length > 0 ? context.senderAltJids.join(", ") : "-"}`,
       `Role: ${context.role}`,
       `Grup: ${context.isGroup ? "ya" : "tidak"}`,
     ].join("\n"),

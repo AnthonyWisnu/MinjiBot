@@ -54,7 +54,7 @@ export class WelcomeService {
 
       await tenantAuditRepository.create({
         groupJid: tenantGroup.groupJid,
-        actorJid: context.senderJid,
+        actorJid: context.senderUserJid,
         action: TenantAuditAction.WELCOME_UPDATED,
         metadata: {
           tenantCode: tenantGroup.tenantCode,
@@ -89,7 +89,7 @@ export class WelcomeService {
 
       await tenantAuditRepository.create({
         groupJid: tenantGroup.groupJid,
-        actorJid: context.senderJid,
+        actorJid: context.senderUserJid,
         action: TenantAuditAction.WELCOME_UPDATED,
         metadata: {
           tenantCode: tenantGroup.tenantCode,
@@ -161,7 +161,7 @@ export class WelcomeService {
     this.assertCanManageWelcome(context.role);
 
     return tenantFeatureService.resolveManagedTenant({
-      actorJid: context.senderJid,
+      actorJid: context.senderUserJid,
       actorRole: context.role,
       tenantGroup: context.tenantGroup,
       isGroup: context.isGroup,

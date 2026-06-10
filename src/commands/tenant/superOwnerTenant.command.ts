@@ -83,7 +83,7 @@ async function handleActivateTenant(context: CommandContext): Promise<void> {
     ownerJid,
     durationText,
     initialQuota,
-    actorJid: context.senderJid,
+    actorJid: context.senderUserJid,
   });
 
   await context.reply(formatActivatedTenant(result.tenantGroup, result.ownerQuota));
@@ -132,7 +132,7 @@ async function handleExtendTenant(context: CommandContext): Promise<void> {
   const tenantGroup = await superOwnerTenantService.extendTenant(
     tenantCode,
     durationText,
-    context.senderJid,
+    context.senderUserJid,
   );
 
   await context.reply(
@@ -154,7 +154,7 @@ async function handleSetTenantExpire(context: CommandContext): Promise<void> {
   const tenantGroup = await superOwnerTenantService.setTenantExpire(
     tenantCode,
     dateText,
-    context.senderJid,
+    context.senderUserJid,
   );
 
   await context.reply(
@@ -203,7 +203,7 @@ async function handleRemoveTenant(context: CommandContext): Promise<void> {
     return;
   }
 
-  const tenantGroup = await superOwnerTenantService.removeTenant(tenantCode, context.senderJid);
+  const tenantGroup = await superOwnerTenantService.removeTenant(tenantCode, context.senderUserJid);
   await context.reply(
     `Tenant berhasil dihapus dari manajemen.\n\nGrup: ${formatNullableText(tenantGroup.name)}\nKode: ${tenantGroup.tenantCode}`,
   );
@@ -224,8 +224,8 @@ async function updateBlockedTenantFromCommand(
   }
 
   return blocked
-    ? superOwnerTenantService.blockTenant(tenantCode, context.senderJid)
-    : superOwnerTenantService.unblockTenant(tenantCode, context.senderJid);
+    ? superOwnerTenantService.blockTenant(tenantCode, context.senderUserJid)
+    : superOwnerTenantService.unblockTenant(tenantCode, context.senderUserJid);
 }
 
 async function ensureSuperOwner(context: CommandContext): Promise<boolean> {

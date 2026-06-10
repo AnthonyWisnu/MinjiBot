@@ -28,7 +28,7 @@ async function handleMyTenant(context: CommandContext): Promise<void> {
     return;
   }
 
-  const tenants = await tenantOwnerSessionService.listOwnedTenants(context.senderJid);
+  const tenants = await tenantOwnerSessionService.listOwnedTenants(context.senderUserJid);
   if (tenants.length === 0) {
     await context.reply("Kamu belum memiliki tenant.");
     return;
@@ -48,7 +48,7 @@ async function handleUseTenant(context: CommandContext): Promise<void> {
     return;
   }
 
-  const tenantGroup = await tenantOwnerSessionService.selectTenant(context.senderJid, selector);
+  const tenantGroup = await tenantOwnerSessionService.selectTenant(context.senderUserJid, selector);
   await context.reply(
     `Tenant aktif dipilih: ${formatNullableText(tenantGroup.name)}.\nCommand pengaturan berikutnya akan berlaku untuk tenant ini.`,
   );
@@ -59,7 +59,7 @@ async function handleCurrentTenant(context: CommandContext): Promise<void> {
     return;
   }
 
-  const currentTenant = await tenantOwnerSessionService.getCurrentTenant(context.senderJid);
+  const currentTenant = await tenantOwnerSessionService.getCurrentTenant(context.senderUserJid);
   if (!currentTenant.tenantGroup) {
     await context.reply(
       currentTenant.expired
@@ -77,7 +77,7 @@ async function handleClearTenant(context: CommandContext): Promise<void> {
     return;
   }
 
-  await tenantOwnerSessionService.clearCurrentTenant(context.senderJid);
+  await tenantOwnerSessionService.clearCurrentTenant(context.senderUserJid);
   await context.reply("Tenant aktif berhasil dibersihkan.");
 }
 

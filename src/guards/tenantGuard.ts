@@ -32,7 +32,7 @@ export class TenantGuard {
       return { allowed: true };
     }
 
-    const tenantGroup = await this.loadCurrentTenant(context.chatJid, context.senderJid);
+    const tenantGroup = await this.loadCurrentTenant(context.chatJid, context.senderUserJid);
     context.tenantGroup = tenantGroup ?? undefined;
 
     if (!tenantGroup) {
@@ -82,7 +82,7 @@ export class TenantGuard {
     }
 
     if (!tenantGroup.expiresAt || tenantGroup.expiresAt.getTime() <= Date.now()) {
-      const expiredTenant = await this.markExpired(tenantGroup, context.senderJid);
+      const expiredTenant = await this.markExpired(tenantGroup, context.senderUserJid);
       context.tenantGroup = expiredTenant;
 
       return {

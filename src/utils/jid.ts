@@ -11,6 +11,10 @@ export function isUserJid(jid: string): boolean {
   return jid.endsWith(USER_JID_SUFFIX) || jid.endsWith(LID_JID_SUFFIX);
 }
 
+export function isPhoneUserJid(jid: string): boolean {
+  return jid.endsWith(USER_JID_SUFFIX);
+}
+
 export function isStatusBroadcastJid(jid: string): boolean {
   return jid === STATUS_BROADCAST_JID;
 }
@@ -21,6 +25,39 @@ export function getMessageSenderJid(chatJid: string, participantJid?: string | n
   }
 
   return normalizeJid(chatJid);
+}
+
+export function getUniqueNormalizedJids(values: (string | null | undefined)[]): string[] {
+  const normalizedJids = values
+    .filter((value): value is string => Boolean(value && value.trim().length > 0))
+    .filter(
+      (value) => !isGroupJid(normalizeJid(value)) && !isStatusBroadcastJid(normalizeJid(value)),
+    )
+    .map((value) => normalizeUserJid(value));
+
+  return [...new Set(normalizedJids)];
+}
+
+export function getPreferredUserJid(jids: string[]): string {
+  const phoneJid = jids.find((jid) => isPhoneUserJid(jid));
+  const firstJid = jids[0];
+
+  if (phoneJid) {
+    return phoneJid;
+  }
+
+  if (firstJid) {
+    return firstJid;
+  }
+
+  throw new Error("JID user tidak tersedia.");
+}
+
+export function getIdentityCandidateJids(
+  primaryJid: string,
+  alternateJids: readonly (string | null | undefined)[] = [],
+): string[] {
+  return getUniqueNormalizedJids([primaryJid, ...alternateJids]);
 }
 
 export function normalizeJid(jid: string): string {

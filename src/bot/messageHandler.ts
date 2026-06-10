@@ -44,6 +44,7 @@ async function handleIncomingMessage(
     context.role = await roleGuard.resolveRole({
       chatJid: context.chatJid,
       senderJid: context.senderJid,
+      senderAltJids: context.senderAltJids,
       isGroup: context.isGroup,
     });
 

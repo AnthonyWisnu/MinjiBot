@@ -2,7 +2,13 @@ import type { proto, WAMessage, WAMessageContent, WASocket } from "@whiskeysocke
 
 import { env } from "../config/env";
 import type { CommandContext, QuotedMessageContext } from "../types/command";
-import { getMessageSenderJid, isGroupJid, isStatusBroadcastJid } from "../utils/jid";
+import {
+  getMessageSenderJid,
+  getPreferredUserJid,
+  getUniqueNormalizedJids,
+  isGroupJid,
+  isStatusBroadcastJid,
+} from "../utils/jid";
 import { extractTextFromMessageContent } from "../utils/messageText";
 
 export function parseCommandMessage(socket: WASocket, message: WAMessage): CommandContext | null {
@@ -37,12 +43,18 @@ export function parseCommandMessage(socket: WASocket, message: WAMessage): Comma
 
   const argsText = commandText.slice(commandName.length).trim();
   const senderJid = getMessageSenderJid(chatJid, message.key.participant);
+  const senderAltJids = getMessageSenderAltJids(message);
+  const senderUserJid = getPreferredUserJid(
+    senderAltJids.includes(senderJid) ? senderAltJids : [senderJid, ...senderAltJids],
+  );
 
   return {
     socket,
     message,
     chatJid,
     senderJid,
+    senderUserJid,
+    senderAltJids,
     isGroup: isGroupJid(chatJid),
     commandName: commandName.toLowerCase(),
     args,
@@ -60,6 +72,17 @@ export function parseCommandMessage(socket: WASocket, message: WAMessage): Comma
       );
     },
   };
+}
+
+function getMessageSenderAltJids(message: WAMessage): string[] {
+  return getUniqueNormalizedJids([
+    message.key.remoteJid,
+    message.key.participant,
+    message.key.senderPn,
+    message.key.participantPn,
+    message.key.senderLid,
+    message.key.participantLid,
+  ]);
 }
 
 function unwrapMessageContent(

@@ -16,7 +16,7 @@ import { TenantGroupRepository } from "../../repositories/tenantGroup.repository
 import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSetting.repository";
 import type { CommandContext } from "../../types/command";
 import type { Role } from "../../types/role";
-import { getMessageSenderJid, normalizeJid } from "../../utils/jid";
+import { getIdentityCandidateJids, getMessageSenderJid, normalizeUserJid } from "../../utils/jid";
 import { extractTextFromMessageContent } from "../../utils/messageText";
 import { tenantFeatureService } from "../tenant/tenantFeature.service";
 
@@ -76,7 +76,7 @@ export class AntiSpamService {
 
       await tenantAuditRepository.create({
         groupJid: tenantGroup.groupJid,
-        actorJid: context.senderJid,
+        actorJid: context.senderUserJid,
         action: TenantAuditAction.MODERATION_UPDATED,
         metadata: {
           tenantCode: tenantGroup.tenantCode,
@@ -111,7 +111,7 @@ export class AntiSpamService {
 
       await tenantAuditRepository.create({
         groupJid: tenantGroup.groupJid,
-        actorJid: context.senderJid,
+        actorJid: context.senderUserJid,
         action: TenantAuditAction.MODERATION_UPDATED,
         metadata: {
           tenantCode: tenantGroup.tenantCode,
@@ -158,7 +158,8 @@ export class AntiSpamService {
     }
 
     const senderJid = getMessageSenderJid(groupJid, message.key.participant);
-    const senderRole = await this.resolveProtectedSenderRole(groupJid, senderJid, tenantGroup);
+    const senderJids = this.getMessageSenderCandidateJids(message, senderJid);
+    const senderRole = await this.resolveProtectedSenderRole(groupJid, senderJids, tenantGroup);
     if (senderRole !== "MEMBER") {
       return;
     }
@@ -286,7 +287,7 @@ export class AntiSpamService {
     this.assertCanManageAntiSpam(context.role);
 
     return tenantFeatureService.resolveManagedTenant({
-      actorJid: context.senderJid,
+      actorJid: context.senderUserJid,
       actorRole: context.role,
       tenantGroup: context.tenantGroup,
       isGroup: context.isGroup,
@@ -304,25 +305,38 @@ export class AntiSpamService {
 
   private async resolveProtectedSenderRole(
     groupJid: string,
-    senderJid: string,
+    senderJids: string[],
     tenantGroup: TenantGroup,
   ): Promise<Role> {
-    const normalizedSenderJid = normalizeJid(senderJid);
-
-    if (tenantGroup.ownerJid && normalizeJid(tenantGroup.ownerJid) === normalizedSenderJid) {
+    if (tenantGroup.ownerJid && senderJids.includes(normalizeUserJid(tenantGroup.ownerJid))) {
       return "TENANT_OWNER";
     }
 
-    const admin = await prisma.tenantAdmin.findUnique({
-      where: {
-        groupJid_userJid: {
-          groupJid,
-          userJid: normalizedSenderJid,
+    for (const senderJid of senderJids) {
+      const admin = await prisma.tenantAdmin.findUnique({
+        where: {
+          groupJid_userJid: {
+            groupJid,
+            userJid: senderJid,
+          },
         },
-      },
-    });
+      });
 
-    return admin ? "TENANT_ADMIN" : "MEMBER";
+      if (admin) {
+        return "TENANT_ADMIN";
+      }
+    }
+
+    return "MEMBER";
+  }
+
+  private getMessageSenderCandidateJids(message: WAMessage, senderJid: string): string[] {
+    return getIdentityCandidateJids(senderJid, [
+      message.key.senderPn,
+      message.key.participantPn,
+      message.key.senderLid,
+      message.key.participantLid,
+    ]);
   }
 
   private async deleteMessageIfPossible(socket: WASocket, message: WAMessage): Promise<void> {
