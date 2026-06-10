@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  BLOCKED
+  REMOVED
+}
+
+enum TenantQuotaTransactionType {
+  ADD
+  SET
+  RESERVE
+  CONSUME
+  REFUND
+  CORRECTION
+}
+
+enum TenantQuotaSource {
+  SUPER_OWNER
+  GROUP_COMMAND
+  PRIVATE_COMMAND
+  SYSTEM
+}
+
+enum HeavyFeatureType {
+  TIKTOK_DOWNLOAD
+  INSTAGRAM_REELS_DOWNLOAD
+  INSTAGRAM_STORY_DOWNLOAD
+  HD_AI_PHOTO
+  HD_AI_PHOTO_DOCUMENT
+}
+
+enum TenantAuditAction {
+  TENANT_REGISTERED
+  TENANT_ACTIVATED
+  TENANT_EXTENDED
+  TENANT_EXPIRED
+  TENANT_BLOCKED
+  TENANT_UNBLOCKED
+  TENANT_REMOVED
+  TENANT_OWNER_CHANGED
+  TENANT_ADMIN_ADDED
+  TENANT_ADMIN_REMOVED
+  FEATURE_UPDATED
+  QUOTA_ADDED
+  QUOTA_SET
+  QUOTA_RESERVED
+  QUOTA_CONSUMED
+  QUOTA_REFUNDED
+  WELCOME_UPDATED
+  MODERATION_UPDATED
+  REMINDER_CREATED
+  REMINDER_DELETED
+}
+
+enum AntiSpamMode {
+  NORMAL
+  STRICT
+}
+
+model TenantGroup {
+  id          String       @id @default(cuid())
+  groupJid    String       @unique
+  tenantCode  String       @unique
+  name        String?
+  status      TenantStatus @default(PENDING)
+  ownerJid    String?
+  expiresAt   DateTime?
+  isBlocked   Boolean      @default(false)
+  approvedAt  DateTime?
+  activatedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  featureSetting TenantFeatureSetting?
+  groupSetting   TenantGroupSetting?
+  admins         TenantAdmin[]
+  reminders      Reminder[]
+  auditLogs      TenantAuditLog[]
+
+  @@index([ownerJid])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model TenantAdmin {
+  id        String   @id @default(cuid())
+  groupJid  String
+  userJid   String
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@unique([groupJid, userJid])
+  @@index([groupJid])
+  @@index([userJid])
+}
+
+model TenantFeatureSetting {
+  id                String   @id @default(cuid())
+  groupJid          String   @unique
+  downloaderEnabled Boolean  @default(true)
+  hdEnabled         Boolean  @default(true)
+  hdAiEnabled       Boolean  @default(true)
+  gameEnabled       Boolean  @default(false)
+  welcomeEnabled    Boolean  @default(false)
+  antiLinkEnabled   Boolean  @default(false)
+  antiSpamEnabled   Boolean  @default(false)
+  reminderEnabled   Boolean  @default(true)
+  tagAllEnabled     Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+}
+
+model TenantGroupSetting {
+  id                   String       @id @default(cuid())
+  groupJid             String       @unique
+  welcomeMessage       String?
+  antiLinkAutoKick     Boolean      @default(false)
+  antiSpamMode         AntiSpamMode @default(NORMAL)
+  tagAllCooldownSec    Int          @default(600)
+  remindAllCooldownSec Int          @default(600)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+}
+
+model TenantOwnerQuota {
+  id              String   @id @default(cuid())
+  ownerJid        String   @unique
+  remainingQuota  Int      @default(0)
+  reservedQuota   Int      @default(0)
+  totalAddedQuota Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  transactions TenantQuotaTransaction[]
+
+  @@index([ownerJid])
+}
+
+model TenantQuotaTransaction {
+  id            String                     @id @default(cuid())
+  ownerJid      String
+  groupJid      String?
+  actorJid      String?
+  amount        Int
+  type          TenantQuotaTransactionType
+  source        TenantQuotaSource
+  feature       HeavyFeatureType?
+  note          String?
+  correlationId String?
+  createdAt     DateTime                   @default(now())
+
+  ownerQuota TenantOwnerQuota @relation(fields: [ownerJid], references: [ownerJid], onDelete: Cascade)
+
+  @@index([ownerJid])
+  @@index([groupJid])
+  @@index([actorJid])
+  @@index([type])
+  @@index([feature])
+  @@index([createdAt])
+  @@index([correlationId])
+}
+
+model TenantPrivateSession {
+  id        String    @id @default(cuid())
+  userJid   String    @unique
+  groupJid  String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userJid])
+  @@index([groupJid])
+  @@index([expiresAt])
+}
+
+model Reminder {
+  id         String    @id @default(cuid())
+  groupJid   String
+  message    String
+  remindAt   DateTime
+  createdBy  String
+  mentionAll Boolean   @default(false)
+  isSent     Boolean   @default(false)
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@index([groupJid, remindAt])
+  @@index([isSent, remindAt])
+  @@index([createdBy, groupJid])
+}
+
+model TenantAuditLog {
+  id        String            @id @default(cuid())
+  groupJid  String?
+  actorJid  String?
+  action    TenantAuditAction
+  metadata  Json?
+  createdAt DateTime          @default(now())
+
+  tenantGroup TenantGroup? @relation(fields: [groupJid], references: [groupJid], onDelete: SetNull)
+
+  @@index([groupJid])
+  @@index([actorJid])
+  @@index([action])
+  @@index([createdAt])
+}

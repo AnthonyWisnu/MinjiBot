@@ -1,0 +1,62 @@
+import type { TenantFeatureSetting, TenantGroup } from "@prisma/client";
+
+import { tenantFeatureService } from "../../services/tenant/tenantFeature.service";
+import type { CommandContext, CommandDefinition } from "../../types/command";
+import { formatNullableText } from "../../utils/format";
+
+export const tenantFeatureCommands: CommandDefinition[] = [
+  {
+    name: "feature",
+    execute: handleFeature,
+  },
+];
+
+async function handleFeature(context: CommandContext): Promise<void> {
+  const [featureText, enabledText] = context.args;
+  if (!featureText || !enabledText) {
+    await context.reply("Format command salah.\nGunakan: .feature <fitur> <on/off>");
+    return;
+  }
+
+  const tenantGroup = await tenantFeatureService.resolveManagedTenant({
+    actorJid: context.senderJid,
+    actorRole: context.role,
+    tenantGroup: context.tenantGroup,
+    isGroup: context.isGroup,
+  });
+  const feature = tenantFeatureService.parseFeatureKey(featureText);
+  const enabled = tenantFeatureService.parseFeatureEnabled(enabledText);
+  const setting = await tenantFeatureService.updateFeature({
+    actorJid: context.senderJid,
+    actorRole: context.role,
+    tenantGroup,
+    feature,
+    enabled,
+  });
+
+  await context.reply(formatFeatureUpdated(tenantGroup, setting));
+}
+
+function formatFeatureUpdated(tenantGroup: TenantGroup, setting: TenantFeatureSetting): string {
+  return [
+    "Pengaturan fitur berhasil diperbarui.",
+    "",
+    `Grup: ${formatNullableText(tenantGroup.name)}`,
+    `Kode: ${tenantGroup.tenantCode}`,
+    "",
+    "[STATUS FITUR]",
+    `Downloader: ${formatEnabled(setting.downloaderEnabled)}`,
+    `HD: ${formatEnabled(setting.hdEnabled)}`,
+    `HD AI: ${formatEnabled(setting.hdAiEnabled)}`,
+    `Game: ${formatEnabled(setting.gameEnabled)}`,
+    `Welcome: ${formatEnabled(setting.welcomeEnabled)}`,
+    `Antilink: ${formatEnabled(setting.antiLinkEnabled)}`,
+    `Antispam: ${formatEnabled(setting.antiSpamEnabled)}`,
+    `Reminder: ${formatEnabled(setting.reminderEnabled)}`,
+    `Tag all: ${formatEnabled(setting.tagAllEnabled)}`,
+  ].join("\n");
+}
+
+function formatEnabled(enabled: boolean): string {
+  return enabled ? "on" : "off";
+}
