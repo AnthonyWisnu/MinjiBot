@@ -10,9 +10,9 @@ sessions/
 auth/
 tmp/
 temp/
-media/
-downloads/
-cookies/
+/media/
+/downloads/
+/cookies/
 *.log
 *.sqlite
 *.sqlite3
