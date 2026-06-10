@@ -1,0 +1,26 @@
+name: Deploy MinjiBot
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Droplet
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd /var/www/MinjiBot
+            git pull origin main
+            npm install
+            npm run prisma:deploy
+            npm run build
+            pm2 restart minjibot || pm2 start dist/index.js --name minjibot
+            pm2 save
