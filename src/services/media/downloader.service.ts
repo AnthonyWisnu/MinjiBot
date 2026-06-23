@@ -1,12 +1,19 @@
-import { stat } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { env } from "../../config/env";
+import { logger } from "../../config/logger";
 import { createTempDir, removeTempDir } from "../../utils/tempFile";
 import { videoNormalizeService } from "./videoNormalize.service";
 
 const BYTES_PER_MB = 1024 * 1024;
+const MOBILE_SAFE_FORMAT =
+  "bv*[vcodec^=avc1][height<=720][ext=mp4]+ba[ext=m4a]/" +
+  "b[vcodec^=avc1][height<=720][ext=mp4]/" +
+  "bv*[height<=720][ext=mp4]+ba[ext=m4a]/" +
+  "b[height<=720][ext=mp4]/" +
+  "best[height<=720][ext=mp4]/best[ext=mp4]/best";
 
 export type DownloaderKind = "tiktok" | "instagram" | "instagram-story";
 
@@ -21,15 +28,29 @@ export class DownloaderService {
     const parsedUrl = parseSupportedUrl(url, kind);
     const tempDir = await createTempDir("download");
     const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
+    const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
     const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
+    const startedAt = Date.now();
 
     try {
       await this.runDownloader(parsedUrl.toString(), rawOutputTemplate);
-      const rawVideoPath = path.join(tempDir, "raw.mp4");
-      await videoNormalizeService.normalizeForWhatsApp(rawVideoPath, normalizedOutputPath);
-      await assertFileSizeAllowed(normalizedOutputPath);
-      const buffer = await import("node:fs/promises").then((fs) =>
-        fs.readFile(normalizedOutputPath),
+      const rawVideoPath = await findDownloadedFile(tempDir);
+      const outputPath = await prepareMobileVideo(
+        rawVideoPath,
+        remuxedOutputPath,
+        normalizedOutputPath,
+      );
+      await assertFileSizeAllowed(outputPath);
+      const buffer = await readFile(outputPath);
+
+      logger.info(
+        {
+          kind,
+          elapsedMs: Date.now() - startedAt,
+          sizeBytes: buffer.byteLength,
+          mode: outputPath === rawVideoPath ? "direct" : path.basename(outputPath, ".mp4"),
+        },
+        "Downloader selesai",
       );
 
       return {
@@ -48,15 +69,55 @@ export class DownloaderService {
       "--max-filesize",
       `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
       "-f",
-      "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best[ext=mp4]/best",
+      MOBILE_SAFE_FORMAT,
       "--merge-output-format",
       "mp4",
+      "--remux-video",
+      "mp4",
+      "--concurrent-fragments",
+      "4",
       "-o",
       outputTemplate,
       url,
     ];
 
     await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+  }
+}
+
+async function findDownloadedFile(tempDir: string): Promise<string> {
+  const entries = await readdir(tempDir);
+  const downloadedFile = entries.find(
+    (entry) =>
+      entry.startsWith("raw.") &&
+      !entry.endsWith(".part") &&
+      !entry.endsWith(".ytdl") &&
+      !entry.endsWith(".json"),
+  );
+
+  if (!downloadedFile) {
+    throw new Error("File hasil download tidak ditemukan.");
+  }
+
+  return path.join(tempDir, downloadedFile);
+}
+
+async function prepareMobileVideo(
+  rawVideoPath: string,
+  remuxedOutputPath: string,
+  normalizedOutputPath: string,
+): Promise<string> {
+  if (path.extname(rawVideoPath).toLowerCase() === ".mp4") {
+    return rawVideoPath;
+  }
+
+  try {
+    await videoNormalizeService.remuxForWhatsApp(rawVideoPath, remuxedOutputPath);
+    return remuxedOutputPath;
+  } catch (error: unknown) {
+    logger.warn({ error }, "Remux video gagal, memakai normalisasi penuh");
+    await videoNormalizeService.normalizeForWhatsApp(rawVideoPath, normalizedOutputPath);
+    return normalizedOutputPath;
   }
 }
 

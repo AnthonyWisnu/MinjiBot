@@ -4,6 +4,31 @@ import { spawn } from "node:child_process";
 import { env } from "../../config/env";
 
 export class VideoNormalizeService {
+  async remuxForWhatsApp(inputPath: string, outputPath: string): Promise<void> {
+    const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
+    const args = [
+      "-y",
+      "-i",
+      inputPath,
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a?",
+      "-c",
+      "copy",
+      "-movflags",
+      "+faststart",
+      outputPath,
+    ];
+
+    await runProcess(
+      ffmpegPath,
+      args,
+      env.DOWNLOADER_TIMEOUT_MS,
+      "Remux video melewati batas waktu.",
+    );
+  }
+
   async normalizeForWhatsApp(inputPath: string, outputPath: string): Promise<void> {
     const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
     const args = [
@@ -35,11 +60,21 @@ export class VideoNormalizeService {
       outputPath,
     ];
 
-    await runProcess(ffmpegPath, args, env.DOWNLOADER_TIMEOUT_MS);
+    await runProcess(
+      ffmpegPath,
+      args,
+      env.DOWNLOADER_TIMEOUT_MS,
+      "Normalisasi video melewati batas waktu.",
+    );
   }
 }
 
-function runProcess(command: string, args: string[], timeoutMs: number): Promise<void> {
+function runProcess(
+  command: string,
+  args: string[],
+  timeoutMs: number,
+  timeoutMessage: string,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       windowsHide: true,
@@ -47,7 +82,7 @@ function runProcess(command: string, args: string[], timeoutMs: number): Promise
     let stderr = "";
     const timeout = setTimeout(() => {
       child.kill("SIGKILL");
-      reject(new Error("Normalisasi video melewati batas waktu."));
+      reject(new Error(timeoutMessage));
     }, timeoutMs);
 
     child.stderr.on("data", (chunk: Buffer) => {
