@@ -4,9 +4,11 @@ import { gameCommands } from "./game/game.command";
 import { downloaderCommands } from "./media/downloader.command";
 import { hdAiCommands } from "./media/hdai.command";
 import { hdCommands } from "./media/hd.command";
+import { stickerCommands } from "./media/sticker.command";
 import { menuCommands } from "./menu.command";
 import { antiLinkCommands } from "./moderation/antiLink.command";
 import { antiSpamCommands } from "./moderation/antiSpam.command";
+import { manualModerationCommands } from "./moderation/manualModeration.command";
 import { quotaCommands } from "./quota/quota.command";
 import { reminderCommands } from "./reminder/reminder.command";
 import { tagAllCommands } from "./tagall/tagAll.command";
@@ -66,10 +68,12 @@ export const commandRouter = new CommandRouter([
   ...tenantFeatureCommands,
   ...hdCommands,
   ...hdAiCommands,
+  ...stickerCommands,
   ...downloaderCommands,
   ...welcomeCommands,
   ...antiLinkCommands,
   ...antiSpamCommands,
+  ...manualModerationCommands,
   ...reminderCommands,
   ...tagAllCommands,
   ...gameCommands,

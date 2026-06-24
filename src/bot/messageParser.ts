@@ -60,6 +60,7 @@ export function parseCommandMessage(socket: WASocket, message: WAMessage): Comma
     args,
     argsText,
     text,
+    mentionedJids: extractMentionedJids(content),
     role: "MEMBER",
     quoted: extractQuotedMessage(content),
     reply: async (replyText: string) => {
@@ -72,6 +73,12 @@ export function parseCommandMessage(socket: WASocket, message: WAMessage): Comma
       );
     },
   };
+}
+
+function extractMentionedJids(content: WAMessageContent): string[] {
+  const contextInfo = getContextInfo(content);
+
+  return getUniqueNormalizedJids(contextInfo?.mentionedJid ?? []);
 }
 
 function getMessageSenderAltJids(message: WAMessage): string[] {

@@ -22,6 +22,7 @@ export interface CommandContext {
   args: string[];
   argsText: string;
   text: string;
+  mentionedJids: string[];
   role: Role;
   tenantGroup?: TenantGroup;
   quoted?: QuotedMessageContext;

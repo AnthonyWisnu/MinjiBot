@@ -69,6 +69,10 @@ export class MenuService {
       ".tt <link>",
       ".ig <link>",
       ".igstory <link>",
+      ".s",
+      ".sticker",
+      ".gambar",
+      ".toimg",
       ".hdai",
       ".hdai doc",
       "",
@@ -175,6 +179,8 @@ export class MenuService {
       ".blocktenant <kode>",
       ".unblocktenant <kode>",
       "",
+      ...this.buildGroupModerationLines(true),
+      "",
       ...this.buildGroupFeatureLines(featureSetting, true),
       "",
       "[MENU]",
@@ -196,13 +202,13 @@ export class MenuService {
       "",
       "[PENGATURAN]",
       ".feature <fitur> <on/off>",
+      "",
+      ...this.buildGroupModerationLines(true),
+      "",
+      "[WELCOME]",
       ".welcome on",
       ".welcome off",
       ".setwelcome <pesan>",
-      ".antilink on",
-      ".antilink off",
-      ".antispam on",
-      ".antispam off",
       "",
       ...this.buildGroupFeatureLines(featureSetting, true),
     ].join("\n");
@@ -217,14 +223,12 @@ export class MenuService {
       "",
       ...this.buildTenantSummaryLines(tenantGroup),
       "",
-      "[MODERASI]",
-      ".kick",
-      ".del",
-      ".antilink on",
-      ".antilink off",
-      ".antispam on",
-      ".antispam off",
-      ".antispam status",
+      ...this.buildGroupModerationLines(true),
+      "",
+      "[WELCOME]",
+      ".welcome on",
+      ".welcome off",
+      ".setwelcome <pesan>",
       "",
       ...this.buildGroupFeatureLines(featureSetting, false),
     ].join("\n");
@@ -267,7 +271,7 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
     includeManagementCommands: boolean,
   ): string[] {
-    const lines = ["[MEDIA]"];
+    const lines = ["[MEDIA]", ".s", ".sticker", ".gambar", ".toimg"];
 
     if (!featureSetting || featureSetting.downloaderEnabled) {
       lines.push(".tt <link>", ".ig <link>", ".igstory <link>");
@@ -308,6 +312,25 @@ export class MenuService {
 
     if (includeManagementCommands) {
       lines.push("", "[PENGATURAN]", ".feature <fitur> <on/off>");
+    }
+
+    return lines;
+  }
+
+  private buildGroupModerationLines(includeAdvancedAntiSpam: boolean): string[] {
+    const lines = [
+      "[MODERASI]",
+      ".kick",
+      ".del",
+      ".antilink on",
+      ".antilink off",
+      ".antispam on",
+      ".antispam off",
+      ".antispam status",
+    ];
+
+    if (includeAdvancedAntiSpam) {
+      lines.push(".antispam mode normal", ".antispam mode strict");
     }
 
     return lines;

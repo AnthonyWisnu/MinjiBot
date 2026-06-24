@@ -8,9 +8,20 @@ export interface ImageMediaTarget {
   mimetype?: string;
 }
 
+export type MediaTargetType = "image" | "video" | "sticker";
+
+export interface MediaTarget {
+  type: MediaTargetType;
+  message: WAMessage;
+  fileLength?: number;
+  mimetype?: string;
+  isAnimated?: boolean;
+  seconds?: number;
+}
+
 export function resolveImageMediaTarget(context: CommandContext): ImageMediaTarget | null {
-  const currentImage = extractImageInfo(context.message.message);
-  if (currentImage) {
+  const currentImage = extractMediaInfo(context.message.message);
+  if (currentImage?.type === "image") {
     return {
       message: context.message,
       fileLength: currentImage.fileLength,
@@ -22,8 +33,8 @@ export function resolveImageMediaTarget(context: CommandContext): ImageMediaTarg
     return null;
   }
 
-  const quotedImage = extractImageInfo(context.quoted.message);
-  if (!quotedImage) {
+  const quotedImage = extractMediaInfo(context.quoted.message);
+  if (quotedImage?.type !== "image") {
     return null;
   }
 
@@ -42,20 +53,76 @@ export function resolveImageMediaTarget(context: CommandContext): ImageMediaTarg
   };
 }
 
-function extractImageInfo(
-  content: WAMessageContent | null | undefined,
-): { fileLength?: number; mimetype?: string } | null {
-  const unwrappedContent = unwrapMessageContent(content);
-  const imageMessage = unwrappedContent?.imageMessage;
+export function resolveMediaTarget(
+  context: CommandContext,
+  allowedTypes: readonly MediaTargetType[],
+): MediaTarget | null {
+  const currentMedia = extractMediaInfo(context.message.message);
+  if (currentMedia && allowedTypes.includes(currentMedia.type)) {
+    return {
+      ...currentMedia,
+      message: context.message,
+    };
+  }
 
-  if (!imageMessage) {
+  if (!context.quoted?.message || !context.quoted.id) {
+    return null;
+  }
+
+  const quotedMedia = extractMediaInfo(context.quoted.message);
+  if (!quotedMedia || !allowedTypes.includes(quotedMedia.type)) {
     return null;
   }
 
   return {
-    fileLength: toNumber(imageMessage.fileLength),
-    mimetype: imageMessage.mimetype ?? undefined,
+    ...quotedMedia,
+    message: {
+      key: {
+        remoteJid: context.chatJid,
+        id: context.quoted.id,
+        fromMe: false,
+        participant: context.quoted.participantJid,
+      },
+      message: context.quoted.message,
+    },
   };
+}
+
+function extractMediaInfo(
+  content: WAMessageContent | null | undefined,
+): Omit<MediaTarget, "message"> | null {
+  const unwrappedContent = unwrapMessageContent(content);
+  const imageMessage = unwrappedContent?.imageMessage;
+  const videoMessage = unwrappedContent?.videoMessage;
+  const stickerMessage = unwrappedContent?.stickerMessage;
+
+  if (imageMessage) {
+    return {
+      type: "image",
+      fileLength: toNumber(imageMessage.fileLength),
+      mimetype: imageMessage.mimetype ?? undefined,
+    };
+  }
+
+  if (videoMessage) {
+    return {
+      type: "video",
+      fileLength: toNumber(videoMessage.fileLength),
+      mimetype: videoMessage.mimetype ?? undefined,
+      seconds: toNumber(videoMessage.seconds),
+    };
+  }
+
+  if (stickerMessage) {
+    return {
+      type: "sticker",
+      fileLength: toNumber(stickerMessage.fileLength),
+      mimetype: stickerMessage.mimetype ?? undefined,
+      isAnimated: Boolean(stickerMessage.isAnimated),
+    };
+  }
+
+  return null;
 }
 
 function unwrapMessageContent(
