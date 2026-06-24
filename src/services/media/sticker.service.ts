@@ -40,7 +40,8 @@ export class StickerService {
   }
 
   async stickerToMedia(inputBuffer: Buffer, isAnimated: boolean): Promise<StickerToMediaResult> {
-    if (!isAnimated) {
+    const detectedAnimated = await this.isAnimatedSticker(inputBuffer);
+    if (!isAnimated && !detectedAnimated) {
       return {
         type: "image",
         buffer: await this.staticStickerToImage(inputBuffer),
@@ -55,6 +56,20 @@ export class StickerService {
       mimetype: "video/mp4",
       fileName: "minjibot-sticker.mp4",
     };
+  }
+
+  private async isAnimatedSticker(inputBuffer: Buffer): Promise<boolean> {
+    const metadata = await sharp(inputBuffer, {
+      animated: true,
+      limitInputPixels: false,
+    }).metadata();
+
+    const pages = metadata.pages ?? 1;
+    const delayCount = metadata.delay?.length ?? 0;
+    const height = metadata.height;
+    const pageHeight = metadata.pageHeight;
+
+    return pages > 1 || delayCount > 1 || (pageHeight !== undefined && pageHeight < height);
   }
 
   private async createStaticSticker(inputBuffer: Buffer): Promise<Buffer> {
