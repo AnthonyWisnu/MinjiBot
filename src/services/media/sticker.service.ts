@@ -49,12 +49,21 @@ export class StickerService {
       };
     }
 
-    return {
-      type: "video",
-      buffer: await this.animatedStickerToVideo(inputBuffer),
-      mimetype: "video/mp4",
-      fileName: "minjibot-sticker.mp4",
-    };
+    try {
+      return {
+        type: "video",
+        buffer: await this.animatedStickerToVideo(inputBuffer),
+        mimetype: "video/mp4",
+        fileName: "minjibot-sticker.mp4",
+      };
+    } catch {
+      return {
+        type: "image",
+        buffer: await this.staticStickerToImage(inputBuffer),
+        mimetype: "image/png",
+        fileName: "minjibot-sticker.png",
+      };
+    }
   }
 
   private async createStaticSticker(inputBuffer: Buffer): Promise<Buffer> {
@@ -93,6 +102,8 @@ export class StickerService {
       await writeFile(inputPath, inputBuffer);
       await runFfmpeg([
         "-y",
+        "-max_error_rate",
+        "1.0",
         "-t",
         String(ANIMATED_STICKER_SECONDS),
         "-i",
