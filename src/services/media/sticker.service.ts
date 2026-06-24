@@ -49,21 +49,12 @@ export class StickerService {
       };
     }
 
-    try {
-      return {
-        type: "video",
-        buffer: await this.animatedStickerToVideo(inputBuffer),
-        mimetype: "video/mp4",
-        fileName: "minjibot-sticker.mp4",
-      };
-    } catch {
-      return {
-        type: "image",
-        buffer: await this.staticStickerToImage(inputBuffer),
-        mimetype: "image/png",
-        fileName: "minjibot-sticker.png",
-      };
-    }
+    return {
+      type: "video",
+      buffer: await this.animatedStickerToVideo(inputBuffer),
+      mimetype: "video/mp4",
+      fileName: "minjibot-sticker.mp4",
+    };
   }
 
   private async createStaticSticker(inputBuffer: Buffer): Promise<Buffer> {
@@ -135,36 +126,55 @@ export class StickerService {
   private async animatedStickerToVideo(inputBuffer: Buffer): Promise<Buffer> {
     const tempDir = await createTempDir("sticker");
     const inputPath = path.join(tempDir, "sticker.webp");
+    const gifPath = path.join(tempDir, "sticker.gif");
     const outputPath = path.join(tempDir, "sticker.mp4");
 
     try {
       await writeFile(inputPath, inputBuffer);
-      await runFfmpeg([
-        "-y",
-        "-t",
-        String(ANIMATED_STICKER_SECONDS),
-        "-i",
-        inputPath,
-        "-an",
-        "-vf",
-        "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
-        "-c:v",
-        "libx264",
-        "-profile:v",
-        "main",
-        "-level",
-        "4.1",
-        "-preset",
-        "veryfast",
-        "-movflags",
-        "+faststart",
-        outputPath,
-      ]);
+      try {
+        await this.convertAnimatedInputToVideo(inputPath, outputPath);
+      } catch {
+        const gifBuffer = await sharp(inputBuffer, {
+          animated: true,
+          limitInputPixels: false,
+        })
+          .gif({
+            effort: 4,
+          })
+          .toBuffer();
+
+        await writeFile(gifPath, gifBuffer);
+        await this.convertAnimatedInputToVideo(gifPath, outputPath);
+      }
 
       return await readFile(outputPath);
     } finally {
       await removeTempDir(tempDir);
     }
+  }
+
+  private async convertAnimatedInputToVideo(inputPath: string, outputPath: string): Promise<void> {
+    await runFfmpeg([
+      "-y",
+      "-t",
+      String(ANIMATED_STICKER_SECONDS),
+      "-i",
+      inputPath,
+      "-an",
+      "-vf",
+      "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
+      "-c:v",
+      "libx264",
+      "-profile:v",
+      "main",
+      "-level",
+      "4.1",
+      "-preset",
+      "veryfast",
+      "-movflags",
+      "+faststart",
+      outputPath,
+    ]);
   }
 }
 
