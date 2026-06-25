@@ -4,6 +4,7 @@ import { superOwnerTenantService } from "../../services/tenant/superOwnerTenant.
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatDateId, formatNullableText } from "../../utils/format";
 import { normalizeUserJid } from "../../utils/jid";
+import { formatUserSafeError } from "../../utils/userSafeError";
 
 export const superOwnerTenantCommands: CommandDefinition[] = [
   {
@@ -104,40 +105,48 @@ async function handleListTenant(context: CommandContext): Promise<void> {
 }
 
 async function handleTenantInfo(context: CommandContext): Promise<void> {
-  if (!(await ensureSuperOwner(context))) {
-    return;
-  }
+  try {
+    if (!(await ensureSuperOwner(context))) {
+      return;
+    }
 
-  const [tenantCode] = context.args;
-  if (!tenantCode) {
-    await context.reply("Format command salah.\nGunakan: .tenantinfo <kode>");
-    return;
-  }
+    const [tenantCode] = context.args;
+    if (!tenantCode) {
+      await context.reply("Format command salah.\nGunakan: .tenantinfo <kode>");
+      return;
+    }
 
-  const result = await superOwnerTenantService.getTenantInfo(tenantCode);
-  await context.reply(formatTenantInfo(result.tenantGroup, result.ownerQuota));
+    const result = await superOwnerTenantService.getTenantInfo(tenantCode);
+    await context.reply(formatTenantInfo(result.tenantGroup, result.ownerQuota));
+  } catch (error: unknown) {
+    await context.reply(formatTenantCommandError(error));
+  }
 }
 
 async function handleExtendTenant(context: CommandContext): Promise<void> {
-  if (!(await ensureSuperOwner(context))) {
-    return;
+  try {
+    if (!(await ensureSuperOwner(context))) {
+      return;
+    }
+
+    const [tenantCode, durationText] = context.args;
+    if (!tenantCode || !durationText) {
+      await context.reply("Format command salah.\nGunakan: .extendtenant <kode> <durasi>");
+      return;
+    }
+
+    const tenantGroup = await superOwnerTenantService.extendTenant(
+      tenantCode,
+      durationText,
+      context.senderUserJid,
+    );
+
+    await context.reply(
+      `Tenant berhasil diperpanjang.\n\nGrup: ${formatNullableText(tenantGroup.name)}\nKode: ${tenantGroup.tenantCode}\nMasa aktif sampai: ${formatDateId(tenantGroup.expiresAt)}`,
+    );
+  } catch (error: unknown) {
+    await context.reply(formatTenantCommandError(error));
   }
-
-  const [tenantCode, durationText] = context.args;
-  if (!tenantCode || !durationText) {
-    await context.reply("Format command salah.\nGunakan: .extendtenant <kode> <durasi>");
-    return;
-  }
-
-  const tenantGroup = await superOwnerTenantService.extendTenant(
-    tenantCode,
-    durationText,
-    context.senderUserJid,
-  );
-
-  await context.reply(
-    `Tenant berhasil diperpanjang.\n\nGrup: ${formatNullableText(tenantGroup.name)}\nKode: ${tenantGroup.tenantCode}\nMasa aktif sampai: ${formatDateId(tenantGroup.expiresAt)}`,
-  );
 }
 
 async function handleSetTenantExpire(context: CommandContext): Promise<void> {
@@ -163,33 +172,41 @@ async function handleSetTenantExpire(context: CommandContext): Promise<void> {
 }
 
 async function handleBlockTenant(context: CommandContext): Promise<void> {
-  if (!(await ensureSuperOwner(context))) {
-    return;
-  }
+  try {
+    if (!(await ensureSuperOwner(context))) {
+      return;
+    }
 
-  const tenantGroup = await updateBlockedTenantFromCommand(context, true);
-  if (!tenantGroup) {
-    return;
-  }
+    const tenantGroup = await updateBlockedTenantFromCommand(context, true);
+    if (!tenantGroup) {
+      return;
+    }
 
-  await context.reply(
-    `Tenant berhasil diblokir.\n\nGrup: ${formatNullableText(tenantGroup.name)}\nKode: ${tenantGroup.tenantCode}`,
-  );
+    await context.reply(
+      `Tenant berhasil diblokir.\n\nGrup: ${formatNullableText(tenantGroup.name)}\nKode: ${tenantGroup.tenantCode}`,
+    );
+  } catch (error: unknown) {
+    await context.reply(formatTenantCommandError(error));
+  }
 }
 
 async function handleUnblockTenant(context: CommandContext): Promise<void> {
-  if (!(await ensureSuperOwner(context))) {
-    return;
-  }
+  try {
+    if (!(await ensureSuperOwner(context))) {
+      return;
+    }
 
-  const tenantGroup = await updateBlockedTenantFromCommand(context, false);
-  if (!tenantGroup) {
-    return;
-  }
+    const tenantGroup = await updateBlockedTenantFromCommand(context, false);
+    if (!tenantGroup) {
+      return;
+    }
 
-  await context.reply(
-    `Tenant berhasil dibuka blokirnya.\n\nGrup: ${formatNullableText(tenantGroup.name)}\nKode: ${tenantGroup.tenantCode}`,
-  );
+    await context.reply(
+      `Tenant berhasil dibuka blokirnya.\n\nGrup: ${formatNullableText(tenantGroup.name)}\nKode: ${tenantGroup.tenantCode}`,
+    );
+  } catch (error: unknown) {
+    await context.reply(formatTenantCommandError(error));
+  }
 }
 
 async function handleRemoveTenant(context: CommandContext): Promise<void> {
@@ -244,6 +261,10 @@ function parseNonNegativeInteger(value: string, label: string): number {
   }
 
   return parsed;
+}
+
+function formatTenantCommandError(error: unknown): string {
+  return formatUserSafeError(error, "Command tenant gagal diproses. Silakan coba lagi.");
 }
 
 function formatPendingGroups(groups: TenantGroup[]): string {

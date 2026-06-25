@@ -41,9 +41,19 @@ async function handleDelete(context: CommandContext): Promise<void> {
 }
 
 function formatManualModerationError(error: unknown): string {
-  if (error instanceof Error) {
+  if (error instanceof Error && isSafeManualModerationError(error.message)) {
     return `${error.message}\n\nPastikan bot menjadi admin grup.`;
   }
 
   return "Command moderasi gagal diproses.\n\nPastikan bot menjadi admin grup.";
+}
+
+function isSafeManualModerationError(message: string): boolean {
+  return (
+    message.includes("kick diri sendiri") ||
+    message.includes("Reply pesan") ||
+    message.includes("Reply atau mention") ||
+    message.includes("User target") ||
+    message.includes("hanya dapat digunakan")
+  );
 }

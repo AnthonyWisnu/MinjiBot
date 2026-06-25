@@ -4,6 +4,7 @@ import { logger } from "../../config/logger";
 import { stickerService } from "../../services/media/sticker.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { resolveMediaTarget, type MediaTarget } from "../../utils/mediaTarget";
+import { isUserSafeErrorMessage } from "../../utils/userSafeError";
 
 const BYTES_PER_MB = 1024 * 1024;
 const MAX_STICKER_INPUT_MB = 15;
@@ -208,7 +209,16 @@ function parseMemeText(text: string): { topText: string; bottomText: string } {
 
 function formatStickerError(error: unknown): string {
   if (error instanceof Error) {
-    return error.message;
+    const message = error.message.toLowerCase();
+    if (
+      message.includes("ukuran media maksimal") ||
+      message.includes("teks meme") ||
+      message.includes("media tidak dapat")
+    ) {
+      return isUserSafeErrorMessage(error.message)
+        ? error.message
+        : "Konversi media gagal diproses.";
+    }
   }
 
   return "Konversi media gagal diproses.";

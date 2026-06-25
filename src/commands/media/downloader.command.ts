@@ -97,12 +97,7 @@ function formatDownloaderError(error: unknown, kind: DownloaderKind): string {
       lowerMessage.includes("private") ||
       lowerMessage.includes("not available")
     ) {
-      return [
-        "IG Story gagal diambil.",
-        "",
-        "Instagram Story sering membutuhkan cookies login dan story harus masih aktif.",
-        "Kalau story private/expired, bot tidak bisa mengambilnya.",
-      ].join("\n");
+      return "IG Story gagal diambil. Pastikan story masih aktif dan dapat diakses.";
     }
 
     return "IG Story gagal diambil. Pastikan link story masih aktif dan akun story dapat diakses.";

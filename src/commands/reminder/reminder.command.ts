@@ -2,6 +2,7 @@ import type { Reminder } from "@prisma/client";
 
 import { reminderService } from "../../services/reminder/reminder.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import { formatUserSafeError } from "../../utils/userSafeError";
 
 export const reminderCommands: CommandDefinition[] = [
   {
@@ -23,15 +24,19 @@ export const reminderCommands: CommandDefinition[] = [
 ];
 
 async function handleRemind(context: CommandContext): Promise<void> {
-  const [timeText] = context.args;
-  const message = getMessageAfterFirstArg(context);
-  if (!timeText || message.length === 0) {
-    await context.reply("Format command salah.\nGunakan: .remind <waktu> <pesan>");
-    return;
-  }
+  try {
+    const [timeText] = context.args;
+    const message = getMessageAfterFirstArg(context);
+    if (!timeText || message.length === 0) {
+      await context.reply("Format command salah.\nGunakan: .remind <waktu> <pesan>");
+      return;
+    }
 
-  const result = await reminderService.createReminder(context, timeText, message, false);
-  await context.reply(formatReminderCreated(result.reminder));
+    const result = await reminderService.createReminder(context, timeText, message, false);
+    await context.reply(formatReminderCreated(result.reminder));
+  } catch (error: unknown) {
+    await context.reply(formatUserSafeError(error, "Reminder gagal diproses."));
+  }
 }
 
 async function handleRemindAll(context: CommandContext): Promise<void> {
@@ -47,13 +52,17 @@ async function handleRemindAll(context: CommandContext): Promise<void> {
 }
 
 async function handleListReminder(context: CommandContext): Promise<void> {
-  const reminders = await reminderService.listGroupReminders(context);
-  if (reminders.length === 0) {
-    await context.reply("Tidak ada reminder aktif di grup ini.");
-    return;
-  }
+  try {
+    const reminders = await reminderService.listGroupReminders(context);
+    if (reminders.length === 0) {
+      await context.reply("Tidak ada reminder aktif di grup ini.");
+      return;
+    }
 
-  await context.reply(formatReminderList(reminders));
+    await context.reply(formatReminderList(reminders));
+  } catch (error: unknown) {
+    await context.reply(formatUserSafeError(error, "Daftar reminder gagal dibuka."));
+  }
 }
 
 async function handleDeleteReminder(context: CommandContext): Promise<void> {

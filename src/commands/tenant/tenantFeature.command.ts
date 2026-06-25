@@ -3,6 +3,7 @@ import type { TenantFeatureSetting, TenantGroup } from "@prisma/client";
 import { tenantFeatureService } from "../../services/tenant/tenantFeature.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatNullableText } from "../../utils/format";
+import { formatUserSafeError } from "../../utils/userSafeError";
 
 export const tenantFeatureCommands: CommandDefinition[] = [
   {
@@ -12,29 +13,33 @@ export const tenantFeatureCommands: CommandDefinition[] = [
 ];
 
 async function handleFeature(context: CommandContext): Promise<void> {
-  const [featureText, enabledText] = context.args;
-  if (!featureText || !enabledText) {
-    await context.reply("Format command salah.\nGunakan: .feature <fitur> <on/off>");
-    return;
+  try {
+    const [featureText, enabledText] = context.args;
+    if (!featureText || !enabledText) {
+      await context.reply("Format command salah.\nGunakan: .feature <fitur> <on/off>");
+      return;
+    }
+
+    const tenantGroup = await tenantFeatureService.resolveManagedTenant({
+      actorJid: context.senderUserJid,
+      actorRole: context.role,
+      tenantGroup: context.tenantGroup,
+      isGroup: context.isGroup,
+    });
+    const feature = tenantFeatureService.parseFeatureKey(featureText);
+    const enabled = tenantFeatureService.parseFeatureEnabled(enabledText);
+    const setting = await tenantFeatureService.updateFeature({
+      actorJid: context.senderUserJid,
+      actorRole: context.role,
+      tenantGroup,
+      feature,
+      enabled,
+    });
+
+    await context.reply(formatFeatureUpdated(tenantGroup, setting));
+  } catch (error: unknown) {
+    await context.reply(formatUserSafeError(error, "Pengaturan fitur gagal diproses."));
   }
-
-  const tenantGroup = await tenantFeatureService.resolveManagedTenant({
-    actorJid: context.senderUserJid,
-    actorRole: context.role,
-    tenantGroup: context.tenantGroup,
-    isGroup: context.isGroup,
-  });
-  const feature = tenantFeatureService.parseFeatureKey(featureText);
-  const enabled = tenantFeatureService.parseFeatureEnabled(enabledText);
-  const setting = await tenantFeatureService.updateFeature({
-    actorJid: context.senderUserJid,
-    actorRole: context.role,
-    tenantGroup,
-    feature,
-    enabled,
-  });
-
-  await context.reply(formatFeatureUpdated(tenantGroup, setting));
 }
 
 function formatFeatureUpdated(tenantGroup: TenantGroup, setting: TenantFeatureSetting): string {

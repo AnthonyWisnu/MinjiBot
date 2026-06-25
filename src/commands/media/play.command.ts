@@ -8,6 +8,7 @@ import type { CommandContext, CommandDefinition } from "../../types/command";
 
 const MAX_DURATION_SECONDS = 10 * 60;
 const MAX_SEARCH_RESULTS = 5;
+const GENERIC_PLAY_ERROR = "Audio YouTube gagal diproses. Silakan coba lagi nanti.";
 
 export const playCommands: CommandDefinition[] = [
   {
@@ -101,18 +102,14 @@ function formatPlayError(error: unknown): string {
     message.includes("download audio") ||
     message.includes("stream")
   ) {
-    return "Cobalt gagal mengambil audio YouTube. Pastikan Cobalt aktif di port 9000 lalu coba lagi.";
+    return GENERIC_PLAY_ERROR;
   }
 
   if (message.includes("ffmpeg")) {
-    return "ffmpeg tidak tersedia atau gagal menjalankan convert audio.";
+    return GENERIC_PLAY_ERROR;
   }
 
-  return [
-    "Audio YouTube gagal diproses. Coba lagi nanti.",
-    "",
-    "Kalau masih gagal, cek koneksi VPS dan ffmpeg.",
-  ].join("\n");
+  return GENERIC_PLAY_ERROR;
 }
 
 function getErrorMessage(error: unknown): string {

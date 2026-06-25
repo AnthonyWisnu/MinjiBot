@@ -1,5 +1,6 @@
 import { gameService } from "../../services/game/game.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import { formatUserSafeError } from "../../utils/userSafeError";
 
 export const gameCommands: CommandDefinition[] = [
   {
@@ -56,11 +57,6 @@ async function replyGame(context: CommandContext, action: () => string): Promise
   try {
     await context.reply(action());
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      await context.reply(error.message);
-      return;
-    }
-
-    throw error;
+    await context.reply(formatUserSafeError(error, "Game gagal diproses. Silakan coba lagi."));
   }
 }

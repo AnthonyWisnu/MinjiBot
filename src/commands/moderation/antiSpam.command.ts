@@ -3,6 +3,7 @@ import type { TenantFeatureSetting, TenantGroup, TenantGroupSetting } from "@pri
 import { antiSpamService } from "../../services/moderation/antiSpam.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatNullableText } from "../../utils/format";
+import { formatUserSafeError } from "../../utils/userSafeError";
 
 export const antiSpamCommands: CommandDefinition[] = [
   {
@@ -12,35 +13,39 @@ export const antiSpamCommands: CommandDefinition[] = [
 ];
 
 async function handleAntiSpam(context: CommandContext): Promise<void> {
-  const [action, value] = context.args;
-  if (!action) {
-    await context.reply(
-      "Format command salah.\nGunakan: .antispam on, .antispam off, .antispam status, atau .antispam mode <normal/strict>",
-    );
-    return;
-  }
-
-  if (action === "status") {
-    const result = await antiSpamService.getAntiSpamConfig(context);
-    await context.reply(formatAntiSpamConfig(result));
-    return;
-  }
-
-  if (action === "mode") {
-    if (!value) {
-      await context.reply("Format command salah.\nGunakan: .antispam mode <normal/strict>");
+  try {
+    const [action, value] = context.args;
+    if (!action) {
+      await context.reply(
+        "Format command salah.\nGunakan: .antispam on, .antispam off, .antispam status, atau .antispam mode <normal/strict>",
+      );
       return;
     }
 
-    const mode = antiSpamService.parseAntiSpamMode(value);
-    const result = await antiSpamService.setAntiSpamMode(context, mode);
-    await context.reply(formatAntiSpamConfig(result));
-    return;
-  }
+    if (action === "status") {
+      const result = await antiSpamService.getAntiSpamConfig(context);
+      await context.reply(formatAntiSpamConfig(result));
+      return;
+    }
 
-  const enabled = antiSpamService.parseAntiSpamToggle(action);
-  const result = await antiSpamService.setAntiSpamEnabled(context, enabled);
-  await context.reply(formatAntiSpamConfig(result));
+    if (action === "mode") {
+      if (!value) {
+        await context.reply("Format command salah.\nGunakan: .antispam mode <normal/strict>");
+        return;
+      }
+
+      const mode = antiSpamService.parseAntiSpamMode(value);
+      const result = await antiSpamService.setAntiSpamMode(context, mode);
+      await context.reply(formatAntiSpamConfig(result));
+      return;
+    }
+
+    const enabled = antiSpamService.parseAntiSpamToggle(action);
+    const result = await antiSpamService.setAntiSpamEnabled(context, enabled);
+    await context.reply(formatAntiSpamConfig(result));
+  } catch (error: unknown) {
+    await context.reply(formatUserSafeError(error, "Pengaturan antispam gagal diproses."));
+  }
 }
 
 function formatAntiSpamConfig(result: {
