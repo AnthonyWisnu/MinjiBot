@@ -1,189 +1,138 @@
 import ffmpegStatic from "ffmpeg-static";
-import { readFile, readdir } from "node:fs/promises";
-import path from "node:path";
 import { spawn } from "node:child_process";
+import { Readable } from "node:stream";
+import play from "play-dl";
 
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
-import { createTempDir, removeTempDir } from "../../utils/tempFile";
-
-const YTDLP_PATH = "/usr/local/bin/yt-dlp";
-const YTDLP_BASE_ARGS = [
-  "--no-playlist",
-  "--no-warnings",
-  "--sleep-interval",
-  "1",
-  "--max-sleep-interval",
-  "3",
-  "--user-agent",
-  "Mozilla/5.0",
-  "-f",
-  "bestaudio/best",
-];
 
 export interface PreparedPlayAudio {
   buffer: Buffer;
-  fileName: string;
-  mimetype: "audio/mpeg";
-  tempDir: string;
+  mimetype: "audio/ogg; codecs=opus";
 }
 
 export class PlayAudioService {
-  async prepareMp3Audio(url: string, title: string): Promise<PreparedPlayAudio> {
-    const tempDir = await createTempDir("play");
-    const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
-    const mp3OutputPath = path.join(tempDir, "audio.mp3");
+  async prepareOpusAudio(videoUrl: string): Promise<PreparedPlayAudio> {
+    const inputStream = await this.createAudioStream(videoUrl);
 
     try {
-      await this.downloadAudio(url, rawOutputTemplate);
-      const inputPath = await findDownloadedFile(tempDir);
-      await this.convertToMp3(inputPath, mp3OutputPath);
+      const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
+      const output = await runFfmpeg(inputStream, ffmpegPath);
 
       return {
-        buffer: await readFile(mp3OutputPath),
-        fileName: `${sanitizeFileName(title)}.mp3`,
-        mimetype: "audio/mpeg",
-        tempDir,
+        buffer: output,
+        mimetype: "audio/ogg; codecs=opus",
       };
-    } catch (error: unknown) {
-      await removeTempDir(tempDir);
-      throw error;
+    } finally {
+      inputStream.destroy();
     }
   }
 
-  async cleanup(tempDir: string): Promise<void> {
+  private async createAudioStream(videoUrl: string): Promise<Readable> {
     try {
-      await removeTempDir(tempDir);
+      const stream = await play.stream(videoUrl);
+      return stream.stream;
     } catch (error: unknown) {
-      logger.warn({ error, tempDir }, "Cleanup temp audio gagal");
+      logger.warn({ error, videoUrl }, "play-dl stream langsung gagal, memakai direct URL");
+      return createDirectAudioStream(videoUrl);
     }
   }
-
-  private async downloadAudio(url: string, outputTemplate: string): Promise<void> {
-    const args = [...YTDLP_BASE_ARGS, "-o", outputTemplate, url];
-
-    try {
-      await runYtDlp(args);
-    } catch {
-      await runYtDlp([
-        ...YTDLP_BASE_ARGS,
-        "--extractor-retries",
-        "3",
-        "--fragment-retries",
-        "3",
-        "-o",
-        outputTemplate,
-        url,
-      ]);
-    }
-  }
-
-  private async convertToMp3(inputPath: string, outputPath: string): Promise<void> {
-    const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
-
-    await runProcess(
-      ffmpegPath,
-      [
-        "-y",
-        "-i",
-        inputPath,
-        "-vn",
-        "-ac",
-        "1",
-        "-ar",
-        "44100",
-        "-c:a",
-        "libmp3lame",
-        "-b:a",
-        "128k",
-        outputPath,
-      ],
-      env.DOWNLOADER_TIMEOUT_MS,
-      "Convert audio melewati batas waktu.",
-      "ffmpeg gagal dijalankan",
-    );
-  }
 }
 
-function runYtDlp(args: string[]): Promise<void> {
-  return runProcess(
-    YTDLP_PATH,
-    args,
-    env.DOWNLOADER_TIMEOUT_MS,
-    "Download audio melewati batas waktu.",
-    "yt-dlp gagal dijalankan",
-  );
-}
+async function createDirectAudioStream(videoUrl: string): Promise<Readable> {
+  const info = await play.video_info(videoUrl);
+  const format = info.format
+    .filter((item) => item.url && item.audioQuality)
+    .sort((left, right) => getBitrate(right) - getBitrate(left))[0];
 
-async function findDownloadedFile(tempDir: string): Promise<string> {
-  const entries = await readdir(tempDir);
-  const downloadedFile = entries.find(
-    (entry) =>
-      entry.startsWith("raw.") &&
-      !entry.endsWith(".part") &&
-      !entry.endsWith(".ytdl") &&
-      !entry.endsWith(".json"),
-  );
-
-  if (!downloadedFile) {
-    throw new Error("File hasil download audio tidak ditemukan.");
+  if (!format?.url) {
+    throw new Error("Stream audio YouTube tidak tersedia.");
   }
 
-  return path.join(tempDir, downloadedFile);
+  const response = await fetch(format.url, {
+    headers: {
+      Origin: "https://www.youtube.com",
+      Range: "bytes=0-",
+      Referer: "https://www.youtube.com/",
+      "User-Agent": "Mozilla/5.0",
+    },
+  });
+
+  if (!response.ok || !response.body) {
+    throw new Error(`Stream audio YouTube gagal dibuka: ${String(response.status)}`);
+  }
+
+  return Readable.fromWeb(response.body);
 }
 
-function runProcess(
-  command: string,
-  args: string[],
-  timeoutMs: number,
-  timeoutMessage: string,
-  unavailableMessage: string,
-): Promise<void> {
+function getBitrate(format: { averageBitrate?: number; bitrate?: number }): number {
+  return format.averageBitrate ?? format.bitrate ?? 0;
+}
+
+function runFfmpeg(inputStream: Readable, ffmpegPath: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const child = spawn(ffmpegPath, getFfmpegArgs(), {
       windowsHide: true,
     });
+    const outputChunks: Buffer[] = [];
     let stderr = "";
     const timeout = setTimeout(() => {
       child.kill("SIGKILL");
-      reject(new Error(timeoutMessage));
-    }, timeoutMs);
+      reject(new Error("Convert audio melewati batas waktu."));
+    }, env.DOWNLOADER_TIMEOUT_MS);
+
+    inputStream.pipe(child.stdin);
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      outputChunks.push(chunk);
+    });
 
     child.stderr.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
     });
 
+    inputStream.on("error", (error) => {
+      child.kill("SIGKILL");
+      reject(error);
+    });
+
     child.on("error", (error) => {
       clearTimeout(timeout);
-      reject(new Error(`${unavailableMessage}: ${error.message}`));
+      reject(new Error(`ffmpeg gagal dijalankan: ${error.message}`));
     });
 
     child.on("close", (code) => {
       clearTimeout(timeout);
       if (code === 0) {
-        resolve();
+        resolve(Buffer.concat(outputChunks));
         return;
       }
 
-      reject(new Error(`${unavailableMessage}: ${stderr.slice(-500)}`));
+      reject(new Error(`ffmpeg gagal menjalankan convert audio: ${stderr.slice(-500)}`));
     });
   });
 }
 
-function sanitizeFileName(value: string): string {
-  const sanitized = value
-    .split("")
-    .filter((char) => char.charCodeAt(0) >= 32 && !isReservedFileNameChar(char))
-    .join("")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 80);
-
-  return sanitized.length > 0 ? sanitized : "minjibot-audio";
-}
-
-function isReservedFileNameChar(char: string): boolean {
-  return '<>:"/\\|?*'.includes(char);
+function getFfmpegArgs(): string[] {
+  return [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-i",
+    "pipe:0",
+    "-vn",
+    "-ac",
+    "1",
+    "-ar",
+    "48000",
+    "-c:a",
+    "libopus",
+    "-b:a",
+    "64k",
+    "-f",
+    "ogg",
+    "pipe:1",
+  ];
 }
 
 export const playAudioService = new PlayAudioService();

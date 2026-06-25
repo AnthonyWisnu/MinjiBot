@@ -1,9 +1,7 @@
+import play, { type YouTubeVideo } from "play-dl";
+
 import { logger } from "../../config/logger";
 import { playAudioService } from "../../services/media/playAudio.service";
-import {
-  youtubeSearchService,
-  type YoutubeSearchResult,
-} from "../../services/media/youtubeSearch.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 
 const MAX_DURATION_SECONDS = 10 * 60;
@@ -23,13 +21,11 @@ async function handlePlay(context: CommandContext): Promise<void> {
     return;
   }
 
-  let tempDir: string | undefined;
-
   try {
     await context.reply(`Mencari ${query}...`);
-    const videos = await youtubeSearchService.searchVideos(query, MAX_SEARCH_RESULTS);
+    const videos = await searchYouTubeVideos(query);
     const playableVideos = videos.filter(
-      (video) => video.durationSeconds > 0 && video.durationSeconds <= MAX_DURATION_SECONDS,
+      (video) => video.durationInSec > 0 && video.durationInSec <= MAX_DURATION_SECONDS,
     );
 
     if (playableVideos.length === 0) {
@@ -38,14 +34,13 @@ async function handlePlay(context: CommandContext): Promise<void> {
     }
 
     const result = await prepareFirstAvailableAudio(playableVideos);
-    tempDir = result.audio.tempDir;
 
     await context.socket.sendMessage(
       context.chatJid,
       {
         audio: result.audio.buffer,
         mimetype: result.audio.mimetype,
-        fileName: result.audio.fileName,
+        ptt: true,
       },
       { quoted: context.message },
     );
@@ -53,23 +48,38 @@ async function handlePlay(context: CommandContext): Promise<void> {
     await context.reply(formatYoutubeResult(result.video));
   } catch (error: unknown) {
     await context.reply(formatPlayError(error));
-  } finally {
-    if (tempDir) {
-      await playAudioService.cleanup(tempDir);
-    }
   }
 }
 
-async function prepareFirstAvailableAudio(videos: YoutubeSearchResult[]): Promise<{
-  audio: Awaited<ReturnType<typeof playAudioService.prepareMp3Audio>>;
-  video: YoutubeSearchResult;
+async function searchYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
+  await play.setToken({
+    useragent: ["Mozilla/5.0"],
+  });
+
+  const videos = await play.search(query, {
+    limit: MAX_SEARCH_RESULTS,
+    source: {
+      youtube: "video",
+    },
+  });
+
+  if (videos.length === 0) {
+    throw new Error("Video YouTube tidak ditemukan.");
+  }
+
+  return videos;
+}
+
+async function prepareFirstAvailableAudio(videos: YouTubeVideo[]): Promise<{
+  audio: Awaited<ReturnType<typeof playAudioService.prepareOpusAudio>>;
+  video: YouTubeVideo;
 }> {
   let lastError: unknown;
 
   for (const video of videos) {
     try {
       return {
-        audio: await playAudioService.prepareMp3Audio(video.url, video.title),
+        audio: await playAudioService.prepareOpusAudio(video.url),
         video,
       };
     } catch (error: unknown) {
@@ -77,7 +87,7 @@ async function prepareFirstAvailableAudio(videos: YoutubeSearchResult[]): Promis
       logger.warn(
         {
           error,
-          videoId: video.videoId,
+          videoId: video.id,
           title: video.title,
         },
         "Kandidat audio YouTube gagal diproses",
@@ -100,13 +110,12 @@ function formatPlayError(error: unknown): string {
     message.includes("video unavailable") ||
     message.includes("not available") ||
     message.includes("private video") ||
-    message.includes("sign in")
+    message.includes("sign in") ||
+    message.includes("play-dl") ||
+    message.includes("403") ||
+    message.includes("stream audio youtube")
   ) {
-    return "Tidak ada hasil YouTube yang bisa diunduh. Coba judul yang lebih spesifik atau tambahkan nama penyanyi.";
-  }
-
-  if (message.includes("enoent") || message.includes("not found")) {
-    return "yt-dlp tidak tersedia atau gagal dijalankan. Pastikan yt-dlp tersedia di PATH server.";
+    return "Stream audio YouTube gagal dibuka. Coba judul lain atau coba lagi nanti.";
   }
 
   if (message.includes("ffmpeg")) {
@@ -116,7 +125,7 @@ function formatPlayError(error: unknown): string {
   return [
     "Audio YouTube gagal diproses. Coba lagi nanti.",
     "",
-    "Kalau masih gagal, cek koneksi VPS, yt-dlp, dan ffmpeg.",
+    "Kalau masih gagal, cek koneksi VPS dan ffmpeg.",
   ].join("\n");
 }
 
@@ -124,10 +133,10 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "";
 }
 
-function formatYoutubeResult(video: { durationText: string; title: string }): string {
+function formatYoutubeResult(video: { durationRaw: string; title?: string }): string {
   return [
     "[PLAY]",
-    `Judul: ${video.title}`,
-    `Durasi: ${video.durationText}`,
+    `Judul: ${video.title ?? "-"}`,
+    `Durasi: ${video.durationRaw}`,
   ].join("\n");
 }
