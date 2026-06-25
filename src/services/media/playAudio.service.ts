@@ -1,99 +1,119 @@
 import ffmpegStatic from "ffmpeg-static";
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { spawn } from "node:child_process";
-import { Readable } from "node:stream";
-import play from "play-dl";
 
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
+import { createTempDir, removeTempDir } from "../../utils/tempFile";
+
+const COBALT_ENDPOINT = "http://localhost:9000/";
 
 export interface PreparedPlayAudio {
   buffer: Buffer;
   mimetype: "audio/ogg; codecs=opus";
+  tempDir: string;
 }
 
 export class PlayAudioService {
   async prepareOpusAudio(videoUrl: string): Promise<PreparedPlayAudio> {
-    const inputStream = await this.createAudioStream(videoUrl);
+    const tempDir = await createTempDir("play");
+    const inputPath = path.join(tempDir, "cobalt-audio.mp3");
+    const outputPath = path.join(tempDir, "audio.opus");
 
     try {
+      const downloadUrl = await requestCobaltAudioUrl(videoUrl);
+      await downloadAudio(downloadUrl, inputPath);
       const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
-      const output = await runFfmpeg(inputStream, ffmpegPath);
+      await runFfmpeg(inputPath, outputPath, ffmpegPath);
 
       return {
-        buffer: output,
+        buffer: await readFile(outputPath),
         mimetype: "audio/ogg; codecs=opus",
+        tempDir,
       };
-    } finally {
-      inputStream.destroy();
+    } catch (error: unknown) {
+      await removeTempDir(tempDir);
+      throw error;
     }
   }
 
-  private async createAudioStream(videoUrl: string): Promise<Readable> {
+  async cleanup(tempDir: string): Promise<void> {
     try {
-      const stream = await play.stream(videoUrl);
-      return stream.stream;
+      await removeTempDir(tempDir);
     } catch (error: unknown) {
-      logger.warn({ error, videoUrl }, "play-dl stream langsung gagal, memakai direct URL");
-      return createDirectAudioStream(videoUrl);
+      logger.warn({ error, tempDir }, "Cleanup temp audio gagal");
     }
   }
 }
 
-async function createDirectAudioStream(videoUrl: string): Promise<Readable> {
-  const info = await play.video_info(videoUrl);
-  const format = info.format
-    .filter((item) => item.url && item.audioQuality)
-    .sort((left, right) => getBitrate(right) - getBitrate(left))[0];
+interface CobaltResponse {
+  status?: string;
+  url?: string;
+  error?: {
+    code?: string;
+  };
+}
 
-  if (!format?.url) {
-    throw new Error("Stream audio YouTube tidak tersedia.");
+async function requestCobaltAudioUrl(videoUrl: string): Promise<string> {
+  const response = await fetch(COBALT_ENDPOINT, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url: videoUrl,
+      downloadMode: "audio",
+      audioFormat: "mp3",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Cobalt tidak merespon dengan benar: ${String(response.status)}`);
   }
 
-  const response = await fetch(format.url, {
+  const data = (await response.json()) as CobaltResponse;
+  if (!isDownloadStatus(data.status) || !data.url) {
+    throw new Error(`Cobalt gagal membuat link audio: ${data.error?.code ?? data.status ?? "-"}`);
+  }
+
+  return new URL(data.url, COBALT_ENDPOINT).toString();
+}
+
+function isDownloadStatus(status: string | undefined): boolean {
+  return status === "stream" || status === "tunnel" || status === "redirect";
+}
+
+async function downloadAudio(url: string, outputPath: string): Promise<void> {
+  const response = await fetch(url, {
     headers: {
-      Origin: "https://www.youtube.com",
-      Range: "bytes=0-",
-      Referer: "https://www.youtube.com/",
+      Accept: "*/*",
       "User-Agent": "Mozilla/5.0",
     },
   });
 
   if (!response.ok || !response.body) {
-    throw new Error(`Stream audio YouTube gagal dibuka: ${String(response.status)}`);
+    throw new Error(`Download audio dari Cobalt gagal: ${String(response.status)}`);
   }
 
-  return Readable.fromWeb(response.body);
+  const buffer = Buffer.from(await response.arrayBuffer());
+  await writeFile(outputPath, buffer);
 }
 
-function getBitrate(format: { averageBitrate?: number; bitrate?: number }): number {
-  return format.averageBitrate ?? format.bitrate ?? 0;
-}
-
-function runFfmpeg(inputStream: Readable, ffmpegPath: string): Promise<Buffer> {
+function runFfmpeg(inputPath: string, outputPath: string, ffmpegPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(ffmpegPath, getFfmpegArgs(), {
+    const child = spawn(ffmpegPath, getFfmpegArgs(inputPath, outputPath), {
       windowsHide: true,
     });
-    const outputChunks: Buffer[] = [];
     let stderr = "";
     const timeout = setTimeout(() => {
       child.kill("SIGKILL");
       reject(new Error("Convert audio melewati batas waktu."));
     }, env.DOWNLOADER_TIMEOUT_MS);
 
-    inputStream.pipe(child.stdin);
-
-    child.stdout.on("data", (chunk: Buffer) => {
-      outputChunks.push(chunk);
-    });
-
     child.stderr.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
-    });
-
-    inputStream.on("error", (error) => {
-      child.kill("SIGKILL");
-      reject(error);
     });
 
     child.on("error", (error) => {
@@ -104,7 +124,7 @@ function runFfmpeg(inputStream: Readable, ffmpegPath: string): Promise<Buffer> {
     child.on("close", (code) => {
       clearTimeout(timeout);
       if (code === 0) {
-        resolve(Buffer.concat(outputChunks));
+        resolve();
         return;
       }
 
@@ -113,13 +133,14 @@ function runFfmpeg(inputStream: Readable, ffmpegPath: string): Promise<Buffer> {
   });
 }
 
-function getFfmpegArgs(): string[] {
+function getFfmpegArgs(inputPath: string, outputPath: string): string[] {
   return [
+    "-y",
     "-hide_banner",
     "-loglevel",
     "error",
     "-i",
-    "pipe:0",
+    inputPath,
     "-vn",
     "-ac",
     "1",
@@ -131,7 +152,7 @@ function getFfmpegArgs(): string[] {
     "64k",
     "-f",
     "ogg",
-    "pipe:1",
+    outputPath,
   ];
 }
 
