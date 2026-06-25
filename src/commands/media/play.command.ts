@@ -7,7 +7,7 @@ import {
 import type { CommandContext, CommandDefinition } from "../../types/command";
 
 const MAX_DURATION_SECONDS = 10 * 60;
-const MAX_SEARCH_RESULTS = 20;
+const MAX_SEARCH_RESULTS = 5;
 
 export const playCommands: CommandDefinition[] = [
   {

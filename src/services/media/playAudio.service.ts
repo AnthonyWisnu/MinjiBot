@@ -7,6 +7,20 @@ import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { createTempDir, removeTempDir } from "../../utils/tempFile";
 
+const YTDLP_PATH = "/usr/local/bin/yt-dlp";
+const YTDLP_BASE_ARGS = [
+  "--no-playlist",
+  "--no-warnings",
+  "--sleep-interval",
+  "1",
+  "--max-sleep-interval",
+  "3",
+  "--user-agent",
+  "Mozilla/5.0",
+  "-f",
+  "bestaudio/best",
+];
+
 export interface PreparedPlayAudio {
   buffer: Buffer;
   fileName: string;
@@ -46,21 +60,22 @@ export class PlayAudioService {
   }
 
   private async downloadAudio(url: string, outputTemplate: string): Promise<void> {
-    await runProcess(
-      env.DOWNLOADER_BIN,
-      [
-        "--no-playlist",
-        "--no-warnings",
-        "-f",
-        "bestaudio/best",
+    const args = [...YTDLP_BASE_ARGS, "-o", outputTemplate, url];
+
+    try {
+      await runYtDlp(args);
+    } catch {
+      await runYtDlp([
+        ...YTDLP_BASE_ARGS,
+        "--extractor-retries",
+        "3",
+        "--fragment-retries",
+        "3",
         "-o",
         outputTemplate,
         url,
-      ],
-      env.DOWNLOADER_TIMEOUT_MS,
-      "Download audio melewati batas waktu.",
-      "yt-dlp gagal dijalankan",
-    );
+      ]);
+    }
   }
 
   private async convertToMp3(inputPath: string, outputPath: string): Promise<void> {
@@ -88,6 +103,16 @@ export class PlayAudioService {
       "ffmpeg gagal dijalankan",
     );
   }
+}
+
+function runYtDlp(args: string[]): Promise<void> {
+  return runProcess(
+    YTDLP_PATH,
+    args,
+    env.DOWNLOADER_TIMEOUT_MS,
+    "Download audio melewati batas waktu.",
+    "yt-dlp gagal dijalankan",
+  );
 }
 
 async function findDownloadedFile(tempDir: string): Promise<string> {
