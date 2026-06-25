@@ -7,7 +7,7 @@ import {
 import type { CommandContext, CommandDefinition } from "../../types/command";
 
 const MAX_DURATION_SECONDS = 10 * 60;
-const MAX_SEARCH_RESULTS = 8;
+const MAX_SEARCH_RESULTS = 20;
 
 export const playCommands: CommandDefinition[] = [
   {
@@ -44,8 +44,8 @@ async function handlePlay(context: CommandContext): Promise<void> {
       context.chatJid,
       {
         audio: result.audio.buffer,
-        mimetype: "audio/ogg; codecs=opus",
-        ptt: true,
+        mimetype: result.audio.mimetype,
+        fileName: result.audio.fileName,
       },
       { quoted: context.message },
     );
@@ -61,7 +61,7 @@ async function handlePlay(context: CommandContext): Promise<void> {
 }
 
 async function prepareFirstAvailableAudio(videos: YoutubeSearchResult[]): Promise<{
-  audio: Awaited<ReturnType<typeof playAudioService.prepareOpusAudio>>;
+  audio: Awaited<ReturnType<typeof playAudioService.prepareMp3Audio>>;
   video: YoutubeSearchResult;
 }> {
   let lastError: unknown;
@@ -69,7 +69,7 @@ async function prepareFirstAvailableAudio(videos: YoutubeSearchResult[]): Promis
   for (const video of videos) {
     try {
       return {
-        audio: await playAudioService.prepareOpusAudio(video.url),
+        audio: await playAudioService.prepareMp3Audio(video.url, video.title),
         video,
       };
     } catch (error: unknown) {

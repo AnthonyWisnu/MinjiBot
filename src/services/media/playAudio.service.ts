@@ -9,22 +9,26 @@ import { createTempDir, removeTempDir } from "../../utils/tempFile";
 
 export interface PreparedPlayAudio {
   buffer: Buffer;
+  fileName: string;
+  mimetype: "audio/mpeg";
   tempDir: string;
 }
 
 export class PlayAudioService {
-  async prepareOpusAudio(url: string): Promise<PreparedPlayAudio> {
+  async prepareMp3Audio(url: string, title: string): Promise<PreparedPlayAudio> {
     const tempDir = await createTempDir("play");
     const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
-    const opusOutputPath = path.join(tempDir, "audio.opus");
+    const mp3OutputPath = path.join(tempDir, "audio.mp3");
 
     try {
       await this.downloadAudio(url, rawOutputTemplate);
       const inputPath = await findDownloadedFile(tempDir);
-      await this.convertToOpus(inputPath, opusOutputPath);
+      await this.convertToMp3(inputPath, mp3OutputPath);
 
       return {
-        buffer: await readFile(opusOutputPath),
+        buffer: await readFile(mp3OutputPath),
+        fileName: `${sanitizeFileName(title)}.mp3`,
+        mimetype: "audio/mpeg",
         tempDir,
       };
     } catch (error: unknown) {
@@ -46,6 +50,7 @@ export class PlayAudioService {
       env.DOWNLOADER_BIN,
       [
         "--no-playlist",
+        "--no-warnings",
         "-f",
         "bestaudio/best",
         "-o",
@@ -58,7 +63,7 @@ export class PlayAudioService {
     );
   }
 
-  private async convertToOpus(inputPath: string, outputPath: string): Promise<void> {
+  private async convertToMp3(inputPath: string, outputPath: string): Promise<void> {
     const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
 
     await runProcess(
@@ -71,11 +76,11 @@ export class PlayAudioService {
         "-ac",
         "1",
         "-ar",
-        "48000",
+        "44100",
         "-c:a",
-        "libopus",
+        "libmp3lame",
         "-b:a",
-        "64k",
+        "128k",
         outputPath,
       ],
       env.DOWNLOADER_TIMEOUT_MS,
@@ -138,6 +143,22 @@ function runProcess(
       reject(new Error(`${unavailableMessage}: ${stderr.slice(-500)}`));
     });
   });
+}
+
+function sanitizeFileName(value: string): string {
+  const sanitized = value
+    .split("")
+    .filter((char) => char.charCodeAt(0) >= 32 && !isReservedFileNameChar(char))
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+
+  return sanitized.length > 0 ? sanitized : "minjibot-audio";
+}
+
+function isReservedFileNameChar(char: string): boolean {
+  return '<>:"/\\|?*'.includes(char);
 }
 
 export const playAudioService = new PlayAudioService();
