@@ -13,6 +13,16 @@ export interface YoutubeSearchResult {
 
 export class YoutubeSearchService {
   async searchVideo(query: string): Promise<YoutubeSearchResult> {
+    const videos = await this.searchVideos(query, 1);
+    const video = videos[0];
+    if (!video) {
+      throw new Error("Video YouTube tidak ditemukan.");
+    }
+
+    return video;
+  }
+
+  async searchVideos(query: string, limit: number): Promise<YoutubeSearchResult[]> {
     const normalizedQuery = query.trim();
     if (!normalizedQuery) {
       throw new Error("Judul lagu tidak boleh kosong.");
@@ -20,8 +30,8 @@ export class YoutubeSearchService {
 
     const startedAt = Date.now();
     const result = await yts(normalizedQuery);
-    const video = result.videos[0];
-    if (!video) {
+    const videos = result.videos.slice(0, limit);
+    if (videos.length === 0) {
       throw new Error("Video YouTube tidak ditemukan.");
     }
 
@@ -29,19 +39,19 @@ export class YoutubeSearchService {
       {
         elapsedMs: Date.now() - startedAt,
         query: normalizedQuery,
-        videoId: video.videoId,
+        resultCount: videos.length,
       },
       "Pencarian YouTube selesai",
     );
 
-    return {
+    return videos.map((video) => ({
       channelTitle: video.author.name,
       durationSeconds: video.seconds,
       durationText: video.timestamp,
       title: video.title,
       url: video.url,
       videoId: video.videoId,
-    };
+    }));
   }
 }
 

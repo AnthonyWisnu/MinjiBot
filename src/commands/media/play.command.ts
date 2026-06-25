@@ -1,8 +1,13 @@
+import { logger } from "../../config/logger";
 import { playAudioService } from "../../services/media/playAudio.service";
-import { youtubeSearchService } from "../../services/media/youtubeSearch.service";
+import {
+  youtubeSearchService,
+  type YoutubeSearchResult,
+} from "../../services/media/youtubeSearch.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 
 const MAX_DURATION_SECONDS = 10 * 60;
+const MAX_SEARCH_RESULTS = 8;
 
 export const playCommands: CommandDefinition[] = [
   {
@@ -22,27 +27,30 @@ async function handlePlay(context: CommandContext): Promise<void> {
 
   try {
     await context.reply(`Mencari ${query}...`);
-    const video = await youtubeSearchService.searchVideo(query);
+    const videos = await youtubeSearchService.searchVideos(query, MAX_SEARCH_RESULTS);
+    const playableVideos = videos.filter(
+      (video) => video.durationSeconds > 0 && video.durationSeconds <= MAX_DURATION_SECONDS,
+    );
 
-    if (video.durationSeconds > MAX_DURATION_SECONDS) {
+    if (playableVideos.length === 0) {
       await context.reply("Durasi lagu maksimal 10 menit.");
       return;
     }
 
-    const audio = await playAudioService.prepareOpusAudio(video.url);
-    tempDir = audio.tempDir;
+    const result = await prepareFirstAvailableAudio(playableVideos);
+    tempDir = result.audio.tempDir;
 
     await context.socket.sendMessage(
       context.chatJid,
       {
-        audio: audio.buffer,
+        audio: result.audio.buffer,
         mimetype: "audio/ogg; codecs=opus",
         ptt: true,
       },
       { quoted: context.message },
     );
 
-    await context.reply(formatYoutubeResult(video));
+    await context.reply(formatYoutubeResult(result.video));
   } catch (error: unknown) {
     await context.reply(formatPlayError(error));
   } finally {
@@ -52,15 +60,52 @@ async function handlePlay(context: CommandContext): Promise<void> {
   }
 }
 
+async function prepareFirstAvailableAudio(videos: YoutubeSearchResult[]): Promise<{
+  audio: Awaited<ReturnType<typeof playAudioService.prepareOpusAudio>>;
+  video: YoutubeSearchResult;
+}> {
+  let lastError: unknown;
+
+  for (const video of videos) {
+    try {
+      return {
+        audio: await playAudioService.prepareOpusAudio(video.url),
+        video,
+      };
+    } catch (error: unknown) {
+      lastError = error;
+      logger.warn(
+        {
+          error,
+          videoId: video.videoId,
+          title: video.title,
+        },
+        "Kandidat audio YouTube gagal diproses",
+      );
+    }
+  }
+
+  throw new Error(`Tidak ada hasil YouTube yang bisa diunduh. ${getErrorMessage(lastError)}`);
+}
+
 function formatPlayError(error: unknown): string {
-  const rawMessage = error instanceof Error ? error.message : "";
+  const rawMessage = getErrorMessage(error);
   const message = rawMessage.toLowerCase();
 
   if (message.includes("tidak ditemukan")) {
     return "Lagu tidak ditemukan di YouTube. Coba kata kunci lain atau tambahkan nama penyanyi.";
   }
 
-  if (message.includes("yt-dlp")) {
+  if (
+    message.includes("video unavailable") ||
+    message.includes("not available") ||
+    message.includes("private video") ||
+    message.includes("sign in")
+  ) {
+    return "Tidak ada hasil YouTube yang bisa diunduh. Coba judul yang lebih spesifik atau tambahkan nama penyanyi.";
+  }
+
+  if (message.includes("enoent") || message.includes("not found")) {
     return "yt-dlp tidak tersedia atau gagal dijalankan. Pastikan yt-dlp tersedia di PATH server.";
   }
 
@@ -73,6 +118,10 @@ function formatPlayError(error: unknown): string {
     "",
     "Kalau masih gagal, cek koneksi VPS, yt-dlp, dan ffmpeg.",
   ].join("\n");
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "";
 }
 
 function formatYoutubeResult(video: { durationText: string; title: string }): string {
