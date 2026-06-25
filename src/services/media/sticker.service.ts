@@ -77,9 +77,8 @@ export class StickerService {
     })
       .rotate()
       .resize(STICKER_SIZE, STICKER_SIZE, {
-        fit: "contain",
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-        withoutEnlargement: true,
+        fit: "cover",
+        position: "center",
       })
       .png()
       .toBuffer();
@@ -120,9 +119,8 @@ export class StickerService {
     })
       .rotate()
       .resize(STICKER_SIZE, STICKER_SIZE, {
-        fit: "contain",
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-        withoutEnlargement: true,
+        fit: "cover",
+        position: "center",
       })
       .webp({
         quality: 85,
