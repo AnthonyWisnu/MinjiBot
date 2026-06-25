@@ -5,6 +5,7 @@ coverage/
 .env
 .env.*
 !.env.example
+ig_cookies.txt
 
 sessions/
 auth/

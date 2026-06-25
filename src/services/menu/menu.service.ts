@@ -71,6 +71,7 @@ export class MenuService {
       ".igstory <link>",
       ".s",
       ".sticker",
+      ".smeme <teks>",
       ".gambar",
       ".toimg",
       ".hdai",
@@ -271,7 +272,7 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
     includeManagementCommands: boolean,
   ): string[] {
-    const lines = ["[MEDIA]", ".s", ".sticker", ".gambar", ".toimg"];
+    const lines = ["[MEDIA]", ".s", ".sticker", ".smeme <teks>", ".gambar", ".toimg"];
 
     if (!featureSetting || featureSetting.downloaderEnabled) {
       lines.push(".tt <link>", ".ig <link>", ".igstory <link>");

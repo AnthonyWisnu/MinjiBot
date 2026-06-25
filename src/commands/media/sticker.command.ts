@@ -19,6 +19,10 @@ export const stickerCommands: CommandDefinition[] = [
     aliases: ["toimg"],
     execute: handleStickerToImage,
   },
+  {
+    name: "smeme",
+    execute: handleStickerMeme,
+  },
 ];
 
 async function handleSticker(context: CommandContext): Promise<void> {
@@ -104,6 +108,46 @@ async function handleStickerToImage(context: CommandContext): Promise<void> {
   }
 }
 
+async function handleStickerMeme(context: CommandContext): Promise<void> {
+  try {
+    if (!isMediaCommandAllowed(context)) {
+      await context.reply(
+        "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+      );
+      return;
+    }
+
+    const memeText = context.argsText.trim();
+    if (!memeText) {
+      await context.reply("Format command salah.\nGunakan: .smeme <teks> atau .smeme atas | bawah");
+      return;
+    }
+
+    const target = resolveMediaTarget(context, ["image", "sticker"]);
+    if (!target) {
+      await context.reply("Reply gambar atau sticker dengan command .smeme <teks>.");
+      return;
+    }
+
+    assertBufferSizeAllowed(target.fileLength, MAX_STICKER_INPUT_MB);
+    const inputBuffer = await downloadTargetMedia(context, target, "smeme-download");
+    assertBufferSizeAllowed(inputBuffer.byteLength, MAX_STICKER_INPUT_MB);
+    const { topText, bottomText } = parseMemeText(memeText);
+    const stickerBuffer = await stickerService.createMemeSticker(inputBuffer, topText, bottomText);
+
+    await context.socket.sendMessage(
+      context.chatJid,
+      {
+        sticker: stickerBuffer,
+        isAnimated: false,
+      },
+      { quoted: context.message },
+    );
+  } catch (error: unknown) {
+    await context.reply(formatStickerError(error));
+  }
+}
+
 function isMediaCommandAllowed(context: CommandContext): boolean {
   return context.isGroup || context.role === "TENANT_OWNER" || context.role === "SUPER_OWNER";
 }
@@ -145,6 +189,21 @@ async function downloadTargetMedia(
       reuploadRequest: context.socket.updateMediaMessage,
     },
   );
+}
+
+function parseMemeText(text: string): { topText: string; bottomText: string } {
+  const separatorIndex = text.indexOf("|");
+  if (separatorIndex < 0) {
+    return {
+      topText: "",
+      bottomText: text,
+    };
+  }
+
+  return {
+    topText: text.slice(0, separatorIndex),
+    bottomText: text.slice(separatorIndex + 1),
+  };
 }
 
 function formatStickerError(error: unknown): string {
