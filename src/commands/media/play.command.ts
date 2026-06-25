@@ -1,5 +1,8 @@
-import { musicPreviewService } from "../../services/media/musicPreview.service";
+import { playAudioService } from "../../services/media/playAudio.service";
+import { youtubeSearchService } from "../../services/media/youtubeSearch.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+
+const MAX_DURATION_SECONDS = 10 * 60;
 
 export const playCommands: CommandDefinition[] = [
   {
@@ -15,21 +18,37 @@ async function handlePlay(context: CommandContext): Promise<void> {
     return;
   }
 
+  let tempDir: string | undefined;
+
   try {
-    await context.reply("Preview lagu sedang dicari. Mohon tunggu.");
-    const audio = await musicPreviewService.searchPreview(query);
+    await context.reply(`Mencari ${query}...`);
+    const video = await youtubeSearchService.searchVideo(query);
+
+    if (video.durationSeconds > MAX_DURATION_SECONDS) {
+      await context.reply("Durasi lagu maksimal 10 menit.");
+      return;
+    }
+
+    const audio = await playAudioService.prepareOpusAudio(video.url);
+    tempDir = audio.tempDir;
 
     await context.socket.sendMessage(
       context.chatJid,
       {
         audio: audio.buffer,
-        mimetype: audio.mimetype,
-        fileName: audio.fileName,
+        mimetype: "audio/ogg; codecs=opus",
+        ptt: true,
       },
       { quoted: context.message },
     );
+
+    await context.reply(formatYoutubeResult(video));
   } catch (error: unknown) {
     await context.reply(formatPlayError(error));
+  } finally {
+    if (tempDir) {
+      await playAudioService.cleanup(tempDir);
+    }
   }
 }
 
@@ -38,16 +57,28 @@ function formatPlayError(error: unknown): string {
   const message = rawMessage.toLowerCase();
 
   if (message.includes("tidak ditemukan")) {
-    return "Preview lagu tidak ditemukan. Coba kata kunci lain atau tambahkan nama penyanyi.";
+    return "Lagu tidak ditemukan di YouTube. Coba kata kunci lain atau tambahkan nama penyanyi.";
   }
 
-  if (message.includes("terlalu besar")) {
-    return "Preview lagu terlalu besar untuk dikirim.";
+  if (message.includes("yt-dlp")) {
+    return "yt-dlp tidak tersedia atau gagal dijalankan. Pastikan yt-dlp tersedia di PATH server.";
+  }
+
+  if (message.includes("ffmpeg")) {
+    return "ffmpeg tidak tersedia atau gagal menjalankan convert audio.";
   }
 
   return [
-    "Preview lagu gagal diambil. Coba lagi nanti.",
+    "Audio YouTube gagal diproses. Coba lagi nanti.",
     "",
-    "Catatan: .play memakai preview resmi online, bukan full lagu.",
+    "Kalau masih gagal, cek koneksi VPS, yt-dlp, dan ffmpeg.",
+  ].join("\n");
+}
+
+function formatYoutubeResult(video: { durationText: string; title: string }): string {
+  return [
+    "[PLAY]",
+    `Judul: ${video.title}`,
+    `Durasi: ${video.durationText}`,
   ].join("\n");
 }
