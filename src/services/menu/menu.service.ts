@@ -273,10 +273,18 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
     includeManagementCommands: boolean,
   ): string[] {
-    const lines = ["[MEDIA]", ".s", ".sticker", ".smeme <teks>", ".gambar", ".toimg"];
+    const lines = [
+      "[MEDIA]",
+      ".s",
+      ".sticker",
+      ".smeme <teks>",
+      ".gambar",
+      ".toimg",
+      ".play <nama lagu>",
+    ];
 
     if (!featureSetting || featureSetting.downloaderEnabled) {
-      lines.push(".tt <link>", ".ig <link>", ".igstory <link>", ".play <nama lagu>");
+      lines.push(".tt <link>", ".ig <link>", ".igstory <link>");
     }
 
     if (!featureSetting || featureSetting.hdEnabled) {

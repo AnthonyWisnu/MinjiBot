@@ -1,4 +1,4 @@
-import { audioPlayService } from "../../services/media/audioPlay.service";
+import { musicPreviewService } from "../../services/media/musicPreview.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 
 export const playCommands: CommandDefinition[] = [
@@ -16,8 +16,8 @@ async function handlePlay(context: CommandContext): Promise<void> {
   }
 
   try {
-    await context.reply("Lagu sedang dicari. Mohon tunggu.");
-    const audio = await audioPlayService.searchAndDownloadMp3(query);
+    await context.reply("Preview lagu sedang dicari. Mohon tunggu.");
+    const audio = await musicPreviewService.searchPreview(query);
 
     await context.socket.sendMessage(
       context.chatJid,
@@ -34,19 +34,20 @@ async function handlePlay(context: CommandContext): Promise<void> {
 }
 
 function formatPlayError(error: unknown): string {
-  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  const rawMessage = error instanceof Error ? error.message : "";
+  const message = rawMessage.toLowerCase();
 
-  if (message.includes("duration")) {
-    return "Durasi lagu maksimal 10 menit.";
+  if (message.includes("tidak ditemukan")) {
+    return "Preview lagu tidak ditemukan. Coba kata kunci lain atau tambahkan nama penyanyi.";
   }
 
-  if (message.includes("audio tidak ditemukan") || message.includes("no video")) {
-    return "Lagu tidak ditemukan. Coba kata kunci lain.";
+  if (message.includes("terlalu besar")) {
+    return "Preview lagu terlalu besar untuk dikirim.";
   }
 
-  if (message.includes("ukuran audio")) {
-    return "Audio terlalu besar untuk dikirim.";
-  }
-
-  return "Lagu gagal diambil. Coba kata kunci lain.";
+  return [
+    "Preview lagu gagal diambil. Coba lagi nanti.",
+    "",
+    "Catatan: .play memakai preview resmi online, bukan full lagu.",
+  ].join("\n");
 }
