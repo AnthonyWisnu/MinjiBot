@@ -8,7 +8,7 @@ import type { CommandContext, CommandDefinition } from "../../types/command";
 
 const MAX_DURATION_SECONDS = 10 * 60;
 const MAX_SEARCH_RESULTS = 5;
-const GENERIC_PLAY_ERROR = "Audio YouTube gagal diproses. Silakan coba lagi nanti.";
+const GENERIC_PLAY_ERROR = "Audio gagal diproses. Silakan coba lagi nanti.";
 
 export const playCommands: CommandDefinition[] = [
   {
@@ -94,7 +94,7 @@ function formatPlayError(error: unknown): string {
   const message = rawMessage.toLowerCase();
 
   if (message.includes("tidak ditemukan")) {
-    return "Lagu tidak ditemukan di YouTube. Coba kata kunci lain atau tambahkan nama penyanyi.";
+    return "Lagu tidak ditemukan. Coba kata kunci lain atau tambahkan nama penyanyi.";
   }
 
   if (

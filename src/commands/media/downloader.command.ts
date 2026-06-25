@@ -97,10 +97,10 @@ function formatDownloaderError(error: unknown, kind: DownloaderKind): string {
       lowerMessage.includes("private") ||
       lowerMessage.includes("not available")
     ) {
-      return "IG Story gagal diambil. Pastikan story masih aktif dan dapat diakses.";
+      return "Media gagal diambil. Pastikan link masih aktif dan dapat diakses.";
     }
 
-    return "IG Story gagal diambil. Pastikan link story masih aktif dan akun story dapat diakses.";
+    return "Media gagal diambil. Pastikan link masih aktif dan dapat diakses.";
   }
 
   if (lowerMessage.includes("max-filesize")) {

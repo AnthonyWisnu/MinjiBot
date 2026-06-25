@@ -10,8 +10,12 @@ const TECHNICAL_PATTERNS = [
   "port",
   "prisma",
   "server",
+  "ig",
+  "instagram",
+  "tiktok",
   "token",
   "vps",
+  "youtube",
   "yt-dlp",
 ];
 
