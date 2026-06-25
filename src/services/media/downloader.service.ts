@@ -33,7 +33,7 @@ export class DownloaderService {
     const startedAt = Date.now();
 
     try {
-      await this.runDownloader(parsedUrl.toString(), rawOutputTemplate);
+      await this.runDownloader(parsedUrl.toString(), rawOutputTemplate, kind);
       const rawVideoPath = await findDownloadedFile(tempDir);
       const outputPath = await prepareMobileVideo(
         rawVideoPath,
@@ -63,7 +63,11 @@ export class DownloaderService {
     }
   }
 
-  private async runDownloader(url: string, outputTemplate: string): Promise<void> {
+  private async runDownloader(
+    url: string,
+    outputTemplate: string,
+    kind: DownloaderKind,
+  ): Promise<void> {
     const args = [
       "--no-playlist",
       "--max-filesize",
@@ -78,11 +82,20 @@ export class DownloaderService {
       "4",
       "-o",
       outputTemplate,
-      url,
     ];
+
+    if (isInstagramDownloader(kind) && env.DOWNLOADER_COOKIES_PATH) {
+      args.push("--cookies", env.DOWNLOADER_COOKIES_PATH);
+    }
+
+    args.push(url);
 
     await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
   }
+}
+
+function isInstagramDownloader(kind: DownloaderKind): boolean {
+  return kind === "instagram" || kind === "instagram-story";
 }
 
 async function findDownloadedFile(tempDir: string): Promise<string> {

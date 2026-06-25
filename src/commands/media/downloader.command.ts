@@ -82,6 +82,35 @@ async function handleDownloader(
       await tenantQuotaService.refundHeavyFeatureQuota(reservation);
     }
 
-    throw error;
+    await context.reply(formatDownloaderError(error, kind));
   }
+}
+
+function formatDownloaderError(error: unknown, kind: DownloaderKind): string {
+  const message = error instanceof Error ? error.message : "";
+  const lowerMessage = message.toLowerCase();
+
+  if (kind === "instagram-story") {
+    if (
+      lowerMessage.includes("login") ||
+      lowerMessage.includes("cookies") ||
+      lowerMessage.includes("private") ||
+      lowerMessage.includes("not available")
+    ) {
+      return [
+        "IG Story gagal diambil.",
+        "",
+        "Instagram Story sering membutuhkan cookies login dan story harus masih aktif.",
+        "Kalau story private/expired, bot tidak bisa mengambilnya.",
+      ].join("\n");
+    }
+
+    return "IG Story gagal diambil. Pastikan link story masih aktif dan akun story dapat diakses.";
+  }
+
+  if (lowerMessage.includes("max-filesize")) {
+    return "Video terlalu besar untuk dikirim.";
+  }
+
+  return "Video gagal diambil. Pastikan link masih aktif dan dapat dibuka.";
 }

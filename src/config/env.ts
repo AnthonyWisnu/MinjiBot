@@ -29,6 +29,7 @@ const envSchema = z.object({
   RECONNECT_MAX_MS: z.coerce.number().int().positive(),
   MAX_DOWNLOAD_FILE_MB: z.coerce.number().int().positive(),
   DOWNLOADER_BIN: z.string().min(1),
+  DOWNLOADER_COOKIES_PATH: optionalPathSchema,
   DOWNLOADER_TIMEOUT_MS: z.coerce.number().int().positive(),
   HD_MAX_INPUT_MB: z.coerce.number().int().positive(),
   HD_AI_MAX_CONCURRENT_JOBS: z.coerce.number().int().positive(),

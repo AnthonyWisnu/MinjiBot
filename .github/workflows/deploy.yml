@@ -22,5 +22,5 @@ jobs:
             npm install
             npm run prisma:deploy
             npm run build
-            pm2 restart minjibot || pm2 start dist/index.js --name minjibot
+            pm2 restart minjibot --update-env || pm2 start dist/index.js --name minjibot
             pm2 save
