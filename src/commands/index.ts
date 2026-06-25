@@ -4,6 +4,7 @@ import { gameCommands } from "./game/game.command";
 import { downloaderCommands } from "./media/downloader.command";
 import { hdAiCommands } from "./media/hdai.command";
 import { hdCommands } from "./media/hd.command";
+import { playCommands } from "./media/play.command";
 import { stickerCommands } from "./media/sticker.command";
 import { menuCommands } from "./menu.command";
 import { antiLinkCommands } from "./moderation/antiLink.command";
@@ -69,6 +70,7 @@ export const commandRouter = new CommandRouter([
   ...hdCommands,
   ...hdAiCommands,
   ...stickerCommands,
+  ...playCommands,
   ...downloaderCommands,
   ...welcomeCommands,
   ...antiLinkCommands,

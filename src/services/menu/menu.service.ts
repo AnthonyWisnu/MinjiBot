@@ -69,6 +69,7 @@ export class MenuService {
       ".tt <link>",
       ".ig <link>",
       ".igstory <link>",
+      ".play <nama lagu>",
       ".s",
       ".sticker",
       ".smeme <teks>",
@@ -275,7 +276,7 @@ export class MenuService {
     const lines = ["[MEDIA]", ".s", ".sticker", ".smeme <teks>", ".gambar", ".toimg"];
 
     if (!featureSetting || featureSetting.downloaderEnabled) {
-      lines.push(".tt <link>", ".ig <link>", ".igstory <link>");
+      lines.push(".tt <link>", ".ig <link>", ".igstory <link>", ".play <nama lagu>");
     }
 
     if (!featureSetting || featureSetting.hdEnabled) {
