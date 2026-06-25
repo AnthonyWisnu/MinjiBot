@@ -30,8 +30,20 @@ export class AudioPlayService {
     const startedAt = Date.now();
 
     try {
-      await this.runAudioDownloader(normalizedQuery, rawOutputTemplate);
-      const rawAudioPath = await findDownloadedFile(tempDir);
+      let downloaderError: Error | null = null;
+      try {
+        await this.runAudioDownloader(normalizedQuery, rawOutputTemplate);
+      } catch (error: unknown) {
+        downloaderError = toError(error);
+      }
+
+      const rawAudioPath = await findDownloadedFile(tempDir).catch((error: unknown) => {
+        if (downloaderError) {
+          throw downloaderError;
+        }
+
+        throw error;
+      });
       await this.convertToMp3(rawAudioPath, outputPath);
       await assertAudioSizeAllowed(outputPath);
       const buffer = await readFile(outputPath);
@@ -58,8 +70,6 @@ export class AudioPlayService {
   private async runAudioDownloader(query: string, outputTemplate: string): Promise<void> {
     const args = [
       "--no-playlist",
-      "--max-downloads",
-      "1",
       "--match-filter",
       `duration <= ${String(MAX_PLAY_DURATION_SECONDS)}`,
       "-f",
@@ -155,6 +165,14 @@ function runProcess(
       reject(new Error(`${errorPrefix}: ${stderr.slice(-500)}`));
     });
   });
+}
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new Error("Proses audio gagal.");
 }
 
 export const audioPlayService = new AudioPlayService();
