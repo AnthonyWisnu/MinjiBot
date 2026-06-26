@@ -7,7 +7,7 @@ import {
 import type { CommandContext, CommandDefinition } from "../../types/command";
 
 const MAX_DURATION_SECONDS = 10 * 60;
-const MAX_SEARCH_RESULTS = 5;
+const MAX_SEARCH_RESULTS = 3;
 const GENERIC_PLAY_ERROR = "Audio gagal diproses. Silakan coba lagi nanti.";
 
 export const playCommands: CommandDefinition[] = [
@@ -46,7 +46,7 @@ async function handlePlay(context: CommandContext): Promise<void> {
       {
         audio: result.audio.buffer,
         mimetype: result.audio.mimetype,
-        ptt: true,
+        ptt: false,
       },
       { quoted: context.message },
     );
@@ -62,7 +62,7 @@ async function handlePlay(context: CommandContext): Promise<void> {
 }
 
 async function prepareFirstAvailableAudio(videos: YoutubeSearchResult[]): Promise<{
-  audio: Awaited<ReturnType<typeof playAudioService.prepareOpusAudio>>;
+  audio: Awaited<ReturnType<typeof playAudioService.prepareMp3Audio>>;
   video: YoutubeSearchResult;
 }> {
   let lastError: unknown;
@@ -70,7 +70,7 @@ async function prepareFirstAvailableAudio(videos: YoutubeSearchResult[]): Promis
   for (const video of videos) {
     try {
       return {
-        audio: await playAudioService.prepareOpusAudio(video.url),
+        audio: await playAudioService.prepareMp3Audio(video.url),
         video,
       };
     } catch (error: unknown) {
@@ -98,7 +98,6 @@ function formatPlayError(error: unknown): string {
   }
 
   if (
-    message.includes("cobalt") ||
     message.includes("download audio") ||
     message.includes("stream")
   ) {
