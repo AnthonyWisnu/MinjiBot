@@ -1,7 +1,6 @@
 const TECHNICAL_PATTERNS = [
   ".env",
   "api",
-  "cobalt",
   "cookie",
   "database",
   "dependency",
