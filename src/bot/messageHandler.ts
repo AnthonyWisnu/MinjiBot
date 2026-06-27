@@ -5,6 +5,7 @@ import { logger } from "../config/logger";
 import { featureGuard } from "../guards/featureGuard";
 import { roleGuard } from "../guards/roleGuard";
 import { tenantGuard } from "../guards/tenantGuard";
+import { afkService } from "../services/afk/afk.service";
 import { antiLinkService } from "../services/moderation/antiLink.service";
 import { antiSpamService } from "../services/moderation/antiSpam.service";
 import { pendingTenantRegistrationService } from "../services/tenant/pendingTenantRegistration.service";
@@ -31,6 +32,7 @@ async function handleIncomingMessage(
   message: MessagesUpsertEvent["messages"][number],
 ): Promise<void> {
   await registerPendingTenantIfNeeded(socket, message);
+  await afkService.handleIncomingMessage(socket, message);
   await antiLinkService.handleIncomingMessage(socket, message);
   await antiSpamService.handleIncomingMessage(socket, message);
 

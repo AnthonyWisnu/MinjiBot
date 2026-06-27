@@ -64,6 +64,7 @@ enum TenantAuditAction {
 
 enum AntiSpamMode {
   NORMAL
+  SOFT
   STRICT
 }
 
@@ -85,6 +86,7 @@ model TenantGroup {
   groupSetting   TenantGroupSetting?
   admins         TenantAdmin[]
   reminders      Reminder[]
+  afkStatuses    AfkStatus[]
   auditLogs      TenantAuditLog[]
 
   @@index([ownerJid])
@@ -207,6 +209,21 @@ model Reminder {
   @@index([groupJid, remindAt])
   @@index([isSent, remindAt])
   @@index([createdBy, groupJid])
+}
+
+model AfkStatus {
+  id        String   @id @default(cuid())
+  groupJid  String
+  userJid   String
+  reason    String
+  startedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@unique([groupJid, userJid])
+  @@index([groupJid])
+  @@index([userJid])
 }
 
 model TenantAuditLog {

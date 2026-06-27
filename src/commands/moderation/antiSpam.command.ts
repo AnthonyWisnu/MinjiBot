@@ -17,7 +17,7 @@ async function handleAntiSpam(context: CommandContext): Promise<void> {
     const [action, value] = context.args;
     if (!action) {
       await context.reply(
-        "Format command salah.\nGunakan: .antispam on, .antispam off, .antispam status, atau .antispam mode <normal/strict>",
+        "Format command salah.\nGunakan: .antispam on, .antispam off, .antispam status, atau .antispam mode <normal/soft/strict>",
       );
       return;
     }
@@ -30,7 +30,7 @@ async function handleAntiSpam(context: CommandContext): Promise<void> {
 
     if (action === "mode") {
       if (!value) {
-        await context.reply("Format command salah.\nGunakan: .antispam mode <normal/strict>");
+        await context.reply("Format command salah.\nGunakan: .antispam mode <normal/soft/strict>");
         return;
       }
 

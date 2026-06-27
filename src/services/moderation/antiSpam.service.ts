@@ -9,6 +9,11 @@ import {
 import type { WAMessage, WASocket } from "@whiskeysockets/baileys";
 
 import { logger } from "../../config/logger";
+import {
+  moderationGuard,
+  type ModerationContextState,
+  type ModerationGuard,
+} from "../../guards/moderationGuard";
 import { prisma } from "../../repositories/prismaClient";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
@@ -16,7 +21,7 @@ import { TenantGroupRepository } from "../../repositories/tenantGroup.repository
 import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSetting.repository";
 import type { CommandContext } from "../../types/command";
 import type { Role } from "../../types/role";
-import { getIdentityCandidateJids, getMessageSenderJid, normalizeUserJid } from "../../utils/jid";
+import { getIdentityCandidateJids, getMessageSenderJid } from "../../utils/jid";
 import { extractTextFromMessageContent } from "../../utils/messageText";
 import { tenantFeatureService } from "../tenant/tenantFeature.service";
 
@@ -55,6 +60,7 @@ export class AntiSpamService {
     private readonly tenantGroupRepository = new TenantGroupRepository(),
     private readonly tenantFeatureRepository = new TenantFeatureRepository(),
     private readonly tenantGroupSettingRepository = new TenantGroupSettingRepository(),
+    private readonly guard: ModerationGuard = moderationGuard,
   ) {}
 
   async setAntiSpamEnabled(
@@ -147,6 +153,7 @@ export class AntiSpamService {
       return;
     }
 
+    const senderJid = getMessageSenderJid(groupJid, message.key.participant);
     const tenantGroup = await this.tenantGroupRepository.findByGroupJid(groupJid);
     if (!this.isTenantActive(tenantGroup)) {
       return;
@@ -154,13 +161,6 @@ export class AntiSpamService {
 
     const featureSetting = await this.tenantFeatureRepository.findByGroupJid(groupJid);
     if (!featureSetting?.antiSpamEnabled) {
-      return;
-    }
-
-    const senderJid = getMessageSenderJid(groupJid, message.key.participant);
-    const senderJids = this.getMessageSenderCandidateJids(message, senderJid);
-    const senderRole = await this.resolveProtectedSenderRole(groupJid, senderJids, tenantGroup);
-    if (senderRole !== "MEMBER") {
       return;
     }
 
@@ -176,21 +176,83 @@ export class AntiSpamService {
     }
     bucket.lastActionAt = now;
 
+    const senderJids = this.getMessageSenderCandidateJids(message, senderJid);
     const groupSetting = await this.tenantGroupSettingRepository.ensureForGroup(groupJid);
-    if (groupSetting.antiSpamMode === AntiSpamMode.STRICT) {
-      await this.deleteMessageIfPossible(socket, message);
-      await this.kickIfPossible(socket, groupJid, senderJid);
+
+    if (groupSetting.antiSpamMode === AntiSpamMode.NORMAL) {
+      await this.sendWarning(socket, groupJid, message, `Peringatan spam terdeteksi: ${reason}.`, [
+        senderJid,
+      ]);
       return;
     }
 
-    await socket.sendMessage(
+    const moderationContext = await this.resolveAntiSpamModerationContext(
+      socket,
       groupJid,
-      {
-        text: `Peringatan spam terdeteksi: ${reason}.`,
-        mentions: [senderJid],
-      },
-      { quoted: message },
+      senderJids,
+      tenantGroup,
     );
+    if (!moderationContext) {
+      await this.sendWarning(
+        socket,
+        groupJid,
+        message,
+        "[WARNING] Pesan terdeteksi spam. Tindakan otomatis tidak dapat dijalankan.",
+        [senderJid],
+      );
+      return;
+    }
+
+    if (groupSetting.antiSpamMode === AntiSpamMode.SOFT) {
+      if (moderationContext.botIsAdmin) {
+        await this.deleteMessageIfPossible(socket, message);
+        await this.sendWarning(
+          socket,
+          groupJid,
+          message,
+          "[WARNING] Pesan terdeteksi spam dan sudah dihapus.",
+          [senderJid],
+        );
+        return;
+      }
+
+      await this.sendWarning(
+        socket,
+        groupJid,
+        message,
+        "[WARNING] Pesan terdeteksi spam. Tindakan otomatis tidak dapat dijalankan.",
+        [senderJid],
+      );
+      return;
+    }
+
+    const autoKickResult = this.guard.canAutoKickUser(moderationContext);
+    if (!autoKickResult.allowed) {
+      if (moderationContext.botIsAdmin) {
+        await this.deleteMessageIfPossible(socket, message);
+      }
+
+      await this.sendWarning(
+        socket,
+        groupJid,
+        message,
+        moderationContext.botIsAdmin
+          ? "[WARNING] Pesan terdeteksi spam, tetapi user dilindungi dari kick."
+          : "[WARNING] Pesan terdeteksi spam. Tindakan otomatis tidak dapat dijalankan.",
+        [senderJid],
+      );
+      return;
+    }
+
+    await this.deleteMessageIfPossible(socket, message);
+    await this.sendWarning(
+      socket,
+      groupJid,
+      message,
+      "[WARNING] Pesan terdeteksi spam. User akan dikeluarkan dari grup.",
+      [senderJid],
+    );
+    await this.kickIfPossible(socket, groupJid, senderJid);
   }
 
   parseAntiSpamToggle(value: string): boolean {
@@ -214,11 +276,15 @@ export class AntiSpamService {
       return AntiSpamMode.NORMAL;
     }
 
+    if (normalized === "soft") {
+      return AntiSpamMode.SOFT;
+    }
+
     if (normalized === "strict") {
       return AntiSpamMode.STRICT;
     }
 
-    throw new Error("Mode antispam harus normal atau strict.");
+    throw new Error("Mode antispam harus normal, soft, atau strict.");
   }
 
   assertCanManageAntiSpam(role: Role): void {
@@ -303,33 +369,6 @@ export class AntiSpamService {
     );
   }
 
-  private async resolveProtectedSenderRole(
-    groupJid: string,
-    senderJids: string[],
-    tenantGroup: TenantGroup,
-  ): Promise<Role> {
-    if (tenantGroup.ownerJid && senderJids.includes(normalizeUserJid(tenantGroup.ownerJid))) {
-      return "TENANT_OWNER";
-    }
-
-    for (const senderJid of senderJids) {
-      const admin = await prisma.tenantAdmin.findUnique({
-        where: {
-          groupJid_userJid: {
-            groupJid,
-            userJid: senderJid,
-          },
-        },
-      });
-
-      if (admin) {
-        return "TENANT_ADMIN";
-      }
-    }
-
-    return "MEMBER";
-  }
-
   private getMessageSenderCandidateJids(message: WAMessage, senderJid: string): string[] {
     return getIdentityCandidateJids(senderJid, [
       message.key.senderPn,
@@ -337,6 +376,43 @@ export class AntiSpamService {
       message.key.senderLid,
       message.key.participantLid,
     ]);
+  }
+
+  private async resolveAntiSpamModerationContext(
+    socket: WASocket,
+    groupJid: string,
+    senderJids: string[],
+    tenantGroup: TenantGroup,
+  ): Promise<ModerationContextState | null> {
+    try {
+      return await this.guard.resolveContext({
+        socket,
+        groupJid,
+        senderJids,
+        targetJids: senderJids,
+        tenantGroup,
+      });
+    } catch (error: unknown) {
+      logger.warn({ error, groupJid }, "Gagal membaca metadata grup untuk antispam");
+      return null;
+    }
+  }
+
+  private async sendWarning(
+    socket: WASocket,
+    groupJid: string,
+    message: WAMessage,
+    text: string,
+    mentions: string[] = [],
+  ): Promise<void> {
+    await socket.sendMessage(
+      groupJid,
+      {
+        text,
+        mentions,
+      },
+      { quoted: message },
+    );
   }
 
   private async deleteMessageIfPossible(socket: WASocket, message: WAMessage): Promise<void> {

@@ -97,10 +97,7 @@ function formatPlayError(error: unknown): string {
     return "Lagu tidak ditemukan. Coba kata kunci lain atau tambahkan nama penyanyi.";
   }
 
-  if (
-    message.includes("download audio") ||
-    message.includes("stream")
-  ) {
+  if (message.includes("download audio") || message.includes("stream")) {
     return GENERIC_PLAY_ERROR;
   }
 
@@ -116,9 +113,5 @@ function getErrorMessage(error: unknown): string {
 }
 
 function formatYoutubeResult(video: { durationText: string; title: string }): string {
-  return [
-    "[PLAY]",
-    `Judul: ${video.title}`,
-    `Durasi: ${video.durationText}`,
-  ].join("\n");
+  return ["[PLAY]", `Judul: ${video.title}`, `Durasi: ${video.durationText}`].join("\n");
 }
