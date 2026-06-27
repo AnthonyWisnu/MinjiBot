@@ -183,8 +183,9 @@ export class ModerationGuard {
   }): Promise<ModerationUserState> {
     const normalizedJids = input.userJids.map((jid) => normalizeUserJid(jid));
     const participant = this.findParticipant(input.metadata, normalizedJids);
-    const userJid = normalizeUserJid(participant?.id ?? normalizedJids[0] ?? "");
-    const candidateJids = [...new Set([userJid, ...normalizedJids])];
+    const participantJids = this.getParticipantCandidateJids(participant);
+    const userJid = normalizeUserJid(participantJids[0] ?? normalizedJids[0] ?? "");
+    const candidateJids = [...new Set([...normalizedJids, ...participantJids, userJid])];
     const isTenantOwner = Boolean(
       input.tenantGroup?.ownerJid &&
       candidateJids.includes(normalizeUserJid(input.tenantGroup.ownerJid)),
@@ -210,12 +211,26 @@ export class ModerationGuard {
     return false;
   }
 
+  private getParticipantCandidateJids(
+    participant:
+      | {
+          id?: string | null;
+          jid?: string | null;
+          lid?: string | null;
+        }
+      | null
+      | undefined,
+  ): string[] {
+    if (!participant) {
+      return [];
+    }
+
+    return getIdentityCandidateJids(participant.id ?? "", [participant.jid, participant.lid]);
+  }
+
   private findParticipant(metadata: GroupMetadata, userJids: string[]) {
     return metadata.participants.find((participant) => {
-      const candidates = getIdentityCandidateJids(participant.id, [
-        participant.jid,
-        participant.lid,
-      ]);
+      const candidates = this.getParticipantCandidateJids(participant);
 
       return candidates.some((jid) => userJids.includes(jid));
     });
@@ -223,10 +238,7 @@ export class ModerationGuard {
 
   private isParticipantAdmin(metadata: GroupMetadata, userJids: string[]): boolean {
     return metadata.participants.some((participant) => {
-      const candidates = getIdentityCandidateJids(participant.id, [
-        participant.jid,
-        participant.lid,
-      ]);
+      const candidates = this.getParticipantCandidateJids(participant);
 
       return candidates.some((jid) => userJids.includes(jid)) && Boolean(participant.admin);
     });
