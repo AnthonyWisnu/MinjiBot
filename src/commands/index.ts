@@ -16,6 +16,7 @@ import { reminderCommands } from "./reminder/reminder.command";
 import { tagAllCommands } from "./tagall/tagAll.command";
 import { tenantFeatureCommands } from "./tenant/tenantFeature.command";
 import { tenantOwnerCommands } from "./tenant/tenantOwner.command";
+import { transferOwnerCommands } from "./tenant/transferOwner.command";
 import { superOwnerTenantCommands } from "./tenant/superOwnerTenant.command";
 import { welcomeCommands } from "./welcome/welcome.command";
 
@@ -66,6 +67,7 @@ export const commandRouter = new CommandRouter([
   ...menuCommands,
   ...superOwnerTenantCommands,
   ...tenantOwnerCommands,
+  ...transferOwnerCommands,
   ...quotaCommands,
   ...tenantFeatureCommands,
   ...afkCommands,

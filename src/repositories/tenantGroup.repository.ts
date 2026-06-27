@@ -113,6 +113,13 @@ export class TenantGroupRepository {
     });
   }
 
+  updateOwner(groupJid: string, ownerJid: string): Promise<TenantGroup> {
+    return this.client.tenantGroup.update({
+      where: { groupJid },
+      data: { ownerJid },
+    });
+  }
+
   setExpiresAt(tenantCode: string, expiresAt: Date): Promise<TenantGroup> {
     return this.client.tenantGroup.update({
       where: { tenantCode },
