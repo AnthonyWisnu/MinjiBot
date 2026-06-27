@@ -1,5 +1,6 @@
 import { logger } from "../config/logger";
 import type { CommandContext, CommandDefinition } from "../types/command";
+import { afkCommands } from "./afk/afk.command";
 import { gameCommands } from "./game/game.command";
 import { downloaderCommands } from "./media/downloader.command";
 import { hdAiCommands } from "./media/hdai.command";
@@ -67,6 +68,7 @@ export const commandRouter = new CommandRouter([
   ...tenantOwnerCommands,
   ...quotaCommands,
   ...tenantFeatureCommands,
+  ...afkCommands,
   ...hdCommands,
   ...hdAiCommands,
   ...stickerCommands,

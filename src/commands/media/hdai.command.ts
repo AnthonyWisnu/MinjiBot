@@ -109,7 +109,9 @@ async function handleHdAi(context: CommandContext): Promise<void> {
       throw error;
     }
   } catch (error: unknown) {
-    await context.reply(formatUserSafeError(error, "Foto HD AI gagal diproses. Silakan coba lagi."));
+    await context.reply(
+      formatUserSafeError(error, "Foto HD AI gagal diproses. Silakan coba lagi."),
+    );
   }
 }
 

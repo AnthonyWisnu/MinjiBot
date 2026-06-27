@@ -281,6 +281,7 @@ export class MenuService {
       ".gambar",
       ".toimg",
       ".play <nama lagu>",
+      ".afk <alasan> - Menandai kamu sedang tidak aktif. Bot akan memberi tahu saat kamu ditag.",
     ];
 
     if (!featureSetting || featureSetting.downloaderEnabled) {
@@ -330,7 +331,10 @@ export class MenuService {
   private buildGroupModerationLines(includeAdvancedAntiSpam: boolean): string[] {
     const lines = [
       "[MODERASI]",
-      ".kick",
+      ".add <nomor HP> - Menambahkan user ke grup.",
+      ".kick @user / reply - Mengeluarkan user dari grup.",
+      ".promote @user / reply - Menjadikan user sebagai admin grup.",
+      ".demote @user / reply - Menurunkan admin menjadi member biasa.",
       ".del",
       ".antilink on",
       ".antilink off",
@@ -340,7 +344,7 @@ export class MenuService {
     ];
 
     if (includeAdvancedAntiSpam) {
-      lines.push(".antispam mode normal", ".antispam mode strict");
+      lines.push(".antispam mode normal", ".antispam mode soft", ".antispam mode strict");
     }
 
     return lines;

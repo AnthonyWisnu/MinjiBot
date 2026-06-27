@@ -3,8 +3,20 @@ import type { CommandContext, CommandDefinition } from "../../types/command";
 
 export const manualModerationCommands: CommandDefinition[] = [
   {
+    name: "add",
+    execute: handleAdd,
+  },
+  {
     name: "kick",
     execute: handleKick,
+  },
+  {
+    name: "promote",
+    execute: handlePromote,
+  },
+  {
+    name: "demote",
+    execute: handleDemote,
   },
   {
     name: "del",
@@ -13,19 +25,37 @@ export const manualModerationCommands: CommandDefinition[] = [
   },
 ];
 
+async function handleAdd(context: CommandContext): Promise<void> {
+  try {
+    const result = await manualModerationService.add(context);
+    await context.reply(result);
+  } catch (error: unknown) {
+    await context.reply(formatManualModerationError(error));
+  }
+}
+
 async function handleKick(context: CommandContext): Promise<void> {
   try {
     const result = await manualModerationService.kick(context);
-    await context.socket.sendMessage(
-      context.chatJid,
-      {
-        text: result,
-        mentions: [context.quoted?.participantJid ?? context.mentionedJids[0] ?? ""].filter(
-          (jid) => jid.length > 0,
-        ),
-      },
-      { quoted: context.message },
-    );
+    await context.reply(result);
+  } catch (error: unknown) {
+    await context.reply(formatManualModerationError(error));
+  }
+}
+
+async function handlePromote(context: CommandContext): Promise<void> {
+  try {
+    const result = await manualModerationService.promote(context);
+    await context.reply(result);
+  } catch (error: unknown) {
+    await context.reply(formatManualModerationError(error));
+  }
+}
+
+async function handleDemote(context: CommandContext): Promise<void> {
+  try {
+    const result = await manualModerationService.demote(context);
+    await context.reply(result);
   } catch (error: unknown) {
     await context.reply(formatManualModerationError(error));
   }
@@ -42,18 +72,12 @@ async function handleDelete(context: CommandContext): Promise<void> {
 
 function formatManualModerationError(error: unknown): string {
   if (error instanceof Error && isSafeManualModerationError(error.message)) {
-    return `${error.message}\n\nPastikan bot menjadi admin grup.`;
+    return error.message;
   }
 
-  return "Command moderasi gagal diproses.\n\nPastikan bot menjadi admin grup.";
+  return "[ERROR] Command moderasi gagal diproses.";
 }
 
 function isSafeManualModerationError(message: string): boolean {
-  return (
-    message.includes("kick diri sendiri") ||
-    message.includes("Reply pesan") ||
-    message.includes("Reply atau mention") ||
-    message.includes("User target") ||
-    message.includes("hanya dapat digunakan")
-  );
+  return message.startsWith("[ERROR]") || message.startsWith("[INFO]");
 }

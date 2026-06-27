@@ -13,14 +13,24 @@ jobs:
       - name: Deploy to Droplet
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          host: 167.172.92.108
+          username: root
+          password: ${{ secrets.DROPLET_PASSWORD }}
           script: |
+            set -e
+            export PATH="$HOME/.deno/bin:/usr/local/bin:/usr/bin:$PATH"
+
             cd /var/www/MinjiBot
-            git pull origin main
-            npm install
+            git fetch origin main
+            git pull --ff-only origin main
+
+            npm ci
             npm run prisma:deploy
+            npm run prisma:generate
             npm run build
-            pm2 restart minjibot --update-env || pm2 start dist/index.js --name minjibot
+
+            pm2 describe minjibot > /dev/null \
+              && pm2 restart minjibot --update-env \
+              || pm2 start dist/index.js --name minjibot
+
             pm2 save
