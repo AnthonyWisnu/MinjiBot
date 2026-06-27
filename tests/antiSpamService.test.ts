@@ -47,6 +47,26 @@ void test("AntiSpamService strict mode does not kick super owner", async () => {
   assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /dilindungi dari kick/);
 });
 
+void test("AntiSpamService strict mode does not kick super owner resolved from LID participant", async () => {
+  const { service, socket } = await createAntiSpamService({
+    mode: AntiSpamMode.STRICT,
+    botIsAdmin: true,
+    extraParticipants: [
+      {
+        id: "111111@lid",
+        jid: "62895366009208@s.whatsapp.net",
+        lid: "111111@lid",
+        admin: null,
+      },
+    ],
+  });
+
+  await sendRepeatedSpam(service, socket, "111111@lid");
+
+  assert.equal(socket.kickedUsers.length, 0);
+  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /dilindungi dari kick/);
+});
+
 void test("AntiSpamService strict mode does not kick tenant owner", async () => {
   const { service, socket } = await createAntiSpamService({
     mode: AntiSpamMode.STRICT,
@@ -55,6 +75,27 @@ void test("AntiSpamService strict mode does not kick tenant owner", async () => 
   });
 
   await sendRepeatedSpam(service, socket, "6281@s.whatsapp.net");
+
+  assert.equal(socket.kickedUsers.length, 0);
+  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /dilindungi dari kick/);
+});
+
+void test("AntiSpamService strict mode does not kick tenant owner resolved from LID participant", async () => {
+  const { service, socket } = await createAntiSpamService({
+    mode: AntiSpamMode.STRICT,
+    botIsAdmin: true,
+    ownerJid: "6282@s.whatsapp.net",
+    extraParticipants: [
+      {
+        id: "222222@lid",
+        jid: "6282@s.whatsapp.net",
+        lid: "222222@lid",
+        admin: null,
+      },
+    ],
+  });
+
+  await sendRepeatedSpam(service, socket, "222222@lid");
 
   assert.equal(socket.kickedUsers.length, 0);
   assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /dilindungi dari kick/);
@@ -104,6 +145,7 @@ async function createAntiSpamService(options: {
   botIsAdmin: boolean;
   ownerJid?: string;
   adminJids?: string[];
+  extraParticipants?: TestParticipant[];
 }): Promise<{
   service: { handleIncomingMessage(socket: WASocket, message: WAMessage): Promise<void> };
   socket: TestSocket;
@@ -111,7 +153,11 @@ async function createAntiSpamService(options: {
   const { AntiSpamService } = await import("../src/services/moderation/antiSpam.service");
   const { ModerationGuard } = await import("../src/guards/moderationGuard");
   const tenantGroup = createTenantGroup(options.ownerJid ?? "6282@s.whatsapp.net");
-  const socket = createSocket(options.botIsAdmin, options.adminJids ?? []);
+  const socket = createSocket(
+    options.botIsAdmin,
+    options.adminJids ?? [],
+    options.extraParticipants ?? [],
+  );
   const guard = new ModerationGuard({
     exists: () => Promise.resolve(false),
   } as never);
@@ -147,7 +193,18 @@ interface TestSocket extends WASocket {
   sentMessages: { jid: string; content: { text?: string; delete?: unknown } }[];
 }
 
-function createSocket(botIsAdmin: boolean, adminJids: string[]): TestSocket {
+interface TestParticipant {
+  id: string;
+  jid?: string;
+  lid?: string;
+  admin: "admin" | "superadmin" | null;
+}
+
+function createSocket(
+  botIsAdmin: boolean,
+  adminJids: string[],
+  extraParticipants: TestParticipant[],
+): TestSocket {
   const sentMessages: { jid: string; content: { text?: string; delete?: unknown } }[] = [];
   const kickedUsers: string[] = [];
   const socket = {
@@ -181,6 +238,7 @@ function createSocket(botIsAdmin: boolean, adminJids: string[]): TestSocket {
             id: jid,
             admin: "admin",
           })),
+          ...extraParticipants,
         ],
       }),
   } as unknown as TestSocket;

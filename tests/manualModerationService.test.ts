@@ -39,6 +39,23 @@ void test("ManualModerationService kick rejects super owner target", async () =>
   assert.equal(socket.actions.length, 0);
 });
 
+void test("ManualModerationService kick rejects super owner target resolved from LID participant", async () => {
+  const { service, socket } = await createManualModerationService({
+    senderJid: "6281@s.whatsapp.net",
+    targetJid: "111111@lid",
+    targetPhoneJid: "62895366009208@s.whatsapp.net",
+    targetLid: "111111@lid",
+    senderIsAdmin: true,
+    targetIsAdmin: false,
+  });
+
+  await assert.rejects(
+    () => service.kick(createMentionContext(socket, "kick", "111111@lid")),
+    /Target adalah user yang dilindungi/,
+  );
+  assert.equal(socket.actions.length, 0);
+});
+
 void test("ManualModerationService kick rejects tenant owner target from regular admin", async () => {
   const { service, socket } = await createManualModerationService({
     senderJid: "6281@s.whatsapp.net",
@@ -50,6 +67,24 @@ void test("ManualModerationService kick rejects tenant owner target from regular
 
   await assert.rejects(
     () => service.kick(createMentionContext(socket, "kick", "6282@s.whatsapp.net")),
+    /Target adalah user yang dilindungi/,
+  );
+  assert.equal(socket.actions.length, 0);
+});
+
+void test("ManualModerationService kick rejects tenant owner target resolved from LID participant", async () => {
+  const { service, socket } = await createManualModerationService({
+    senderJid: "6281@s.whatsapp.net",
+    targetJid: "222222@lid",
+    targetPhoneJid: "6282@s.whatsapp.net",
+    targetLid: "222222@lid",
+    senderIsAdmin: true,
+    targetIsAdmin: false,
+    tenantOwnerJid: "6282@s.whatsapp.net",
+  });
+
+  await assert.rejects(
+    () => service.kick(createMentionContext(socket, "kick", "222222@lid")),
     /Target adalah user yang dilindungi/,
   );
   assert.equal(socket.actions.length, 0);
@@ -205,6 +240,8 @@ void test("ManualModerationService demote succeeds for regular admin when allowe
 async function createManualModerationService(options: {
   senderJid: string;
   targetJid: string;
+  targetPhoneJid?: string;
+  targetLid?: string;
   botIsAdmin?: boolean;
   senderIsAdmin: boolean;
   targetIsAdmin: boolean;
@@ -240,6 +277,8 @@ interface TestSocket extends WASocket {
 function createSocket(options: {
   senderJid: string;
   targetJid: string;
+  targetPhoneJid?: string;
+  targetLid?: string;
   botIsAdmin?: boolean;
   senderIsAdmin: boolean;
   targetIsAdmin: boolean;
@@ -269,6 +308,8 @@ function createSocket(options: {
           },
           {
             id: options.targetJid,
+            jid: options.targetPhoneJid,
+            lid: options.targetLid,
             admin: options.targetIsAdmin ? "admin" : null,
           },
         ],
