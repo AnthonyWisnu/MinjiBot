@@ -7,6 +7,11 @@ import {
 import type { WAMessage, WASocket } from "@whiskeysockets/baileys";
 
 import { logger } from "../../config/logger";
+import {
+  moderationGuard,
+  type ModerationContextState,
+  type ModerationGuard,
+} from "../../guards/moderationGuard";
 import { prisma } from "../../repositories/prismaClient";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
@@ -14,7 +19,7 @@ import { TenantGroupRepository } from "../../repositories/tenantGroup.repository
 import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSetting.repository";
 import type { CommandContext } from "../../types/command";
 import type { Role } from "../../types/role";
-import { getIdentityCandidateJids, getMessageSenderJid, normalizeUserJid } from "../../utils/jid";
+import { getIdentityCandidateJids, getMessageSenderJid } from "../../utils/jid";
 import { extractTextFromMessageContent } from "../../utils/messageText";
 import { tenantFeatureService } from "../tenant/tenantFeature.service";
 
@@ -31,6 +36,7 @@ export class AntiLinkService {
     private readonly tenantGroupRepository = new TenantGroupRepository(),
     private readonly tenantFeatureRepository = new TenantFeatureRepository(),
     private readonly tenantGroupSettingRepository = new TenantGroupSettingRepository(),
+    private readonly guard: ModerationGuard = moderationGuard,
   ) {}
 
   async setAntiLinkEnabled(
@@ -88,15 +94,33 @@ export class AntiLinkService {
 
     const senderJid = getMessageSenderJid(groupJid, message.key.participant);
     const senderJids = this.getMessageSenderCandidateJids(message, senderJid);
-    const senderRole = await this.resolveProtectedSenderRole(groupJid, senderJids, tenantGroup);
-    if (senderRole !== "MEMBER") {
-      return;
-    }
 
     await this.deleteMessageIfPossible(socket, message);
 
     const groupSetting = await this.tenantGroupSettingRepository.ensureForGroup(groupJid);
     if (groupSetting.antiLinkAutoKick) {
+      const moderationContext = await this.resolveAntiLinkModerationContext(
+        socket,
+        groupJid,
+        senderJids,
+        tenantGroup,
+      );
+      if (!moderationContext) {
+        return;
+      }
+
+      const autoKickResult = this.guard.canAutoKickUser(moderationContext);
+      if (!autoKickResult.allowed) {
+        await this.sendWarning(
+          socket,
+          groupJid,
+          message,
+          "[WARNING] Link terdeteksi, tetapi user dilindungi dari kick.",
+          [senderJid],
+        );
+        return;
+      }
+
       await this.kickIfPossible(socket, groupJid, senderJid);
     }
   }
@@ -143,33 +167,6 @@ export class AntiLinkService {
     );
   }
 
-  private async resolveProtectedSenderRole(
-    groupJid: string,
-    senderJids: string[],
-    tenantGroup: TenantGroup,
-  ): Promise<Role> {
-    if (tenantGroup.ownerJid && senderJids.includes(normalizeUserJid(tenantGroup.ownerJid))) {
-      return "TENANT_OWNER";
-    }
-
-    for (const senderJid of senderJids) {
-      const admin = await prisma.tenantAdmin.findUnique({
-        where: {
-          groupJid_userJid: {
-            groupJid,
-            userJid: senderJid,
-          },
-        },
-      });
-
-      if (admin) {
-        return "TENANT_ADMIN";
-      }
-    }
-
-    return "MEMBER";
-  }
-
   private getMessageSenderCandidateJids(message: WAMessage, senderJid: string): string[] {
     return getIdentityCandidateJids(senderJid, [
       message.key.senderPn,
@@ -177,6 +174,26 @@ export class AntiLinkService {
       message.key.senderLid,
       message.key.participantLid,
     ]);
+  }
+
+  private async resolveAntiLinkModerationContext(
+    socket: WASocket,
+    groupJid: string,
+    senderJids: string[],
+    tenantGroup: TenantGroup,
+  ): Promise<ModerationContextState | null> {
+    try {
+      return await this.guard.resolveContext({
+        socket,
+        groupJid,
+        senderJids,
+        targetJids: senderJids,
+        tenantGroup,
+      });
+    } catch (error: unknown) {
+      logger.warn({ error, groupJid }, "Gagal membaca metadata grup untuk antilink");
+      return null;
+    }
   }
 
   private async deleteMessageIfPossible(socket: WASocket, message: WAMessage): Promise<void> {
@@ -194,6 +211,23 @@ export class AntiLinkService {
     } catch (error: unknown) {
       logger.warn({ error, groupJid: remoteJid }, "Gagal menghapus pesan antilink");
     }
+  }
+
+  private async sendWarning(
+    socket: WASocket,
+    groupJid: string,
+    message: WAMessage,
+    text: string,
+    mentions: string[] = [],
+  ): Promise<void> {
+    await socket.sendMessage(
+      groupJid,
+      {
+        text,
+        mentions,
+      },
+      { quoted: message },
+    );
   }
 
   private async kickIfPossible(
