@@ -131,12 +131,9 @@ export class ModerationGuard {
     if (
       context.target.userJid === context.sender.userJid ||
       context.target.isBot ||
-      context.target.isSuperOwner
+      context.target.isSuperOwner ||
+      context.target.isTenantOwner
     ) {
-      return protectedTargetResult();
-    }
-
-    if (context.target.isTenantOwner && !context.sender.isSuperOwner) {
       return protectedTargetResult();
     }
 
