@@ -114,6 +114,7 @@ export class ModerationGuard {
       context.target.isBot ||
       context.target.isSuperOwner ||
       context.target.isTenantOwner ||
+      context.target.isTenantAdmin ||
       context.target.isGroupAdmin
     ) {
       return protectedTargetResult();
