@@ -72,6 +72,24 @@ export class TenantGroupRepository {
     });
   }
 
+  listVisible(): Promise<TenantGroup[]> {
+    return this.client.tenantGroup.findMany({
+      where: {
+        status: {
+          not: TenantStatus.REMOVED,
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  listRemoved(): Promise<TenantGroup[]> {
+    return this.client.tenantGroup.findMany({
+      where: { status: TenantStatus.REMOVED },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   createPending(input: CreatePendingTenantGroupInput): Promise<TenantGroup> {
     return this.client.tenantGroup.create({
       data: {
