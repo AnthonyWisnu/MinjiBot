@@ -1,6 +1,9 @@
 import type { TenantGroup, TenantOwnerQuota } from "@prisma/client";
 
-import { superOwnerTenantService } from "../../services/tenant/superOwnerTenant.service";
+import {
+  superOwnerTenantService,
+  type TenantListFilter,
+} from "../../services/tenant/superOwnerTenant.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatDateId, formatNullableText } from "../../utils/format";
 import { normalizeUserJid } from "../../utils/jid";
@@ -91,17 +94,22 @@ async function handleActivateTenant(context: CommandContext): Promise<void> {
 }
 
 async function handleListTenant(context: CommandContext): Promise<void> {
-  if (!(await ensureSuperOwner(context))) {
-    return;
-  }
+  try {
+    if (!(await ensureSuperOwner(context))) {
+      return;
+    }
 
-  const tenants = await superOwnerTenantService.listTenants();
-  if (tenants.length === 0) {
-    await context.reply("Belum ada tenant terdaftar.");
-    return;
-  }
+    const filter = parseTenantListFilter(context.args[0]);
+    const tenants = await superOwnerTenantService.listTenants(filter);
+    if (tenants.length === 0) {
+      await context.reply(getEmptyTenantListMessage(filter));
+      return;
+    }
 
-  await context.reply(formatTenantList(tenants));
+    await context.reply(formatTenantList(tenants, getTenantListTitle(filter)));
+  } catch (error: unknown) {
+    await context.reply(formatTenantCommandError(error));
+  }
 }
 
 async function handleTenantInfo(context: CommandContext): Promise<void> {
@@ -263,6 +271,39 @@ function parseNonNegativeInteger(value: string, label: string): number {
   return parsed;
 }
 
+function parseTenantListFilter(value: string | undefined): TenantListFilter {
+  if (!value) {
+    return "visible";
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "all" || normalized === "removed") {
+    return normalized;
+  }
+
+  throw new Error("Format command salah.\nGunakan: .listtenant [all/removed]");
+}
+
+function getTenantListTitle(filter: TenantListFilter): string {
+  if (filter === "all") {
+    return "[DAFTAR SEMUA TENANT]";
+  }
+
+  if (filter === "removed") {
+    return "[DAFTAR TENANT REMOVED]";
+  }
+
+  return "[DAFTAR TENANT]";
+}
+
+function getEmptyTenantListMessage(filter: TenantListFilter): string {
+  if (filter === "removed") {
+    return "Belum ada tenant removed.";
+  }
+
+  return "Belum ada tenant aktif/terdaftar.";
+}
+
 function formatTenantCommandError(error: unknown): string {
   return formatUserSafeError(error, "Command tenant gagal diproses. Silakan coba lagi.");
 }
@@ -280,8 +321,8 @@ function formatPendingGroups(groups: TenantGroup[]): string {
   return lines.join("\n").trim();
 }
 
-function formatTenantList(groups: TenantGroup[]): string {
-  const lines = ["[DAFTAR TENANT]", ""];
+function formatTenantList(groups: TenantGroup[], title: string): string {
+  const lines = [title, ""];
 
   groups.forEach((group, index) => {
     lines.push(`${String(index + 1)}. ${formatNullableText(group.name)}`);

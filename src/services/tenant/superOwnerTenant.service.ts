@@ -33,6 +33,8 @@ export interface TenantInfoResult {
   ownerQuota: TenantOwnerQuota | null;
 }
 
+export type TenantListFilter = "visible" | "all" | "removed";
+
 export class SuperOwnerTenantService {
   constructor(
     private readonly tenantGroupRepository = new TenantGroupRepository(),
@@ -43,8 +45,16 @@ export class SuperOwnerTenantService {
     return this.tenantGroupRepository.listPending();
   }
 
-  listTenants(): Promise<TenantGroup[]> {
-    return this.tenantGroupRepository.listAll();
+  listTenants(filter: TenantListFilter = "visible"): Promise<TenantGroup[]> {
+    if (filter === "all") {
+      return this.tenantGroupRepository.listAll();
+    }
+
+    if (filter === "removed") {
+      return this.tenantGroupRepository.listRemoved();
+    }
+
+    return this.tenantGroupRepository.listVisible();
   }
 
   async getTenantInfo(tenantCode: string): Promise<TenantInfoResult> {
