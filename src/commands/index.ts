@@ -14,6 +14,7 @@ import { manualModerationCommands } from "./moderation/manualModeration.command"
 import { quotaCommands } from "./quota/quota.command";
 import { reminderCommands } from "./reminder/reminder.command";
 import { tagAllCommands } from "./tagall/tagAll.command";
+import { tenantAdminCommands } from "./tenant/tenantAdmin.command";
 import { tenantFeatureCommands } from "./tenant/tenantFeature.command";
 import { tenantOwnerCommands } from "./tenant/tenantOwner.command";
 import { transferOwnerCommands } from "./tenant/transferOwner.command";
@@ -68,6 +69,7 @@ export const commandRouter = new CommandRouter([
   ...superOwnerTenantCommands,
   ...tenantOwnerCommands,
   ...transferOwnerCommands,
+  ...tenantAdminCommands,
   ...quotaCommands,
   ...tenantFeatureCommands,
   ...afkCommands,
