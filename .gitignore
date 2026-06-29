@@ -6,6 +6,7 @@ coverage/
 .env.*
 !.env.example
 ig_cookies.txt
+www.youtube.com_cookies.txt
 
 sessions/
 auth/

@@ -72,6 +72,9 @@ export class MenuService {
       ".ig <link>",
       ".igstory <link>",
       ".play <nama lagu>",
+      ".lirik <judul/artis>",
+      ".lirik",
+      ".lirik doc <judul/artis>",
       ".s",
       ".sticker",
       ".smeme <teks>",
@@ -294,6 +297,9 @@ export class MenuService {
       ".gambar",
       ".toimg",
       ".play <nama lagu>",
+      ".lirik <judul/artis>",
+      ".lirik",
+      ".lirik doc <judul/artis>",
       ".afk <alasan>",
     ];
 
