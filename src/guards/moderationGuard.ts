@@ -86,10 +86,6 @@ export class ModerationGuard {
       return protectedTargetResult();
     }
 
-    if (context.target.isSuperOwner || context.target.isTenantOwner) {
-      return protectedTargetResult();
-    }
-
     return { allowed: true };
   }
 
