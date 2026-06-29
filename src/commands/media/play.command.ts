@@ -1,4 +1,5 @@
 import { logger } from "../../config/logger";
+import { lastPlayedService } from "../../services/media/lastPlayed.service";
 import { playAudioService } from "../../services/media/playAudio.service";
 import {
   youtubeSearchService,
@@ -50,6 +51,12 @@ async function handlePlay(context: CommandContext): Promise<void> {
       },
       { quoted: context.message },
     );
+
+    lastPlayedService.setLastPlayed({
+      chatJid: context.chatJid,
+      title: result.video.title,
+      artist: result.video.channelTitle,
+    });
 
     await context.reply(formatYoutubeResult(result.video));
   } catch (error: unknown) {
