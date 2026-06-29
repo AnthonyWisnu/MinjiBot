@@ -252,6 +252,57 @@ void test("ManualModerationService promote succeeds for regular user when allowe
   assert.deepEqual(socket.actions, [{ action: "promote", participant: "6283@s.whatsapp.net" }]);
 });
 
+void test("ManualModerationService promote succeeds for tenant owner when target is not admin", async () => {
+  const { service, socket } = await createManualModerationService({
+    senderJid: "6281@s.whatsapp.net",
+    targetJid: "6282@s.whatsapp.net",
+    senderIsAdmin: true,
+    targetIsAdmin: false,
+    tenantOwnerJid: "6282@s.whatsapp.net",
+  });
+
+  const result = await service.promote(
+    createMentionContext(socket, "promote", "6282@s.whatsapp.net"),
+  );
+
+  assert.equal(result, "[ADMIN] User berhasil dipromosikan menjadi admin.");
+  assert.deepEqual(socket.actions, [{ action: "promote", participant: "6282@s.whatsapp.net" }]);
+});
+
+void test("ManualModerationService promote succeeds for super owner when target is not admin", async () => {
+  const { service, socket } = await createManualModerationService({
+    senderJid: "6281@s.whatsapp.net",
+    targetJid: "62895366009208@s.whatsapp.net",
+    senderIsAdmin: true,
+    targetIsAdmin: false,
+    tenantOwnerJid: "6282@s.whatsapp.net",
+  });
+
+  const result = await service.promote(
+    createMentionContext(socket, "promote", "62895366009208@s.whatsapp.net"),
+  );
+
+  assert.equal(result, "[ADMIN] User berhasil dipromosikan menjadi admin.");
+  assert.deepEqual(socket.actions, [
+    { action: "promote", participant: "62895366009208@s.whatsapp.net" },
+  ]);
+});
+
+void test("ManualModerationService promote rejects bot target", async () => {
+  const { service, socket } = await createManualModerationService({
+    senderJid: "6281@s.whatsapp.net",
+    targetJid: "999@s.whatsapp.net",
+    senderIsAdmin: true,
+    targetIsAdmin: false,
+  });
+
+  await assert.rejects(
+    () => service.promote(createMentionContext(socket, "promote", "999@s.whatsapp.net")),
+    /Target adalah user yang dilindungi/,
+  );
+  assert.equal(socket.actions.length, 0);
+});
+
 void test("ManualModerationService promote rejects when bot is not admin", async () => {
   const { service, socket } = await createManualModerationService({
     senderJid: "6281@s.whatsapp.net",
