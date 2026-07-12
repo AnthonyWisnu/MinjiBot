@@ -6,11 +6,11 @@ Ready for implementation.
 
 ## Objective
 
-Replace Tenant Owner shared quota with group-scoped member profiles while preserving tenant rental and all unrelated group management features.
+Replace Tenant Owner shared quota and the temporary in-memory game profile with one persistent group-scoped member economy while preserving tenant rental and unrelated group management features.
 
-## Required Reading
+## Required Reading Order
 
-Codex must read these files before implementation:
+Codex must read these documents before starting any plan:
 
 1. `CODEX_REFACTOR_INSTRUCTIONS.md`
 2. `REFACTOR_REQUIREMENTS.md`
@@ -19,201 +19,76 @@ Codex must read these files before implementation:
 5. `MEMBER_COMMANDS.md`
 6. `MEMBER_MIGRATION.md`
 7. `MEMBER_TESTING.md`
-8. Current `AGENT.md`, `DATABASE.md`, `TENANT_FLOW.md`, and `PLAN.md` for existing architecture only
+8. The active numbered plan
+9. Current `AGENT.md`, `DATABASE.md`, `TENANT_FLOW.md`, `PLAN.md`, and `README.md` for existing architecture context
 
-When old documents conflict with the new refactor documents, the new refactor documents take precedence.
+When old documents conflict with the refactor documents, the refactor documents take precedence.
 
-## Plan 001 - Repository Audit and Documentation Alignment
+## Known Legacy Systems
 
-Goals:
+The repository currently contains two economy implementations that must converge into one system:
 
-- Inspect the current codebase and locate every owner quota dependency.
-- Create an impact inventory by file.
-- Update old documentation sections that directly block the new design.
-- Do not change runtime code or Prisma schema.
+- Persistent Tenant Owner shared quota in PostgreSQL.
+- Temporary per-group game points and daily data stored in memory inside `game.service.ts`.
 
-Required output:
+Codex must not preserve both systems or create a third balance source.
 
-- `plans/001-member-economy-audit.md` with exact files, symbols, commands, tests, and migration dependencies.
-- Updated status and validation notes.
+## Execution Order
 
-Validation:
+| Plan | File | Purpose |
+|---|---|---|
+| 001 | `plans/001-repository-audit-and-documentation-alignment.md` | Audit exact repository impact and align documentation only |
+| 002 | `plans/002-member-profile-persistence.md` | Add persistent group member profiles and ledger schema |
+| 003 | `plans/003-member-economy-core.md` | Implement atomic asset mutations, ledger, rank, and idempotency |
+| 004 | `plans/004-daily-claim-and-limit-purchase.md` | Replace legacy daily and add point-based limit purchase |
+| 005 | `plans/005-gift-and-super-owner-corrections.md` | Add group gift and audited Super Owner corrections |
+| 006 | `plans/006-profile-rank-and-leaderboards.md` | Replace in-memory profile and rank views |
+| 007 | `plans/007-heavy-feature-member-limit-switch.md` | Charge heavy features to invoking member profiles |
+| 008 | `plans/008-game-reward-integration.md` | Persist all game rewards and remove in-memory economy |
+| 009 | `plans/009-remove-legacy-owner-quota.md` | Remove owner quota runtime, schema, commands, and documentation |
+| 010 | `plans/010-final-validation-and-release-readiness.md` | Perform full validation and release-readiness review |
 
-- Documentation consistency search.
-- Working tree contains documentation changes only.
-
-## Plan 002 - Member Profile Persistence
-
-Goals:
-
-- Add member profile and ledger enums/models.
-- Add additive migration.
-- Add profile and transaction repositories.
-- Add safe profile find-or-create.
-- Keep legacy owner quota intact.
-
-Tests:
-
-- Initial balances.
-- Group isolation.
-- Idempotent creation.
-- Migration on test database.
-
-## Plan 003 - Member Economy Core
-
-Goals:
-
-- Add services for points, limits, reserved limits, XP, rank, ledger, and idempotency.
-- Implement atomic credit and debit.
-- Implement reserve, consume, and refund state transitions.
-- Prevent negative balances and duplicate operations.
-
-Recommended modules:
-
-```txt
-src/services/member/memberProfile.service.ts
-src/services/member/memberEconomy.service.ts
-src/services/member/memberLedger.service.ts
-src/services/member/rank.service.ts
-```
-
-Tests:
-
-- All balance transitions.
-- Concurrent debit safety.
-- Duplicate key safety.
-- Invalid state transitions.
-
-## Plan 004 - Daily Claim and Limit Purchase
-
-Goals:
-
-- Add WIB calendar date helper.
-- Add injectable random provider.
-- Implement `.daily`.
-- Implement `.belilimit <jumlah>`.
-- Add command registration and menu entries.
-
-Tests:
-
-- Date boundary.
-- Group isolation.
-- Probability branches with mocks.
-- Concurrent daily claim.
-- Purchase arithmetic and rollback.
-
-## Plan 005 - Gift and Administrative Corrections
-
-Goals:
-
-- Implement point and limit gifts.
-- Validate current group participants through Baileys metadata.
-- Implement Super Owner add and set commands.
-- Add paired ledger records and actor metadata.
-
-Tests:
-
-- Sender-recipient atomicity.
-- Non-participant rejection.
-- Self-transfer rejection.
-- Tenant Owner normal debit.
-- Super Owner authorization.
-
-## Plan 006 - Profile, Rank, and Leaderboards
-
-Goals:
-
-- Implement `.profile` and `.profile @user`.
-- Implement rank resolver output.
-- Implement `.toprank` and `.toppoint`.
-- Do not create profiles through read-only lookup.
-
-Tests:
-
-- Current group scope.
-- Missing profile behavior.
-- Rank thresholds.
-- Stable leaderboard ties.
-- Caller position outside top 10.
-
-## Plan 007 - Heavy Feature Member Limit Switch
-
-Goals:
-
-- Replace owner quota lookup with sender member profile lookup.
-- Apply configured costs.
-- Integrate reserve, consume, and refund into every listed feature.
-- Keep legacy tables temporarily but stop using them in switched features.
-
-Features:
-
-- TikTok.
-- Instagram Reels.
-- Instagram Story.
-- Play song.
-- Song lyrics.
-- HD AI Photo.
-- HD AI Photo Document.
-
-Tests:
-
-- Per-feature costs.
-- Failure refund.
-- Invalid input no charge.
-- Duplicate job no double charge.
-- No owner quota mutation.
-
-## Plan 008 - Game Reward Integration
-
-Goals:
-
-- Route all approved game rewards through member economy service.
-- Add round and reward event identifiers.
-- Preserve Family100 partial rewards on surrender.
-- Enforce duplicate and cap rules.
-
-Tests:
-
-- Every reward table entry.
-- Family100 partial completion and surrender.
-- Tic Tac Toe timeout.
-- Event replay idempotency.
-
-## Plan 009 - Legacy Owner Quota Removal
-
-Goals:
-
-- Remove deprecated commands, menus, guards, services, repositories, types, and tests.
-- Remove Prisma owner quota models and enums.
-- Add destructive migration.
-- Update `AGENT.md`, `DATABASE.md`, `TENANT_FLOW.md`, `PLAN.md`, and `README.md` to the final architecture.
-
-Required source search must return no runtime references to legacy symbols.
-
-## Plan 010 - Final Validation
-
-Goals:
-
-- Run full static, test, build, Prisma, migration, and runtime validation.
-- Review transaction and idempotency invariants.
-- Review user-facing messages.
-- Confirm no secrets or generated files are tracked.
-- Update every plan status and final documentation.
-
-Definition of done:
-
-- All required validations pass.
-- Working tree is clean.
-- No legacy owner quota runtime dependency remains.
-- All balance mutations use the economy service and ledger.
-- All listed heavy features charge member profiles.
-- Tenant rental remains operational.
-
-## Implementation Discipline
+## Mandatory Sequence
 
 - Complete one plan at a time.
-- Do not begin the next plan until current tests pass.
-- Make one intentional commit per plan.
-- Never claim a test passed without running it.
-- Do not silently reduce scope to make tests pass.
-- Record deviations in the active plan document with reasons and consequences.
+- Do not begin the next plan until the active plan is Completed, committed, validated, and the working tree is clean.
+- Plan 001 may correct assumptions and exact file lists in Plans 002 through 010, but it must not weaken approved business requirements.
+- Plans 002 through 008 are additive or switching phases.
+- Destructive owner quota removal is forbidden before Plan 009.
+- Plan 010 must validate both fresh migration and upgrade from representative legacy data.
+
+## Commit Sequence
+
+Recommended commits:
+
+```txt
+docs: audit member economy refactor impact
+feat: add persistent group member profiles
+feat: implement member economy core
+feat: add daily claim and limit purchase
+feat: add member gifts and balance corrections
+feat: add persistent profiles and leaderboards
+refactor: charge heavy features to member limits
+refactor: persist game rewards in member economy
+refactor: remove tenant owner quota system
+test: complete member economy refactor validation
+```
+
+Do not create an empty commit if a plan requires no final correction.
+
+## Global Definition of Done
+
+- Tenant rental and tenant lifecycle remain operational.
+- One user can have independent profiles in different groups.
+- Daily uses `Asia/Jakarta` and resets at 00.00 WIB.
+- Points, available limits, reserved limits, and XP never become negative.
+- All balance changes are atomic, ledger-backed, and idempotent where replay is possible.
+- All approved heavy features charge the invoking member profile.
+- Game rewards persist and no member economy remains in memory.
+- Tenant Owner shared quota no longer exists in active runtime or current Prisma schema.
+- Documentation, command registry, menus, tests, and migrations are consistent.
+- Full validation passes and working tree is clean.
+
+## Starting Codex Instruction
+
+For each execution, tell Codex only which numbered plan to complete. Codex must read the shared documents and the selected plan, inspect the current branch state, complete only that plan, validate it, commit it, and stop before the next plan.
