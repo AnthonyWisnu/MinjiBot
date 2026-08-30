@@ -1,4 +1,5 @@
 import ffmpegStatic from "ffmpeg-static";
+import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -6,9 +7,6 @@ import { spawn } from "node:child_process";
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { createTempDir, removeTempDir } from "../../utils/tempFile";
-
-const YTDLP_PATH = "/usr/local/bin/yt-dlp";
-const YTDLP_COOKIES_PATH = "/var/www/MinjiBot/cookies.txt";
 
 export interface PreparedPlayAudio {
   buffer: Buffer;
@@ -49,18 +47,25 @@ export class PlayAudioService {
 }
 
 function runYtDlp(videoUrl: string, outputTemplate: string): Promise<void> {
+  const cookiesPath = env.YOUTUBE_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
+  const args = [
+    "-f",
+    "bestaudio/best",
+    "--no-playlist",
+    "--no-warnings",
+    "-o",
+    outputTemplate,
+  ];
+
+  if (cookiesPath && existsSync(cookiesPath)) {
+    args.push("--cookies", cookiesPath);
+  }
+
+  args.push(videoUrl);
+
   return runProcess(
-    YTDLP_PATH,
-    [
-      "--cookies",
-      YTDLP_COOKIES_PATH,
-      "-f",
-      "bestaudio",
-      "--no-playlist",
-      "-o",
-      outputTemplate,
-      videoUrl,
-    ],
+    env.DOWNLOADER_BIN,
+    args,
     "Download audio melewati batas waktu.",
     "Download audio gagal dijalankan.",
   );

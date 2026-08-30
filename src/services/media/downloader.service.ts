@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -8,6 +9,8 @@ import { createTempDir, removeTempDir } from "../../utils/tempFile";
 import { videoNormalizeService } from "./videoNormalize.service";
 
 const BYTES_PER_MB = 1024 * 1024;
+const DEFAULT_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 const MOBILE_SAFE_FORMAT =
   "bv*[vcodec^=avc1][height<=720][ext=mp4]+ba[ext=m4a]/" +
   "b[vcodec^=avc1][height<=720][ext=mp4]/" +
@@ -70,6 +73,7 @@ export class DownloaderService {
   ): Promise<void> {
     const args = [
       "--no-playlist",
+      "--no-warnings",
       "--max-filesize",
       `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
       "-f",
@@ -80,12 +84,22 @@ export class DownloaderService {
       "mp4",
       "--concurrent-fragments",
       "4",
+      "--add-header",
+      `User-Agent:${DEFAULT_USER_AGENT}`,
       "-o",
       outputTemplate,
     ];
 
-    if (isInstagramDownloader(kind) && env.DOWNLOADER_COOKIES_PATH) {
-      args.push("--cookies", env.DOWNLOADER_COOKIES_PATH);
+    if (isInstagramDownloader(kind)) {
+      const cookiesPath = env.INSTAGRAM_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
+      if (cookiesPath && existsSync(cookiesPath)) {
+        args.push("--cookies", cookiesPath);
+      }
+    } else if (kind === "tiktok") {
+      const cookiesPath = env.TIKTOK_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
+      if (cookiesPath && existsSync(cookiesPath)) {
+        args.push("--cookies", cookiesPath);
+      }
     }
 
     args.push(url);
