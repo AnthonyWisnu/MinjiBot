@@ -7,14 +7,15 @@ coverage/
 !.env.example
 ig_cookies.txt
 www.youtube.com_cookies.txt
-
+*cookies*.txt
+cookies/
+/cookies/
 sessions/
 auth/
 tmp/
 temp/
 /media/
 /downloads/
-/cookies/
 *.log
 *.sqlite
 *.sqlite3
