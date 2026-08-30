@@ -53,6 +53,8 @@ function runYtDlp(videoUrl: string, outputTemplate: string): Promise<void> {
     "bestaudio/best",
     "--no-playlist",
     "--no-warnings",
+    "--extractor-args",
+    "youtube:player_client=android,web,tv,ios",
     "-o",
     outputTemplate,
   ];
@@ -119,6 +121,10 @@ function runProcess(
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       windowsHide: true,
+      env: {
+        ...process.env,
+        PATH: `/usr/local/bin:/usr/bin:${process.env.PATH || ""}`,
+      },
     });
     let stderr = "";
     const timeout = setTimeout(() => {
