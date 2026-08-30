@@ -26,14 +26,94 @@ export interface DownloadedVideo {
   mimetype: "video/mp4";
 }
 
+interface TikWmResponse {
+  code: number;
+  msg: string;
+  data?: {
+    play?: string;
+    hdplay?: string;
+    wmplay?: string;
+    title?: string;
+  };
+}
+
+async function downloadTikTokDirect(url: string): Promise<DownloadedVideo> {
+  const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`;
+  const response = await fetch(apiUrl, {
+    headers: {
+      "User-Agent": DEFAULT_USER_AGENT,
+    },
+    signal: AbortSignal.timeout(env.DOWNLOADER_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`TikWM API error status: ${String(response.status)}`);
+  }
+
+  const json = (await response.json()) as TikWmResponse;
+  if (json.code !== 0 || !json.data) {
+    throw new Error(`TikWM API response error: ${json.msg || "Unknown error"}`);
+  }
+
+  const videoUrl = json.data.play || json.data.hdplay || json.data.wmplay;
+  if (!videoUrl) {
+    throw new Error("Link video TikTok tidak ditemukan dalam respon API.");
+  }
+
+  const videoRes = await fetch(videoUrl, {
+    headers: {
+      "User-Agent": DEFAULT_USER_AGENT,
+      Referer: "https://www.tikwm.com/",
+    },
+    signal: AbortSignal.timeout(env.DOWNLOADER_TIMEOUT_MS),
+  });
+
+  if (!videoRes.ok) {
+    throw new Error(`Gagal mengunduh stream video TikTok (${String(videoRes.status)})`);
+  }
+
+  const arrayBuffer = await videoRes.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
+  if (buffer.byteLength > maxBytes) {
+    throw new Error(`Ukuran video maksimal ${String(env.MAX_DOWNLOAD_FILE_MB)} MB.`);
+  }
+
+  return {
+    buffer,
+    fileName: "minjibot-tiktok.mp4",
+    mimetype: "video/mp4",
+  };
+}
+
 export class DownloaderService {
   async downloadVideo(url: string, kind: DownloaderKind): Promise<DownloadedVideo> {
     const parsedUrl = parseSupportedUrl(url, kind);
+    const startedAt = Date.now();
+
+    if (kind === "tiktok") {
+      try {
+        const directResult = await downloadTikTokDirect(parsedUrl.toString());
+        logger.info(
+          {
+            kind,
+            elapsedMs: Date.now() - startedAt,
+            sizeBytes: directResult.buffer.byteLength,
+            mode: "tikwm-direct",
+          },
+          "Downloader selesai",
+        );
+        return directResult;
+      } catch (error: unknown) {
+        logger.warn({ error }, "TikTok direct API gagal, mencoba fallback yt-dlp");
+      }
+    }
+
     const tempDir = await createTempDir("download");
     const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
     const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
     const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
-    const startedAt = Date.now();
 
     try {
       await this.runDownloader(parsedUrl.toString(), rawOutputTemplate, kind);
