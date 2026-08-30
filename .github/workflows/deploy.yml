@@ -10,23 +10,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to Droplet
+      - name: Deploy to Tencent Lighthouse VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 167.172.92.108
-          username: root
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USERNAME }}
           password: ${{ secrets.DROPLET_PASSWORD }}
+          port: 22
           script: |
             set -e
-            export PATH="$HOME/.deno/bin:/usr/local/bin:/usr/bin:$PATH"
+            export PATH="/usr/local/bin:/usr/bin:$PATH"
 
-            cd /var/www/MinjiBot
+            cd /home/anthony/MinjiBot
             git fetch origin main
             git pull --ff-only origin main
 
-            npm ci
-            npm run prisma:deploy
-            npm run prisma:generate
+            npm ci || npm install
+            npx prisma generate
+            npx prisma db push --skip-generate || npm run prisma:deploy
             npm run build
 
             pm2 describe minjibot > /dev/null \
