@@ -6,7 +6,7 @@ import type { CommandContext } from "../../types/command";
 import { type GameRewardService, gameRewardService } from "./gameReward.service";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 
-type QuizType = "kuis" | "family100" | "tebakkata" | "tebakemoji" | "tebakangka";
+type QuizType = "kuis" | "family100" | "tebakkata" | "tebakemoji" | "tebakangka" | "mtk";
 type TicTacToeCell = "X" | "O" | null;
 
 interface Question {
@@ -69,7 +69,7 @@ function loadQuestions(fileName: string, fallback: Question[]): Question[] {
   return fallback;
 }
 
-const FALLBACK_QUIZ: Record<Exclude<QuizType, "tebakangka">, Question[]> = {
+const FALLBACK_QUIZ: Record<Exclude<QuizType, "tebakangka" | "mtk">, Question[]> = {
   kuis: [
     { prompt: "Apa ibu kota Indonesia?", answers: ["jakarta"] },
     { prompt: "Planet apa yang paling dekat dengan matahari?", answers: ["merkurius", "mercury"] },
@@ -88,7 +88,7 @@ const FALLBACK_QUIZ: Record<Exclude<QuizType, "tebakangka">, Question[]> = {
   ],
 };
 
-const QUIZ_BANK: Record<Exclude<QuizType, "tebakangka">, Question[]> = {
+const QUIZ_BANK: Record<Exclude<QuizType, "tebakangka" | "mtk">, Question[]> = {
   kuis: loadQuestions("kuis.json", FALLBACK_QUIZ.kuis),
   family100: loadQuestions("family100.json", FALLBACK_QUIZ.family100),
   tebakkata: loadQuestions("tebakkata.json", FALLBACK_QUIZ.tebakkata),
@@ -144,7 +144,7 @@ export class GameService {
       return this.startNumberGuess(context);
     }
 
-    const question = pickRandom(this.quizBank[type]);
+    const question = type === "mtk" ? generateMtkQuestion() : pickRandom(this.quizBank[type]);
     this.quizSessions.set(context.chatJid, {
       type,
       groupJid: context.chatJid,
@@ -481,6 +481,10 @@ export class GameService {
           await this.rewardService.awardKuisWrongParticipation(
             context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
           );
+        } else if (type === "mtk") {
+          await this.rewardService.awardMtkWrongParticipation(
+            context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
+          );
         }
       }
       return "Jawaban belum benar. Coba lagi.";
@@ -499,6 +503,10 @@ export class GameService {
     let reward: { points: number; xp: number };
     if (type === "kuis") {
       reward = await this.rewardService.awardKuisCorrect(
+        context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
+      );
+    } else if (type === "mtk") {
+      reward = await this.rewardService.awardMtkCorrect(
         context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
       );
     } else if (type === "tebakkata") {
@@ -692,7 +700,35 @@ function formatGameName(type: QuizType): string {
     tebakkata: "tebak kata",
     tebakemoji: "tebak emoji",
     tebakangka: "tebak angka",
+    mtk: "matematika cepat",
   }[type];
+}
+
+function generateMtkQuestion(): Question {
+  const operations = ["+", "-", "x"] as const;
+  const op = operations[Math.floor(Math.random() * operations.length)] ?? "+";
+  let a: number;
+  let b: number;
+  let answer: number;
+
+  if (op === "+") {
+    a = Math.floor(Math.random() * 90) + 10;
+    b = Math.floor(Math.random() * 90) + 10;
+    answer = a + b;
+  } else if (op === "-") {
+    a = Math.floor(Math.random() * 90) + 10;
+    b = Math.floor(Math.random() * (a - 5)) + 5;
+    answer = a - b;
+  } else {
+    a = Math.floor(Math.random() * 12) + 2;
+    b = Math.floor(Math.random() * 12) + 2;
+    answer = a * b;
+  }
+
+  return {
+    prompt: `Berapa hasil dari: ${String(a)} ${op} ${String(b)} ?`,
+    answers: [String(answer)],
+  };
 }
 
 function answerHint(type: QuizType): string {

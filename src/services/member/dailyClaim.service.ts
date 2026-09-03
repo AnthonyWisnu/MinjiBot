@@ -9,8 +9,8 @@ import type { RandomProvider } from "./randomProvider";
 import { generateCorrelationId } from "./memberEconomy.service";
 
 const DAILY_XP = 50;
-const DAILY_POINTS_MIN = 100;
-const DAILY_POINTS_MAX = 300;
+const DAILY_POINTS_MIN = 10;
+const DAILY_POINTS_MAX = 30;
 const DAILY_BONUS_LIMIT_PROBABILITY = 0.1;
 
 export interface DailyClaimResult {
