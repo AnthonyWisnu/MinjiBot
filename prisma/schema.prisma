@@ -37,6 +37,8 @@ enum HeavyFeatureType {
   INSTAGRAM_STORY_DOWNLOAD
   HD_AI_PHOTO
   HD_AI_PHOTO_DOCUMENT
+  PLAY_SONG
+  SONG_LYRICS
 }
 
 enum TenantAuditAction {
@@ -68,6 +70,28 @@ enum AntiSpamMode {
   STRICT
 }
 
+enum MemberTransactionAsset {
+  POINT
+  LIMIT
+  EXPERIENCE
+}
+
+enum MemberTransactionType {
+  INITIAL_BALANCE
+  DAILY_REWARD
+  GAME_REWARD
+  LIMIT_PURCHASE_POINT_DEBIT
+  LIMIT_PURCHASE_LIMIT_CREDIT
+  GIFT_SENT
+  GIFT_RECEIVED
+  FEATURE_RESERVE
+  FEATURE_CONSUME
+  FEATURE_REFUND
+  SUPER_OWNER_ADD
+  SUPER_OWNER_SET
+  CORRECTION
+}
+
 model TenantGroup {
   id          String       @id @default(cuid())
   groupJid    String       @unique
@@ -88,6 +112,7 @@ model TenantGroup {
   reminders      Reminder[]
   afkStatuses    AfkStatus[]
   auditLogs      TenantAuditLog[]
+  memberProfiles GroupMemberProfile[]
 
   @@index([ownerJid])
   @@index([status])
@@ -239,5 +264,59 @@ model TenantAuditLog {
   @@index([groupJid])
   @@index([actorJid])
   @@index([action])
+  @@index([createdAt])
+}
+
+model GroupMemberProfile {
+  id                String    @id @default(cuid())
+  groupJid          String
+  userJid           String
+  pointsBalance     Int       @default(0)
+  limitBalance      Int       @default(3)
+  reservedLimit     Int       @default(0)
+  experience        Int       @default(0)
+  totalPointsEarned Int       @default(0)
+  totalLimitsEarned Int       @default(3)
+  totalGamesPlayed  Int       @default(0)
+  totalGamesWon     Int       @default(0)
+  currentStreak     Int       @default(0)
+  longestStreak     Int       @default(0)
+  lastDailyClaimAt  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenantGroup  TenantGroup              @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+  transactions GroupMemberTransaction[]
+
+  @@unique([groupJid, userJid])
+  @@index([groupJid, experience])
+  @@index([groupJid, pointsBalance])
+  @@index([userJid])
+}
+
+model GroupMemberTransaction {
+  id             String                 @id @default(cuid())
+  profileId      String
+  groupJid       String
+  userJid        String
+  actorJid       String?
+  targetUserJid  String?
+  asset          MemberTransactionAsset
+  type           MemberTransactionType
+  amount         Int
+  balanceBefore  Int?
+  balanceAfter   Int?
+  feature        HeavyFeatureType?
+  correlationId  String?
+  idempotencyKey String?                @unique
+  note           String?
+  metadata       Json?
+  createdAt      DateTime               @default(now())
+
+  profile GroupMemberProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([groupJid, userJid])
+  @@index([profileId, createdAt])
+  @@index([correlationId])
   @@index([createdAt])
 }

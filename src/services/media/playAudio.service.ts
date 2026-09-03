@@ -123,7 +123,7 @@ function runProcess(
       windowsHide: true,
       env: {
         ...process.env,
-        PATH: `/usr/local/bin:/usr/bin:${process.env.PATH || ""}`,
+        PATH: `/usr/local/bin:/usr/bin:${process.env.PATH ?? ""}`,
       },
     });
     let stderr = "";

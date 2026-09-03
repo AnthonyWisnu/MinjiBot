@@ -55,7 +55,7 @@ async function downloadTikTokDirect(url: string): Promise<DownloadedVideo> {
     throw new Error(`TikWM API response error: ${json.msg || "Unknown error"}`);
   }
 
-  const videoUrl = json.data.play || json.data.hdplay || json.data.wmplay;
+  const videoUrl = json.data.play ?? json.data.hdplay ?? json.data.wmplay;
   if (!videoUrl) {
     throw new Error("Link video TikTok tidak ditemukan dalam respon API.");
   }
