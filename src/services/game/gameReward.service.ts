@@ -2,6 +2,7 @@ import { MemberEconomyService } from "../member/memberEconomy.service";
 import { DuplicateOperationError } from "../../types/memberEconomy";
 import {
   KUIS_REWARD,
+  MTK_REWARD,
   TEBAKKATA_REWARD,
   TEBAKEMOJI_REWARD,
   TEBAKANGKA_REWARD,
@@ -71,6 +72,31 @@ export class GameRewardService {
   ): Promise<boolean> {
     const key = `game:kuis:${roundId}:${userJid}:wrong-xp`;
     return this.creditXpSafe(groupJid, userJid, KUIS_REWARD.WRONG_XP, key, correlationId, "kuis-wrong-xp");
+  }
+
+  // ---- Matematika (mtk) ----
+
+  async awardMtkCorrect(
+    groupJid: string,
+    userJid: string,
+    roundId: string,
+    correlationId: string,
+  ): Promise<GameRewardResult> {
+    const key = `game:mtk:${roundId}:${userJid}:correct`;
+    await this.creditSafe(groupJid, userJid, MTK_REWARD.CORRECT_POINTS, key, correlationId, "mtk-correct-points");
+    await this.creditXpSafe(groupJid, userJid, MTK_REWARD.CORRECT_XP, `${key}:xp`, correlationId, "mtk-correct-xp");
+    await this.recordGameSafe(groupJid, userJid, true, `${key}:stat`, correlationId);
+    return { points: MTK_REWARD.CORRECT_POINTS, xp: MTK_REWARD.CORRECT_XP };
+  }
+
+  async awardMtkWrongParticipation(
+    groupJid: string,
+    userJid: string,
+    roundId: string,
+    correlationId: string,
+  ): Promise<boolean> {
+    const key = `game:mtk:${roundId}:${userJid}:wrong-xp`;
+    return this.creditXpSafe(groupJid, userJid, MTK_REWARD.WRONG_XP, key, correlationId, "mtk-wrong-xp");
   }
 
   // ---- Tebak Kata ----

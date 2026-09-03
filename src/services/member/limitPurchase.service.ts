@@ -7,7 +7,7 @@ import { prisma } from "../../repositories/prismaClient";
 import { InsufficientPointsError, InvalidAmountError } from "../../types/memberEconomy";
 import { generateCorrelationId } from "./memberEconomy.service";
 
-export const LIMIT_PRICE_POINTS = 1_000;
+export const LIMIT_PRICE_POINTS = 100;
 const MAX_SAFE_LIMIT_AMOUNT = 1_000_000;
 
 export interface LimitPurchaseResult {

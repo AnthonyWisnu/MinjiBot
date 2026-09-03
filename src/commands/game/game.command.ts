@@ -1,4 +1,5 @@
 import { gameService } from "../../services/game/game.service";
+import { slotGameService } from "../../services/game/slotGame.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
@@ -26,6 +27,15 @@ export const gameCommands: CommandDefinition[] = [
     name: "tebakangka",
     execute: (context) =>
       replyGame(context, () => gameService.startOrAnswerQuiz(context, "tebakangka")),
+  },
+  {
+    name: "mtk",
+    aliases: ["math"],
+    execute: (context) => replyGame(context, () => gameService.startOrAnswerQuiz(context, "mtk")),
+  },
+  {
+    name: "slot",
+    execute: (context) => replyGame(context, () => slotGameService.play(context)),
   },
   {
     name: "tictactoe",

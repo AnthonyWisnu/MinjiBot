@@ -56,16 +56,16 @@ void test("isConsecutiveWibDay returns false for gap of 2 days", () => {
 
 // ---- DailyClaimService tests ----
 
-void test("DailyClaimService.claimDaily returns pointsGained between 100 and 300", async () => {
+void test("DailyClaimService.claimDaily returns pointsGained between 10 and 30", async () => {
   const results: number[] = [];
-  // Run 10 times to check range (deterministic via fixed random)
-  for (const pts of [100, 150, 200, 250, 300]) {
+  // Run 5 times to check range (deterministic via fixed random)
+  for (const pts of [10, 15, 20, 25, 30]) {
     const service = makeDailyService({ randomPoints: pts, randomBonus: false });
     const result = await service.claimDaily("g@g.us", "u@s.net", new Date("2026-09-03T10:00:00Z"));
     results.push(result.pointsGained);
   }
   for (const pts of results) {
-    assert.ok(pts >= 100 && pts <= 300, `Expected ${String(pts)} to be between 100 and 300`);
+    assert.ok(pts >= 10 && pts <= 30, `Expected ${String(pts)} to be between 10 and 30`);
   }
 });
 
