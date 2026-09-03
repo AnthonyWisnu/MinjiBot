@@ -31,14 +31,6 @@ void test("getFeatureCost: Song lyrics costs 1", () => {
   assert.equal(getFeatureCost(HeavyFeatureType.SONG_LYRICS), 1);
 });
 
-void test("getFeatureCost: HD AI Photo costs 2", () => {
-  assert.equal(getFeatureCost(HeavyFeatureType.HD_AI_PHOTO), 2);
-});
-
-void test("getFeatureCost: HD AI Photo Document costs 2", () => {
-  assert.equal(getFeatureCost(HeavyFeatureType.HD_AI_PHOTO_DOCUMENT), 2);
-});
-
 // ---- HeavyFeatureLimitService ----
 
 function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberProfile {
@@ -145,7 +137,7 @@ void test("HeavyFeatureLimitService.resolvePrivateChatGroupJid: returns groupJid
 
 void test("HeavyFeatureLimitService.resolvePrivateChatGroupJid: returns null when no eligible profile", async () => {
   const { service } = makeLimitService({ bestProfile: null });
-  const result = await service.resolvePrivateChatGroupJid("u@s.whatsapp.net", HeavyFeatureType.HD_AI_PHOTO);
+  const result = await service.resolvePrivateChatGroupJid("u@s.whatsapp.net", HeavyFeatureType.TIKTOK_DOWNLOAD);
   assert.equal(result, null);
 });
 

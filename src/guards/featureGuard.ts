@@ -11,7 +11,6 @@ const COMMAND_FEATURE_MAP = new Map<string, TenantFeatureKey>([
   ["ig", "downloader"],
   ["igstory", "downloader"],
   ["hd", "hd"],
-  ["hdai", "hdai"],
   ["remind", "reminder"],
   ["remindall", "reminder"],
   ["listreminder", "reminder"],

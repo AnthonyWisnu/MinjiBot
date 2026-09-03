@@ -10,7 +10,6 @@ import type { TenantFeatureKey } from "../../types/feature";
 const FEATURE_SETTING_FIELD = {
   downloader: "downloaderEnabled",
   hd: "hdEnabled",
-  hdai: "hdAiEnabled",
   game: "gameEnabled",
   welcome: "welcomeEnabled",
   antilink: "antiLinkEnabled",
@@ -110,10 +109,6 @@ export class TenantFeatureService {
   parseFeatureKey(value: string): TenantFeatureKey {
     const normalized = value.trim().toLowerCase();
 
-    if (normalized === "hdai" || normalized === "hd-ai") {
-      return "hdai";
-    }
-
     if (normalized === "anti-link") {
       return "antilink";
     }
@@ -160,7 +155,6 @@ function isTenantFeatureKey(value: string): value is TenantFeatureKey {
   return [
     "downloader",
     "hd",
-    "hdai",
     "game",
     "welcome",
     "antilink",

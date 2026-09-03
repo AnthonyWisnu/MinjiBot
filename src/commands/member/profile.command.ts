@@ -1,6 +1,6 @@
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { memberProfileViewService } from "../../services/member/memberProfileView.service";
-import type { ProfileView } from "../../services/member/memberProfileView.service";
+import type { MemberProfileViewService, ProfileView } from "../../services/member/memberProfileView.service";
 import { normalizeUserJid } from "../../utils/jid";
 
 function formatProfileView(view: ProfileView, label: string): string {
@@ -23,62 +23,82 @@ function formatProfileView(view: ProfileView, label: string): string {
   ].join("\n");
 }
 
-async function executeProfile(context: CommandContext): Promise<void> {
+async function executeProfile(
+  context: CommandContext,
+  service: Pick<MemberProfileViewService, "getOwnProfile"> = memberProfileViewService,
+): Promise<void> {
   if (!context.isGroup || !context.tenantGroup) {
     await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
     return;
   }
 
-  const targetJid = context.mentionedJids[0];
+  let targetUserJid: string | null = null;
 
-  if (targetJid) {
-    // View another member's profile (read-only).
-    const normalized = normalizeUserJid(targetJid);
-    const view = await memberProfileViewService.getTargetProfile(context.chatJid, normalized);
-    if (!view) {
-      await context.reply("Member tersebut belum memiliki profil di grup ini.");
-      return;
+  if (context.mentionedJids.length > 0 && context.mentionedJids[0]) {
+    targetUserJid = normalizeUserJid(context.mentionedJids[0]);
+  } else if (context.quoted?.participantJid) {
+    targetUserJid = normalizeUserJid(context.quoted.participantJid);
+  } else if (context.args.length > 0 && context.args[0]) {
+    const raw = context.args[0].replace(/^@/, "").trim();
+    if (/^\d+$/.test(raw)) {
+      targetUserJid = normalizeUserJid(`${raw}@s.whatsapp.net`);
     }
-    const label = `@${normalized.split("@")[0] ?? normalized}`;
+  }
+
+  if (targetUserJid && targetUserJid !== normalizeUserJid(context.senderUserJid)) {
+    // View another member's profile
+    const view = await service.getOwnProfile(
+      context.chatJid,
+      targetUserJid,
+    );
+    const userPhone = targetUserJid.split("@")[0] ?? targetUserJid;
+    const label = `@${userPhone}`;
     await context.reply(formatProfileView(view, label));
   } else {
     // View own profile (creates if not exists).
-    const view = await memberProfileViewService.getOwnProfile(
+    const view = await service.getOwnProfile(
       context.chatJid,
       context.senderUserJid,
     );
-    const label = `@${normalizeUserJid(context.senderUserJid).split("@")[0] ?? context.senderUserJid}`;
+    const userPhone = normalizeUserJid(context.senderUserJid).split("@")[0] ?? context.senderUserJid;
+    const label = `@${userPhone}`;
     await context.reply(formatProfileView(view, label));
   }
 }
 
-export const profileCommands: CommandDefinition[] = [
-  {
-    name: "profile",
-    execute: executeProfile,
-  },
-  {
-    // .poin as alias — shows own balance concisely.
-    name: "poin",
-    execute: async (context) => {
-      if (!context.isGroup || !context.tenantGroup) {
-        await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
-        return;
-      }
-      const view = await memberProfileViewService.getOwnProfile(
-        context.chatJid,
-        context.senderUserJid,
-      );
-      await context.reply(
-        [
-          "Saldo kamu:",
-          "",
-          `Poin  : ${view.profile.pointsBalance.toLocaleString("id-ID")}`,
-          `Limit : ${String(view.profile.limitBalance)}`,
-          `XP    : ${view.profile.experience.toLocaleString("id-ID")}`,
-          `Rank  : ${view.rank}`,
-        ].join("\n"),
-      );
+export function createProfileCommands(
+  service: Pick<MemberProfileViewService, "getOwnProfile"> = memberProfileViewService,
+): CommandDefinition[] {
+  return [
+    {
+      name: "profile",
+      execute: (context) => executeProfile(context, service),
     },
-  },
-];
+    {
+      name: "poin",
+      execute: async (context) => {
+        if (!context.isGroup || !context.tenantGroup) {
+          await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
+          return;
+        }
+        const view = await service.getOwnProfile(
+          context.chatJid,
+          context.senderUserJid,
+        );
+        await context.reply(
+          [
+            "Saldo kamu:",
+            "",
+            `Poin  : ${view.profile.pointsBalance.toLocaleString("id-ID")}`,
+            `Limit : ${String(view.profile.limitBalance)}`,
+            `XP    : ${view.profile.experience.toLocaleString("id-ID")}`,
+            `Rank  : ${view.rank}`,
+          ].join("\n"),
+        );
+      },
+    },
+  ];
+}
+
+export const profileCommands: CommandDefinition[] = createProfileCommands();
+

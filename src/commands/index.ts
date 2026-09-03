@@ -9,7 +9,6 @@ import { limitPurchaseCommand } from "./member/limitPurchase.command";
 import { memberAdminCommands } from "./member/memberAdmin.command";
 import { profileCommands } from "./member/profile.command";
 import { downloaderCommands } from "./media/downloader.command";
-import { hdAiCommands } from "./media/hdai.command";
 import { hdCommands } from "./media/hd.command";
 import { lyricsCommands } from "./media/lyrics.command";
 import { playCommands } from "./media/play.command";
@@ -79,7 +78,6 @@ export const commandRouter = new CommandRouter([
   ...tenantFeatureCommands,
   ...afkCommands,
   ...hdCommands,
-  ...hdAiCommands,
   ...stickerCommands,
   ...playCommands,
   ...lyricsCommands,
