@@ -2,7 +2,44 @@
 
 ## Status
 
-Planned
+Completed
+
+## Execution Evidence
+
+### Files Added
+
+- `src/services/member/gift.service.ts` - Atomic gift transfer in one `$transaction` with balance predicate concurrency
+- `src/services/member/memberAdmin.service.ts` - Thin wrapper over `MemberEconomyService` for Super Owner corrections
+- `src/commands/member/gift.command.ts` - `.giftpoint` and `.giftlimit` handlers with Baileys participant validation
+- `src/commands/member/memberAdmin.command.ts` - `.addpoint`, `.setpoint`, `.addlimit`, `.setlimit`, `.addxp`, `.setxp`, `.memberinfo` (Super Owner only)
+- `tests/gift.test.ts` - 17 new tests (gift: 8, admin: 9)
+
+### Files Modified
+
+- `src/commands/index.ts` - Registered `giftCommands` and `memberAdminCommands`
+
+### Participant Validation Approach
+
+Recipient participant check is done at command handler level by calling `context.socket.groupMetadata(chatJid)` to get real-time participant list from Baileys. The JID list is passed to `GiftService` as `participantJids`. This ensures members who have left the group cannot receive gifts even if they have an old profile in the DB.
+
+### Concurrency and Idempotency
+
+- `GiftService` uses `updateMany` with `{ [balanceField]: { gte: amount } }` predicate — if count is 0, throws InsufficientPointsError / InsufficientLimitError without any mutation.
+- Idempotency key = `message.key.id` (WhatsApp message ID, globally unique). Checked via `txRepo.findByIdempotencyKey()` before entering the transaction.
+- Two ledger entries (GIFT_SENT + GIFT_RECEIVED) share one `correlationId`.
+
+### Validation Results
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 errors |
+| `npm run build` | 0 errors |
+| `npm run test` | 175 pass, 0 fail (17 new tests) |
+
+### Commit
+
+See git log for SHA.
 
 ## Objective
 
