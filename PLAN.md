@@ -93,20 +93,24 @@ Model utama:
 - `TenantAdmin`
 - `TenantFeatureSetting`
 - `TenantGroupSetting`
-- `TenantOwnerQuota`
-- `TenantQuotaTransaction`
+- `TenantOwnerQuota` (LEGACY - akan dihapus di Plan 009)
+- `TenantQuotaTransaction` (LEGACY - akan dihapus di Plan 009)
 - `TenantPrivateSession`
 - `Reminder`
 - `TenantAuditLog`
+- `GroupMemberProfile` (NEW - profil ekonomi member per grup)
+- `GroupMemberTransaction` (NEW - ledger transaksi member)
 
 Enum utama:
 
 - `TenantStatus`
-- `TenantQuotaTransactionType`
-- `TenantQuotaSource`
+- `TenantQuotaTransactionType` (LEGACY)
+- `TenantQuotaSource` (LEGACY)
 - `HeavyFeatureType`
 - `TenantAuditAction`
 - `AntiSpamMode`
+- `MemberTransactionAsset` (NEW - POINT, LIMIT, EXPERIENCE)
+- `MemberTransactionType` (NEW - 13 jenis transaksi)
 
 Tabel yang tidak boleh dibuat:
 
@@ -114,7 +118,6 @@ Tabel yang tidak boleh dibuat:
 - `UserDownloadLimit`
 - `PrivateLimit`
 - `MemberLimit`
-- `belilimit`
 - Database JSON production
 
 ## 5. Tahap 1 - Project Setup

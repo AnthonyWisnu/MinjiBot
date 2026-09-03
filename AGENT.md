@@ -283,8 +283,7 @@ If implemented later, game must be tenant-aware and scoped by groupJid.
 Do not build these unless explicitly requested:
 
 - Premium user system.
-- Private limit system.
-- Member self-purchase limit system.
+- Private limit system (member economy replaced this with GroupMemberProfile).
 - Payment gateway.
 - Auto invoice.
 - Auto payment validation.
@@ -378,6 +377,12 @@ src/
       reminder.command.ts
     tagall/
       tagAll.command.ts
+    member/
+      memberProfile.command.ts
+      memberDaily.command.ts
+      memberLimit.command.ts
+      memberGift.command.ts
+      memberAdmin.command.ts
   services/
     tenant/
       tenantGroup.service.ts
@@ -387,6 +392,9 @@ src/
       tenantSession.service.ts
     quota/
       tenantQuota.service.ts
+    member/
+      memberEconomy.service.ts
+      rank.service.ts
     moderation/
       antiLink.service.ts
       antiSpam.service.ts
@@ -408,6 +416,8 @@ src/
     tenantSession.repository.ts
     tenantAudit.repository.ts
     reminder.repository.ts
+    groupMemberProfile.repository.ts
+    groupMemberTransaction.repository.ts
   guards/
     tenantGuard.ts
     roleGuard.ts
@@ -425,6 +435,7 @@ src/
     role.ts
     feature.ts
     quota.ts
+    memberEconomy.ts
 prisma/
   schema.prisma
   seed.ts
@@ -441,7 +452,11 @@ prisma/
 - Do not import command files into services.
 - Do not put tenant logic inside unrelated media or game services.
 - All tenant-specific data must be scoped by groupJid.
-- Tenant Owner quota must be scoped by ownerJid.
+- LEGACY: Tenant Owner quota is scoped by ownerJid (will be removed in Plan 009).
+- NEW: All member balance mutations must go through MemberEconomyService. Command handlers, game handlers, and media handlers must never mutate GroupMemberProfile directly.
+- NEW: Rank is a pure derived value from XP. Never persist rank as an authoritative field.
+- NEW: Every balance mutation must create a corresponding GroupMemberTransaction ledger entry.
+- NEW: Heavy features must reserve limit before processing, then consume on success or refund on failure.
 
 ## 8. Line Limit Rules
 
