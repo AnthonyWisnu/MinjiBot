@@ -1,10 +1,13 @@
 import { HeavyFeatureType } from "@prisma/client";
-import { randomUUID } from "node:crypto";
 
 import { downloaderService, type DownloaderKind } from "../../services/media/downloader.service";
-import { heavyFeatureAccessService } from "../../services/quota/heavyFeatureAccess.service";
-import { tenantQuotaService } from "../../services/quota/tenantQuota.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import {
+  resolveFeatureAccess,
+  reserveFeatureLimit,
+  consumeFeatureLimit,
+  refundFeatureLimit,
+} from "./heavyFeatureHelper";
 
 export const downloaderCommands: CommandDefinition[] = [
   {
@@ -34,30 +37,16 @@ async function handleDownloader(
     return;
   }
 
-  const quotaContext = await heavyFeatureAccessService.resolveQuotaContext(context);
-  if (!quotaContext.allowed) {
-    await context.reply(quotaContext.message);
-    return;
-  }
+  const access = await resolveFeatureAccess(context, feature);
+  if (access === null) return;
 
-  const reservation = {
-    ownerJid: quotaContext.ownerJid,
-    actorJid: context.senderUserJid,
-    groupJid: quotaContext.groupJid,
-    source: quotaContext.source,
-    feature,
-    correlationId: randomUUID(),
-  };
+  const reservation = access.skip ? null : access.reservation;
   let reserved = false;
 
   try {
-    if (!quotaContext.skipQuota) {
-      try {
-        await tenantQuotaService.reserveHeavyFeatureQuota(reservation);
-      } catch {
-        await context.reply(heavyFeatureAccessService.getQuotaEmptyMessage(context));
-        return;
-      }
+    if (reservation !== null) {
+      const ok = await reserveFeatureLimit(context, reservation);
+      if (!ok) return;
       reserved = true;
     }
 
@@ -74,15 +63,18 @@ async function handleDownloader(
       { quoted: context.message },
     );
 
-    if (reserved) {
-      await tenantQuotaService.consumeHeavyFeatureQuota(reservation);
+    if (reserved && reservation !== null) {
+      await consumeFeatureLimit(reservation);
     }
   } catch (error: unknown) {
-    if (reserved) {
-      await tenantQuotaService.refundHeavyFeatureQuota(reservation);
+    if (reserved && reservation !== null) {
+      await refundFeatureLimit(reservation);
+      await context.reply(
+        `${formatDownloaderError(error, kind)}\nLimit yang sudah direservasi telah dikembalikan.`,
+      );
+    } else {
+      await context.reply(formatDownloaderError(error, kind));
     }
-
-    await context.reply(formatDownloaderError(error, kind));
   }
 }
 

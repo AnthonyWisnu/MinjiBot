@@ -2,7 +2,75 @@
 
 ## Status
 
-Planned
+Completed
+
+## Execution Evidence
+
+### Features Switched
+
+| Feature | Command | Cost | Old System | New System |
+|---|---|---|---|---|
+| TikTok download | `.tt` | 1 limit | TenantOwnerQuota | Member limit (group profile) |
+| Instagram Reels | `.ig` | 1 limit | TenantOwnerQuota | Member limit (group profile) |
+| Instagram Story | `.igstory` | 1 limit | TenantOwnerQuota | Member limit (group profile) |
+| HD AI Photo | `.hdai` | 2 limit | TenantOwnerQuota | Member limit (group profile) |
+| Play song | `.play` | 1 limit | **Tidak ada gating** | Member limit (group profile) |
+| Song lyrics | `.lirik` | 1 limit | **Tidak ada gating** | Member limit (group profile) |
+
+`.hd` (HD standar tanpa AI) tidak ada di tabel cost Plan 007 dan tidak menggunakan quota sebelumnya. Tidak diswitch.
+
+### Skip Limit Policy (No Ledger Entry)
+
+| Role | Konteks | Perilaku |
+|---|---|---|
+| Super Owner | Grup manapun | Skip limit, gratis |
+| Super Owner | Private chat | Skip limit, gratis |
+| Tenant Owner | Grup miliknya sendiri | Skip limit, gratis |
+| Tenant Owner | Private chat (kontrak aktif) | Skip limit, gratis |
+| Tenant Owner | Grup lain sebagai member | Bayar dari profil member di grup tersebut |
+| Member / Admin | Grup aktif | Bayar dari profil member di grup tersebut |
+| Member biasa | Private chat | Bayar dari profil dengan limit terbesar di grup aktif manapun |
+
+### Files Added
+
+- `src/services/member/heavyFeatureCost.ts` - Cost map per HeavyFeatureType
+- `src/services/member/heavyFeatureLimit.service.ts` - reserve/consume/refund wrapper
+- `src/commands/media/heavyFeatureHelper.ts` - Shared resolveFeatureAccess + helpers untuk semua command
+- `tests/heavyFeatureLimit.test.ts` - 23 test baru
+
+### Files Modified
+
+- `src/services/quota/heavyFeatureAccess.service.ts` - Rewrite: ganti TenantOwnerQuota resolution dengan member skipLimit logic
+- `src/commands/media/downloader.command.ts` - Switch ke member limit (TT, IG, IGStory)
+- `src/commands/media/hdai.command.ts` - Switch ke member limit (HD AI, cost 2)
+- `src/commands/media/play.command.ts` - Tambah gating baru (sebelumnya tidak ada)
+- `src/commands/media/lyrics.command.ts` - Tambah gating baru (sebelumnya tidak ada)
+- `tests/lyricsService.test.ts` - Update context mock: tambah tenantGroup + SUPER_OWNER role
+
+### Reserve/Consume/Refund Boundaries
+
+- **Reserve**: Setelah validasi input, sebelum external processing
+- **Consume**: Setelah WhatsApp send sukses
+- **Refund**: Di catch block manapun jika reserved = true
+- Lirik not found: refund sebelum reply, tidak consume
+- Error handling: pesan refund disertakan di reply user
+
+### Owner Quota Not Touched
+
+`tenantQuota.service.ts` dan `TenantOwnerQuota` repository tidak dipanggil sama sekali dari semua command di atas. Import `tenantQuotaService` sudah dihapus dari seluruh command media.
+
+### Validation Results
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 errors |
+| `npm run build` | 0 errors |
+| `npm run test` | 211 pass, 0 fail (23 test baru) |
+
+### Commit
+
+See git log for SHA.
 
 ## Objective
 

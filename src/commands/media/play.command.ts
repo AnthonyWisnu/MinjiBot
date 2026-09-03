@@ -1,3 +1,5 @@
+import { HeavyFeatureType } from "@prisma/client";
+
 import { logger } from "../../config/logger";
 import { lastPlayedService } from "../../services/media/lastPlayed.service";
 import { playAudioService } from "../../services/media/playAudio.service";
@@ -6,6 +8,12 @@ import {
   type YoutubeSearchResult,
 } from "../../services/media/youtubeSearch.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import {
+  resolveFeatureAccess,
+  reserveFeatureLimit,
+  consumeFeatureLimit,
+  refundFeatureLimit,
+} from "./heavyFeatureHelper";
 
 const MAX_DURATION_SECONDS = 10 * 60;
 const MAX_SEARCH_RESULTS = 3;
@@ -25,7 +33,12 @@ async function handlePlay(context: CommandContext): Promise<void> {
     return;
   }
 
+  const access = await resolveFeatureAccess(context, HeavyFeatureType.PLAY_SONG);
+  if (access === null) return;
+
+  const reservation = access.skip ? null : access.reservation;
   let tempDir: string | undefined;
+  let reserved = false;
 
   try {
     await context.reply(`Mencari ${query}...`);
@@ -37,6 +50,12 @@ async function handlePlay(context: CommandContext): Promise<void> {
     if (playableVideos.length === 0) {
       await context.reply("Durasi lagu maksimal 10 menit.");
       return;
+    }
+
+    if (reservation !== null) {
+      const ok = await reserveFeatureLimit(context, reservation);
+      if (!ok) return;
+      reserved = true;
     }
 
     const result = await prepareFirstAvailableAudio(playableVideos);
@@ -58,8 +77,15 @@ async function handlePlay(context: CommandContext): Promise<void> {
       artist: result.video.channelTitle,
     });
 
+    if (reserved && reservation !== null) {
+      await consumeFeatureLimit(reservation);
+    }
+
     await context.reply(formatYoutubeResult(result.video));
   } catch (error: unknown) {
+    if (reserved && reservation !== null) {
+      await refundFeatureLimit(reservation);
+    }
     await context.reply(formatPlayError(error));
   } finally {
     if (tempDir) {
