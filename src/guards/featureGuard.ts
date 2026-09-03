@@ -1,3 +1,4 @@
+import { roleGuard } from "./roleGuard";
 import type { CommandContext } from "../types/command";
 import type { TenantFeatureKey } from "../types/feature";
 import { tenantFeatureService } from "../services/tenant/tenantFeature.service";
@@ -23,10 +24,6 @@ const COMMAND_FEATURE_MAP = new Map<string, TenantFeatureKey>([
   ["tebakangka", "game"],
   ["tictactoe", "game"],
   ["nyerah", "game"],
-  ["rank", "game"],
-  ["poin", "game"],
-  ["profile", "game"],
-  ["daily", "game"],
 ]);
 
 export type FeatureGuardResult =
@@ -43,6 +40,11 @@ export class FeatureGuard {
 
   async checkCommandFeature(context: CommandContext): Promise<FeatureGuardResult> {
     if (!context.isGroup || context.commandName === "feature") {
+      return { allowed: true };
+    }
+
+    const sender = context.senderUserJid ?? context.senderJid;
+    if (sender && roleGuard.isSuperOwner(sender)) {
       return { allowed: true };
     }
 
