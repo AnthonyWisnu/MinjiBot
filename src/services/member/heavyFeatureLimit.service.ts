@@ -103,7 +103,12 @@ export class HeavyFeatureLimitService {
   getInsufficientLimitMessage(): string {
     return [
       "Limit kamu tidak cukup untuk menggunakan fitur ini.",
-      "Gunakan .daily, beli melalui .belilimit, atau terima gift limit dari member lain.",
+      "",
+      "Cara mendapatkan limit tambahan:",
+      "1. Main game (.kuis, .family100, .tebakkata, .tebakemoji) untuk dapat poin",
+      "2. Tukar poin jadi limit: .belilimit <jumlah>",
+      "3. Klaim hadiah harian: .daily",
+      "4. Minta transfer limit ke teman: .giftlimit @user <jumlah>",
     ].join("\n");
   }
 

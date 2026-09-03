@@ -20,48 +20,48 @@ import {
 
 // ---- Rank resolver pure tests ----
 
-void test("resolveRank returns Bronze for 0 XP", () => {
-  assert.equal(resolveRank(0), "Bronze");
+void test("resolveRank returns Warrior for 0 XP", () => {
+  assert.equal(resolveRank(0), "Warrior");
 });
 
-void test("resolveRank returns Bronze for 999 XP", () => {
-  assert.equal(resolveRank(999), "Bronze");
+void test("resolveRank returns Warrior for 999 XP", () => {
+  assert.equal(resolveRank(999), "Warrior");
 });
 
-void test("resolveRank returns Silver for exactly 1000 XP", () => {
-  assert.equal(resolveRank(1_000), "Silver");
+void test("resolveRank returns Elite for exactly 1000 XP", () => {
+  assert.equal(resolveRank(1_000), "Elite");
 });
 
-void test("resolveRank returns Silver for 4999 XP", () => {
-  assert.equal(resolveRank(4_999), "Silver");
+void test("resolveRank returns Elite for 4999 XP", () => {
+  assert.equal(resolveRank(4_999), "Elite");
 });
 
-void test("resolveRank returns Gold for exactly 5000 XP", () => {
-  assert.equal(resolveRank(5_000), "Gold");
+void test("resolveRank returns Master for exactly 5000 XP", () => {
+  assert.equal(resolveRank(5_000), "Master");
 });
 
-void test("resolveRank returns Platinum for exactly 15000 XP", () => {
-  assert.equal(resolveRank(15_000), "Platinum");
+void test("resolveRank returns Grandmaster for exactly 15000 XP", () => {
+  assert.equal(resolveRank(15_000), "Grandmaster");
 });
 
-void test("resolveRank returns Diamond for exactly 40000 XP", () => {
-  assert.equal(resolveRank(40_000), "Diamond");
+void test("resolveRank returns Epic for exactly 40000 XP", () => {
+  assert.equal(resolveRank(40_000), "Epic");
 });
 
-void test("resolveRank returns Master for exactly 100000 XP", () => {
-  assert.equal(resolveRank(100_000), "Master");
+void test("resolveRank returns Legend for exactly 100000 XP", () => {
+  assert.equal(resolveRank(100_000), "Legend");
 });
 
-void test("resolveRank returns Master for 249999 XP", () => {
-  assert.equal(resolveRank(249_999), "Master");
+void test("resolveRank returns Legend for 249999 XP", () => {
+  assert.equal(resolveRank(249_999), "Legend");
 });
 
-void test("resolveRank returns Grandmaster for exactly 250000 XP", () => {
-  assert.equal(resolveRank(250_000), "Grandmaster");
+void test("resolveRank returns Mythic for exactly 250000 XP", () => {
+  assert.equal(resolveRank(250_000), "Mythic");
 });
 
-void test("resolveRank returns Grandmaster for very high XP", () => {
-  assert.equal(resolveRank(999_999_999), "Grandmaster");
+void test("resolveRank returns Mythic for very high XP", () => {
+  assert.equal(resolveRank(999_999_999), "Mythic");
 });
 
 void test("nextRankThreshold returns 1000 for Bronze member", () => {

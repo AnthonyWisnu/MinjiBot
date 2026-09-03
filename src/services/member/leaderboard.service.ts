@@ -2,6 +2,7 @@ import type { GroupMemberProfile } from "@prisma/client";
 
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { resolveRank } from "./rank.service";
+import { roleGuard } from "../../guards/roleGuard";
 import { normalizeUserJid } from "../../utils/jid";
 
 const TOP_N = 10;
@@ -34,13 +35,15 @@ export class LeaderboardService {
   ) {}
 
   async getTopRank(groupJid: string, callerJid: string): Promise<LeaderboardResult> {
-    const top = await this.profileRepo.listTopByExperience(groupJid, TOP_N);
+    const rawTop = await this.profileRepo.listTopByExperience(groupJid, TOP_N + 5);
+    const top = rawTop.filter((p) => !roleGuard.isSuperOwner(p.userJid)).slice(0, TOP_N);
     const entries = top.map((p, i) => this.toEntry(i + 1, p, p.experience));
 
+    const isCallerSuperOwner = roleGuard.isSuperOwner(callerJid);
     const callerInTop = top.some((p) => normalizeUserJid(p.userJid) === normalizeUserJid(callerJid));
     let callerPosition: number | null = null;
 
-    if (!callerInTop) {
+    if (!callerInTop && !isCallerSuperOwner) {
       const pos = await this.profileRepo.getPositionByExperience(groupJid, callerJid);
       callerPosition = pos > 0 ? pos : null;
     }
@@ -49,13 +52,15 @@ export class LeaderboardService {
   }
 
   async getTopPoint(groupJid: string, callerJid: string): Promise<LeaderboardResult> {
-    const top = await this.profileRepo.listTopByPoints(groupJid, TOP_N);
+    const rawTop = await this.profileRepo.listTopByPoints(groupJid, TOP_N + 5);
+    const top = rawTop.filter((p) => !roleGuard.isSuperOwner(p.userJid)).slice(0, TOP_N);
     const entries = top.map((p, i) => this.toEntry(i + 1, p, p.pointsBalance));
 
+    const isCallerSuperOwner = roleGuard.isSuperOwner(callerJid);
     const callerInTop = top.some((p) => normalizeUserJid(p.userJid) === normalizeUserJid(callerJid));
     let callerPosition: number | null = null;
 
-    if (!callerInTop) {
+    if (!callerInTop && !isCallerSuperOwner) {
       const pos = await this.profileRepo.getPositionByPoints(groupJid, callerJid);
       callerPosition = pos > 0 ? pos : null;
     }
