@@ -6,6 +6,7 @@ import {
   TEBAKEMOJI_REWARD,
   TEBAKANGKA_REWARD,
   FAMILY100_REWARD,
+  TICTACTOE_REWARD,
   getTebakangkaReward,
 } from "./gameReward.constants";
 
@@ -221,6 +222,58 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<void> {
     const key = `game:family100:${roundId}:${userJid}:stat`;
+    await this.recordGameSafe(groupJid, userJid, false, key, correlationId);
+  }
+
+  // ---- Tic Tac Toe PvP ----
+
+  async awardTicTacToeWin(
+    groupJid: string,
+    userJid: string,
+    roundId: string,
+    correlationId: string,
+  ): Promise<GameRewardResult> {
+    const key = `game:tictactoe:${roundId}:${userJid}:win`;
+    await this.creditSafe(groupJid, userJid, TICTACTOE_REWARD.WIN_POINTS, key, correlationId, "tictactoe-win-points");
+    await this.creditXpSafe(groupJid, userJid, TICTACTOE_REWARD.WIN_XP, `${key}:xp`, correlationId, "tictactoe-win-xp");
+    await this.recordGameSafe(groupJid, userJid, true, `${key}:stat`, correlationId);
+    return { points: TICTACTOE_REWARD.WIN_POINTS, xp: TICTACTOE_REWARD.WIN_XP };
+  }
+
+  async awardTicTacToeLoss(
+    groupJid: string,
+    userJid: string,
+    roundId: string,
+    correlationId: string,
+  ): Promise<GameRewardResult> {
+    const key = `game:tictactoe:${roundId}:${userJid}:loss`;
+    await this.creditSafe(groupJid, userJid, TICTACTOE_REWARD.LOSS_POINTS, key, correlationId, "tictactoe-loss-points");
+    await this.creditXpSafe(groupJid, userJid, TICTACTOE_REWARD.LOSS_XP, `${key}:xp`, correlationId, "tictactoe-loss-xp");
+    await this.recordGameSafe(groupJid, userJid, false, `${key}:stat`, correlationId);
+    return { points: TICTACTOE_REWARD.LOSS_POINTS, xp: TICTACTOE_REWARD.LOSS_XP };
+  }
+
+  async awardTicTacToeDraw(
+    groupJid: string,
+    userJid: string,
+    roundId: string,
+    correlationId: string,
+  ): Promise<GameRewardResult> {
+    const key = `game:tictactoe:${roundId}:${userJid}:draw`;
+    await this.creditSafe(groupJid, userJid, TICTACTOE_REWARD.DRAW_POINTS, key, correlationId, "tictactoe-draw-points");
+    await this.creditXpSafe(groupJid, userJid, TICTACTOE_REWARD.DRAW_XP, `${key}:xp`, correlationId, "tictactoe-draw-xp");
+    await this.recordGameSafe(groupJid, userJid, false, `${key}:stat`, correlationId);
+    return { points: TICTACTOE_REWARD.DRAW_POINTS, xp: TICTACTOE_REWARD.DRAW_XP };
+  }
+
+  // Timeout: 0 reward, only record games-played stat.
+  async recordTicTacToeTimeout(
+    groupJid: string,
+    userJid: string,
+    roundId: string,
+    correlationId: string,
+  ): Promise<void> {
+    const key = `game:tictactoe:${roundId}:${userJid}:timeout`;
     await this.recordGameSafe(groupJid, userJid, false, key, correlationId);
   }
 

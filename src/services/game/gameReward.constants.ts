@@ -37,6 +37,15 @@ export const FAMILY100_REWARD = {
   CAP_XP: 180,
 } as const;
 
+export const TICTACTOE_REWARD = {
+  WIN_POINTS: 250,
+  WIN_XP: 100,
+  LOSS_POINTS: 50,
+  LOSS_XP: 25,
+  DRAW_POINTS: 100,
+  DRAW_XP: 50,
+} as const;
+
 export function getTebakangkaReward(attempts: number): { points: number; xp: number } {
   if (attempts <= 3) return { points: TEBAKANGKA_REWARD.BAND_1_3.POINTS, xp: TEBAKANGKA_REWARD.BAND_1_3.XP };
   if (attempts <= 7) return { points: TEBAKANGKA_REWARD.BAND_4_7.POINTS, xp: TEBAKANGKA_REWARD.BAND_4_7.XP };

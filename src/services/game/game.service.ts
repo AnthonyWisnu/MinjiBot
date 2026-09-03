@@ -17,28 +17,29 @@ interface QuizSession {
   groupJid: string;
   startedBy: string;
   question: Question;
-  // Set of normalized answers already found (for family100 dedup and others).
   answered: Set<string>;
   createdAt: number;
   roundId: string;
   correlationId: string;
-  // Tebak angka: attempt count per user.
   attemptsByUser: Map<string, number>;
-  // Wrong participation tracking: userJid -> XP already awarded.
   wrongParticipants: Set<string>;
-  // Family100: per-user earned totals for cap enforcement.
   family100EarnedByUser: Map<string, { points: number; xp: number }>;
-  // Track who answered which answer in family100 (for multi-answer tracking).
   family100AnswererByAnswer: Map<string, string>;
   numberTarget?: number;
 }
 
 interface TicTacToeSession {
   groupJid: string;
-  playerJid: string;
+  player1Jid: string;   // X -- who sent the challenge
+  player2Jid: string;   // O -- who was challenged
+  currentTurn: "X" | "O";
   board: TicTacToeCell[];
   createdAt: number;
+  lastMoveAt: number;
   roundId: string;
+  correlationId: string;
+  // "waiting" = challenge sent but not accepted; "active" = game in progress.
+  state: "waiting" | "active";
 }
 
 const QUIZ_BANK: Record<Exclude<QuizType, "tebakangka">, Question[]> = {
@@ -96,6 +97,8 @@ const WIN_LINES = [
 ] as const;
 
 const SESSION_TTL_MS = 10 * 60 * 1000;
+const WAITING_TTL_MS = 5 * 60 * 1000;
+const MOVE_TTL_MS = 5 * 60 * 1000;
 
 export class GameService {
   private readonly quizSessions = new Map<string, QuizSession>();
@@ -111,6 +114,8 @@ export class GameService {
       ? { ...QUIZ_BANK, ...quizBankOverride }
       : QUIZ_BANK;
   }
+
+  // ---- Quiz ----
 
   async startOrAnswerQuiz(context: CommandContext, type: QuizType): Promise<string> {
     this.assertGroup(context);
@@ -154,6 +159,8 @@ export class GameService {
     ].join("\n");
   }
 
+  // ---- Surrender ----
+
   async surrender(context: CommandContext): Promise<string> {
     this.assertGroup(context);
     this.cleanupExpired(context.chatJid);
@@ -166,7 +173,6 @@ export class GameService {
         `Jawaban: ${quiz.question.answers.join(", ")}`,
       ];
 
-      // Award surrender XP to wrong participants only (not family100 — their rewards already given).
       if (quiz.type === "tebakkata" || quiz.type === "tebakemoji") {
         const xpReceivers = [...quiz.wrongParticipants];
         if (xpReceivers.length > 0) {
@@ -186,7 +192,6 @@ export class GameService {
       }
 
       if (quiz.type === "family100") {
-        // Record game-played for all participants who earned anything.
         const participants = [...quiz.family100EarnedByUser.keys()];
         await Promise.allSettled(
           participants.map((userJid) =>
@@ -203,48 +208,147 @@ export class GameService {
     const tictactoe = this.ticTacToeSessions.get(context.chatJid);
     if (tictactoe) {
       this.ticTacToeSessions.delete(context.chatJid);
-      return "Tic tac toe dihentikan.";
+
+      if (tictactoe.state === "waiting") {
+        return "Tantangan dibatalkan.";
+      }
+
+      const senderJid = context.senderUserJid;
+      const isSurrender1 = senderJid === tictactoe.player1Jid;
+      const isSurrender2 = senderJid === tictactoe.player2Jid;
+
+      if (!isSurrender1 && !isSurrender2) {
+        return "Kamu bukan pemain dalam sesi ini.";
+      }
+
+      const loserJid = senderJid;
+      const winnerJid = isSurrender1 ? tictactoe.player2Jid : tictactoe.player1Jid;
+
+      await Promise.allSettled([
+        this.rewardService.awardTicTacToeLoss(context.chatJid, loserJid, tictactoe.roundId, tictactoe.correlationId),
+        this.rewardService.awardTicTacToeWin(context.chatJid, winnerJid, tictactoe.roundId, tictactoe.correlationId),
+      ]);
+
+      return [
+        "Menyerah. Game selesai.",
+        `Pemenang: ${winnerJid}`,
+        `Poin menang: ${String(250)} | XP: ${String(100)}`,
+      ].join("\n");
     }
 
     return "Tidak ada game aktif di grup ini.";
   }
 
-  playTicTacToe(context: CommandContext): string {
+  // ---- TicTacToe PvP ----
+
+  async playTicTacToe(context: CommandContext): Promise<string> {
     this.assertGroup(context);
-    this.cleanupExpired(context.chatJid);
 
     const positionText = context.args[0];
-    if (!positionText) {
-      if (this.ticTacToeSessions.has(context.chatJid)) {
-        return "Tic tac toe sedang aktif. Gunakan .tictactoe <1-9> untuk memilih kotak.";
-      }
+    const hasMention = context.mentionedJids.length > 0;
 
-      const session: TicTacToeSession = {
-        groupJid: context.chatJid,
-        playerJid: context.senderUserJid,
-        board: Array<TicTacToeCell>(9).fill(null),
-        createdAt: Date.now(),
-        roundId: randomUUID(),
-      };
-      this.ticTacToeSessions.set(context.chatJid, session);
+    const timeoutResult = await this.checkTicTacToeTimeout(context.chatJid);
+    if (timeoutResult !== null) {
+      return timeoutResult;
+    }
 
+    if (hasMention) {
+      return this.handleChallenge(context);
+    }
+
+    if (positionText && /^\d+$/.test(positionText)) {
+      return this.handleMove(context, positionText);
+    }
+
+    return this.handleAccept(context);
+  }
+
+  // ---- Private: TicTacToe PvP helpers ----
+
+  private handleChallenge(context: CommandContext): string {
+    const challengedJid = context.mentionedJids[0];
+
+    if (!challengedJid) {
+      return "Mention pemain yang ingin ditantang. Contoh: .tictactoe @pemain";
+    }
+
+    if (challengedJid === context.senderUserJid) {
+      return "Tidak bisa menantang diri sendiri.";
+    }
+
+    if (this.ticTacToeSessions.has(context.chatJid)) {
+      return "Sudah ada sesi tic tac toe aktif di grup ini.";
+    }
+
+    const session: TicTacToeSession = {
+      groupJid: context.chatJid,
+      player1Jid: context.senderUserJid,
+      player2Jid: challengedJid,
+      currentTurn: "X",
+      board: Array<TicTacToeCell>(9).fill(null),
+      createdAt: Date.now(),
+      lastMoveAt: Date.now(),
+      roundId: randomUUID(),
+      correlationId: generateCorrelationId(),
+      state: "waiting",
+    };
+
+    this.ticTacToeSessions.set(context.chatJid, session);
+
+    return [
+      `Tantangan dikirim ke ${challengedJid}.`,
+      "Ketik .tictactoe untuk menerima. Tantangan berlaku 5 menit.",
+    ].join("\n");
+  }
+
+  private handleAccept(context: CommandContext): string {
+    const session = this.ticTacToeSessions.get(context.chatJid);
+
+    if (!session) {
+      return "Belum ada tantangan tic tac toe di grup ini. Tantang pemain dengan .tictactoe @pemain.";
+    }
+
+    if (session.state === "active") {
+      const currentPlayerJid = session.currentTurn === "X" ? session.player1Jid : session.player2Jid;
       return [
-        "Tic tac toe dimulai.",
-        "Kamu memakai X. Bot memakai O.",
+        "Tic tac toe sedang berlangsung.",
+        `Giliran: ${currentPlayerJid} (${session.currentTurn})`,
         "",
         formatBoard(session.board),
         "",
-        "Gunakan .tictactoe <1-9>.",
+        "Gunakan .tictactoe <1-9> untuk melangkah.",
       ].join("\n");
     }
 
-    const session = this.ticTacToeSessions.get(context.chatJid);
-    if (!session) {
-      return "Belum ada tic tac toe aktif. Gunakan .tictactoe untuk mulai.";
+    if (session.player2Jid !== context.senderUserJid) {
+      return "Tantangan ini bukan untukmu.";
     }
 
-    if (session.playerJid !== context.senderUserJid) {
-      return "Tic tac toe ini sedang dimainkan oleh member lain.";
+    session.state = "active";
+    session.lastMoveAt = Date.now();
+
+    return [
+      "Tantangan diterima. Game dimulai.",
+      `${session.player1Jid} (X) vs ${session.player2Jid} (O)`,
+      `Giliran pertama: ${session.player1Jid} (X)`,
+      "",
+      formatBoard(session.board),
+      "",
+      "Gunakan .tictactoe <1-9> untuk melangkah.",
+    ].join("\n");
+  }
+
+  private async handleMove(context: CommandContext, positionText: string): Promise<string> {
+    const session = this.ticTacToeSessions.get(context.chatJid);
+
+    if (!session || session.state === "waiting") {
+      return "Belum ada tic tac toe aktif. Terima tantangan dulu atau tantang pemain dengan .tictactoe @pemain.";
+    }
+
+    const currentPlayerJid = session.currentTurn === "X" ? session.player1Jid : session.player2Jid;
+
+    if (context.senderUserJid !== currentPlayerJid) {
+      return `Bukan giliranmu. Giliran: ${currentPlayerJid} (${session.currentTurn})`;
     }
 
     const position = Number(positionText);
@@ -257,26 +361,89 @@ export class GameService {
       return "Kotak itu sudah terisi. Pilih kotak lain.";
     }
 
-    session.board[index] = "X";
-    const playerResult = this.resolveTicTacToeResult(context, session, "X");
-    if (playerResult) {
-      return playerResult;
+    session.board[index] = session.currentTurn;
+    session.lastMoveAt = Date.now();
+
+    const mark = session.currentTurn;
+
+    if (hasWinner(session.board, mark)) {
+      this.ticTacToeSessions.delete(context.chatJid);
+      const winnerJid = mark === "X" ? session.player1Jid : session.player2Jid;
+      const loserJid = mark === "X" ? session.player2Jid : session.player1Jid;
+
+      const [winResult, lossResult] = await Promise.allSettled([
+        this.rewardService.awardTicTacToeWin(context.chatJid, winnerJid, session.roundId, session.correlationId),
+        this.rewardService.awardTicTacToeLoss(context.chatJid, loserJid, session.roundId, session.correlationId),
+      ]);
+
+      const winPts = winResult.status === "fulfilled" ? winResult.value.points : 250;
+      const lossPts = lossResult.status === "fulfilled" ? lossResult.value.points : 50;
+
+      return [
+        `${winnerJid} menang.`,
+        `Poin menang: ${String(winPts)} | Poin kalah: ${String(lossPts)}`,
+        "",
+        formatBoard(session.board),
+      ].join("\n");
     }
 
-    const botMove = chooseBotMove(session.board);
-    if (botMove >= 0) {
-      session.board[botMove] = "O";
+    if (session.board.every(Boolean)) {
+      this.ticTacToeSessions.delete(context.chatJid);
+
+      await Promise.allSettled([
+        this.rewardService.awardTicTacToeDraw(context.chatJid, session.player1Jid, session.roundId, session.correlationId),
+        this.rewardService.awardTicTacToeDraw(context.chatJid, session.player2Jid, session.roundId, session.correlationId),
+      ]);
+
+      return [
+        "Hasil seri.",
+        `Poin seri: ${String(100)} | XP: ${String(50)}`,
+        "",
+        formatBoard(session.board),
+      ].join("\n");
     }
 
-    const botResult = this.resolveTicTacToeResult(context, session, "O");
-    if (botResult) {
-      return botResult;
-    }
+    session.currentTurn = session.currentTurn === "X" ? "O" : "X";
+    const nextPlayerJid = session.currentTurn === "X" ? session.player1Jid : session.player2Jid;
 
-    return ["Langkah diterima.", "", formatBoard(session.board)].join("\n");
+    return [
+      "Langkah diterima.",
+      `Giliran: ${nextPlayerJid} (${session.currentTurn})`,
+      "",
+      formatBoard(session.board),
+    ].join("\n");
   }
 
-  // ---- Private: quiz answer dispatch ----
+  private async checkTicTacToeTimeout(groupJid: string): Promise<string | null> {
+    const now = Date.now();
+    const session = this.ticTacToeSessions.get(groupJid);
+    if (!session) return null;
+
+    if (session.state === "waiting" && now - session.createdAt > WAITING_TTL_MS) {
+      this.ticTacToeSessions.delete(groupJid);
+      return "Tantangan tic tac toe sudah kedaluwarsa dan dibatalkan.";
+    }
+
+    if (session.state === "active" && now - session.lastMoveAt > MOVE_TTL_MS) {
+      this.ticTacToeSessions.delete(groupJid);
+      const timedOutJid = session.currentTurn === "X" ? session.player1Jid : session.player2Jid;
+      const winnerJid = session.currentTurn === "X" ? session.player2Jid : session.player1Jid;
+
+      await Promise.allSettled([
+        this.rewardService.recordTicTacToeTimeout(groupJid, timedOutJid, session.roundId, session.correlationId),
+        this.rewardService.awardTicTacToeWin(groupJid, winnerJid, session.roundId, session.correlationId),
+      ]);
+
+      return [
+        `${timedOutJid} habis waktu. ${winnerJid} menang.`,
+        `Pemenang mendapat ${String(250)} poin dan ${String(100)} XP.`,
+      ].join("\n");
+    }
+
+    return null;
+  }
+
+  // ---- Private: Quiz helpers ----
 
   private async answerQuiz(context: CommandContext, type: QuizType, answerText: string): Promise<string> {
     const session = this.quizSessions.get(context.chatJid);
@@ -298,7 +465,6 @@ export class GameService {
     );
 
     if (!matchedAnswer) {
-      // Wrong answer: award XP once per user per round.
       if (!session.wrongParticipants.has(context.senderUserJid)) {
         session.wrongParticipants.add(context.senderUserJid);
         if (type === "kuis") {
@@ -306,24 +472,20 @@ export class GameService {
             context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
           );
         }
-        // tebakkata and tebakemoji wrong XP given at surrender/end, tracked via wrongParticipants.
       }
       return "Jawaban belum benar. Coba lagi.";
     }
 
-    // Family100 allows multiple correct answers.
     if (type === "family100") {
       return this.answerFamily100(context, session, normalizedAnswer);
     }
 
-    // Single-answer quiz: answer already found by someone else?
     if (session.answered.has(normalizedAnswer)) {
       return "Jawaban itu sudah ditemukan.";
     }
 
     session.answered.add(normalizedAnswer);
 
-    // Award correct answer.
     let reward: { points: number; xp: number };
     if (type === "kuis") {
       reward = await this.rewardService.awardKuisCorrect(
@@ -380,7 +542,6 @@ export class GameService {
     const isLastAnswer = session.answered.size >= session.question.answers.length;
 
     if (isLastAnswer) {
-      // Award final bonus to this user.
       const updatedEarned = session.family100EarnedByUser.get(context.senderUserJid) ?? { points: 0, xp: 0 };
       const bonusResult = await this.rewardService.awardFamily100FinalBonus(
         context.chatJid,
@@ -391,7 +552,6 @@ export class GameService {
         updatedEarned.xp,
       );
 
-      // Record game-played for all participants.
       const participants = [...session.family100EarnedByUser.keys()];
       await Promise.allSettled(
         participants.map((userJid) =>
@@ -462,7 +622,6 @@ export class GameService {
       return "Jawaban harus berupa angka.";
     }
 
-    // Track attempts for this user.
     const prev = session.attemptsByUser.get(context.senderUserJid) ?? 0;
     const attempts = prev + 1;
     session.attemptsByUser.set(context.senderUserJid, attempts);
@@ -472,7 +631,6 @@ export class GameService {
       return guess < target ? "Terlalu kecil." : "Terlalu besar.";
     }
 
-    // Correct: award tiered reward.
     this.quizSessions.delete(context.chatJid);
     const reward = await this.rewardService.awardTebakAngkaCorrect(
       context.chatJid, context.senderUserJid, session.roundId, attempts, session.correlationId,
@@ -486,40 +644,13 @@ export class GameService {
     ].join("\n");
   }
 
-  private resolveTicTacToeResult(
-    context: CommandContext,
-    session: TicTacToeSession,
-    mark: Exclude<TicTacToeCell, null>,
-  ): string | null {
-    if (hasWinner(session.board, mark)) {
-      this.ticTacToeSessions.delete(context.chatJid);
-
-      if (mark === "X") {
-        return ["Kamu menang.", "", formatBoard(session.board)].join("\n");
-      }
-
-      return ["Bot menang.", "", formatBoard(session.board)].join("\n");
-    }
-
-    if (session.board.every(Boolean)) {
-      this.ticTacToeSessions.delete(context.chatJid);
-      return ["Hasil seri.", "", formatBoard(session.board)].join("\n");
-    }
-
-    return null;
-  }
-
   private cleanupExpired(groupJid: string): void {
     const now = Date.now();
     const quiz = this.quizSessions.get(groupJid);
     if (quiz && now - quiz.createdAt > SESSION_TTL_MS) {
       this.quizSessions.delete(groupJid);
     }
-
-    const ticTacToe = this.ticTacToeSessions.get(groupJid);
-    if (ticTacToe && now - ticTacToe.createdAt > SESSION_TTL_MS) {
-      this.ticTacToeSessions.delete(groupJid);
-    }
+    // TicTacToe expiry handled in checkTicTacToeTimeout (async, awards rewards).
   }
 
   private assertGroup(context: CommandContext): void {
@@ -574,10 +705,6 @@ function formatBoard(board: TicTacToeCell[]): string {
 
 function getBoardCell(cells: string[], index: number): string {
   return cells[index] ?? String(index + 1);
-}
-
-function chooseBotMove(board: TicTacToeCell[]): number {
-  return board.findIndex((cell) => cell === null);
 }
 
 function hasWinner(board: TicTacToeCell[], mark: Exclude<TicTacToeCell, null>): boolean {

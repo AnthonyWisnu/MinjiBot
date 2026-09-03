@@ -10,6 +10,7 @@ import {
   TEBAKEMOJI_REWARD,
   TEBAKANGKA_REWARD,
   FAMILY100_REWARD,
+  TICTACTOE_REWARD,
   getTebakangkaReward,
 } from "../src/services/game/gameReward.constants";
 import type { CommandContext } from "../src/types/command";
@@ -432,4 +433,138 @@ void test("GameService: different groups have isolated sessions", async () => {
     "kuis",
   );
   assert.equal(r1, r2); // Both return wrong answer.
+});
+
+// ---- TicTacToe PvP ----
+
+void test("TicTacToe: challenge creates waiting session", async () => {
+  const { service } = makeFakeRewardService();
+  const gameService = new GameService(service, () => 1, DETERMINISTIC_BANK);
+
+  const challenger = makeGameContext({ senderUserJid: "playerA@s.whatsapp.net", mentionedJids: ["playerB@s.whatsapp.net"] });
+  const result = await gameService.playTicTacToe(challenger);
+  assert.match(result, /Tantangan dikirim/);
+  assert.match(result, /playerB/);
+});
+
+void test("TicTacToe: self-challenge is rejected", async () => {
+  const { service } = makeFakeRewardService();
+  const gameService = new GameService(service, () => 1, DETERMINISTIC_BANK);
+
+  const ctx = makeGameContext({ senderUserJid: "playerA@s.whatsapp.net", mentionedJids: ["playerA@s.whatsapp.net"] });
+  const result = await gameService.playTicTacToe(ctx);
+  assert.match(result, /diri sendiri/);
+});
+
+void test("TicTacToe: only challenged player can accept", async () => {
+  const { service } = makeFakeRewardService();
+  const gameService = new GameService(service, () => 1, DETERMINISTIC_BANK);
+
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerA@s.whatsapp.net", mentionedJids: ["playerB@s.whatsapp.net"] }));
+
+  // Stranger tries to accept.
+  const stranger = makeGameContext({ senderUserJid: "playerC@s.whatsapp.net", mentionedJids: [] });
+  const result = await gameService.playTicTacToe(stranger);
+  assert.match(result, /bukan untukmu/);
+});
+
+void test("TicTacToe: accept starts game and player1 goes first", async () => {
+  const { service } = makeFakeRewardService();
+  const gameService = new GameService(service, () => 1, DETERMINISTIC_BANK);
+
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerA@s.whatsapp.net", mentionedJids: ["playerB@s.whatsapp.net"] }));
+
+  const acceptCtx = makeGameContext({ senderUserJid: "playerB@s.whatsapp.net", mentionedJids: [] });
+  const result = await gameService.playTicTacToe(acceptCtx);
+  assert.match(result, /Game dimulai/);
+  assert.match(result, /playerA.*X/);
+});
+
+void test("TicTacToe: wrong player turn is rejected", async () => {
+  const { service } = makeFakeRewardService();
+  const gameService = new GameService(service, () => 1, DETERMINISTIC_BANK);
+
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerA@s.whatsapp.net", mentionedJids: ["playerB@s.whatsapp.net"] }));
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerB@s.whatsapp.net", mentionedJids: [] }));
+
+  // PlayerB tries to move first (should be playerA turn).
+  const wrongTurn = makeGameContext({ senderUserJid: "playerB@s.whatsapp.net", args: ["1"] });
+  const result = await gameService.playTicTacToe(wrongTurn);
+  assert.match(result, /Bukan giliranmu/);
+});
+
+void test("TicTacToe: valid move advances turn to other player", async () => {
+  const { service } = makeFakeRewardService();
+  const gameService = new GameService(service, () => 1, DETERMINISTIC_BANK);
+
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerA@s.whatsapp.net", mentionedJids: ["playerB@s.whatsapp.net"] }));
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerB@s.whatsapp.net", mentionedJids: [] }));
+
+  const moveCtx = makeGameContext({ senderUserJid: "playerA@s.whatsapp.net", args: ["1"] });
+  const result = await gameService.playTicTacToe(moveCtx);
+  assert.match(result, /Langkah diterima/);
+  assert.match(result, /playerB.*O/);
+});
+
+void test("TicTacToe: win awards winner and loser correctly", async () => {
+  const { service, spy } = makeFakeRewardService();
+  const gameService = new GameService(service, () => 1, DETERMINISTIC_BANK);
+
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerA@s.whatsapp.net", mentionedJids: ["playerB@s.whatsapp.net"] }));
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerB@s.whatsapp.net", mentionedJids: [] }));
+
+  // PlayerA wins by filling top row: pos 1, 2, 3 (X).
+  // PlayerA moves 1, PlayerB moves 4, PlayerA moves 2, PlayerB moves 5, PlayerA moves 3 = win.
+  const move = (jid: string, pos: string) =>
+    gameService.playTicTacToe(makeGameContext({ senderUserJid: jid, args: [pos] }));
+
+  await move("playerA@s.whatsapp.net", "1");
+  await move("playerB@s.whatsapp.net", "4");
+  await move("playerA@s.whatsapp.net", "2");
+  await move("playerB@s.whatsapp.net", "5");
+  const result = await move("playerA@s.whatsapp.net", "3");
+
+  assert.match(result, /menang/);
+  assert.ok(spy.creditedPoints.some(c => c.userJid === "playerA@s.whatsapp.net" && c.points === 250));
+  assert.ok(spy.creditedPoints.some(c => c.userJid === "playerB@s.whatsapp.net" && c.points === 50));
+});
+
+void test("TicTacToe: surrender awards opponent as winner", async () => {
+  const { service, spy } = makeFakeRewardService();
+  const gameService = new GameService(service, () => 1, DETERMINISTIC_BANK);
+
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerA@s.whatsapp.net", mentionedJids: ["playerB@s.whatsapp.net"] }));
+  await gameService.playTicTacToe(makeGameContext({ senderUserJid: "playerB@s.whatsapp.net", mentionedJids: [] }));
+
+  // PlayerA surrenders.
+  const result = await gameService.surrender(makeGameContext({ senderUserJid: "playerA@s.whatsapp.net" }));
+  assert.match(result, /Menyerah/);
+  assert.ok(spy.creditedPoints.some(c => c.userJid === "playerB@s.whatsapp.net" && c.points === 250));
+  assert.ok(spy.creditedPoints.some(c => c.userJid === "playerA@s.whatsapp.net" && c.points === 50));
+});
+
+void test("TicTacToe: draw awards both players via GameRewardService", async () => {
+  const { economy, calls } = makeEconomy();
+  const service = new GameRewardService(economy);
+  const roundId = "round-draw-1";
+  const correlationId = "corr-draw-1";
+
+  const [r1, r2] = await Promise.all([
+    service.awardTicTacToeDraw("g@g.us", "playerA@s.whatsapp.net", roundId, correlationId),
+    service.awardTicTacToeDraw("g@g.us", "playerB@s.whatsapp.net", roundId, `${correlationId}-b`),
+  ]);
+
+  assert.equal(r1.points, 100);
+  assert.equal(r2.points, 100);
+  assert.ok(calls.some(c => c.method === "creditPoints" && c.userJid === "playerA@s.whatsapp.net" && c.amount === 100));
+  assert.ok(calls.some(c => c.method === "creditPoints" && c.userJid === "playerB@s.whatsapp.net" && c.amount === 100));
+});
+
+void test("TicTacToe PvP: reward constants are correct", () => {
+  assert.equal(TICTACTOE_REWARD.WIN_POINTS, 250);
+  assert.equal(TICTACTOE_REWARD.WIN_XP, 100);
+  assert.equal(TICTACTOE_REWARD.LOSS_POINTS, 50);
+  assert.equal(TICTACTOE_REWARD.LOSS_XP, 25);
+  assert.equal(TICTACTOE_REWARD.DRAW_POINTS, 100);
+  assert.equal(TICTACTOE_REWARD.DRAW_XP, 50);
 });
