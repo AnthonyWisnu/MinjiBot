@@ -228,8 +228,8 @@ void test("MemberAdminService.getMemberInfo: returns profile and rank for known 
   const info = await service.getMemberInfo("g@g.us", "u@s.net");
   assert.ok(info !== null);
   assert.ok(typeof info.rank === "string");
-  // 2000 XP should be Silver rank (threshold 1000)
-  assert.equal(info.rank, "Silver");
+  // 2000 XP should be Elite rank (threshold 1000)
+  assert.equal(info.rank, "Elite");
 });
 
 // ---- Helpers ----

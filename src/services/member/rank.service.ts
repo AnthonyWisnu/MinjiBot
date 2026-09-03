@@ -1,21 +1,22 @@
 export type MemberRank =
-  | "Bronze"
-  | "Silver"
-  | "Gold"
-  | "Platinum"
-  | "Diamond"
+  | "Warrior"
+  | "Elite"
   | "Master"
-  | "Grandmaster";
+  | "Grandmaster"
+  | "Epic"
+  | "Legend"
+  | "Mythic"
+  | "Immortal [MAX]";
 
 // Ordered from highest to lowest for threshold scan
 const RANK_THRESHOLDS: [MemberRank, number][] = [
-  ["Grandmaster", 250_000],
-  ["Master",      100_000],
-  ["Diamond",      40_000],
-  ["Platinum",     15_000],
-  ["Gold",          5_000],
-  ["Silver",        1_000],
-  ["Bronze",            0],
+  ["Mythic",      250_000],
+  ["Legend",      100_000],
+  ["Epic",         40_000],
+  ["Grandmaster",  15_000],
+  ["Master",        5_000],
+  ["Elite",         1_000],
+  ["Warrior",           0],
 ];
 
 // Pure function - no database access.
@@ -26,7 +27,7 @@ export function resolveRank(experience: number): MemberRank {
       return rank;
     }
   }
-  return "Bronze";
+  return "Warrior";
 }
 
 // Returns the minimum XP needed for the next rank tier.

@@ -15,11 +15,11 @@ function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberPr
     groupJid: "group-1@g.us",
     userJid: "user-1@s.whatsapp.net",
     pointsBalance: 0,
-    limitBalance: 3,
+    limitBalance: 10,
     reservedLimit: 0,
     experience: 0,
     totalPointsEarned: 0,
-    totalLimitsEarned: 3,
+    totalLimitsEarned: 10,
     totalGamesPlayed: 0,
     totalGamesWon: 0,
     currentStreak: 0,
@@ -42,10 +42,10 @@ void test("GroupMemberProfileRepository.findOrCreate returns initial balances fo
   const result = await repo.findOrCreate("group-1@g.us", "user-1@s.whatsapp.net");
 
   assert.equal(result.pointsBalance, 0);
-  assert.equal(result.limitBalance, 3);
+  assert.equal(result.limitBalance, 10);
   assert.equal(result.reservedLimit, 0);
   assert.equal(result.experience, 0);
-  assert.equal(result.totalLimitsEarned, 3);
+  assert.equal(result.totalLimitsEarned, 10);
 });
 
 void test("GroupMemberProfileRepository.findOrCreate is idempotent and does not reset spent balance", async () => {

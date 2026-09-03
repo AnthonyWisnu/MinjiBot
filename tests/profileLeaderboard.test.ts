@@ -33,7 +33,7 @@ function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberPr
 // ---- MemberProfileViewService ----
 
 void test("MemberProfileViewService.getOwnProfile: creates/reads own profile and returns rank", async () => {
-  const profile = makeProfile({ experience: 1500 }); // Silver = 1000+
+  const profile = makeProfile({ experience: 1500 }); // Elite = 1000+
 
   const service = new MemberProfileViewService(
     { findOrCreate: (...a) => { void a; return Promise.resolve(profile); }, findByGroupAndUser: (...a) => { void a; return Promise.resolve(profile); } },
@@ -41,7 +41,7 @@ void test("MemberProfileViewService.getOwnProfile: creates/reads own profile and
   );
 
   const view = await service.getOwnProfile("g@g.us", "u@s.whatsapp.net");
-  assert.equal(view.rank, "Silver");
+  assert.equal(view.rank, "Elite");
   assert.ok(typeof view.createdAtWib === "string");
 });
 
@@ -87,20 +87,20 @@ void test("MemberProfileViewService: same user in different groups is independen
 
   const viewA = await service.getTargetProfile("ga@g.us", "u@s.whatsapp.net");
   const viewB = await service.getTargetProfile("gb@g.us", "u@s.whatsapp.net");
-  assert.equal(viewA?.rank, "Silver");
-  assert.equal(viewB?.rank, "Diamond");
+  assert.equal(viewA?.rank, "Elite");
+  assert.equal(viewB?.rank, "Epic");
 });
 
 void test("MemberProfileViewService: rank thresholds displayed correctly", async () => {
   const thresholds = [
-    { xp: 0, expected: "Bronze" },
-    { xp: 999, expected: "Bronze" },
-    { xp: 1000, expected: "Silver" },
-    { xp: 5000, expected: "Gold" },
-    { xp: 15000, expected: "Platinum" },
-    { xp: 40000, expected: "Diamond" },
-    { xp: 100000, expected: "Master" },
-    { xp: 250000, expected: "Grandmaster" },
+    { xp: 0, expected: "Warrior" },
+    { xp: 999, expected: "Warrior" },
+    { xp: 1000, expected: "Elite" },
+    { xp: 5000, expected: "Master" },
+    { xp: 15000, expected: "Grandmaster" },
+    { xp: 40000, expected: "Epic" },
+    { xp: 100000, expected: "Legend" },
+    { xp: 250000, expected: "Mythic" },
   ];
 
   for (const { xp, expected } of thresholds) {
@@ -122,7 +122,7 @@ void test("MemberProfileViewService: spending points does not reduce rank", asyn
     { findOrCreateProfile: (...a) => { void a; return Promise.resolve(highXpProfile); } },
   );
   const view = await service.getOwnProfile("g@g.us", "u@s.whatsapp.net");
-  assert.equal(view.rank, "Master");
+  assert.equal(view.rank, "Legend");
 });
 
 // ---- LeaderboardService ----

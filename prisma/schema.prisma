@@ -213,11 +213,11 @@ model GroupMemberProfile {
   groupJid          String
   userJid           String
   pointsBalance     Int       @default(0)
-  limitBalance      Int       @default(3)
+  limitBalance      Int       @default(10)
   reservedLimit     Int       @default(0)
   experience        Int       @default(0)
   totalPointsEarned Int       @default(0)
-  totalLimitsEarned Int       @default(3)
+  totalLimitsEarned Int       @default(10)
   totalGamesPlayed  Int       @default(0)
   totalGamesWon     Int       @default(0)
   currentStreak     Int       @default(0)

@@ -2,6 +2,7 @@ import type { GroupMemberProfile } from "@prisma/client";
 
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { MemberEconomyService } from "./memberEconomy.service";
+import { roleGuard } from "../../guards/roleGuard";
 import { resolveRank } from "./rank.service";
 import { toWibDateKey } from "../../utils/wibDate";
 
@@ -38,9 +39,10 @@ export class MemberProfileViewService {
   }
 
   private toView(profile: GroupMemberProfile): ProfileView {
+    const isSuperOwner = roleGuard.isSuperOwner(profile.userJid);
     return {
       profile,
-      rank: resolveRank(profile.experience),
+      rank: isSuperOwner ? "Immortal [MAX]" : resolveRank(profile.experience),
       createdAtWib: toWibDateKey(profile.createdAt),
     };
   }

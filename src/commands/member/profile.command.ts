@@ -1,9 +1,25 @@
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { memberProfileViewService } from "../../services/member/memberProfileView.service";
 import type { MemberProfileViewService, ProfileView } from "../../services/member/memberProfileView.service";
+import { roleGuard } from "../../guards/roleGuard";
 import { normalizeUserJid } from "../../utils/jid";
 
-function formatProfileView(view: ProfileView, label: string): string {
+function formatProfileView(view: ProfileView, label: string, isSuperOwner = false): string {
+  if (isSuperOwner) {
+    return [
+      `PROFIL MEMBER - ${label}`,
+      "",
+      "Role          : Super Owner (Master)",
+      "Rank          : Immortal [MAX]",
+      "XP            : 999.999",
+      "Poin          : 999.999",
+      "Limit         : 999 (Unlimited)",
+      "Daily Streak  : 999 hari",
+      "Game Menang   : 999 / 999",
+      `Profil Dibuat : ${view.createdAtWib}`,
+    ].join("\n");
+  }
+
   const { profile, rank, createdAtWib } = view;
   const winRate =
     profile.totalGamesPlayed > 0
@@ -53,7 +69,8 @@ async function executeProfile(
     );
     const userPhone = targetUserJid.split("@")[0] ?? targetUserJid;
     const label = `@${userPhone}`;
-    await context.reply(formatProfileView(view, label));
+    const isSuperOwner = roleGuard.isSuperOwner(targetUserJid);
+    await context.reply(formatProfileView(view, label, isSuperOwner));
   } else {
     // View own profile (creates if not exists).
     const view = await service.getOwnProfile(
@@ -62,7 +79,8 @@ async function executeProfile(
     );
     const userPhone = normalizeUserJid(context.senderUserJid).split("@")[0] ?? context.senderUserJid;
     const label = `@${userPhone}`;
-    await context.reply(formatProfileView(view, label));
+    const isSuperOwner = roleGuard.isSuperOwner(context.senderUserJid);
+    await context.reply(formatProfileView(view, label, isSuperOwner));
   }
 }
 
@@ -79,6 +97,20 @@ export function createProfileCommands(
       execute: async (context) => {
         if (!context.isGroup || !context.tenantGroup) {
           await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
+          return;
+        }
+        if (roleGuard.isSuperOwner(context.senderUserJid)) {
+          await context.reply(
+            [
+              "Saldo kamu:",
+              "",
+              "Role  : Super Owner (Master)",
+              "Poin  : 999.999",
+              "Limit : 999 (Unlimited)",
+              "XP    : 999.999",
+              "Rank  : Immortal [MAX]",
+            ].join("\n"),
+          );
           return;
         }
         const view = await service.getOwnProfile(

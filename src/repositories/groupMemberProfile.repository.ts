@@ -4,7 +4,7 @@ import { prisma, type PrismaTransactionClient } from "./prismaClient";
 
 type Client = typeof prisma | PrismaTransactionClient;
 
-const INITIAL_LIMIT_BALANCE = 3;
+const INITIAL_LIMIT_BALANCE = 10;
 
 export class GroupMemberProfileRepository {
   constructor(private readonly client: Client = prisma) {}
