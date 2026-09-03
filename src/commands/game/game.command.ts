@@ -47,10 +47,6 @@ export const gameCommands: CommandDefinition[] = [
     name: "profile",
     execute: (context) => replyGame(context, () => gameService.getProfileText(context)),
   },
-  {
-    name: "daily",
-    execute: (context) => replyGame(context, () => gameService.claimDaily(context)),
-  },
 ];
 
 async function replyGame(context: CommandContext, action: () => string): Promise<void> {

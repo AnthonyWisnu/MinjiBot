@@ -2,7 +2,64 @@
 
 ## Status
 
-Planned
+Completed
+
+## Execution Evidence
+
+### Files Added
+
+- `src/utils/wibDate.ts` - WIB (Asia/Jakarta) date key helper, no server timezone dependency
+- `src/services/member/randomProvider.ts` - Injectable `RandomProvider` interface + `defaultRandom` production impl
+- `src/services/member/dailyClaim.service.ts` - `DailyClaimService` with streak logic and idempotency key per WIB date
+- `src/services/member/limitPurchase.service.ts` - `LimitPurchaseService` with atomic single-transaction debit+credit
+- `src/commands/member/daily.command.ts` - `.daily` command handler (group only)
+- `src/commands/member/limitPurchase.command.ts` - `.belilimit <jumlah>` command handler (group only)
+- `tests/dailyClaim.test.ts` - 22 new tests (WIB date, daily claim, limit purchase)
+
+### Files Modified
+
+- `src/commands/game/game.command.ts` - Removed legacy `.daily` entry (was calling in-memory `gameService.claimDaily()`)
+- `src/commands/index.ts` - Registered `dailyCommand` and `limitPurchaseCommand`
+- `src/types/memberEconomy.ts` - Added `"DAILY_REWARD"` to `CreditLimitInput.type` union
+
+### Legacy Daily Disconnected
+
+`game.command.ts` no longer routes `.daily` to `gameService.claimDaily()`.
+`GameService.claimDaily()` method and `PlayerProfile.lastDailyKey` field remain in source
+for now (legacy cleanup is deferred to Plan 008 when full game profile migration happens).
+
+### WIB Date Strategy
+
+Uses `Intl.DateTimeFormat` with `timeZone: "Asia/Jakarta"`.
+Returns `YYYY-MM-DD` string key. Does not depend on server timezone.
+Idempotency key format: `daily:{groupJid}:{userJid}:{YYYY-MM-DD-WIB}`
+
+### Reward Rules
+
+- Points: random 100-300 (via injectable `RandomProvider`)
+- XP: 50 fixed
+- Bonus limit: 10% chance, 1 limit
+- Streak: increments on consecutive WIB days, resets otherwise
+
+### Limit Purchase Atomicity
+
+Single `$transaction` with `updateMany` balance predicate:
+- Debit points and credit limit in one round-trip
+- Two ledger entries (POINT and LIMIT) share one correlationId
+- `InsufficientPointsError` if `updateMany.count === 0`
+
+### Validation Results
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 errors |
+| `npm run build` | 0 errors |
+| `npm run test` | 158 pass, 0 fail (22 new tests: WIB date 8, daily 8, purchase 6) |
+
+### Commit
+
+See git log for SHA.
 
 ## Objective
 

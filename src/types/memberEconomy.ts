@@ -90,6 +90,7 @@ export interface SetPointsInput extends BaseInput {
 export interface CreditLimitInput extends BaseInput {
   amount: number;
   type:
+    | "DAILY_REWARD"
     | "LIMIT_PURCHASE_LIMIT_CREDIT"
     | "GIFT_RECEIVED"
     | "SUPER_OWNER_ADD"
