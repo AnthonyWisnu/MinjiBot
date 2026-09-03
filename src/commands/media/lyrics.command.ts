@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { HeavyFeatureType } from "@prisma/client";
 
 import {
   lyricsService,
@@ -10,6 +11,12 @@ import { lastPlayedService, type LastPlayedService } from "../../services/media/
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { createTempDir, removeTempDir } from "../../utils/tempFile";
 import { formatUserSafeError } from "../../utils/userSafeError";
+import {
+  resolveFeatureAccess,
+  reserveFeatureLimit,
+  consumeFeatureLimit,
+  refundFeatureLimit,
+} from "./heavyFeatureHelper";
 
 const MAX_TEXT_LYRICS_LENGTH = 3500;
 const LYRICS_TEXT_MIMETYPE = "text/plain";
@@ -45,21 +52,46 @@ async function handleLyrics(
       return;
     }
 
-    const lyrics = await deps.lyricsService.searchLyrics(query);
-    if (!lyrics) {
-      await context.reply(
-        "[INFO] Lirik tidak ditemukan. Coba gunakan format: .lirik <judul> - <artis>",
-      );
-      return;
-    }
+    const access = await resolveFeatureAccess(context, HeavyFeatureType.SONG_LYRICS);
+    if (access === null) return;
 
-    const text = formatLyricsText(lyrics);
-    if (documentMode || text.length > MAX_TEXT_LYRICS_LENGTH) {
-      await sendLyricsDocument(context, lyrics, text, query);
-      return;
-    }
+    const reservation = access.skip ? null : access.reservation;
+    let reserved = false;
 
-    await context.reply(text);
+    try {
+      if (reservation !== null) {
+        const ok = await reserveFeatureLimit(context, reservation);
+        if (!ok) return;
+        reserved = true;
+      }
+
+      const lyrics = await deps.lyricsService.searchLyrics(query);
+      if (!lyrics) {
+        if (reserved && reservation !== null) {
+          await refundFeatureLimit(reservation);
+        }
+        await context.reply(
+          "[INFO] Lirik tidak ditemukan. Coba gunakan format: .lirik <judul> - <artis>",
+        );
+        return;
+      }
+
+      const text = formatLyricsText(lyrics);
+      if (documentMode || text.length > MAX_TEXT_LYRICS_LENGTH) {
+        await sendLyricsDocument(context, lyrics, text, query);
+      } else {
+        await context.reply(text);
+      }
+
+      if (reserved && reservation !== null) {
+        await consumeFeatureLimit(reservation);
+      }
+    } catch (error: unknown) {
+      if (reserved && reservation !== null) {
+        await refundFeatureLimit(reservation);
+      }
+      throw error;
+    }
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "[ERROR] Lirik gagal diproses."));
   }

@@ -1,15 +1,18 @@
 import { downloadMediaMessage } from "@whiskeysockets/baileys";
 import { HeavyFeatureType } from "@prisma/client";
-import { randomUUID } from "node:crypto";
 
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { imageAiUpscaleService } from "../../services/media/imageAiUpscale.service";
-import { heavyFeatureAccessService } from "../../services/quota/heavyFeatureAccess.service";
-import { tenantQuotaService } from "../../services/quota/tenantQuota.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { resolveImageMediaTarget } from "../../utils/mediaTarget";
 import { formatUserSafeError } from "../../utils/userSafeError";
+import {
+  resolveFeatureAccess,
+  reserveFeatureLimit,
+  consumeFeatureLimit,
+  refundFeatureLimit,
+} from "./heavyFeatureHelper";
 
 const BYTES_PER_MB = 1024 * 1024;
 const HD_AI_OUTPUT_MIMETYPE = "image/jpeg";
@@ -36,30 +39,17 @@ async function handleHdAi(context: CommandContext): Promise<void> {
     const feature = isDocumentMode
       ? HeavyFeatureType.HD_AI_PHOTO_DOCUMENT
       : HeavyFeatureType.HD_AI_PHOTO;
-    const quotaContext = await heavyFeatureAccessService.resolveQuotaContext(context);
-    if (!quotaContext.allowed) {
-      await context.reply(quotaContext.message);
-      return;
-    }
 
-    const reservation = {
-      ownerJid: quotaContext.ownerJid,
-      actorJid: context.senderUserJid,
-      groupJid: quotaContext.groupJid,
-      source: quotaContext.source,
-      feature,
-      correlationId: randomUUID(),
-    };
+    const access = await resolveFeatureAccess(context, feature);
+    if (access === null) return;
+
+    const reservation = access.skip ? null : access.reservation;
     let reserved = false;
 
     try {
-      if (!quotaContext.skipQuota) {
-        try {
-          await tenantQuotaService.reserveHeavyFeatureQuota(reservation);
-        } catch {
-          await context.reply(heavyFeatureAccessService.getQuotaEmptyMessage(context));
-          return;
-        }
+      if (reservation !== null) {
+        const ok = await reserveFeatureLimit(context, reservation);
+        if (!ok) return;
         reserved = true;
       }
 
@@ -98,12 +88,12 @@ async function handleHdAi(context: CommandContext): Promise<void> {
         );
       }
 
-      if (reserved) {
-        await tenantQuotaService.consumeHeavyFeatureQuota(reservation);
+      if (reserved && reservation !== null) {
+        await consumeFeatureLimit(reservation);
       }
     } catch (error: unknown) {
-      if (reserved) {
-        await tenantQuotaService.refundHeavyFeatureQuota(reservation);
+      if (reserved && reservation !== null) {
+        await refundFeatureLimit(reservation);
       }
 
       throw error;

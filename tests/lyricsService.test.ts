@@ -236,10 +236,19 @@ function createLyricsContext(options: {
     argsText: options.argsText ?? "",
     text: ".lirik",
     mentionedJids: [],
-    role: "MEMBER",
+    // Use SUPER_OWNER so the access resolver skips limit charge in tests.
+    // This keeps lyrics command tests focused on lyrics logic, not limit flow.
+    role: "SUPER_OWNER",
+    tenantGroup: {
+      id: "tg-1",
+      groupJid: "120@g.us",
+      ownerJid: "6281@s.whatsapp.net",
+      status: "ACTIVE",
+    } as never,
     reply: (text: string) => {
       replies.push(text);
       return Promise.resolve(undefined);
     },
   };
 }
+
