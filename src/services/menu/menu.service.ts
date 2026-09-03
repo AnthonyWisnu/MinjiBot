@@ -17,88 +17,79 @@ export class MenuService {
 
   buildOwnerMenu(): string {
     return [
-      "╭── [ MENU SUPER OWNER ] ──",
-      "│ Mode: Private Chat",
-      "╰─────────────────────────",
+      "*─── [ MENU SUPER OWNER ] ───*",
+      "Mode: Private Chat",
       "",
-      "╭── [ MANAJEMEN TENANT ]",
-      "│ • .pendinggroup",
-      "│ • .activatetenant <kode> <owner> <durasi>",
-      "│ • .listtenant",
-      "│ • .tenantinfo <kode>",
-      "│ • .extendtenant <kode> <durasi>",
-      "│ • .settenantexpire <kode> <tgl>",
-      "│ • .blocktenant <kode>",
-      "│ • .unblocktenant <kode>",
-      "│ • .removetenant <kode>",
-      "╰─────────────────────────",
+      "*─── [ MANAJEMEN TENANT ] ───*",
+      "• .pendinggroup",
+      "• .activatetenant <kode> <owner>",
+      "• .listtenant",
+      "• .tenantinfo <kode>",
+      "• .extendtenant <kode> <durasi>",
+      "• .settenantexpire <kode> <tgl>",
+      "• .blocktenant <kode>",
+      "• .unblocktenant <kode>",
+      "• .removetenant <kode>",
       "",
-      "╭── [ NAVIGASI ]",
-      "│ • .tenantmenu",
-      "│ • .featuremenu",
-      "│ • .menu",
-      "╰─────────────────────────",
+      "*─── [ NAVIGASI ] ───*",
+      "• .tenantmenu",
+      "• .featuremenu",
+      "• .menu",
     ].join("\n");
   }
 
   buildTenantOwnerMenu(): string {
     return [
-      "╭── [ MENU TENANT OWNER ] ──",
-      "│ Mode: Private Chat",
-      "╰─────────────────────────",
+      "*─── [ MENU TENANT OWNER ] ───*",
+      "Mode: Private Chat",
       "",
-      "╭── [ KONTROL SEWA ]",
-      "│ • .mytenant",
-      "│ • .usetenant <nomor/kode>",
-      "│ • .currenttenant",
-      "│ • .cleartenant",
-      "│ • .transferowner @user",
-      "│ • .addtenantadmin <nomor>",
-      "│ • .removetenantadmin <nomor>",
-      "│ • .listtenantadmin",
-      "╰─────────────────────────",
+      "*─── [ KONTROL SEWA ] ───*",
+      "• .mytenant",
+      "• .usetenant <nomor/kode>",
+      "• .currenttenant",
+      "• .cleartenant",
+      "• .transferowner @user",
+      "• .addtenantadmin <nomor>",
+      "• .removetenantadmin <nomor>",
+      "• .listtenantadmin",
       "",
-      "╭── [ PENGATURAN GRUP ]",
-      "│ • .feature <fitur> <on/off>",
-      "│ • .welcome [on|off]",
-      "│ • .setwelcome <pesan>",
-      "│ • .antilink [on|off]",
-      "│ • .antispam [on|off]",
-      "╰─────────────────────────",
+      "*─── [ PENGATURAN GRUP ] ───*",
+      "• .feature <fitur> <on/off>",
+      "• .welcome [on|off]",
+      "• .setwelcome <pesan>",
+      "• .antilink [on|off]",
+      "• .antispam [on|off]",
       "",
-      "╭── [ MEDIA PRIVATE ]",
-      "│ • .tt <url>",
-      "│ • .ig / .igstory <url>",
-      "│ • .play <lagu>",
-      "│ • .lirik [doc] <judul>",
-      "│ • .sticker / .s",
-      "│ • .smeme <teks>",
-      "│ • .gambar <teks>",
-      "│ • .toimg",
-      "│ • .hd [doc]",
-      "╰─────────────────────────",
+      "*─── [ MEDIA PRIVATE ] ───*",
+      "• .tt <url>",
+      "• .ig / .igstory <url>",
+      "• .play <lagu>",
+      "• .lirik [doc] <judul>",
+      "• .sticker / .s",
+      "• .smeme <teks>",
+      "• .gambar <teks>",
+      "• .toimg",
+      "• .hd [doc]",
       "",
-      "╭── [ INFORMASI ]",
-      "│ • .profile",
-      "│ • .menu",
-      "╰─────────────────────────",
+      "*─── [ INFORMASI ] ───*",
+      "• .profile",
+      "• .menu",
     ].join("\n");
   }
 
   buildFeatureMenu(): string {
     return [
-      "╭── [ KONTROL FITUR ] ──",
-      "│ Gunakan: .feature <fitur> <on/off>",
-      "│",
-      "│ • downloader",
-      "│ • hd",
-      "│ • game",
-      "│ • welcome",
-      "│ • antilink",
-      "│ • antispam",
-      "│ • reminder",
-      "│ • tagall",
-      "╰───────────────────────",
+      "*─── [ KONTROL FITUR ] ───*",
+      "Format: .feature <fitur> <on/off>",
+      "",
+      "• downloader",
+      "• hd",
+      "• game",
+      "• welcome",
+      "• antilink",
+      "• antispam",
+      "• reminder",
+      "• tagall",
     ].join("\n");
   }
 
@@ -112,13 +103,11 @@ export class MenuService {
     }
 
     return [
-      "╭── [ BANTUAN MINJIBOT ] ──",
-      "│",
-      "│ Fitur bot aktif di grup terdaftar.",
-      "│ Hubungi Owner untuk sewa bot.",
-      "│",
-      "│ • .menu",
-      "╰─────────────────────────",
+      "*─── [ BANTUAN MINJIBOT ] ───*",
+      "Fitur bot aktif di grup terdaftar.",
+      "Hubungi Owner untuk sewa bot.",
+      "",
+      "• .menu",
     ].join("\n");
   }
 
@@ -148,23 +137,21 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
   ): string {
     return [
-      "╭── [ DASHBOARD SUPER OWNER ] ──",
-      `│ Grup   : ${this.formatGroupName(tenantGroup)}`,
-      `│ Kode   : ${tenantGroup ? tenantGroup.tenantCode : "-"}`,
-      `│ Status : ${tenantGroup ? tenantGroup.status.toLowerCase() : "belum terdaftar"}`,
-      `│ Exp    : ${tenantGroup ? formatDateId(tenantGroup.expiresAt) : "-"}`,
-      "╰─────────────────────────",
+      "*─── [ DASHBOARD OWNER ] ───*",
+      `Grup: ${this.formatGroupName(tenantGroup)}`,
+      `Kode: ${tenantGroup ? tenantGroup.tenantCode : "-"}`,
+      `Status: ${tenantGroup ? tenantGroup.status.toLowerCase() : "belum terdaftar"}`,
+      `Exp: ${tenantGroup ? formatDateId(tenantGroup.expiresAt) : "-"}`,
       "",
-      "╭── [ MANAJEMEN TENANT ]",
-      "│ • .tenantinfo <kode>",
-      "│ • .extendtenant <kode> <durasi>",
-      "│ • .blocktenant <kode>",
-      "│ • .unblocktenant <kode>",
-      "│ • .transferowner @user",
-      "│ • .addtenantadmin <nomor>",
-      "│ • .removetenantadmin <nomor>",
-      "│ • .listtenantadmin",
-      "╰─────────────────────────",
+      "*─── [ MANAJEMEN TENANT ] ───*",
+      "• .tenantinfo <kode>",
+      "• .extendtenant <kode> <durasi>",
+      "• .blocktenant <kode>",
+      "• .unblocktenant <kode>",
+      "• .transferowner @user",
+      "• .addtenantadmin <nomor>",
+      "• .removetenantadmin <nomor>",
+      "• .listtenantadmin",
       "",
       ...this.buildGroupModerationLines(true),
       "",
@@ -176,15 +163,14 @@ export class MenuService {
       "",
       ...this.buildGroupEconomyLines(),
       "",
-      "╭── [ PENGATURAN & NAVIGASI ]",
-      "│ • .feature <fitur> <on/off>",
-      "│ • .status",
-      "│ • .tenantstatus",
-      "│ • .ownermenu",
-      "│ • .tenantmenu",
-      "│ • .featuremenu",
-      "│ • .menu",
-      "╰─────────────────────────",
+      "*─── [ PENGATURAN ] ───*",
+      "• .feature <fitur> <on/off>",
+      "• .status",
+      "• .tenantstatus",
+      "• .ownermenu",
+      "• .tenantmenu",
+      "• .featuremenu",
+      "• .menu",
     ].join("\n");
   }
 
@@ -193,22 +179,20 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
   ): string {
     return [
-      "╭── [ DASHBOARD TENANT ] ──",
-      `│ Grup   : ${this.formatGroupName(tenantGroup)}`,
-      `│ Kode   : ${tenantGroup ? tenantGroup.tenantCode : "-"}`,
-      `│ Status : ${tenantGroup ? tenantGroup.status.toLowerCase() : "belum terdaftar"}`,
-      `│ Exp    : ${tenantGroup ? formatDateId(tenantGroup.expiresAt) : "-"}`,
-      "╰─────────────────────────",
+      "*─── [ DASHBOARD TENANT ] ───*",
+      `Grup: ${this.formatGroupName(tenantGroup)}`,
+      `Kode: ${tenantGroup ? tenantGroup.tenantCode : "-"}`,
+      `Status: ${tenantGroup ? tenantGroup.status.toLowerCase() : "belum terdaftar"}`,
+      `Exp: ${tenantGroup ? formatDateId(tenantGroup.expiresAt) : "-"}`,
       "",
-      "╭── [ PENGATURAN SEWA ]",
-      "│ • .feature <fitur> <on/off>",
-      "│ • .welcome [on|off]",
-      "│ • .setwelcome <pesan>",
-      "│ • .transferowner @user",
-      "│ • .addtenantadmin <nomor>",
-      "│ • .removetenantadmin <nomor>",
-      "│ • .listtenantadmin",
-      "╰─────────────────────────",
+      "*─── [ PENGATURAN SEWA ] ───*",
+      "• .feature <fitur> <on/off>",
+      "• .welcome [on|off]",
+      "• .setwelcome <pesan>",
+      "• .transferowner @user",
+      "• .addtenantadmin <nomor>",
+      "• .removetenantadmin <nomor>",
+      "• .listtenantadmin",
       "",
       ...this.buildGroupModerationLines(true),
       "",
@@ -220,12 +204,11 @@ export class MenuService {
       "",
       ...this.buildGroupEconomyLines(),
       "",
-      "╭── [ INFORMASI ]",
-      "│ • .tenantstatus",
-      "│ • .status",
-      "│ • .featuremenu",
-      "│ • .menu",
-      "╰─────────────────────────",
+      "*─── [ INFORMASI ] ───*",
+      "• .tenantstatus",
+      "• .status",
+      "• .featuremenu",
+      "• .menu",
     ].join("\n");
   }
 
@@ -234,15 +217,13 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
   ): string {
     return [
-      "╭── [ DASHBOARD ADMIN ] ──",
-      `│ Grup : ${this.formatGroupName(tenantGroup)}`,
-      "╰─────────────────────────",
+      "*─── [ DASHBOARD ADMIN ] ───*",
+      `Grup: ${this.formatGroupName(tenantGroup)}`,
       "",
-      "╭── [ PENGATURAN GRUP ]",
-      "│ • .welcome [on|off]",
-      "│ • .setwelcome <pesan>",
-      "│ • .listtenantadmin",
-      "╰─────────────────────────",
+      "*─── [ PENGATURAN GRUP ] ───*",
+      "• .welcome [on|off]",
+      "• .setwelcome <pesan>",
+      "• .listtenantadmin",
       "",
       ...this.buildGroupModerationLines(false),
       "",
@@ -254,11 +235,10 @@ export class MenuService {
       "",
       ...this.buildGroupEconomyLines(),
       "",
-      "╭── [ INFORMASI ]",
-      "│ • .tenantstatus",
-      "│ • .status",
-      "│ • .menu",
-      "╰─────────────────────────",
+      "*─── [ INFORMASI ] ───*",
+      "• .tenantstatus",
+      "• .status",
+      "• .menu",
     ].join("\n");
   }
 
@@ -267,9 +247,8 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
   ): string {
     return [
-      "╭── [ MINJIBOT - MENU ] ──",
-      `│ Grup: ${this.formatGroupName(tenantGroup)}`,
-      "╰─────────────────────────",
+      "*─── [ MINJIBOT MENU ] ───*",
+      `Grup: ${this.formatGroupName(tenantGroup)}`,
       "",
       ...this.buildGroupMediaLines(),
       "",
@@ -279,10 +258,9 @@ export class MenuService {
       "",
       ...this.buildGroupUtilityLines(featureSetting),
       "",
-      "╭── [ BANTUAN ]",
-      "│ • .status",
-      "│ • .menu",
-      "╰─────────────────────────",
+      "*─── [ BANTUAN ] ───*",
+      "• .status",
+      "• .menu",
     ].join("\n");
   }
 
@@ -293,18 +271,17 @@ export class MenuService {
 
   private buildGroupMediaLines(): string[] {
     return [
-      "╭── [ MEDIA & TOOLS ]",
-      "│ • .sticker / .s",
-      "│ • .smeme <teks>",
-      "│ • .gambar <teks>",
-      "│ • .toimg",
-      "│ • .play <lagu>",
-      "│ • .lirik [doc] <judul>",
-      "│ • .tt <url>",
-      "│ • .ig / .igstory <url>",
-      "│ • .hd [doc]",
-      "│ • .afk [alasan]",
-      "╰─────────────────────────",
+      "*─── [ MEDIA & TOOLS ] ───*",
+      "• .sticker / .s",
+      "• .smeme <teks>",
+      "• .gambar <teks>",
+      "• .toimg",
+      "• .play <lagu>",
+      "• .lirik [doc] <judul>",
+      "• .tt <url>",
+      "• .ig / .igstory <url>",
+      "• .hd [doc]",
+      "• .afk [alasan]",
     ];
   }
 
@@ -314,31 +291,29 @@ export class MenuService {
     }
 
     return [
-      "╭── [ GAME & HIBURAN ]",
-      "│ • .kuis",
-      "│ • .family100",
-      "│ • .tebakkata",
-      "│ • .tebakemoji",
-      "│ • .tebakangka",
-      "│ • .tictactoe @user",
-      "│ • .nyerah",
-      "╰─────────────────────────",
+      "*─── [ GAME & HIBURAN ] ───*",
+      "• .kuis",
+      "• .family100",
+      "• .tebakkata",
+      "• .tebakemoji",
+      "• .tebakangka",
+      "• .tictactoe @user",
+      "• .nyerah",
     ];
   }
 
   private buildGroupEconomyLines(): string[] {
     return [
-      "╭── [ SALDO & PROFIL ]",
-      "│ • .profile [@user]",
-      "│ • .poin",
-      "│ • .daily",
-      "│ • .belilimit <jumlah>",
-      "│ • .giftpoint @user <jumlah>",
-      "│ • .giftlimit @user <jumlah>",
-      "│ • .rank",
-      "│ • .toprank",
-      "│ • .toppoint",
-      "╰─────────────────────────",
+      "*─── [ SALDO & PROFIL ] ───*",
+      "• .profile [@user]",
+      "• .poin",
+      "• .daily",
+      "• .belilimit <jumlah>",
+      "• .giftpoint @user <jumlah>",
+      "• .giftlimit @user <jumlah>",
+      "• .rank",
+      "• .toprank",
+      "• .toppoint",
     ];
   }
 
@@ -348,14 +323,13 @@ export class MenuService {
     const tagAllOn = !featureSetting || featureSetting.tagAllEnabled;
 
     if (reminderOn || tagAllOn) {
-      lines.push("╭── [ PENGINGAT ]");
+      lines.push("*─── [ PENGINGAT ] ───*");
       if (reminderOn) {
-        lines.push("│ • .remind <waktu> <pesan>", "│ • .listreminder");
+        lines.push("• .remind <waktu> <pesan>", "• .listreminder");
       }
       if (tagAllOn) {
-        lines.push("│ • .tagall <pesan>");
+        lines.push("• .tagall <pesan>");
       }
-      lines.push("╰─────────────────────────");
     }
 
     return lines;
@@ -363,22 +337,21 @@ export class MenuService {
 
   private buildGroupModerationLines(includeAdvanced: boolean): string[] {
     const lines = [
-      "╭── [ MODERASI GRUP ]",
-      "│ • .antilink [on|off]",
-      "│ • .antispam [on|off|status]",
+      "*─── [ MODERASI GRUP ] ───*",
+      "• .antilink [on|off]",
+      "• .antispam [on|off|status]",
     ];
 
     if (includeAdvanced) {
-      lines.push("│ • .antispam mode <mode>");
+      lines.push("• .antispam mode <mode>");
     }
 
     lines.push(
-      "│ • .kick @user",
-      "│ • .add <nomor>",
-      "│ • .promote @user",
-      "│ • .demote @user",
-      "│ • .del",
-      "╰─────────────────────────",
+      "• .kick @user",
+      "• .add <nomor>",
+      "• .promote @user",
+      "• .demote @user",
+      "• .del",
     );
 
     return lines;
