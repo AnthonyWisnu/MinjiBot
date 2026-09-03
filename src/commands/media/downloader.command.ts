@@ -54,9 +54,10 @@ async function handleDownloader(
       reserved = true;
     }
 
-    await context.reply("Video sedang diproses. Mohon tunggu.");
+    await context.reply("Video TikTok sedang diproses. Mohon tunggu...");
     const downloadedVideo = await downloaderService.downloadVideo(url, kind);
 
+    // Kirim video terlebih dahulu
     await context.socket.sendMessage(
       context.chatJid,
       {
@@ -70,6 +71,9 @@ async function handleDownloader(
     if (reserved && reservation !== null) {
       await consumeFeatureLimit(reservation);
     }
+
+    // Susul dengan audio (best-effort, tidak ganggu user jika gagal)
+    await sendTikTokAudio(context, downloadedVideo.buffer);
   } catch (error: unknown) {
     if (reserved && reservation !== null) {
       await refundFeatureLimit(reservation);
@@ -79,6 +83,26 @@ async function handleDownloader(
     } else {
       await context.reply(formatTikTokError(error));
     }
+  }
+}
+
+async function sendTikTokAudio(context: CommandContext, videoBuffer: Buffer): Promise<void> {
+  try {
+    const audio = await downloaderService.extractAudioFromVideo(videoBuffer);
+    await sleep(500);
+    await context.socket.sendMessage(
+      context.chatJid,
+      {
+        audio: audio.buffer,
+        mimetype: audio.mimetype,
+        ptt: false,
+      },
+      { quoted: context.message },
+    );
+  } catch (error: unknown) {
+    // Gagal extract audio tidak perlu notify user — video sudah terkirim
+    // Hanya log di server
+    void error;
   }
 }
 
