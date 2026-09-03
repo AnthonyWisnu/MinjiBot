@@ -20,11 +20,17 @@ const MOBILE_SAFE_FORMAT =
   "bv*[height<=720][ext=mp4]+ba[ext=m4a]/" +
   "b[height<=720][ext=mp4]/" +
   "best[height<=720][ext=mp4]/best[ext=mp4]/best";
-const YT_VIDEO_FORMAT_480P =
+const YT_VIDEO_FORMAT_SMART =
+  // Prioritas 1: 720p 60 FPS (H.264 mp4) jika video approx <= 100MB
+  "bv*[vcodec^=avc1][height<=720][fps>30][filesize_approx<=100M][ext=mp4]+ba[ext=m4a]/" +
+  // Prioritas 2: 720p 30 FPS (H.264 mp4) jika video approx <= 100MB
+  "bv*[vcodec^=avc1][height<=720][fps<=30][filesize_approx<=100M][ext=mp4]+ba[ext=m4a]/" +
+  // Prioritas 3: 480p (H.264 mp4) untuk video panjang hingga 12 menit
   "bv*[vcodec^=avc1][height<=480][ext=mp4]+ba[ext=m4a]/" +
-  "b[vcodec^=avc1][height<=480][ext=mp4]/" +
-  "bv*[height<=480][ext=mp4]+ba[ext=m4a]/" +
-  "best[height<=480][ext=mp4]/best[ext=mp4]/best";
+  // Fallback format jika avc1 tidak tersedia
+  "bv*[height<=720][filesize_approx<=100M][ext=mp4]+ba[ext=m4a]/" +
+  "b[height<=720][ext=mp4]/" +
+  "best[height<=720]/best";
 
 const IMAGE_EXTS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const VIDEO_EXTS = new Set([".mp4", ".webm", ".mkv", ".mov", ".avi"]);
@@ -258,7 +264,7 @@ export class DownloaderService {
         "--match-filter",
         "duration <= 720",
         "-f",
-        YT_VIDEO_FORMAT_480P,
+        YT_VIDEO_FORMAT_SMART,
         "--merge-output-format",
         "mp4",
         "--remux-video",
