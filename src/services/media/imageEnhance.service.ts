@@ -17,8 +17,16 @@ export class ImageEnhanceService {
       throw new Error("Dimensi gambar tidak dapat dibaca.");
     }
 
-    const width = metadata.width * 2;
-    const height = metadata.height * 2;
+    const MAX_DIMENSION = 4096;
+    const targetScale = 4;
+    const maxScale = Math.min(
+      MAX_DIMENSION / metadata.width,
+      MAX_DIMENSION / metadata.height,
+    );
+    const scale = Math.max(1, Math.min(targetScale, maxScale));
+
+    const width = Math.round(metadata.width * scale);
+    const height = Math.round(metadata.height * scale);
     const buffer = await image
       .resize({
         width,
