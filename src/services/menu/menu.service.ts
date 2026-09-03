@@ -297,6 +297,8 @@ export class MenuService {
       "• .tebakkata",
       "• .tebakemoji",
       "• .tebakangka",
+      "• .mtk",
+      "• .slot",
       "• .tictactoe @user",
       "• .nyerah",
     ];
