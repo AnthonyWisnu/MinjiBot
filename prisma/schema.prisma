@@ -23,6 +23,7 @@ enum HeavyFeatureType {
   HD_AI_PHOTO_DOCUMENT
   PLAY_SONG
   SONG_LYRICS
+  YOUTUBE_VIDEO_DOWNLOAD
 }
 
 enum TenantAuditAction {
