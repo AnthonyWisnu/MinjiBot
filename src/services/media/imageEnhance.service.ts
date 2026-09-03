@@ -26,6 +26,8 @@ export class ImageEnhanceService {
         fit: "fill",
         kernel: "lanczos3",
       })
+      .sharpen({ sigma: 1.2, m1: 1.0, m2: 3.0 })
+      .modulate({ brightness: 1.02, saturation: 1.08 })
       .jpeg({
         quality: 92,
         mozjpeg: true,

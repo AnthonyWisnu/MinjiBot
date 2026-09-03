@@ -1,7 +1,9 @@
 import { existsSync } from "node:fs";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+
+import ffmpegStatic from "ffmpeg-static";
 
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
@@ -46,6 +48,11 @@ export interface DownloadedVideo {
 export type DownloadResult =
   | { type: "single"; item: DownloadedMediaItem }
   | { type: "multi"; items: DownloadedMediaItem[]; totalCount: number };
+
+export interface ExtractedAudio {
+  buffer: Buffer;
+  mimetype: "audio/mpeg";
+}
 
 interface TikWmResponse {
   code: number;
@@ -321,6 +328,28 @@ export class DownloaderService {
     args.push(url);
     await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
   }
+
+  /**
+   * Extract audio track from a video buffer using ffmpeg.
+   * Returns MP3 audio — same format as .play command.
+   */
+  async extractAudioFromVideo(videoBuffer: Buffer): Promise<ExtractedAudio> {
+    const tempDir = await createTempDir("tt-audio");
+    const inputPath = path.join(tempDir, "input.mp4");
+    const outputPath = path.join(tempDir, "audio.mp3");
+
+    try {
+      await writeFile(inputPath, videoBuffer);
+
+      const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
+      await runFfmpegAudio(inputPath, outputPath, ffmpegPath, env.DOWNLOADER_TIMEOUT_MS);
+
+      const buffer = await readFile(outputPath);
+      return { buffer, mimetype: "audio/mpeg" };
+    } finally {
+      await removeTempDir(tempDir);
+    }
+  }
 }
 
 async function scanDownloadedMediaFiles(tempDir: string): Promise<DownloadedMediaItem[]> {
@@ -457,6 +486,57 @@ function runProcess(command: string, args: string[], timeoutMs: number): Promise
       }
 
       reject(new Error(`Downloader gagal: ${stderr.slice(-500)}`));
+    });
+  });
+}
+
+function runFfmpegAudio(
+  inputPath: string,
+  outputPath: string,
+  ffmpegPath: string,
+  timeoutMs: number,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      ffmpegPath,
+      [
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        inputPath,
+        "-vn",
+        "-c:a",
+        "libmp3lame",
+        "-b:a",
+        "192k",
+        outputPath,
+      ],
+      { windowsHide: true },
+    );
+    let stderr = "";
+    const timeout = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error("Extract audio melewati batas waktu."));
+    }, timeoutMs);
+
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf8");
+    });
+
+    child.on("error", (error) => {
+      clearTimeout(timeout);
+      reject(new Error(`ffmpeg tidak tersedia: ${error.message}`));
+    });
+
+    child.on("close", (code) => {
+      clearTimeout(timeout);
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`Extract audio gagal: ${stderr.slice(-300)}`));
     });
   });
 }
