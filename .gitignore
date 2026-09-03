@@ -29,3 +29,5 @@ temp/
 *.token
 qris*
 qr-session*
+scratch/
+backups/

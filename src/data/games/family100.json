@@ -1,0 +1,1083 @@
+[
+  {
+    "prompt": "Sebutkan alasan seseorang sering terlambat masuk kerja atau sekolah!",
+    "answers": [
+      "macet",
+      "kesiangan",
+      "bangun siang",
+      "ban bocor",
+      "hujan",
+      "mager",
+      "antre mandi"
+    ]
+  },
+  {
+    "prompt": "Sebutkan topping martabak manis yang paling populer!",
+    "answers": [
+      "cokelat",
+      "keju",
+      "kacang",
+      "susu",
+      "matcha",
+      "nutella",
+      "oreo"
+    ]
+  },
+  {
+    "prompt": "Sebutkan benda yang selalu ada di dalam dompet!",
+    "answers": [
+      "uang",
+      "ktp",
+      "kartu atm",
+      "sim",
+      "foto",
+      "struk",
+      "kartu kredit"
+    ]
+  },
+  {
+    "prompt": "Sebutkan rasa es krim yang paling umum dijual!",
+    "answers": [
+      "cokelat",
+      "vanila",
+      "stroberi",
+      "kopi",
+      "matcha",
+      "durian"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hewan yang paling sering dijadikan hewan peliharaan di rumah!",
+    "answers": [
+      "kucing",
+      "anjing",
+      "burung",
+      "ikan",
+      "kelinci",
+      "hamster"
+    ]
+  },
+  {
+    "prompt": "Sebutkan barang yang wajib dibawa saat bepergian ke luar rumah!",
+    "answers": [
+      "hp",
+      "smartphone",
+      "dompet",
+      "kunci",
+      "uang",
+      "charger",
+      "masker"
+    ]
+  },
+  {
+    "prompt": "Sebutkan kegiatan yang biasa dilakukan orang saat waktu luang atau libur!",
+    "answers": [
+      "tidur",
+      "nonton film",
+      "rebahan",
+      "main game",
+      "jalan-jalan",
+      "baca buku",
+      "olahraga"
+    ]
+  },
+  {
+    "prompt": "Sebutkan makanan yang biasa ada di warteg!",
+    "answers": [
+      "orek tempe",
+      "telur balado",
+      "ayam goreng",
+      "sayur sop",
+      "kentang balado",
+      "sayur bayam",
+      "perkedel"
+    ]
+  },
+  {
+    "prompt": "Sebutkan menu sarapan paling favorit di Indonesia!",
+    "answers": [
+      "nasi uduk",
+      "bubur ayam",
+      "nasi kuning",
+      "lontong sayur",
+      "nasi goreng",
+      "roti"
+    ]
+  },
+  {
+    "prompt": "Sebutkan minuman yang paling sering dipesan di warung makan atau restoran!",
+    "answers": [
+      "es teh manis",
+      "teh hangat",
+      "air putih",
+      "es jeruk",
+      "kopi",
+      "jus buah"
+    ]
+  },
+  {
+    "prompt": "Sebutkan benda yang ada di kamar mandi!",
+    "answers": [
+      "sabun",
+      "shampo",
+      "sikat gigi",
+      "odol",
+      "handuk",
+      "gayung",
+      "ember"
+    ]
+  },
+  {
+    "prompt": "Sebutkan aplikasi media sosial yang paling sering dibuka di HP!",
+    "answers": [
+      "whatsapp",
+      "instagram",
+      "tiktok",
+      "youtube",
+      "twitter",
+      "facebook"
+    ]
+  },
+  {
+    "prompt": "Sebutkan barang yang sering dibawa saat piknik ke pantai!",
+    "answers": [
+      "tikar",
+      "kacamata hitam",
+      "baju ganti",
+      "kamera",
+      "makanan",
+      "sunscreen",
+      "topi"
+    ]
+  },
+  {
+    "prompt": "Sebutkan alasan orang tidak bisa tidur di malam hari!",
+    "answers": [
+      "insomnia",
+      "banyak pikiran",
+      "minum kopi",
+      "main hp",
+      "suhu panas",
+      "lapar",
+      "berisik"
+    ]
+  },
+  {
+    "prompt": "Sebutkan barang yang ada di atas meja belajar atau kerja!",
+    "answers": [
+      "laptop",
+      "buku",
+      "pulpen",
+      "lampu meja",
+      "gelas",
+      "kalender",
+      "mouse"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis olahraga yang paling digemari pria!",
+    "answers": [
+      "sepak bola",
+      "futsal",
+      "badminton",
+      "basket",
+      "lari",
+      "gym",
+      "renang"
+    ]
+  },
+  {
+    "prompt": "Sebutkan buah yang sering dijadikan bahan rujak buah!",
+    "answers": [
+      "mangga muda",
+      "bengkuang",
+      "kedondong",
+      "nanas",
+      "jambu air",
+      "pepaya"
+    ]
+  },
+  {
+    "prompt": "Sebutkan kendaraan umum darat yang ada di kota besar!",
+    "answers": [
+      "busway",
+      "angkot",
+      "mrt",
+      "krl",
+      "taksi",
+      "ojol",
+      "kereta"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang sering dicari orang saat masuk ke kafe!",
+    "answers": [
+      "wifi",
+      "colokan",
+      "kopi",
+      "tempat duduk",
+      "menu",
+      "toilet",
+      "suasana"
+    ]
+  },
+  {
+    "prompt": "Sebutkan benda tajam yang ada di dapur!",
+    "answers": [
+      "pisau",
+      "gunting",
+      "parutan",
+      "garpu",
+      "peeler"
+    ]
+  },
+  {
+    "prompt": "Sebutkan rasa pop corn yang paling populer di bioskop!",
+    "answers": [
+      "asin",
+      "karamel",
+      "manis",
+      "keju"
+    ]
+  },
+  {
+    "prompt": "Sebutkan barang yang sering hilang di dalam rumah!",
+    "answers": [
+      "gunting kuku",
+      "remote tv",
+      "kunci motor",
+      "korek api",
+      "jarum pentul",
+      "peniti"
+    ]
+  },
+  {
+    "prompt": "Sebutkan apa yang dilakukan orang saat baru bangun tidur!",
+    "answers": [
+      "cek hp",
+      "menggeliat",
+      "minum air",
+      "cuci muka",
+      "ke toilet",
+      "matikan alarm"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis lauk pelengkap nasi goreng!",
+    "answers": [
+      "telur",
+      "ayam",
+      "kerupuk",
+      "acar",
+      "sosis",
+      "bakso",
+      "timun"
+    ]
+  },
+  {
+    "prompt": "Sebutkan benda yang ada di dalam tas sekolah anak!",
+    "answers": [
+      "buku tulis",
+      "tempat pensil",
+      "kotak bekal",
+      "botol minum",
+      "penggaris",
+      "penghapus"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis gorengan yang paling laku dijual di pinggir jalan!",
+    "answers": [
+      "bakwan",
+      "tahu isi",
+      "pisang goreng",
+      "tempe mendoan",
+      "cireng",
+      "ubi goreng"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang membuat seseorang merasa gugup atau cemas!",
+    "answers": [
+      "ujian",
+      "wawancara kerja",
+      "presentasi",
+      "ketemu mertua",
+      "bicara di depan umum",
+      "sidang skripsi"
+    ]
+  },
+  {
+    "prompt": "Sebutkan perlengkapan yang dipakai saat mengendarai sepeda motor!",
+    "answers": [
+      "helm",
+      "jaket",
+      "sarung tangan",
+      "sepatu",
+      "jas hujan",
+      "masker"
+    ]
+  },
+  {
+    "prompt": "Sebutkan buah yang banyak mengandung air!",
+    "answers": [
+      "semangka",
+      "melon",
+      "jeruk",
+      "pir",
+      "jambu air",
+      "nanas"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang menyebabkan orang menangis selain sedih!",
+    "answers": [
+      "mengupas bawang",
+      "tertawa terbahak-bahak",
+      "terharu",
+      "kelilipan",
+      "menguap",
+      "sakit"
+    ]
+  },
+  {
+    "prompt": "Sebutkan tempat yang sering dikunjungi orang saat liburan akhir pekan!",
+    "answers": [
+      "mall",
+      "pantai",
+      "bioskop",
+      "taman",
+      "kafe",
+      "puncak",
+      "kolam renang"
+    ]
+  },
+  {
+    "prompt": "Sebutkan alasan orang memutuskan untuk resign dari pekerjaan!",
+    "answers": [
+      "gaji kecil",
+      "bos galak",
+      "lingkungan toxic",
+      "dapat tawaran lebih baik",
+      "capek",
+      "ingin wirausaha"
+    ]
+  },
+  {
+    "prompt": "Sebutkan perlengkapan tidur yang ada di atas kasur!",
+    "answers": [
+      "bantal",
+      "guling",
+      "selimut",
+      "sprei",
+      "boneka"
+    ]
+  },
+  {
+    "prompt": "Sebutkan benda yang dipakai di kepala manusia!",
+    "answers": [
+      "topi",
+      "helm",
+      "bando",
+      "kacamata",
+      "hijab",
+      "wig",
+      "mahkota"
+    ]
+  },
+  {
+    "prompt": "Sebutkan makanan cepat saji (fast food) yang paling populer!",
+    "answers": [
+      "ayam goreng",
+      "burger",
+      "pizza",
+      "kentang goreng",
+      "hotdog"
+    ]
+  },
+  {
+    "prompt": "Sebutkan rasa snack kripik kentang yang paling digemari!",
+    "answers": [
+      "rumput laut",
+      "barbeque",
+      "keju",
+      "pedas",
+      "original",
+      "sapi panggang"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang bisa dilakukan saat menunggu antrean panjang!",
+    "answers": [
+      "main hp",
+      "baca berita",
+      "dengar musik",
+      "ngobrol",
+      "melamun",
+      "scroll tiktok"
+    ]
+  },
+  {
+    "prompt": "Sebutkan binatang buas karnivora pemakan daging di hutan!",
+    "answers": [
+      "harimau",
+      "singa",
+      "serigala",
+      "buaya",
+      "macan",
+      "beruang"
+    ]
+  },
+  {
+    "prompt": "Sebutkan makanan yang paling enak disantap saat hujan turun!",
+    "answers": [
+      "mi instan",
+      "bakso",
+      "soto",
+      "gorengan",
+      "sup hangat",
+      "wedang jahe"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang menyebabkan tagihan listrik melonjak naik!",
+    "answers": [
+      "ac menyala terus",
+      "kulkas rusak",
+      "main komputer",
+      "mesin cuci",
+      "setrika",
+      "lupa matikan lampu"
+    ]
+  },
+  {
+    "prompt": "Sebutkan benda yang ada di dalam kotak P3K pertolongan pertama!",
+    "answers": [
+      "perban",
+      "betadine",
+      "plester",
+      "minyak kayu putih",
+      "kapas",
+      "obat pusing",
+      "alkohol"
+    ]
+  },
+  {
+    "prompt": "Sebutkan alasan seseorang menolak ajakan kencan atau nongkrong!",
+    "answers": [
+      "tidak ada uang",
+      "mager",
+      "ada acara keluarga",
+      "capek",
+      "sudah ada janji",
+      "sakit"
+    ]
+  },
+  {
+    "prompt": "Sebutkan peralatan yang dipakai dokter saat memeriksa pasien!",
+    "answers": [
+      "stetoskop",
+      "termometer",
+      "jarum suntik",
+      "alat tensi",
+      "senter kecil"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang membuat orang bangun pagi lebih awal!",
+    "answers": [
+      "alarm bunyi",
+      "suara adzan",
+      "takut terlambat",
+      "kebelet pipis",
+      "bau masakan",
+      "ditelpon"
+    ]
+  },
+  {
+    "prompt": "Sebutkan warna primer dasar dalam teori seni rupa!",
+    "answers": [
+      "merah",
+      "kuning",
+      "biru"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis pakaian atasan yang biasa dipakai pria!",
+    "answers": [
+      "kaos",
+      "kemeja",
+      "jaket",
+      "hoodie",
+      "jas",
+      "sweater"
+    ]
+  },
+  {
+    "prompt": "Sebutkan bumbu dapur pokok yang wajib ada di setiap masakan!",
+    "answers": [
+      "bawang merah",
+      "bawang putih",
+      "garam",
+      "gula",
+      "cabai",
+      "merica"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis bunga yang memiliki aroma sangat wangi!",
+    "answers": [
+      "melati",
+      "mawar",
+      "sedap malam",
+      "kamboja",
+      "kenanga",
+      "lavender"
+    ]
+  },
+  {
+    "prompt": "Sebutkan minuman yang mengandung kafein!",
+    "answers": [
+      "kopi",
+      "teh",
+      "minuman energi",
+      "soda",
+      "cokelat"
+    ]
+  },
+  {
+    "prompt": "Sebutkan alat transportasi udara yang ada di dunia!",
+    "answers": [
+      "pesawat",
+      "helikopter",
+      "balon udara",
+      "paralayang",
+      "jet"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis serangga yang sering mengganggu kenyamanan manusia!",
+    "answers": [
+      "nyamuk",
+      "lalat",
+      "kecoa",
+      "semut",
+      "lebah",
+      "rayap"
+    ]
+  },
+  {
+    "prompt": "Sebutkan perayaan hari besar keagamaan di Indonesia!",
+    "answers": [
+      "idul fitri",
+      "natal",
+      "nyepi",
+      "waisak",
+      "imlek",
+      "idul adha"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang biasa ditanyakan saat wawancara kerja!",
+    "answers": [
+      "pengalaman kerja",
+      "gaji yang diharapkan",
+      "kelebihan dan kelemahan",
+      "alasan melamar",
+      "pendidikan"
+    ]
+  },
+  {
+    "prompt": "Sebutkan makanan tradisional berbahan dasar singkong!",
+    "answers": [
+      "getuk",
+      "singkong goreng",
+      "tape",
+      "combro",
+      "misro",
+      "kripik singkong"
+    ]
+  },
+  {
+    "prompt": "Sebutkan aksesoris yang biasa dipakai wanita!",
+    "answers": [
+      "anting",
+      "kalung",
+      "gelang",
+      "cincin",
+      "jepit rambut",
+      "tas"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang bikin baterai HP cepat habis!",
+    "answers": [
+      "main game berat",
+      "kecerahan layar tinggi",
+      "sinyal lemah",
+      "hotspot aktif",
+      "buka kamera terus",
+      "baterai bocor"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hewan yang berjalan sangat lambat!",
+    "answers": [
+      "siput",
+      "kura-kura",
+      "kukang",
+      "koala"
+    ]
+  },
+  {
+    "prompt": "Sebutkan tempat orang biasa membeli obat!",
+    "answers": [
+      "apotek",
+      "toko obat",
+      "puskesmas",
+      "rumah sakit",
+      "minimarket"
+    ]
+  },
+  {
+    "prompt": "Sebutkan rasa susu kotak yang paling banyak dibeli anak-anak!",
+    "answers": [
+      "cokelat",
+      "stroberi",
+      "vanila",
+      "pisang",
+      "madu"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis saus yang biasa disediakan di gerai burger!",
+    "answers": [
+      "saus tomat",
+      "saus sambal",
+      "mayones",
+      "saus keju",
+      "barbeque"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang sering diunggah orang di status WhatsApp atau Instagram Story!",
+    "answers": [
+      "makanan",
+      "foto selfie",
+      "pemandangan",
+      "kata mutiara",
+      "lagu yang didengar",
+      "kegiatan"
+    ]
+  },
+  {
+    "prompt": "Sebutkan benda berbahan kaca yang mudah pecah di rumah!",
+    "answers": [
+      "gelas",
+      "piring",
+      "cermin",
+      "jendela",
+      "vas bunga",
+      "bohlam"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis kue kering yang wajib ada saat hari raya Lebaran!",
+    "answers": [
+      "nastar",
+      "kastengel",
+      "putri salju",
+      "lidah kucing",
+      "semprit"
+    ]
+  },
+  {
+    "prompt": "Sebutkan alasan orang rajin berolahraga!",
+    "answers": [
+      "ingin sehat",
+      "menurunkan berat badan",
+      "membentuk otot",
+      "menghilangkan stres",
+      "hobi"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis alat musik petik!",
+    "answers": [
+      "gitar",
+      "ukulele",
+      "bass",
+      "harpa",
+      "kecapi"
+    ]
+  },
+  {
+    "prompt": "Sebutkan alat kebersihan yang dipakai menyapu dan mengepel lantai!",
+    "answers": [
+      "sapu",
+      "pel",
+      "serokan sampah",
+      "ember pel",
+      "kemoceng"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang dilakukan orang saat merasa kedinginan!",
+    "answers": [
+      "pakai selimut",
+      "pakai jaket",
+      "minum air hangat",
+      "peluk bantal",
+      "matikan ac"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis olahan telur yang paling praktis dimasak!",
+    "answers": [
+      "telur dadar",
+      "telur ceplok",
+      "telur rebus",
+      "orak arik"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang menyebabkan orang batuk-batuk!",
+    "answers": [
+      "tersedak",
+      "minum es berlebih",
+      "kena asap rokok",
+      "debu",
+      "flu",
+      "masuk angin"
+    ]
+  },
+  {
+    "prompt": "Sebutkan bagian tubuh manusia yang ada di wajah!",
+    "answers": [
+      "mata",
+      "hidung",
+      "mulut",
+      "pipi",
+      "alis",
+      "dagu",
+      "dahi"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis alas kaki yang biasa dipakai orang!",
+    "answers": [
+      "sandal",
+      "sepatu",
+      "sepatu sandal",
+      "boots",
+      "heels"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis hewan yang hidup di perairan tawar!",
+    "answers": [
+      "ikan lele",
+      "ikan mas",
+      "ikan nila",
+      "udang",
+      "belut",
+      "gurame"
+    ]
+  },
+  {
+    "prompt": "Sebutkan benda yang menghasilkan bunyi atau suara kencang!",
+    "answers": [
+      "speaker",
+      "klakson",
+      "petasan",
+      "trompet",
+      "sirine",
+      "drum"
+    ]
+  },
+  {
+    "prompt": "Sebutkan apa yang dibawa orang saat berbelanja ke pasar tradisional!",
+    "answers": [
+      "uang tunai",
+      "kantong belanja",
+      "dompet",
+      "catatan belanja",
+      "payung"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis topping yang sering ditambahkan pada minuman boba!",
+    "answers": [
+      "boba tapioka",
+      "jelly",
+      "puding",
+      "cheese foam",
+      "oreo crumb",
+      "aloe vera"
+    ]
+  },
+  {
+    "prompt": "Sebutkan profesi yang memakai seragam dinas khusus saat bekerja!",
+    "answers": [
+      "polisi",
+      "tentara",
+      "pilot",
+      "perawat",
+      "satpam",
+      "pramugari",
+      "dokter"
+    ]
+  },
+  {
+    "prompt": "Sebutkan sayuran yang biasa dimasukkan ke dalam semangkuk sup ayam!",
+    "answers": [
+      "wortel",
+      "kentang",
+      "kol",
+      "daun bawang",
+      "seledri",
+      "buncis"
+    ]
+  },
+  {
+    "prompt": "Sebutkan nama-nama planet yang ada di tata surya kita!",
+    "answers": [
+      "merkurius",
+      "venus",
+      "bumi",
+      "mars",
+      "jupiter",
+      "saturnus",
+      "uranus",
+      "neptunus"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hewan mamalia berkaki empat yang memakan rumput!",
+    "answers": [
+      "sapi",
+      "kambing",
+      "kuda",
+      "kerbau",
+      "domba",
+      "rusa"
+    ]
+  },
+  {
+    "prompt": "Sebutkan perlengkapan yang wajib ada saat berkemah di alam bebas!",
+    "answers": [
+      "tenda",
+      "sleeping bag",
+      "senter",
+      "kompor portable",
+      "makanan kaleng",
+      "pisau lipat"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis sambal khas Nusantara yang paling populer!",
+    "answers": [
+      "sambal terasi",
+      "sambal bawang",
+      "sambal matah",
+      "sambal ijo",
+      "sambal dabu dabu",
+      "sambal tomat"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis genre film yang disukai penonton bioskop!",
+    "answers": [
+      "horor",
+      "komedi",
+      "aksi",
+      "romantis",
+      "animasi",
+      "sci-fi"
+    ]
+  },
+  {
+    "prompt": "Sebutkan alasan seseorang suka berbelanja online!",
+    "answers": [
+      "praktis",
+      "banyak promo",
+      "gratis ongkir",
+      "tidak perlu keluar rumah",
+      "pilihan banyak"
+    ]
+  },
+  {
+    "prompt": "Sebutkan perlengkapan rias kosmetik yang sering dipakai wanita!",
+    "answers": [
+      "lipstik",
+      "bedak",
+      "maskara",
+      "eyeliner",
+      "blush on",
+      "pensil alis"
+    ]
+  },
+  {
+    "prompt": "Sebutkan tempat rekreasi satwa yang sering dikunjungi keluarga!",
+    "answers": [
+      "kebun binatang",
+      "taman safari",
+      "akuarium raksasa"
+    ]
+  },
+  {
+    "prompt": "Sebutkan kegiatan yang biasa dilakukan orang sebelum berangkat tidur malam!",
+    "answers": [
+      "sikat gigi",
+      "cuci muka",
+      "berdoa",
+      "pasang alarm",
+      "matikan lampu",
+      "charge hp"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis pekerjaan di bidang teknologi dan komputer!",
+    "answers": [
+      "programmer",
+      "desainer grafis",
+      "data analyst",
+      "web developer",
+      "it support"
+    ]
+  },
+  {
+    "prompt": "Sebutkan buah yang rasanya masam atau asam segar!",
+    "answers": [
+      "lemon",
+      "jeruk nipis",
+      "mangga muda",
+      "kedondong",
+      "belimbing wuluh"
+    ]
+  },
+  {
+    "prompt": "Sebutkan alasan orang sering lupa membawa barang!",
+    "answers": [
+      "terburu-buru",
+      "banyak pikiran",
+      "mengantuk",
+      "teledor",
+      "panik"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hewan yang berkembang biak dengan cara bertelur!",
+    "answers": [
+      "ayam",
+      "bebek",
+      "burung",
+      "ular",
+      "ikan",
+      "penyu"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis minuman segar yang cocok diminum saat cuaca panas terik!",
+    "answers": [
+      "es kelapa muda",
+      "es teh",
+      "es jeruk",
+      "es campur",
+      "es buah",
+      "jus alpukat"
+    ]
+  },
+  {
+    "prompt": "Sebutkan peralatan makan yang ada di atas meja makan!",
+    "answers": [
+      "piring",
+      "sendok",
+      "garpu",
+      "gelas",
+      "mangkok",
+      "serbet"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hal yang dicari orang saat baterai HP-nya habis!",
+    "answers": [
+      "charger",
+      "colokan",
+      "powerbank",
+      "kabel data"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis game mobile yang sering dimainkan anak muda!",
+    "answers": [
+      "mobile legends",
+      "free fire",
+      "pubg",
+      "genshin impact",
+      "roblox"
+    ]
+  },
+  {
+    "prompt": "Sebutkan rasa popcorn atau keripik kentang selain asin!",
+    "answers": [
+      "manis",
+      "pedas",
+      "keju",
+      "rumput laut",
+      "barbeque"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis bumbu instan masakan yang sering dibeli ibu rumah tangga!",
+    "answers": [
+      "bumbu nasi goreng",
+      "bumbu rendang",
+      "bumbu ayam goreng",
+      "bumbu sayur sop",
+      "bumbu soto"
+    ]
+  },
+  {
+    "prompt": "Sebutkan alasan orang menyukai hewan kucing!",
+    "answers": [
+      "lucu",
+      "gemas",
+      "manja",
+      "bulunya lembut",
+      "bisa diajak main"
+    ]
+  },
+  {
+    "prompt": "Sebutkan jenis alat musik tiup!",
+    "answers": [
+      "terompet",
+      "suling",
+      "saksofon",
+      "harmonika",
+      "flute"
+    ]
+  },
+  {
+    "prompt": "Sebutkan tempat yang suasananya biasanya sangat hening dan tenang!",
+    "answers": [
+      "perpustakaan",
+      "tempat ibadah",
+      "kuburan",
+      "hutan",
+      "kamar tidur"
+    ]
+  },
+  {
+    "prompt": "Sebutkan hadiah ulang tahun yang paling umum diberikan!",
+    "answers": [
+      "kue ulang tahun",
+      "jam tangan",
+      "baju",
+      "sepatu",
+      "dompet",
+      "uang",
+      "buket bunga"
+    ]
+  }
+]
