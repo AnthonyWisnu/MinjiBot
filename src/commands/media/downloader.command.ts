@@ -186,7 +186,7 @@ async function handleYoutubeVideoDownloader(context: CommandContext): Promise<vo
     }
 
     await context.reply(
-      "Video YouTube sedang diproses (maks. 12 menit, 480p). Mohon tunggu...",
+      "Video YouTube sedang diproses (maks. 12 menit, hingga 720p 60fps). Mohon tunggu...",
     );
     const result = await downloaderService.downloadYoutube(url);
 
