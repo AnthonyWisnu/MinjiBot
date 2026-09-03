@@ -1,8 +1,88 @@
-# Plan 008 - Game Reward Integration
+# Plan 008A - Game Reward Integration (Quiz, Family100, Tebak Series)
 
 ## Status
 
-Planned
+Completed
+
+## Scope Note
+
+Plan 008 split into:
+- **008A** (this plan): Persistent game rewards for kuis, family100, tebakkata, tebakemoji, tebakangka. TicTacToe reward stripped from game.service.ts (in-memory reward removed), PvP design postponed to Plan 008B.
+- **008B** (next): TicTacToe full PvP redesign + persistent rewards.
+
+## Execution Evidence
+
+### Architecture Changes
+
+**Before:**
+- `GameService` was synchronous (all methods returned `string`)
+- In-memory `PlayerProfile`, `profilesByGroup` stored points and stats
+- `awardWin()`, `addGamesPlayed()` directly mutated in-memory state
+- Legacy `claimDaily()`, `getPoints()`, `getRank()` still present
+
+**After:**
+- `GameService` is fully async (`Promise<string>` returns)
+- No in-memory profile storage
+- All rewards go through `GameRewardService` -> `MemberEconomyService` -> Prisma
+- `claimDaily()`, `getPoints()`, `getRank()` removed (replaced by Plan 002-006)
+- `game.command.ts` updated to async `replyGame` pattern
+
+### Files Added
+
+- `src/services/game/gameReward.constants.ts` - Single source of truth for all reward values
+- `src/services/game/gameReward.service.ts` - Persistent reward service with idempotency
+
+### Files Modified
+
+- `src/services/game/game.service.ts` - Full rewrite: async, persistent rewards, roundId, session tracking
+- `src/commands/game/game.command.ts` - Async handler wrapper update
+- `src/services/member/memberEconomy.service.ts` - Add idempotencyKey to `recordGameResult`
+- `src/types/memberEconomy.ts` - Add idempotencyKey/correlationId to `RecordGameResultInput`
+- `tests/gameService.test.ts` - Rewrite to async, remove claimDaily test (replaced by Plan 004)
+
+### Reward Table Applied
+
+| Game | Result | Points | XP |
+|---|---|---:|---:|
+| Kuis | Correct | 100 | 40 |
+| Kuis | Wrong participation (once) | 0 | 5 |
+| Tebak Kata | Correct | 125 | 50 |
+| Tebak Kata | Surrender (wrong participants only) | 0 | 10 |
+| Tebak Emoji | Correct | 100 | 40 |
+| Tebak Emoji | Surrender (wrong participants only) | 0 | 10 |
+| Tebak Angka | Win attempt 1-3 | 200 | 80 |
+| Tebak Angka | Win attempt 4-7 | 150 | 60 |
+| Tebak Angka | Win attempt 8+ | 100 | 40 |
+| Family100 | Each correct answer | 75 | 30 |
+| Family100 | Final answer bonus | 50 | 20 |
+| Family100 | Cap per user per round | 450 pts / 180 XP | - |
+
+### Idempotency Key Format
+
+- Kuis correct: `game:kuis:<roundId>:<userJid>:correct`
+- Kuis wrong XP: `game:kuis:<roundId>:<userJid>:wrong-xp`
+- Family100 answer: `game:family100:<roundId>:<userJid>:answer:<normalizedAnswer>`
+- Family100 final bonus: `game:family100:<roundId>:<userJid>:final-bonus`
+- Game stat: `<above-key>:stat`
+
+### TicTacToe Status
+
+TicTacToe session logic intact (vs bot, playable), but all in-memory reward calls removed. No replacement reward. To be fully rewired in Plan 008B (PvP).
+
+### Validation Results
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 errors |
+| `npm run build` | 0 errors |
+| `npm run test` | 238 pass, 0 fail (+27 test baru) |
+
+### Commit
+
+See git log for SHA.
+
+
 
 ## Objective
 

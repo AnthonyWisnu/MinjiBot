@@ -1,4 +1,8 @@
+import { randomUUID } from "node:crypto";
+
 import type { CommandContext } from "../../types/command";
+import { type GameRewardService, gameRewardService } from "./gameReward.service";
+import { generateCorrelationId } from "../member/memberEconomy.service";
 
 type QuizType = "kuis" | "family100" | "tebakkata" | "tebakemoji" | "tebakangka";
 type TicTacToeCell = "X" | "O" | null;
@@ -6,7 +10,6 @@ type TicTacToeCell = "X" | "O" | null;
 interface Question {
   prompt: string;
   answers: string[];
-  reward: number;
 }
 
 interface QuizSession {
@@ -14,8 +17,19 @@ interface QuizSession {
   groupJid: string;
   startedBy: string;
   question: Question;
+  // Set of normalized answers already found (for family100 dedup and others).
   answered: Set<string>;
   createdAt: number;
+  roundId: string;
+  correlationId: string;
+  // Tebak angka: attempt count per user.
+  attemptsByUser: Map<string, number>;
+  // Wrong participation tracking: userJid -> XP already awarded.
+  wrongParticipants: Set<string>;
+  // Family100: per-user earned totals for cap enforcement.
+  family100EarnedByUser: Map<string, { points: number; xp: number }>;
+  // Track who answered which answer in family100 (for multi-answer tracking).
+  family100AnswererByAnswer: Map<string, string>;
   numberTarget?: number;
 }
 
@@ -24,13 +38,7 @@ interface TicTacToeSession {
   playerJid: string;
   board: TicTacToeCell[];
   createdAt: number;
-}
-
-interface PlayerProfile {
-  points: number;
-  wins: number;
-  gamesPlayed: number;
-  lastDailyKey?: string;
+  roundId: string;
 }
 
 const QUIZ_BANK: Record<Exclude<QuizType, "tebakangka">, Question[]> = {
@@ -38,48 +46,40 @@ const QUIZ_BANK: Record<Exclude<QuizType, "tebakangka">, Question[]> = {
     {
       prompt: "Apa ibu kota Indonesia?",
       answers: ["jakarta"],
-      reward: 10,
     },
     {
       prompt: "Planet apa yang paling dekat dengan matahari?",
       answers: ["merkurius", "mercury"],
-      reward: 10,
     },
   ],
   family100: [
     {
       prompt: "Sebutkan sesuatu yang biasanya ada di dapur.",
       answers: ["kompor", "panci", "wajan", "pisau", "sendok", "piring"],
-      reward: 5,
     },
     {
       prompt: "Sebutkan benda yang sering dibawa ke sekolah.",
       answers: ["tas", "buku", "pensil", "pulpen", "penghapus", "penggaris"],
-      reward: 5,
     },
   ],
   tebakkata: [
     {
       prompt: "Aku punya kunci tapi tidak punya pintu. Apakah aku?",
       answers: ["keyboard"],
-      reward: 10,
     },
     {
       prompt: "Kata acak: A M K A N. Susun menjadi kata yang benar.",
       answers: ["makan"],
-      reward: 10,
     },
   ],
   tebakemoji: [
     {
       prompt: "Tebak frasa ini: hujan + uang.",
       answers: ["hujan uang"],
-      reward: 10,
     },
     {
       prompt: "Tebak frasa ini: rumah + sakit.",
       answers: ["rumah sakit"],
-      reward: 10,
     },
   ],
 };
@@ -95,15 +95,24 @@ const WIN_LINES = [
   [2, 4, 6],
 ] as const;
 
-const DAILY_REWARD = 15;
 const SESSION_TTL_MS = 10 * 60 * 1000;
 
 export class GameService {
   private readonly quizSessions = new Map<string, QuizSession>();
   private readonly ticTacToeSessions = new Map<string, TicTacToeSession>();
-  private readonly profilesByGroup = new Map<string, Map<string, PlayerProfile>>();
+  private readonly quizBank: typeof QUIZ_BANK;
 
-  startOrAnswerQuiz(context: CommandContext, type: QuizType): string {
+  constructor(
+    private readonly rewardService: GameRewardService = gameRewardService,
+    private readonly randomInt: (min: number, max: number) => number = defaultRandomInt,
+    quizBankOverride?: Partial<typeof QUIZ_BANK>,
+  ) {
+    this.quizBank = quizBankOverride
+      ? { ...QUIZ_BANK, ...quizBankOverride }
+      : QUIZ_BANK;
+  }
+
+  async startOrAnswerQuiz(context: CommandContext, type: QuizType): Promise<string> {
     this.assertGroup(context);
     this.cleanupExpired(context.chatJid);
 
@@ -120,7 +129,7 @@ export class GameService {
       return this.startNumberGuess(context);
     }
 
-    const question = pickRandom(QUIZ_BANK[type]);
+    const question = pickRandom(this.quizBank[type]);
     this.quizSessions.set(context.chatJid, {
       type,
       groupJid: context.chatJid,
@@ -128,6 +137,12 @@ export class GameService {
       question,
       answered: new Set(),
       createdAt: Date.now(),
+      roundId: randomUUID(),
+      correlationId: generateCorrelationId(),
+      attemptsByUser: new Map(),
+      wrongParticipants: new Set(),
+      family100EarnedByUser: new Map(),
+      family100AnswererByAnswer: new Map(),
     });
 
     return [
@@ -139,14 +154,50 @@ export class GameService {
     ].join("\n");
   }
 
-  surrender(context: CommandContext): string {
+  async surrender(context: CommandContext): Promise<string> {
     this.assertGroup(context);
     this.cleanupExpired(context.chatJid);
 
     const quiz = this.quizSessions.get(context.chatJid);
     if (quiz) {
       this.quizSessions.delete(context.chatJid);
-      return `Game dihentikan.\nJawaban: ${quiz.question.answers.join(", ")}`;
+      const surrenderLines: string[] = [
+        "Game dihentikan.",
+        `Jawaban: ${quiz.question.answers.join(", ")}`,
+      ];
+
+      // Award surrender XP to wrong participants only (not family100 — their rewards already given).
+      if (quiz.type === "tebakkata" || quiz.type === "tebakemoji") {
+        const xpReceivers = [...quiz.wrongParticipants];
+        if (xpReceivers.length > 0) {
+          await Promise.allSettled(
+            xpReceivers.map((userJid) => {
+              if (quiz.type === "tebakkata") {
+                return this.rewardService.awardTebakKataSurrender(
+                  context.chatJid, userJid, quiz.roundId, quiz.correlationId,
+                );
+              }
+              return this.rewardService.awardTebakEmojiSurrender(
+                context.chatJid, userJid, quiz.roundId, quiz.correlationId,
+              );
+            }),
+          );
+        }
+      }
+
+      if (quiz.type === "family100") {
+        // Record game-played for all participants who earned anything.
+        const participants = [...quiz.family100EarnedByUser.keys()];
+        await Promise.allSettled(
+          participants.map((userJid) =>
+            this.rewardService.recordFamily100GamePlayed(
+              context.chatJid, userJid, quiz.roundId, quiz.correlationId,
+            ),
+          ),
+        );
+      }
+
+      return surrenderLines.join("\n");
     }
 
     const tictactoe = this.ticTacToeSessions.get(context.chatJid);
@@ -173,9 +224,9 @@ export class GameService {
         playerJid: context.senderUserJid,
         board: Array<TicTacToeCell>(9).fill(null),
         createdAt: Date.now(),
+        roundId: randomUUID(),
       };
       this.ticTacToeSessions.set(context.chatJid, session);
-      this.addGamesPlayed(context.chatJid, context.senderUserJid);
 
       return [
         "Tic tac toe dimulai.",
@@ -225,60 +276,9 @@ export class GameService {
     return ["Langkah diterima.", "", formatBoard(session.board)].join("\n");
   }
 
-  claimDaily(context: CommandContext): string {
-    this.assertGroup(context);
+  // ---- Private: quiz answer dispatch ----
 
-    const profile = this.getProfile(context.chatJid, context.senderUserJid);
-    const dailyKey = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Makassar",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date());
-
-    if (profile.lastDailyKey === dailyKey) {
-      return "Bonus harian sudah diambil hari ini.";
-    }
-
-    profile.lastDailyKey = dailyKey;
-    profile.points += DAILY_REWARD;
-
-    return `Bonus harian berhasil diambil.\nPoin bertambah: ${String(DAILY_REWARD)}\nTotal poin: ${String(profile.points)}`;
-  }
-
-  getPoints(context: CommandContext): string {
-    this.assertGroup(context);
-
-    const profile = this.getProfile(context.chatJid, context.senderUserJid);
-    return formatProfile(context.senderUserJid, profile);
-  }
-
-  getProfileText(context: CommandContext): string {
-    return this.getPoints(context);
-  }
-
-  getRank(context: CommandContext): string {
-    this.assertGroup(context);
-
-    const profiles = this.profilesByGroup.get(context.chatJid);
-    if (!profiles || profiles.size === 0) {
-      return "Belum ada poin game di grup ini.";
-    }
-
-    const lines = ["[RANK GAME]", ""];
-    [...profiles.entries()]
-      .sort(([, left], [, right]) => right.points - left.points)
-      .slice(0, 10)
-      .forEach(([jid, profile], index) => {
-        lines.push(`${String(index + 1)}. ${jid}`);
-        lines.push(`   Poin: ${String(profile.points)}`);
-        lines.push(`   Menang: ${String(profile.wins)}`);
-      });
-
-    return lines.join("\n");
-  }
-
-  private answerQuiz(context: CommandContext, type: QuizType, answerText: string): string {
+  private async answerQuiz(context: CommandContext, type: QuizType, answerText: string): Promise<string> {
     const session = this.quizSessions.get(context.chatJid);
     if (!session) {
       return `Belum ada ${formatGameName(type)} aktif. Gunakan .${type} untuk mulai.`;
@@ -298,30 +298,137 @@ export class GameService {
     );
 
     if (!matchedAnswer) {
+      // Wrong answer: award XP once per user per round.
+      if (!session.wrongParticipants.has(context.senderUserJid)) {
+        session.wrongParticipants.add(context.senderUserJid);
+        if (type === "kuis") {
+          await this.rewardService.awardKuisWrongParticipation(
+            context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
+          );
+        }
+        // tebakkata and tebakemoji wrong XP given at surrender/end, tracked via wrongParticipants.
+      }
       return "Jawaban belum benar. Coba lagi.";
     }
 
+    // Family100 allows multiple correct answers.
+    if (type === "family100") {
+      return this.answerFamily100(context, session, normalizedAnswer);
+    }
+
+    // Single-answer quiz: answer already found by someone else?
     if (session.answered.has(normalizedAnswer)) {
       return "Jawaban itu sudah ditemukan.";
     }
 
     session.answered.add(normalizedAnswer);
-    this.awardWin(context.chatJid, context.senderUserJid, session.question.reward);
 
-    if (session.type !== "family100" || session.answered.size >= session.question.answers.length) {
+    // Award correct answer.
+    let reward: { points: number; xp: number };
+    if (type === "kuis") {
+      reward = await this.rewardService.awardKuisCorrect(
+        context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
+      );
+    } else if (type === "tebakkata") {
+      reward = await this.rewardService.awardTebakKataCorrect(
+        context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
+      );
+    } else {
+      reward = await this.rewardService.awardTebakEmojiCorrect(
+        context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
+      );
+    }
+
+    this.quizSessions.delete(context.chatJid);
+
+    return [
+      "Benar.",
+      `Poin bertambah: ${String(reward.points)}`,
+      `XP bertambah: ${String(reward.xp)}`,
+      "Game selesai.",
+    ].join("\n");
+  }
+
+  private async answerFamily100(
+    context: CommandContext,
+    session: QuizSession,
+    normalizedAnswer: string,
+  ): Promise<string> {
+    if (session.answered.has(normalizedAnswer)) {
+      return "Jawaban itu sudah ditemukan.";
+    }
+
+    session.answered.add(normalizedAnswer);
+    session.family100AnswererByAnswer.set(normalizedAnswer, context.senderUserJid);
+
+    const earned = session.family100EarnedByUser.get(context.senderUserJid) ?? { points: 0, xp: 0 };
+    const result = await this.rewardService.awardFamily100Answer(
+      context.chatJid,
+      context.senderUserJid,
+      session.roundId,
+      normalizedAnswer,
+      session.correlationId,
+      earned.points,
+      earned.xp,
+    );
+
+    session.family100EarnedByUser.set(context.senderUserJid, {
+      points: earned.points + result.points,
+      xp: earned.xp + result.xp,
+    });
+
+    const isLastAnswer = session.answered.size >= session.question.answers.length;
+
+    if (isLastAnswer) {
+      // Award final bonus to this user.
+      const updatedEarned = session.family100EarnedByUser.get(context.senderUserJid) ?? { points: 0, xp: 0 };
+      const bonusResult = await this.rewardService.awardFamily100FinalBonus(
+        context.chatJid,
+        context.senderUserJid,
+        session.roundId,
+        session.correlationId,
+        updatedEarned.points,
+        updatedEarned.xp,
+      );
+
+      // Record game-played for all participants.
+      const participants = [...session.family100EarnedByUser.keys()];
+      await Promise.allSettled(
+        participants.map((userJid) =>
+          this.rewardService.recordFamily100GamePlayed(
+            context.chatJid, userJid, session.roundId, session.correlationId,
+          ),
+        ),
+      );
+
       this.quizSessions.delete(context.chatJid);
-      return `Benar.\nPoin bertambah: ${String(session.question.reward)}\nGame selesai.`;
+
+      const bonusLines = bonusResult.capped
+        ? ["Bonus jawaban terakhir tidak diterima (cap sudah penuh)."]
+        : [`Bonus jawaban terakhir: ${String(bonusResult.points)} poin, ${String(bonusResult.xp)} XP`];
+
+      return [
+        "Benar.",
+        result.capped
+          ? "Reward tidak diterima (cap sudah penuh)."
+          : `Poin bertambah: ${String(result.points)}, XP: ${String(result.xp)}`,
+        ...bonusLines,
+        `Terjawab: ${String(session.answered.size)}/${String(session.question.answers.length)}`,
+        "Game selesai.",
+      ].join("\n");
     }
 
     return [
       "Benar.",
-      `Poin bertambah: ${String(session.question.reward)}`,
+      result.capped
+        ? "Reward tidak diterima (cap sudah penuh)."
+        : `Poin bertambah: ${String(result.points)}, XP: ${String(result.xp)}`,
       `Terjawab: ${String(session.answered.size)}/${String(session.question.answers.length)}`,
     ].join("\n");
   }
 
   private startNumberGuess(context: CommandContext): string {
-    const target = Math.floor(Math.random() * 20) + 1;
+    const target = this.randomInt(1, 20);
     this.quizSessions.set(context.chatJid, {
       type: "tebakangka",
       groupJid: context.chatJid,
@@ -329,35 +436,54 @@ export class GameService {
       question: {
         prompt: "Tebak angka dari 1 sampai 20.",
         answers: [String(target)],
-        reward: 10,
       },
       answered: new Set(),
       createdAt: Date.now(),
+      roundId: randomUUID(),
+      correlationId: generateCorrelationId(),
+      attemptsByUser: new Map(),
+      wrongParticipants: new Set(),
+      family100EarnedByUser: new Map(),
+      family100AnswererByAnswer: new Map(),
       numberTarget: target,
     });
 
     return "Game dimulai: tebak angka.\nTebak angka dari 1 sampai 20.\nGunakan .tebakangka <angka>.";
   }
 
-  private answerNumberGuess(
+  private async answerNumberGuess(
     context: CommandContext,
     session: QuizSession,
     answerText: string,
-  ): string {
+  ): Promise<string> {
     const guess = Number(answerText);
     const target = session.numberTarget;
     if (!Number.isInteger(guess) || !target) {
       return "Jawaban harus berupa angka.";
     }
 
+    // Track attempts for this user.
+    const prev = session.attemptsByUser.get(context.senderUserJid) ?? 0;
+    const attempts = prev + 1;
+    session.attemptsByUser.set(context.senderUserJid, attempts);
+    session.wrongParticipants.add(context.senderUserJid);
+
     if (guess !== target) {
       return guess < target ? "Terlalu kecil." : "Terlalu besar.";
     }
 
+    // Correct: award tiered reward.
     this.quizSessions.delete(context.chatJid);
-    this.awardWin(context.chatJid, context.senderUserJid, session.question.reward);
+    const reward = await this.rewardService.awardTebakAngkaCorrect(
+      context.chatJid, context.senderUserJid, session.roundId, attempts, session.correlationId,
+    );
 
-    return `Benar. Angkanya ${String(target)}.\nPoin bertambah: ${String(session.question.reward)}`;
+    return [
+      `Benar. Angkanya ${String(target)}.`,
+      `Percobaan ke-${String(attempts)}.`,
+      `Poin bertambah: ${String(reward.points)}`,
+      `XP bertambah: ${String(reward.xp)}`,
+    ].join("\n");
   }
 
   private resolveTicTacToeResult(
@@ -369,8 +495,7 @@ export class GameService {
       this.ticTacToeSessions.delete(context.chatJid);
 
       if (mark === "X") {
-        this.awardWin(context.chatJid, context.senderUserJid, 15);
-        return ["Kamu menang.", "Poin bertambah: 15", "", formatBoard(session.board)].join("\n");
+        return ["Kamu menang.", "", formatBoard(session.board)].join("\n");
       }
 
       return ["Bot menang.", "", formatBoard(session.board)].join("\n");
@@ -382,38 +507,6 @@ export class GameService {
     }
 
     return null;
-  }
-
-  private awardWin(groupJid: string, userJid: string, points: number): void {
-    const profile = this.getProfile(groupJid, userJid);
-    profile.points += points;
-    profile.wins += 1;
-    profile.gamesPlayed += 1;
-  }
-
-  private addGamesPlayed(groupJid: string, userJid: string): void {
-    const profile = this.getProfile(groupJid, userJid);
-    profile.gamesPlayed += 1;
-  }
-
-  private getProfile(groupJid: string, userJid: string): PlayerProfile {
-    let groupProfiles = this.profilesByGroup.get(groupJid);
-    if (!groupProfiles) {
-      groupProfiles = new Map();
-      this.profilesByGroup.set(groupJid, groupProfiles);
-    }
-
-    let profile = groupProfiles.get(userJid);
-    if (!profile) {
-      profile = {
-        points: 0,
-        wins: 0,
-        gamesPlayed: 0,
-      };
-      groupProfiles.set(userJid, profile);
-    }
-
-    return profile;
   }
 
   private cleanupExpired(groupJid: string): void {
@@ -435,6 +528,8 @@ export class GameService {
     }
   }
 }
+
+// ---- Pure helpers (no side effects) ----
 
 function pickRandom<T>(items: readonly T[]): T {
   const item = items[Math.floor(Math.random() * items.length)];
@@ -467,17 +562,6 @@ function answerHint(type: QuizType): string {
   return `Jawab dengan .${type} <jawaban>.`;
 }
 
-function formatProfile(userJid: string, profile: PlayerProfile): string {
-  return [
-    "[PROFIL GAME]",
-    "",
-    `User: ${userJid}`,
-    `Poin: ${String(profile.points)}`,
-    `Menang: ${String(profile.wins)}`,
-    `Main: ${String(profile.gamesPlayed)}`,
-  ].join("\n");
-}
-
 function formatBoard(board: TicTacToeCell[]): string {
   const cells = board.map((cell, index) => cell ?? String(index + 1));
 
@@ -498,6 +582,10 @@ function chooseBotMove(board: TicTacToeCell[]): number {
 
 function hasWinner(board: TicTacToeCell[], mark: Exclude<TicTacToeCell, null>): boolean {
   return WIN_LINES.some((line) => line.every((index) => board[index] === mark));
+}
+
+function defaultRandomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 export const gameService = new GameService();
