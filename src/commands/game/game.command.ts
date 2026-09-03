@@ -29,7 +29,7 @@ export const gameCommands: CommandDefinition[] = [
   },
   {
     name: "tictactoe",
-    execute: (context) => replyGame(context, () => Promise.resolve(gameService.playTicTacToe(context))),
+    execute: (context) => replyGame(context, () => gameService.playTicTacToe(context)),
   },
   {
     name: "nyerah",
