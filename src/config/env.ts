@@ -40,6 +40,7 @@ const envSchema = z.object({
   REMINDER_POLL_MS: z.coerce.number().int().positive(),
   FFMPEG_PATH: optionalPathSchema,
   AI_UPSCALE_BIN: optionalPathSchema,
+  GALLERY_DL_BIN: z.string().default("gallery-dl"),
 });
 
 export type Env = z.infer<typeof envSchema>;

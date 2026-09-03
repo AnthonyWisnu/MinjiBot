@@ -4,6 +4,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import ffmpegStatic from "ffmpeg-static";
+import sharp from "sharp";
 
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
@@ -186,35 +187,40 @@ export class DownloaderService {
     const tempDir = await createTempDir("ig-download");
 
     try {
-      const args = [
-        "--no-warnings",
-        "--max-filesize",
-        `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
-        "--playlist-items",
-        "1-10",
-        "--merge-output-format",
-        "mp4",
-        "--remux-video",
-        "mp4",
-        "--concurrent-fragments",
-        "4",
-        "--add-header",
-        `User-Agent:${DEFAULT_USER_AGENT}`,
-        "-f",
-        MOBILE_SAFE_FORMAT,
-        "-o",
-        path.join(tempDir, "item-%(playlist_index)s.%(ext)s"),
-      ];
+      let items: DownloadedMediaItem[] = [];
+      const isReel = url.toLowerCase().includes("/reel/");
 
-      const cookiesPath = env.INSTAGRAM_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
-      if (cookiesPath && existsSync(cookiesPath)) {
-        args.push("--cookies", cookiesPath);
+      if (isReel) {
+        // Reels diproses via yt-dlp terlebih dahulu
+        try {
+          await this.runYtDlpInstagram(url, tempDir);
+          items = await scanDownloadedMediaFiles(tempDir);
+        } catch (ytErr) {
+          logger.warn({ ytErr, url }, "yt-dlp gagal download reel, mencoba fallback gallery-dl");
+          await this.runGalleryDl(url, tempDir);
+          items = await scanDownloadedMediaFiles(tempDir);
+        }
+      } else {
+        // Foto tunggal, carousel slide, atau post foto/video:
+        // Gunakan gallery-dl terlebih dahulu karena yt-dlp tidak men-download foto
+        try {
+          await this.runGalleryDl(url, tempDir);
+          items = await scanDownloadedMediaFiles(tempDir);
+        } catch (gdlErr) {
+          logger.warn({ gdlErr, url }, "gallery-dl gagal, mencoba fallback yt-dlp");
+        }
+
+        // Jika gallery-dl tidak menghasilkan media (misal video post), coba yt-dlp
+        if (items.length === 0) {
+          try {
+            await this.runYtDlpInstagram(url, tempDir);
+            items = await scanDownloadedMediaFiles(tempDir);
+          } catch (ytErr) {
+            logger.warn({ ytErr, url }, "yt-dlp fallback juga gagal");
+          }
+        }
       }
 
-      args.push(url);
-      await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
-
-      const items = await scanDownloadedMediaFiles(tempDir);
       if (items.length === 0) {
         throw new Error("Tidak ada media yang berhasil diunduh.");
       }
@@ -350,28 +356,68 @@ export class DownloaderService {
       await removeTempDir(tempDir);
     }
   }
+
+  private async runYtDlpInstagram(url: string, tempDir: string): Promise<void> {
+    const args = [
+      "--no-warnings",
+      "--max-filesize",
+      `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
+      "--playlist-items",
+      "1-10",
+      "--merge-output-format",
+      "mp4",
+      "--remux-video",
+      "mp4",
+      "--concurrent-fragments",
+      "4",
+      "--add-header",
+      `User-Agent:${DEFAULT_USER_AGENT}`,
+      "-f",
+      MOBILE_SAFE_FORMAT,
+      "-o",
+      path.join(tempDir, "item-%(playlist_index)s.%(ext)s"),
+    ];
+
+    const cookiesPath = env.INSTAGRAM_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
+    if (cookiesPath && existsSync(cookiesPath)) {
+      args.push("--cookies", cookiesPath);
+    }
+
+    args.push(url);
+    await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+  }
+
+  private async runGalleryDl(url: string, tempDir: string): Promise<void> {
+    const args: string[] = [
+      "--range",
+      "1-10",
+      "--no-mtime",
+      "-D",
+      tempDir,
+    ];
+
+    const cookiesPath = env.INSTAGRAM_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
+    if (cookiesPath && existsSync(cookiesPath)) {
+      args.push("--cookies", cookiesPath);
+    }
+
+    args.push(url);
+    await runProcess(env.GALLERY_DL_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+  }
 }
 
 async function scanDownloadedMediaFiles(tempDir: string): Promise<DownloadedMediaItem[]> {
-  const entries = (await readdir(tempDir))
-    .filter(
-      (e) =>
-        !e.endsWith(".part") &&
-        !e.endsWith(".ytdl") &&
-        !e.endsWith(".json") &&
-        !e.startsWith("remuxed") &&
-        !e.startsWith("normalized"),
-    )
-    .sort();
-
+  const filePaths = await findMediaFilesRecursive(tempDir);
   const items: DownloadedMediaItem[] = [];
-  for (const entry of entries) {
-    const filePath = path.join(tempDir, entry);
-    const ext = path.extname(entry).toLowerCase();
+
+  for (const filePath of filePaths) {
+    const ext = path.extname(filePath).toLowerCase();
 
     if (VIDEO_EXTS.has(ext)) {
-      const remuxedPath = path.join(tempDir, `${entry}.remuxed.mp4`);
-      const normalizedPath = path.join(tempDir, `${entry}.normalized.mp4`);
+      const parentDir = path.dirname(filePath);
+      const baseName = path.basename(filePath, ext);
+      const remuxedPath = path.join(parentDir, `${baseName}.remuxed.mp4`);
+      const normalizedPath = path.join(parentDir, `${baseName}.normalized.mp4`);
       const finalPath = await prepareMobileVideo(filePath, remuxedPath, normalizedPath);
       items.push({
         buffer: await readFile(finalPath),
@@ -380,21 +426,49 @@ async function scanDownloadedMediaFiles(tempDir: string): Promise<DownloadedMedi
         fileName: "minjibot-ig.mp4",
       });
     } else if (IMAGE_EXTS.has(ext)) {
-      const mimeMap: Record<string, string> = {
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".png": "image/png",
-        ".webp": "image/webp",
-      };
+      let imgBuffer = await readFile(filePath);
+      let mime = "image/jpeg";
+      let outExt = ".jpg";
+
+      if (ext === ".webp") {
+        imgBuffer = Buffer.from(await sharp(imgBuffer).jpeg({ quality: 95 }).toBuffer());
+      } else if (ext === ".png") {
+        mime = "image/png";
+        outExt = ".png";
+      }
+
       items.push({
-        buffer: await readFile(filePath),
+        buffer: imgBuffer,
         mediaType: "image",
-        mimetype: mimeMap[ext] ?? "image/jpeg",
-        fileName: `minjibot-ig${ext}`,
+        mimetype: mime,
+        fileName: `minjibot-ig${outExt}`,
       });
     }
   }
   return items;
+}
+
+async function findMediaFilesRecursive(dir: string): Promise<string[]> {
+  const results: string[] = [];
+  const entries = await readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...(await findMediaFilesRecursive(fullPath)));
+    } else if (
+      entry.isFile() &&
+      !entry.name.endsWith(".part") &&
+      !entry.name.endsWith(".ytdl") &&
+      !entry.name.endsWith(".json") &&
+      !entry.name.includes(".remuxed") &&
+      !entry.name.includes(".normalized")
+    ) {
+      results.push(fullPath);
+    }
+  }
+
+  return results.sort();
 }
 
 async function findFirstDownloadedFile(tempDir: string, prefix: string): Promise<string> {
