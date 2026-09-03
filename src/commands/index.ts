@@ -2,6 +2,8 @@ import { logger } from "../config/logger";
 import type { CommandContext, CommandDefinition } from "../types/command";
 import { afkCommands } from "./afk/afk.command";
 import { gameCommands } from "./game/game.command";
+import { dailyCommand } from "./member/daily.command";
+import { limitPurchaseCommand } from "./member/limitPurchase.command";
 import { downloaderCommands } from "./media/downloader.command";
 import { hdAiCommands } from "./media/hdai.command";
 import { hdCommands } from "./media/hd.command";
@@ -87,4 +89,6 @@ export const commandRouter = new CommandRouter([
   ...reminderCommands,
   ...tagAllCommands,
   ...gameCommands,
+  dailyCommand,
+  limitPurchaseCommand,
 ]);
