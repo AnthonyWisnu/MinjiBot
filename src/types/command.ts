@@ -10,6 +10,10 @@ export interface QuotedMessageContext {
   message?: WAMessageContent;
 }
 
+export interface ReplyOptions {
+  mentions?: string[];
+}
+
 export interface CommandContext {
   socket: WASocket;
   message: WAMessage;
@@ -26,7 +30,7 @@ export interface CommandContext {
   role: Role;
   tenantGroup?: TenantGroup;
   quoted?: QuotedMessageContext;
-  reply: (text: string) => Promise<void>;
+  reply: (text: string, options?: ReplyOptions) => Promise<void>;
 }
 
 export interface CommandDefinition {
