@@ -19,10 +19,6 @@ export const menuCommands: CommandDefinition[] = [
     execute: handleFeatureMenu,
   },
   {
-    name: "quotamenu",
-    execute: handleQuotaMenu,
-  },
-  {
     name: "whoami",
     execute: handleWhoami,
   },
@@ -54,14 +50,6 @@ async function handleFeatureMenu(context: CommandContext): Promise<void> {
   }
 
   await context.reply(menuService.buildFeatureMenu());
-}
-
-async function handleQuotaMenu(context: CommandContext): Promise<void> {
-  if (!(await ensureSuperOwner(context))) {
-    return;
-  }
-
-  await context.reply(menuService.buildQuotaMenu());
 }
 
 async function handleWhoami(context: CommandContext): Promise<void> {

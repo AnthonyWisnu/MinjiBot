@@ -1,4 +1,4 @@
-import type { TenantGroup, TenantOwnerQuota } from "@prisma/client";
+import type { TenantGroup } from "@prisma/client";
 
 import {
   superOwnerTenantService,
@@ -72,25 +72,23 @@ async function handleActivateTenant(context: CommandContext): Promise<void> {
     return;
   }
 
-  const [selector, ownerNumber, durationText, quotaText] = context.args;
-  if (!selector || !ownerNumber || !durationText || !quotaText) {
+  const [selector, ownerNumber, durationText] = context.args;
+  if (!selector || !ownerNumber || !durationText) {
     await context.reply(
-      "Format command salah.\nGunakan: .activatetenant <nomorList/kode> <nomorOwner> <durasi> <quota>",
+      "Format command salah.\nGunakan: .activatetenant <nomorList/kode> <nomorOwner> <durasi>",
     );
     return;
   }
 
-  const initialQuota = parseNonNegativeInteger(quotaText, "Kuota awal");
   const ownerJid = normalizeUserJid(ownerNumber);
   const result = await superOwnerTenantService.activateTenant({
     selector,
     ownerJid,
     durationText,
-    initialQuota,
     actorJid: context.senderUserJid,
   });
 
-  await context.reply(formatActivatedTenant(result.tenantGroup, result.ownerQuota));
+  await context.reply(formatActivatedTenant(result.tenantGroup));
 }
 
 async function handleListTenant(context: CommandContext): Promise<void> {
@@ -125,7 +123,7 @@ async function handleTenantInfo(context: CommandContext): Promise<void> {
     }
 
     const result = await superOwnerTenantService.getTenantInfo(tenantCode);
-    await context.reply(formatTenantInfo(result.tenantGroup, result.ownerQuota));
+    await context.reply(formatTenantInfo(result.tenantGroup));
   } catch (error: unknown) {
     await context.reply(formatTenantCommandError(error));
   }
@@ -262,15 +260,6 @@ async function ensureSuperOwner(context: CommandContext): Promise<boolean> {
   return false;
 }
 
-function parseNonNegativeInteger(value: string, label: string): number {
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0) {
-    throw new Error(`${label} harus berupa angka nol atau lebih.`);
-  }
-
-  return parsed;
-}
-
 function parseTenantListFilter(value: string | undefined): TenantListFilter {
   if (!value) {
     return "visible";
@@ -336,7 +325,7 @@ function formatTenantList(groups: TenantGroup[], title: string): string {
   return lines.join("\n").trim();
 }
 
-function formatActivatedTenant(tenantGroup: TenantGroup, ownerQuota: TenantOwnerQuota): string {
+function formatActivatedTenant(tenantGroup: TenantGroup): string {
   return [
     "Tenant berhasil diaktifkan.",
     "",
@@ -344,11 +333,10 @@ function formatActivatedTenant(tenantGroup: TenantGroup, ownerQuota: TenantOwner
     `Kode: ${tenantGroup.tenantCode}`,
     `Tenant Owner: ${formatNullableText(tenantGroup.ownerJid)}`,
     `Masa aktif sampai: ${formatDateId(tenantGroup.expiresAt)}`,
-    `Kuota fitur berat owner: ${String(ownerQuota.remainingQuota)}`,
   ].join("\n");
 }
 
-function formatTenantInfo(tenantGroup: TenantGroup, ownerQuota: TenantOwnerQuota | null): string {
+function formatTenantInfo(tenantGroup: TenantGroup): string {
   return [
     "[INFO TENANT]",
     "",
@@ -358,7 +346,5 @@ function formatTenantInfo(tenantGroup: TenantGroup, ownerQuota: TenantOwnerQuota
     `Diblokir: ${tenantGroup.isBlocked ? "ya" : "tidak"}`,
     `Tenant Owner: ${formatNullableText(tenantGroup.ownerJid)}`,
     `Masa aktif sampai: ${formatDateId(tenantGroup.expiresAt)}`,
-    `Kuota tersisa owner: ${ownerQuota ? String(ownerQuota.remainingQuota) : "-"}`,
-    `Kuota direservasi owner: ${ownerQuota ? String(ownerQuota.reservedQuota) : "-"}`,
   ].join("\n");
 }

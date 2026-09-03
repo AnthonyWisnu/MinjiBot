@@ -18,7 +18,6 @@ import { menuCommands } from "./menu.command";
 import { antiLinkCommands } from "./moderation/antiLink.command";
 import { antiSpamCommands } from "./moderation/antiSpam.command";
 import { manualModerationCommands } from "./moderation/manualModeration.command";
-import { quotaCommands } from "./quota/quota.command";
 import { reminderCommands } from "./reminder/reminder.command";
 import { tagAllCommands } from "./tagall/tagAll.command";
 import { tenantAdminCommands } from "./tenant/tenantAdmin.command";
@@ -77,7 +76,6 @@ export const commandRouter = new CommandRouter([
   ...tenantOwnerCommands,
   ...transferOwnerCommands,
   ...tenantAdminCommands,
-  ...quotaCommands,
   ...tenantFeatureCommands,
   ...afkCommands,
   ...hdCommands,

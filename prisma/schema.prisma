@@ -15,22 +15,6 @@ enum TenantStatus {
   REMOVED
 }
 
-enum TenantQuotaTransactionType {
-  ADD
-  SET
-  RESERVE
-  CONSUME
-  REFUND
-  CORRECTION
-}
-
-enum TenantQuotaSource {
-  SUPER_OWNER
-  GROUP_COMMAND
-  PRIVATE_COMMAND
-  SYSTEM
-}
-
 enum HeavyFeatureType {
   TIKTOK_DOWNLOAD
   INSTAGRAM_REELS_DOWNLOAD
@@ -53,11 +37,6 @@ enum TenantAuditAction {
   TENANT_ADMIN_ADDED
   TENANT_ADMIN_REMOVED
   FEATURE_UPDATED
-  QUOTA_ADDED
-  QUOTA_SET
-  QUOTA_RESERVED
-  QUOTA_CONSUMED
-  QUOTA_REFUNDED
   WELCOME_UPDATED
   MODERATION_UPDATED
   REMINDER_CREATED
@@ -166,43 +145,6 @@ model TenantGroupSetting {
   tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
 }
 
-model TenantOwnerQuota {
-  id              String   @id @default(cuid())
-  ownerJid        String   @unique
-  remainingQuota  Int      @default(0)
-  reservedQuota   Int      @default(0)
-  totalAddedQuota Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  transactions TenantQuotaTransaction[]
-
-  @@index([ownerJid])
-}
-
-model TenantQuotaTransaction {
-  id            String                     @id @default(cuid())
-  ownerJid      String
-  groupJid      String?
-  actorJid      String?
-  amount        Int
-  type          TenantQuotaTransactionType
-  source        TenantQuotaSource
-  feature       HeavyFeatureType?
-  note          String?
-  correlationId String?
-  createdAt     DateTime                   @default(now())
-
-  ownerQuota TenantOwnerQuota @relation(fields: [ownerJid], references: [ownerJid], onDelete: Cascade)
-
-  @@index([ownerJid])
-  @@index([groupJid])
-  @@index([actorJid])
-  @@index([type])
-  @@index([feature])
-  @@index([createdAt])
-  @@index([correlationId])
-}
 
 model TenantPrivateSession {
   id        String    @id @default(cuid())

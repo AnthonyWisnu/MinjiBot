@@ -21,7 +21,7 @@ export class MenuService {
       "",
       "[TENANT]",
       ".pendinggroup",
-      ".activatetenant <nomorList/kode> <nomorOwner> <durasi> <quota>",
+      ".activatetenant <nomorList/kode> <nomorOwner> <durasi>",
       ".listtenant",
       ".tenantinfo <kode>",
       ".extendtenant <kode> <durasi>",
@@ -30,15 +30,8 @@ export class MenuService {
       ".unblocktenant <kode>",
       ".removetenant <kode>",
       "",
-      "[KUOTA OWNER]",
-      ".addquota <nomorOwner> <jumlah>",
-      ".setownerquota <nomorOwner> <jumlah>",
-      ".ownerquota <nomorOwner>",
-      ".listownerquota",
-      "",
       "[MENU]",
       ".tenantmenu",
-      ".quotamenu",
       ".featuremenu",
       ".menu",
     ].join("\n");
@@ -84,7 +77,7 @@ export class MenuService {
       ".hdai doc",
       "",
       "[INFO]",
-      ".quota",
+      ".profile",
       ".menu",
     ].join("\n");
   }
@@ -111,24 +104,6 @@ export class MenuService {
       ".feature tagall off",
       ".feature game on",
       ".feature game off",
-    ].join("\n");
-  }
-
-  buildQuotaMenu(): string {
-    return [
-      "[MENU KUOTA]",
-      "",
-      "[SUPER OWNER]",
-      ".addquota <nomorOwner> <jumlah>",
-      ".setownerquota <nomorOwner> <jumlah>",
-      ".ownerquota <nomorOwner>",
-      ".listownerquota",
-      "",
-      "[TENANT OWNER]",
-      ".quota",
-      "",
-      "[GRUP]",
-      ".quota",
     ].join("\n");
   }
 
@@ -198,7 +173,6 @@ export class MenuService {
       ".ownermenu",
       ".tenantmenu",
       ".featuremenu",
-      ".quotamenu",
     ].join("\n");
   }
 
@@ -266,7 +240,7 @@ export class MenuService {
       "[INFO]",
       ".status",
       ".tenantstatus",
-      ".quota",
+      ".profile",
       ".menu",
     ].join("\n");
   }

@@ -1,10 +1,7 @@
 import {
   TenantAuditAction,
-  TenantQuotaSource,
-  TenantQuotaTransactionType,
   TenantStatus,
   type TenantGroup,
-  type TenantOwnerQuota,
 } from "@prisma/client";
 
 import { prisma } from "../../repositories/prismaClient";
@@ -12,25 +9,21 @@ import { TenantAuditRepository } from "../../repositories/tenantAudit.repository
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSetting.repository";
-import { TenantQuotaRepository } from "../../repositories/tenantQuota.repository";
 import { addDuration, parseDateOnly } from "../../utils/time";
 
 export interface ActivateTenantInput {
   selector: string;
   ownerJid: string;
   durationText: string;
-  initialQuota: number;
   actorJid: string;
 }
 
 export interface ActivatedTenantResult {
   tenantGroup: TenantGroup;
-  ownerQuota: TenantOwnerQuota;
 }
 
 export interface TenantInfoResult {
   tenantGroup: TenantGroup;
-  ownerQuota: TenantOwnerQuota | null;
 }
 
 export type TenantListFilter = "visible" | "all" | "removed";
@@ -38,7 +31,6 @@ export type TenantListFilter = "visible" | "all" | "removed";
 export class SuperOwnerTenantService {
   constructor(
     private readonly tenantGroupRepository = new TenantGroupRepository(),
-    private readonly tenantQuotaRepository = new TenantQuotaRepository(),
   ) {}
 
   listPendingGroups(): Promise<TenantGroup[]> {
@@ -59,18 +51,10 @@ export class SuperOwnerTenantService {
 
   async getTenantInfo(tenantCode: string): Promise<TenantInfoResult> {
     const tenantGroup = await this.findTenantByCodeOrThrow(tenantCode);
-    const ownerQuota = tenantGroup.ownerJid
-      ? await this.tenantQuotaRepository.findByOwnerJid(tenantGroup.ownerJid)
-      : null;
-
-    return { tenantGroup, ownerQuota };
+    return { tenantGroup };
   }
 
   async activateTenant(input: ActivateTenantInput): Promise<ActivatedTenantResult> {
-    if (input.initialQuota < 0) {
-      throw new Error("Kuota awal tidak boleh negatif.");
-    }
-
     const pendingTenant = await this.resolvePendingTenant(input.selector);
     const expiresAt = addDuration(new Date(), input.durationText);
 
@@ -95,43 +79,6 @@ export class SuperOwnerTenantService {
       await tenantFeatureRepository.ensureForGroup(activatedTenant.groupJid);
       await tenantGroupSettingRepository.ensureForGroup(activatedTenant.groupJid);
 
-      const ownerQuota = await tx.tenantOwnerQuota.upsert({
-        where: { ownerJid: input.ownerJid },
-        create: {
-          ownerJid: input.ownerJid,
-          remainingQuota: input.initialQuota,
-          totalAddedQuota: input.initialQuota,
-        },
-        update: {
-          remainingQuota: { increment: input.initialQuota },
-          totalAddedQuota: { increment: input.initialQuota },
-        },
-      });
-
-      if (input.initialQuota > 0) {
-        await tx.tenantQuotaTransaction.create({
-          data: {
-            ownerJid: input.ownerJid,
-            groupJid: activatedTenant.groupJid,
-            actorJid: input.actorJid,
-            amount: input.initialQuota,
-            type: TenantQuotaTransactionType.ADD,
-            source: TenantQuotaSource.SUPER_OWNER,
-            note: "Kuota awal aktivasi tenant",
-          },
-        });
-
-        await tenantAuditRepository.create({
-          groupJid: activatedTenant.groupJid,
-          actorJid: input.actorJid,
-          action: TenantAuditAction.QUOTA_ADDED,
-          metadata: {
-            ownerJid: input.ownerJid,
-            amount: input.initialQuota,
-          },
-        });
-      }
-
       await tenantAuditRepository.create({
         groupJid: activatedTenant.groupJid,
         actorJid: input.actorJid,
@@ -140,14 +87,10 @@ export class SuperOwnerTenantService {
           tenantCode: activatedTenant.tenantCode,
           ownerJid: input.ownerJid,
           expiresAt: activatedTenant.expiresAt?.toISOString(),
-          initialQuota: input.initialQuota,
         },
       });
 
-      return {
-        tenantGroup: activatedTenant,
-        ownerQuota,
-      };
+      return { tenantGroup: activatedTenant };
     });
   }
 
