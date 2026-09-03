@@ -35,18 +35,6 @@ export const gameCommands: CommandDefinition[] = [
     name: "nyerah",
     execute: (context) => replyGame(context, () => gameService.surrender(context)),
   },
-  {
-    name: "rank",
-    execute: (context) => replyGame(context, () => gameService.getRank(context)),
-  },
-  {
-    name: "poin",
-    execute: (context) => replyGame(context, () => gameService.getPoints(context)),
-  },
-  {
-    name: "profile",
-    execute: (context) => replyGame(context, () => gameService.getProfileText(context)),
-  },
 ];
 
 async function replyGame(context: CommandContext, action: () => string): Promise<void> {

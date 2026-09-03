@@ -2,7 +2,56 @@
 
 ## Status
 
-Planned
+Completed
+
+## Execution Evidence
+
+### Files Added
+
+- `src/services/member/memberProfileView.service.ts` - Read-only profile view (own = findOrCreate, target = find-only)
+- `src/services/member/leaderboard.service.ts` - Top 10 XP and points leaderboards with caller position
+- `src/commands/member/profile.command.ts` - `.profile`, `.profile @user`, `.poin` (alias, concise balance)
+- `src/commands/member/leaderboard.command.ts` - `.toprank` (alias `.rank`), `.toppoint`
+- `tests/profileLeaderboard.test.ts` - 13 new tests
+
+### Files Modified
+
+- `src/commands/game/game.command.ts` - Removed legacy `.rank`, `.poin`, `.profile` entries (were calling in-memory game service)
+- `src/commands/index.ts` - Registered `profileCommands`, `leaderboardCommands`
+
+### Legacy Methods Disconnected
+
+`game.service.ts` methods `getPoints`, `getProfileText`, `getRank` and `profilesByGroup` reads are no longer routed to from any command. The methods remain in source until Plan 008 (full game profile migration).
+
+### Commands and Aliases
+
+- `.profile` → own profile (findOrCreate), `.profile @user` → target (read-only)
+- `.poin` → concise own balance display
+- `.toprank` / `.rank` → XP leaderboard (top 10, caller position if outside)
+- `.toppoint` → points leaderboard (same rules)
+
+Aliases handled by `CommandRouter.register()` which reads `definition.aliases` and maps each name to the same handler.
+
+### Leaderboard Query Strategy
+
+Uses two dedicated DB queries per leaderboard call:
+1. `findMany` ordered by XP/points DESC, limit 10 (the top list)
+2. If caller not in top list: `count({ where: { [field]: { gt: callerValue } } }) + 1` for position
+
+No in-memory sorting. Tie breaker is delegated to Prisma default (insertion order = earlier profile creation, then by PK).
+
+### Validation Results
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 errors |
+| `npm run build` | 0 errors |
+| `npm run test` | 188 pass, 0 fail (13 new tests) |
+
+### Commit
+
+See git log for SHA.
 
 ## Objective
 

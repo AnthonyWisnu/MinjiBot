@@ -4,8 +4,10 @@ import { afkCommands } from "./afk/afk.command";
 import { gameCommands } from "./game/game.command";
 import { dailyCommand } from "./member/daily.command";
 import { giftCommands } from "./member/gift.command";
+import { leaderboardCommands } from "./member/leaderboard.command";
 import { limitPurchaseCommand } from "./member/limitPurchase.command";
 import { memberAdminCommands } from "./member/memberAdmin.command";
+import { profileCommands } from "./member/profile.command";
 import { downloaderCommands } from "./media/downloader.command";
 import { hdAiCommands } from "./media/hdai.command";
 import { hdCommands } from "./media/hd.command";
@@ -95,4 +97,6 @@ export const commandRouter = new CommandRouter([
   limitPurchaseCommand,
   ...giftCommands,
   ...memberAdminCommands,
+  ...profileCommands,
+  ...leaderboardCommands,
 ]);
