@@ -3,7 +3,7 @@ import qrcode from "qrcode-terminal";
 
 import { env } from "../config/env";
 import { logger } from "../config/logger";
-import { disconnectPrisma } from "../repositories/prismaClient";
+import { prisma, disconnectPrisma } from "../repositories/prismaClient";
 import { createBotSocket } from "./connection";
 import { handleGroupParticipantsUpdate } from "./groupParticipantsHandler";
 import { handleMessagesUpsert } from "./messageHandler";
@@ -17,6 +17,22 @@ export class BotLifecycle {
 
   async start(): Promise<void> {
     this.isStopping = false;
+    try {
+      await prisma.tenantFeatureSetting.updateMany({
+        data: {
+          downloaderEnabled: true,
+          hdEnabled: true,
+          gameEnabled: true,
+          welcomeEnabled: true,
+          antiLinkEnabled: true,
+          antiSpamEnabled: true,
+          reminderEnabled: true,
+          tagAllEnabled: true,
+        },
+      });
+    } catch (error: unknown) {
+      logger.warn({ error }, "Default tenant features auto-sync skipped");
+    }
     await this.connect();
   }
 
