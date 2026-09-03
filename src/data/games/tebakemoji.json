@@ -1,0 +1,735 @@
+[
+  {
+    "prompt": "Tebak tempat/kegiatan dari emoji ini:\n🍿 🎬 🎫",
+    "answers": [
+      "bioskop",
+      "nonton bioskop",
+      "nonton film",
+      "film"
+    ]
+  },
+  {
+    "prompt": "Tebak kegiatan dari emoji ini:\n☕ 🥐 🌅",
+    "answers": [
+      "sarapan",
+      "ngopi",
+      "sarapan pagi",
+      "ngopi pagi"
+    ]
+  },
+  {
+    "prompt": "Tebak fenomena alam dari emoji ini:\n🌧️ ☀️ 🌈",
+    "answers": [
+      "pelangi"
+    ]
+  },
+  {
+    "prompt": "Tebak profesi dari emoji ini:\n👮 🚓 🚨",
+    "answers": [
+      "polisi",
+      "pak polisi"
+    ]
+  },
+  {
+    "prompt": "Tebak profesi dari emoji ini:\n👨‍⚕️ 🩺 🏥",
+    "answers": [
+      "dokter",
+      "tenaga medis"
+    ]
+  },
+  {
+    "prompt": "Tebak profesi dari emoji ini:\n👨‍🚒 🚒 🧯",
+    "answers": [
+      "pemadam kebakaran",
+      "damkar",
+      "pemadam"
+    ]
+  },
+  {
+    "prompt": "Tebak profesi dari emoji ini:\n👨‍🍳 🍳 🍲",
+    "answers": [
+      "koki",
+      "chef",
+      "juru masak"
+    ]
+  },
+  {
+    "prompt": "Tebak profesi dari emoji ini:\n🧑‍🏫 📚 🏫",
+    "answers": [
+      "guru",
+      "dosen",
+      "pengajar"
+    ]
+  },
+  {
+    "prompt": "Tebak profesi dari emoji ini:\n👨‍✈️ ✈️ 🛫",
+    "answers": [
+      "pilot"
+    ]
+  },
+  {
+    "prompt": "Tebak profesi dari emoji ini:\n👨‍🌾 🌾 🚜",
+    "answers": [
+      "petani"
+    ]
+  },
+  {
+    "prompt": "Tebak jenis makanan dari emoji ini:\n🍔 🍟 🥤",
+    "answers": [
+      "fast food",
+      "makanan cepat saji",
+      "burger",
+      "mcd"
+    ]
+  },
+  {
+    "prompt": "Tebak makanan/minuman dari emoji ini:\n🍕 🧀 🇮🇹",
+    "answers": [
+      "pizza"
+    ]
+  },
+  {
+    "prompt": "Tebak makanan khas Jepang dari emoji ini:\n🍣 🥢 🍱",
+    "answers": [
+      "sushi"
+    ]
+  },
+  {
+    "prompt": "Tebak makanan berkuah dari emoji ini:\n🍜 🥩 🥚",
+    "answers": [
+      "mie ayam",
+      "ramen",
+      "bakso",
+      "mie"
+    ]
+  },
+  {
+    "prompt": "Tebak hidangan penutup dari emoji ini:\n🍦 🍨 🍧",
+    "answers": [
+      "es krim",
+      "ice cream"
+    ]
+  },
+  {
+    "prompt": "Tebak perayaan dari emoji ini:\n🎂 🕯️ 🎉",
+    "answers": [
+      "ulang tahun",
+      "ultah"
+    ]
+  },
+  {
+    "prompt": "Tebak perayaan dari emoji ini:\n🎆 🎇 🥳",
+    "answers": [
+      "tahun baru",
+      "pesta kembang api",
+      "kembang api"
+    ]
+  },
+  {
+    "prompt": "Tebak olahraga dari emoji ini:\n⚽ 🥅 👟",
+    "answers": [
+      "sepak bola",
+      "sepakbola",
+      "futsal"
+    ]
+  },
+  {
+    "prompt": "Tebak olahraga dari emoji ini:\n🏀 ⛹️ 🗑️",
+    "answers": [
+      "basket",
+      "bola basket"
+    ]
+  },
+  {
+    "prompt": "Tebak olahraga dari emoji ini:\n🏸 🏸 🥇",
+    "answers": [
+      "bulu tangkis",
+      "badminton"
+    ]
+  },
+  {
+    "prompt": "Tebak olahraga dari emoji ini:\n🏊 🌊 🩲",
+    "answers": [
+      "renang",
+      "berenang"
+    ]
+  },
+  {
+    "prompt": "Tebak olahraga dari emoji ini:\n🥊 🥊 🏆",
+    "answers": [
+      "tinju",
+      "boxing"
+    ]
+  },
+  {
+    "prompt": "Tebak aktivitas malam dari emoji ini:\n🛌 💤 🌙",
+    "answers": [
+      "tidur",
+      "tidur malam",
+      "istirahat"
+    ]
+  },
+  {
+    "prompt": "Tebak kegiatan santai dari emoji ini:\n✈️ 🧳 🌴",
+    "answers": [
+      "liburan",
+      "traveling",
+      "wisata",
+      "healing"
+    ]
+  },
+  {
+    "prompt": "Tebak tempat belanja dari emoji ini:\n🛒 🏬 🛍️",
+    "answers": [
+      "supermarket",
+      "mall",
+      "belanja",
+      "pasar"
+    ]
+  },
+  {
+    "prompt": "Tebak alat transportasi dari emoji ini:\n🛵 📦 💨",
+    "answers": [
+      "ojol",
+      "kurir",
+      "paket",
+      "ojek online"
+    ]
+  },
+  {
+    "prompt": "Tebak sarana transportasi dari emoji ini:\n🚆 🚉 🎫",
+    "answers": [
+      "kereta",
+      "kereta api",
+      "krl",
+      "mrt"
+    ]
+  },
+  {
+    "prompt": "Tebak hewan dari emoji ini:\n🐱 🧶 🐟",
+    "answers": [
+      "kucing"
+    ]
+  },
+  {
+    "prompt": "Tebak hewan dari emoji ini:\n🐶 🦴 🐕",
+    "answers": [
+      "anjing"
+    ]
+  },
+  {
+    "prompt": "Tebak hewan dari emoji ini:\n🐭 🧀 🕳️",
+    "answers": [
+      "tikus"
+    ]
+  },
+  {
+    "prompt": "Tebak hewan dari emoji ini:\n🐰 🥕 🐇",
+    "answers": [
+      "kelinci"
+    ]
+  },
+  {
+    "prompt": "Tebak hewan dari emoji ini:\n🐵 🍌 🌴",
+    "answers": [
+      "monyet",
+      "kera"
+    ]
+  },
+  {
+    "prompt": "Tebak hewan dari emoji ini:\n🦁 👑 🥩",
+    "answers": [
+      "singa",
+      "raja hutan"
+    ]
+  },
+  {
+    "prompt": "Tebak hewan laut dari emoji ini:\n🦈 🌊 🦷",
+    "answers": [
+      "hiu",
+      "ikan hiu"
+    ]
+  },
+  {
+    "prompt": "Tebak hewan laut dari emoji ini:\n🐋 🌊 💦",
+    "answers": [
+      "paus",
+      "ikan paus"
+    ]
+  },
+  {
+    "prompt": "Tebak serangga dari emoji ini:\n🐝 🍯 🌺",
+    "answers": [
+      "lebah",
+      "tawon"
+    ]
+  },
+  {
+    "prompt": "Tebak serangga dari emoji ini:\n🦋 🌸 🐛",
+    "answers": [
+      "kupu-kupu",
+      "kupu kupu"
+    ]
+  },
+  {
+    "prompt": "Tebak benda musik dari emoji ini:\n🎸 🎶 🤘",
+    "answers": [
+      "gitar",
+      "gitar listrik"
+    ]
+  },
+  {
+    "prompt": "Tebak benda musik dari emoji ini:\n🎹 🎼 🎵",
+    "answers": [
+      "piano",
+      "keyboard"
+    ]
+  },
+  {
+    "prompt": "Tebak benda fotografi dari emoji ini:\n📷 📸 🖼️",
+    "answers": [
+      "kamera",
+      "foto",
+      "fotografi"
+    ]
+  },
+  {
+    "prompt": "Tebak gadget dari emoji ini:\n📱 🔋 🔌",
+    "answers": [
+      "hp",
+      "smartphone",
+      "handphone"
+    ]
+  },
+  {
+    "prompt": "Tebak komputer dari emoji ini:\n💻 🖱️ ⌨️",
+    "answers": [
+      "laptop",
+      "komputer",
+      "pc"
+    ]
+  },
+  {
+    "prompt": "Tebak benda penerangan dari emoji ini:\n💡 🔌 ⚡",
+    "answers": [
+      "lampu",
+      "bohlam"
+    ]
+  },
+  {
+    "prompt": "Tebak benda cuaca dari emoji ini:\n☔ 🌧️ 🌂",
+    "answers": [
+      "payung",
+      "hujan"
+    ]
+  },
+  {
+    "prompt": "Tebak benda musim panas dari emoji ini:\n🕶️ ☀️ 🏖️",
+    "answers": [
+      "kacamata hitam",
+      "kacamata"
+    ]
+  },
+  {
+    "prompt": "Tebak alat sekolah dari emoji ini:\n🎒 📚 ✏️",
+    "answers": [
+      "tas sekolah",
+      "alat tulis",
+      "tas"
+    ]
+  },
+  {
+    "prompt": "Tebak surat menyurat dari emoji ini:\n✉️ 📮 📬",
+    "answers": [
+      "surat",
+      "kantor pos",
+      "pos"
+    ]
+  },
+  {
+    "prompt": "Tebak keamanan dari emoji ini:\n🔒 🔑 🚪",
+    "answers": [
+      "gembok",
+      "kunci"
+    ]
+  },
+  {
+    "prompt": "Tebak uang dari emoji ini:\n💵 💳 💰",
+    "answers": [
+      "uang",
+      "duit",
+      "dompet"
+    ]
+  },
+  {
+    "prompt": "Tebak waktu dari emoji ini:\n⏰ 🔔 ⏱️",
+    "answers": [
+      "jam",
+      "alarm",
+      "jam beker"
+    ]
+  },
+  {
+    "prompt": "Tebak emosi/reaksi dari emoji ini:\n😂 🤣 💀",
+    "answers": [
+      "tertawa",
+      "ngakak",
+      "lucu"
+    ]
+  },
+  {
+    "prompt": "Tebak emosi dari emoji ini:\n😭 😢 💔",
+    "answers": [
+      "sedih",
+      "menangis",
+      "patah hati"
+    ]
+  },
+  {
+    "prompt": "Tebak emosi dari emoji ini:\n😡 🤬 🔥",
+    "answers": [
+      "marah",
+      "emosi",
+      "ngamuk"
+    ]
+  },
+  {
+    "prompt": "Tebak emosi dari emoji ini:\n😍 🥰 ❤️",
+    "answers": [
+      "jatuh cinta",
+      "cinta",
+      "kasmaran",
+      "bucin"
+    ]
+  },
+  {
+    "prompt": "Tebak kondisi tubuh dari emoji ini:\n🤒 🤕 💊",
+    "answers": [
+      "sakit",
+      "demam",
+      "masuk angin"
+    ]
+  },
+  {
+    "prompt": "Tebak profesi dari emoji ini:\n🎤 🎵 🧑‍🎤",
+    "answers": [
+      "penyanyi",
+      "vokalis"
+    ]
+  },
+  {
+    "prompt": "Tebak seni dari emoji ini:\n🎨 🖌️ 🖼️",
+    "answers": [
+      "pelukis",
+      "melukis",
+      "seniman"
+    ]
+  },
+  {
+    "prompt": "Tebak aktivitas dari emoji ini:\n🎣 🐟 🌊",
+    "answers": [
+      "memancing",
+      "mancing"
+    ]
+  },
+  {
+    "prompt": "Tebak aktivitas dari emoji ini:\n🍳 🧂 🍲",
+    "answers": [
+      "memasak",
+      "masak"
+    ]
+  },
+  {
+    "prompt": "Tebak aktivitas dari emoji ini:\n📖 👓 ☕",
+    "answers": [
+      "membaca",
+      "baca buku"
+    ]
+  },
+  {
+    "prompt": "Tebak transportasi air dari emoji ini:\n⛵ 🌊 ⚓",
+    "answers": [
+      "kapal",
+      "perahu",
+      "kapal laut"
+    ]
+  },
+  {
+    "prompt": "Tebak kendaraan luar angkasa dari emoji ini:\n🚀 🌕 👨‍🚀",
+    "answers": [
+      "roket",
+      "astronot",
+      "pesawat luar angkasa"
+    ]
+  },
+  {
+    "prompt": "Tebak cuaca dingin dari emoji ini:\n❄️ ☃️ 🧤",
+    "answers": [
+      "salju",
+      "musim dingin",
+      "dingin"
+    ]
+  },
+  {
+    "prompt": "Tebak cuaca panas dari emoji ini:\n☀️ 🏜️ 🥵",
+    "answers": [
+      "panas",
+      "kemarau",
+      "terik"
+    ]
+  },
+  {
+    "prompt": "Tebak malam hari dari emoji ini:\n🌙 🦉 ⭐",
+    "answers": [
+      "malam",
+      "malam hari",
+      "burung hantu"
+    ]
+  },
+  {
+    "prompt": "Tebak pagi hari dari emoji ini:\n🌅 🐓 ☀️",
+    "answers": [
+      "pagi",
+      "pagi hari",
+      "subuh"
+    ]
+  },
+  {
+    "prompt": "Tebak pernikahan dari emoji ini:\n👰 🤵 💍",
+    "answers": [
+      "pernikahan",
+      "menikah",
+      "kawin",
+      "wedding"
+    ]
+  },
+  {
+    "prompt": "Tebak olahraga otak dari emoji ini:\n♟️ 🧠 🏆",
+    "answers": [
+      "catur"
+    ]
+  },
+  {
+    "prompt": "Tebak game dari emoji ini:\n🎮 🕹️ 👾",
+    "answers": [
+      "video game",
+      "main game",
+      "game"
+    ]
+  },
+  {
+    "prompt": "Tebak horor dari emoji ini:\n👻 🎃 🧛",
+    "answers": [
+      "hantu",
+      "halloween",
+      "horor"
+    ]
+  },
+  {
+    "prompt": "Tebak bayi dari emoji ini:\n👶 🍼 🚼",
+    "answers": [
+      "bayi",
+      "anak bayi"
+    ]
+  },
+  {
+    "prompt": "Tebak cinta monyet dari emoji ini:\n💌 💘 🏹",
+    "answers": [
+      "surat cinta",
+      "panah asmara",
+      "jatuh cinta"
+    ]
+  },
+  {
+    "prompt": "Tebak perlombaan dari emoji ini:\n🏁 🏎️ 💨",
+    "answers": [
+      "balapan",
+      "balap mobil",
+      "f1",
+      "race"
+    ]
+  },
+  {
+    "prompt": "Tebak musik dari emoji ini:\n🎧 🎶 📱",
+    "answers": [
+      "mendengarkan musik",
+      "dengar lagu",
+      "headset"
+    ]
+  },
+  {
+    "prompt": "Tebak mandi dari emoji ini:\n🚿 🧼 🫧",
+    "answers": [
+      "mandi",
+      "shower",
+      "cuci badan"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\n🏠  sakit 🏥",
+    "answers": [
+      "rumah sakit"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\n🌧️ 💸 🤑",
+    "answers": [
+      "hujan uang",
+      "rejeki"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nmata ☀️ 🌅",
+    "answers": [
+      "matahari",
+      "sunrise"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nair 👁️ 💧",
+    "answers": [
+      "air mata"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\ncuci 🧠 🌀",
+    "answers": [
+      "cuci otak"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nkutu 📚 🤓",
+    "answers": [
+      "kutu buku"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nbuaya 🐊 💔",
+    "answers": [
+      "buaya darat"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nkambing 🐐 ⬛",
+    "answers": [
+      "kambing hitam"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nmeja 🟢 ⚖️",
+    "answers": [
+      "meja hijau",
+      "pengadilan"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nnaik 🩸 😡",
+    "answers": [
+      "naik darah",
+      "marah"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\ntangan 🦾 👮",
+    "answers": [
+      "tangan kanan",
+      "orang kepercayaan"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nbuah 👄 🗣️",
+    "answers": [
+      "buah bibir"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\npanjang ✋ 🕵️",
+    "answers": [
+      "panjang tangan",
+      "pencuri"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nkecil ❤️ 🥺",
+    "answers": [
+      "kecil hati",
+      "minder"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nbesar 🗣️ 📢",
+    "answers": [
+      "besar mulut",
+      "sombong"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nrendah ❤️ 🤝",
+    "answers": [
+      "rendah hati",
+      "sopan"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nkeras 🧠 🗿",
+    "answers": [
+      "keras kepala"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\ntebal 😶 🗿",
+    "answers": [
+      "tebal muka",
+      "tidak tahu malu"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\ncuci 🖐️ 🧼",
+    "answers": [
+      "cuci tangan"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nangkat 🦶 🏃",
+    "answers": [
+      "angkat kaki",
+      "pergi"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\ntutup 👄 🤐",
+    "answers": [
+      "tutup mulut",
+      "diam"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\ngulung 🎪 📉",
+    "answers": [
+      "gulung tikar",
+      "bangkrut"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nbanting 🦴 💼",
+    "answers": [
+      "banting tulang",
+      "kerja keras"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nbelajar 📚 ✍️",
+    "answers": [
+      "belajar",
+      "mengerjakan pr"
+    ]
+  },
+  {
+    "prompt": "Tebak istilah dari emoji ini:\nmakan 🍽️ 🤤",
+    "answers": [
+      "makan siang",
+      "makan",
+      "kuliner"
+    ]
+  }
+]

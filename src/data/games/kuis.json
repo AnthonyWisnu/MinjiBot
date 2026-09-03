@@ -1,0 +1,1020 @@
+[
+  {
+    "prompt": "Makanan khas Palembang yang terbuat dari olahan ikan dan disajikan dengan kuah cuko adalah?",
+    "answers": [
+      "pempek",
+      "empek-empek",
+      "mpek mpek"
+    ]
+  },
+  {
+    "prompt": "Bahan baku utama dalam pembuatan tahu dan tempe adalah?",
+    "answers": [
+      "kedelai",
+      "kacang kedelai"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Padang berbahan daging sapi yang pernah dinobatkan sebagai makanan terenak di dunia adalah?",
+    "answers": [
+      "rendang"
+    ]
+  },
+  {
+    "prompt": "Gudeg adalah makanan khas tradisional yang berasal dari kota mana?",
+    "answers": [
+      "jogja",
+      "yogyakarta",
+      "jogjakarta"
+    ]
+  },
+  {
+    "prompt": "Minuman khas Jawa Barat yang terbuat dari santan, gula merah, dan butiran hijau tepung beras adalah?",
+    "answers": [
+      "cendol",
+      "es cendol",
+      "dawet",
+      "es dawet"
+    ]
+  },
+  {
+    "prompt": "Makanan berkuah cokelat pekat khas Jawa Timur yang menggunakan bumbu kluwek adalah?",
+    "answers": [
+      "rawon"
+    ]
+  },
+  {
+    "prompt": "Camilan khas Bandung yang terbuat dari tepung tapioka digoreng dan disingkat dari aci digoreng adalah?",
+    "answers": [
+      "cireng"
+    ]
+  },
+  {
+    "prompt": "Gorengan aci yang dicolok tusukan bambu dan disiram saus kacang disebut?",
+    "answers": [
+      "cilok",
+      "cimol"
+    ]
+  },
+  {
+    "prompt": "Makanan pedas berkuah kencur berisi kerupuk basah khas Sunda yang sangat populer adalah?",
+    "answers": [
+      "seblak"
+    ]
+  },
+  {
+    "prompt": "Sate khas Madura umumnya menggunakan bumbu apa sebagai pelengkap utamanya?",
+    "answers": [
+      "kacang",
+      "bumbu kacang"
+    ]
+  },
+  {
+    "prompt": "Kue tradisional bulat berwarna hijau berisi gula merah cair dan berbalur parutan kelapa adalah?",
+    "answers": [
+      "klepon"
+    ]
+  },
+  {
+    "prompt": "Nasi kuning biasanya disajikan dalam bentuk kerucut pada acara syukuran yang disebut?",
+    "answers": [
+      "tumpeng",
+      "nasi tumpeng"
+    ]
+  },
+  {
+    "prompt": "Bumbu dapur berbau khas menyengat yang sering jadi bahan sambal terasi adalah?",
+    "answers": [
+      "terasi",
+      "belacan"
+    ]
+  },
+  {
+    "prompt": "Minuman teh susu berisikan butiran kenyal hitam dari tapioka yang populer saat ini adalah?",
+    "answers": [
+      "boba",
+      "bubble tea",
+      "boba tea"
+    ]
+  },
+  {
+    "prompt": "Pelengkap soto atau bubur ayam yang terbuat dari kerupuk melinjo dengan rasa agak pahit adalah?",
+    "answers": [
+      "emping"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Betawi yang terbuat dari ketan dan telur bebek dengan serundeng adalah?",
+    "answers": [
+      "kerak telor",
+      "kerak telur"
+    ]
+  },
+  {
+    "prompt": "Buah yang dijuluki sebagai raja buah dan memiliki bau sangat menyengat adalah?",
+    "answers": [
+      "durian",
+      "duren"
+    ]
+  },
+  {
+    "prompt": "Minuman khas wedang yang berkhasiat menghangatkan tubuh berbahan dasar rimpang adalah?",
+    "answers": [
+      "jahe",
+      "wedang jahe"
+    ]
+  },
+  {
+    "prompt": "Makanan kaleng berbahan dasar daging sapi olahan yang sering dijadikan topping mi instan adalah?",
+    "answers": [
+      "kornet",
+      "daging kornet"
+    ]
+  },
+  {
+    "prompt": "Kopi khas Indonesia yang terkenal mahal karena diproses dari fermentasi hewan luwak adalah?",
+    "answers": [
+      "kopi luwak",
+      "luwak"
+    ]
+  },
+  {
+    "prompt": "Martabak asin yang terbuat dari telur, daun bawang, dan daging cincang biasa disebut martabak apa?",
+    "answers": [
+      "telur",
+      "martabak telur",
+      "martabak telor"
+    ]
+  },
+  {
+    "prompt": "Kue basah berlapis-lapis tipis legit khas Indonesia yang kaya rempah mentega adalah?",
+    "answers": [
+      "lapis legit",
+      "kue lapis legit"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Solo berupa daging cincang manis dibungkus daun pisang adalah?",
+    "answers": [
+      "semar mendem",
+      "sosis solo",
+      "selat solo"
+    ]
+  },
+  {
+    "prompt": "Sambal khas Manado yang bahan-bahannya diiris mentah dan disiram minyak panas adalah?",
+    "answers": [
+      "sambal matah",
+      "sambal dabu dabu",
+      "dabu dabu"
+    ]
+  },
+  {
+    "prompt": "Mi instan paling terkenal di Indonesia yang sudah mendunia adalah?",
+    "answers": [
+      "indomie"
+    ]
+  },
+  {
+    "prompt": "Siapa nama tetangga SpongeBob SquarePants yang hobi bermain klarinet dan berwajah masam?",
+    "answers": [
+      "squidward",
+      "squidward tentacles"
+    ]
+  },
+  {
+    "prompt": "Sahabat terbaik SpongeBob yang merupakan seekor bintang laut merah muda adalah?",
+    "answers": [
+      "patrick",
+      "patrick star"
+    ]
+  },
+  {
+    "prompt": "Siapa nama pemilik restoran Krusty Krab yang sangat terobsesi dengan uang?",
+    "answers": [
+      "tuan krab",
+      "mr krabs",
+      "mr. krabs",
+      "krabs"
+    ]
+  },
+  {
+    "prompt": "Robot kucing berwarna biru dari abad ke-22 yang memiliki kantong ajaib adalah?",
+    "answers": [
+      "doraemon"
+    ]
+  },
+  {
+    "prompt": "Nama anak laki-laki berkacamata yang selalu dibantu oleh Doraemon adalah?",
+    "answers": [
+      "nobita",
+      "nobi nobita"
+    ]
+  },
+  {
+    "prompt": "Dua saudara kembar berkepala botak asal Malaysia dalam serial animasi terkenal adalah?",
+    "answers": [
+      "upin ipin",
+      "upin dan ipin"
+    ]
+  },
+  {
+    "prompt": "Karakter ayam peliharaan kesayangan Tok Dalang dalam animasi Upin & Ipin bernama?",
+    "answers": [
+      "rembo"
+    ]
+  },
+  {
+    "prompt": "Ninja berambut kuning asal Konoha yang memiliki cita-cita menjadi Hokage adalah?",
+    "answers": [
+      "naruto",
+      "naruto uzumaki"
+    ]
+  },
+  {
+    "prompt": "Rival terdekat Naruto yang merupakan keturunan terakhir klan Uchiha adalah?",
+    "answers": [
+      "sasuke",
+      "sasuke uchiha"
+    ]
+  },
+  {
+    "prompt": "Benda ajaib dalam anime Dragon Ball yang dicari untuk memanggil naga Shenron berjumlah berapa bintang?",
+    "answers": [
+      "7",
+      "tujuh"
+    ]
+  },
+  {
+    "prompt": "Karakter kartun kucing dan tikus yang tidak pernah akur dalam animasi klasik adalah?",
+    "answers": [
+      "tom and jerry",
+      "tom & jerry",
+      "tom jerry"
+    ]
+  },
+  {
+    "prompt": "Boneka koboi kayu yang menjadi sahabat Buzz Lightyear dalam film Toy Story bernama?",
+    "answers": [
+      "woody"
+    ]
+  },
+  {
+    "prompt": "Monster pemakan biskuit berwarna biru berbulu lebat di serial Sesame Street adalah?",
+    "answers": [
+      "cookie monster"
+    ]
+  },
+  {
+    "prompt": "Putri salju dalam film animasi Disney Frozen yang bisa mengendalikan es bernama?",
+    "answers": [
+      "elsa"
+    ]
+  },
+  {
+    "prompt": "Singa muda pewaris takhta Pride Lands dalam film The Lion King bernama?",
+    "answers": [
+      "simba"
+    ]
+  },
+  {
+    "prompt": "Tikus kuning berkekuatan listrik yang menjadi ikon utama Pokemon adalah?",
+    "answers": [
+      "pikachu"
+    ]
+  },
+  {
+    "prompt": "Superhero Marvel berzirah besi canggih warna merah-emas yang diperankan Tony Stark adalah?",
+    "answers": [
+      "iron man",
+      "ironman"
+    ]
+  },
+  {
+    "prompt": "Pahlawan bertopeng laba-laba yang bernama asli Peter Parker adalah?",
+    "answers": [
+      "spiderman",
+      "spider-man",
+      "spider man"
+    ]
+  },
+  {
+    "prompt": "Pahlawan berkostum kelelawar pembela kebenaran di kota Gotham adalah?",
+    "answers": [
+      "batman"
+    ]
+  },
+  {
+    "prompt": "Raksasa hijau bertubuh kekar anggota Avengers yang menjadi kuat saat marah adalah?",
+    "answers": [
+      "hulk"
+    ]
+  },
+  {
+    "prompt": "Superhero berkostum biru merah dengan jubah dan lambang huruf S di dada adalah?",
+    "answers": [
+      "superman"
+    ]
+  },
+  {
+    "prompt": "Penyihir cilik berkacamata bulat dan memiliki bekas luka petir di dahinya adalah?",
+    "answers": [
+      "harry potter"
+    ]
+  },
+  {
+    "prompt": "Siapa nama sahabat setia Harry Potter yang berambut pirang merah dari keluarga Weasley?",
+    "answers": [
+      "ron",
+      "ron weasley"
+    ]
+  },
+  {
+    "prompt": "Gadis penyihir sangat cerdas yang merupakan sahabat Harry Potter dan Ron Weasley adalah?",
+    "answers": [
+      "hermione",
+      "hermione granger"
+    ]
+  },
+  {
+    "prompt": "Ikan badut oranye belang putih yang hilang di samudra luas dalam film animasi Pixar adalah?",
+    "answers": [
+      "nemo"
+    ]
+  },
+  {
+    "prompt": "Vokalis dari grup musik legendaris asal Yogyakarta, Sheila on 7 adalah?",
+    "answers": [
+      "duta",
+      "duta sheila on 7",
+      "akhdiyat duta modjo"
+    ]
+  },
+  {
+    "prompt": "Vokalis band NOAH yang sebelumnya membesarkan grup band Peterpan adalah?",
+    "answers": [
+      "ariel",
+      "ariel noah"
+    ]
+  },
+  {
+    "prompt": "Grup musik rock Indonesia yang dipimpin oleh Ahmad Dhani bernama Dewa berapa?",
+    "answers": [
+      "19",
+      "dewa 19"
+    ]
+  },
+  {
+    "prompt": "Penyanyi pria bersuara merdu asal Bandung pelantun lagu Hati-Hati di Jalan adalah?",
+    "answers": [
+      "tulus"
+    ]
+  },
+  {
+    "prompt": "Penyanyi wanita Indonesia pelantun lagu Kali Kedua dan Mantan Terindah adalah?",
+    "answers": [
+      "raisa"
+    ]
+  },
+  {
+    "prompt": "Musisi legendaris Indonesia yang terkenal dengan lagu Bento dan Surat Buat Wakil Rakyat adalah?",
+    "answers": [
+      "iwan fals"
+    ]
+  },
+  {
+    "prompt": "Grup band rock asal Gang Potlot Jakarta yang memiliki basis penggemar Slankers adalah?",
+    "answers": [
+      "slank"
+    ]
+  },
+  {
+    "prompt": "Raja dangdut Indonesia pelantun lagu Begadang dan Judi adalah?",
+    "answers": [
+      "rhoma irama",
+      "roma irama"
+    ]
+  },
+  {
+    "prompt": "Grup idola K-Pop beranggotakan RM, Jin, Suga, J-Hope, Jimin, V, dan Jungkook adalah?",
+    "answers": [
+      "bts",
+      "bangtan boys"
+    ]
+  },
+  {
+    "prompt": "Girlgroup K-Pop beranggotakan Jennie, Jisoo, Rose, dan Lisa adalah?",
+    "answers": [
+      "blackpink"
+    ]
+  },
+  {
+    "prompt": "Girlgroup K-Pop beranggotakan Minji, Hanni, Danielle, Haerin, dan Hyein bernama?",
+    "answers": [
+      "newjeans",
+      "new jeans"
+    ]
+  },
+  {
+    "prompt": "Penyanyi pop dunia yang dijuluki King of Pop dan mempopulerkan tarian Moonwalk adalah?",
+    "answers": [
+      "michael jackson"
+    ]
+  },
+  {
+    "prompt": "Vokalis legendaris grup band Queen pelantun lagu Bohemian Rhapsody adalah?",
+    "answers": [
+      "freddie mercury"
+    ]
+  },
+  {
+    "prompt": "Grup band pop rock asal Inggris pelantun lagu Fix You dan Yellow adalah?",
+    "answers": [
+      "coldplay"
+    ]
+  },
+  {
+    "prompt": "Aplikasi media sosial pesan singkat yang logonya berwarna hijau dan sering dipakai sehari-hari adalah?",
+    "answers": [
+      "whatsapp",
+      "wa"
+    ]
+  },
+  {
+    "prompt": "Aplikasi video pendek populer asal Tiongkok yang mempopulerkan istilah fyp adalah?",
+    "answers": [
+      "tiktok"
+    ]
+  },
+  {
+    "prompt": "Platform berbagi video terpopuler di dunia milik Google dengan tombol subscribe adalah?",
+    "answers": [
+      "youtube"
+    ]
+  },
+  {
+    "prompt": "Game MOBA mobile 5v5 yang paling populer dimainkan di Indonesia adalah?",
+    "answers": [
+      "mobile legends",
+      "mlbb",
+      "ml"
+    ]
+  },
+  {
+    "prompt": "Game battle royale bertema bertahan hidup dengan parasut dan zona biru adalah?",
+    "answers": [
+      "pubg",
+      "pubg mobile"
+    ]
+  },
+  {
+    "prompt": "Game battle royale buatan Garena yang sering disebut game epep adalah?",
+    "answers": [
+      "free fire",
+      "ff"
+    ]
+  },
+  {
+    "prompt": "Game membangun blok kubus pixel tak terbatas yang sangat mendunia adalah?",
+    "answers": [
+      "minecraft"
+    ]
+  },
+  {
+    "prompt": "Konsol game buatan Sony yang stiknya memiliki tombol segitiga, kotak, lingkaran, dan silang adalah?",
+    "answers": [
+      "playstation",
+      "ps"
+    ]
+  },
+  {
+    "prompt": "Aplikasi ojek online karya anak bangsa Indonesia berlogo warna hijau dengan ikon helm adalah?",
+    "answers": [
+      "gojek"
+    ]
+  },
+  {
+    "prompt": "Istilah bahasa gaul untuk seseorang yang malas gerak disingkat menjadi apa?",
+    "answers": [
+      "mager"
+    ]
+  },
+  {
+    "prompt": "Istilah gaul takut ketinggalan tren atau berita kekinian disingkat menjadi apa?",
+    "answers": [
+      "fomo"
+    ]
+  },
+  {
+    "prompt": "Hewan mamalia terbesar di dunia yang hidup di lautan luas adalah?",
+    "answers": [
+      "paus biru",
+      "paus"
+    ]
+  },
+  {
+    "prompt": "Hewan mamalia yang memiliki leher sangat panjang untuk memakan daun di pohon tinggi adalah?",
+    "answers": [
+      "jerapah"
+    ]
+  },
+  {
+    "prompt": "Hewan darat pelari tercepat di dunia adalah?",
+    "answers": [
+      "cheetah",
+      "cita"
+    ]
+  },
+  {
+    "prompt": "Hewan berkantung asli Australia yang pandai melompat adalah?",
+    "answers": [
+      "kangguru",
+      "kanguru"
+    ]
+  },
+  {
+    "prompt": "Burung yang menjadi simbol negara Indonesia dan mencengkeram pita Bhinneka Tunggal Ika adalah?",
+    "answers": [
+      "garuda",
+      "burung garuda"
+    ]
+  },
+  {
+    "prompt": "Hewan amfibi yang hidup di dua alam dan bersuara kwek-kwek saat berjalan adalah?",
+    "answers": [
+      "bebek"
+    ]
+  },
+  {
+    "prompt": "Kadal terbesar di dunia yang merupakan satwa endemik pulau di Nusa Tenggara Timur adalah?",
+    "answers": [
+      "komodo"
+    ]
+  },
+  {
+    "prompt": "Hewan mamalia berkantung yang hobi tidur berjam-jam di pohon eukaliptus adalah?",
+    "answers": [
+      "koala"
+    ]
+  },
+  {
+    "prompt": "Satu-satunya mamalia di dunia yang memiliki sayap dan bisa terbang adalah?",
+    "answers": [
+      "kelelawar",
+      "kalong"
+    ]
+  },
+  {
+    "prompt": "Hewan pemalu bertubuh lambat di lautan yang membawa cangkang keras di punggungnya adalah?",
+    "answers": [
+      "kura-kura",
+      "penyu",
+      "kura kura"
+    ]
+  },
+  {
+    "prompt": "Warna pelangi setelah warna merah adalah warna apa?",
+    "answers": [
+      "jingga",
+      "oranye",
+      "orange"
+    ]
+  },
+  {
+    "prompt": "Berapa jumlah warna yang ada pada pelangi?",
+    "answers": [
+      "7",
+      "tujuh"
+    ]
+  },
+  {
+    "prompt": "Warna daun tumbuhan umumnya berwarna hijau karena mengandung zat hijau daun bernama?",
+    "answers": [
+      "klorofil"
+    ]
+  },
+  {
+    "prompt": "Benda langit yang mengelilingi bumi dan tampak bersinar terang di malam hari adalah?",
+    "answers": [
+      "bulan"
+    ]
+  },
+  {
+    "prompt": "Pusat tata surya kita yang memancarkan cahaya dan panas adalah?",
+    "answers": [
+      "matahari"
+    ]
+  },
+  {
+    "prompt": "Planet ketiga dari matahari yang menjadi tempat tinggal manusia adalah?",
+    "answers": [
+      "bumi",
+      "earth"
+    ]
+  },
+  {
+    "prompt": "Gas utama yang dihirup oleh manusia saat bernapas adalah?",
+    "answers": [
+      "oksigen",
+      "o2"
+    ]
+  },
+  {
+    "prompt": "Berapa jumlah hari dalam satu tahun biasa yang bukan tahun kabisat?",
+    "answers": [
+      "365",
+      "tiga ratus enam puluh lima"
+    ]
+  },
+  {
+    "prompt": "Tahun yang jumlah harinya 366 dan terjadi setiap 4 tahun sekali disebut tahun apa?",
+    "answers": [
+      "kabisat",
+      "tahun kabisat"
+    ]
+  },
+  {
+    "prompt": "Bulan Februari pada tahun kabisat berjumlah berapa hari?",
+    "answers": [
+      "29",
+      "dua puluh sembilan"
+    ]
+  },
+  {
+    "prompt": "Samudra paling luas dan paling dalam di bumi adalah Samudra apa?",
+    "answers": [
+      "pasifik",
+      "samudra pasifik"
+    ]
+  },
+  {
+    "prompt": "Gunung tertinggi di dunia yang berada di pegunungan Himalaya adalah Gunung apa?",
+    "answers": [
+      "everest",
+      "gunung everest"
+    ]
+  },
+  {
+    "prompt": "Danau vulkanik terbesar di Indonesia yang di tengahnya terdapat Pulau Samosir adalah Danau apa?",
+    "answers": [
+      "toba",
+      "danau toba"
+    ]
+  },
+  {
+    "prompt": "Candi Buddha terbesar di dunia yang terletak di Magelang Jawa Tengah adalah Candi apa?",
+    "answers": [
+      "borobudur",
+      "candi borobudur"
+    ]
+  },
+  {
+    "prompt": "Candi Hindu termegah di Indonesia yang terletak di perbatasan Yogyakarta dan Jawa Tengah adalah Candi apa?",
+    "answers": [
+      "prambanan",
+      "candi prambanan"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Jepang yang terkenal dengan persimpangan Shibuya adalah?",
+    "answers": [
+      "tokyo"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Korea Selatan yang terkenal dengan distrik Gangnam adalah?",
+    "answers": [
+      "seoul"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Prancis yang terdapat Menara Eiffel adalah?",
+    "answers": [
+      "paris"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Inggris yang dilewati Sungai Thames dan memiliki jam Big Ben adalah?",
+    "answers": [
+      "london"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Malaysia yang memiliki Menara Kembar Petronas adalah?",
+    "answers": [
+      "kuala lumpur"
+    ]
+  },
+  {
+    "prompt": "Negara tetangga Indonesia yang terkenal dengan patung singa Merlion adalah?",
+    "answers": [
+      "singapura",
+      "singapore"
+    ]
+  },
+  {
+    "prompt": "Mata uang resmi yang digunakan di negara Indonesia adalah?",
+    "answers": [
+      "rupiah",
+      "idr"
+    ]
+  },
+  {
+    "prompt": "Mata uang resmi yang digunakan di negara Amerika Serikat adalah?",
+    "answers": [
+      "dollar",
+      "dolar",
+      "us dollar",
+      "usd"
+    ]
+  },
+  {
+    "prompt": "Mata uang resmi yang digunakan di negara Jepang adalah?",
+    "answers": [
+      "yen"
+    ]
+  },
+  {
+    "prompt": "Mata uang resmi yang digunakan di negara Korea Selatan adalah?",
+    "answers": [
+      "won"
+    ]
+  },
+  {
+    "prompt": "Bulan kemerdekaan Republik Indonesia diperingati setiap tanggal 17 bulan apa?",
+    "answers": [
+      "agustus"
+    ]
+  },
+  {
+    "prompt": "Tahun berapa Republik Indonesia memproklamasikan kemerdekaannya?",
+    "answers": [
+      "1945"
+    ]
+  },
+  {
+    "prompt": "Siapa bapak proklamator dan Presiden pertama Republik Indonesia?",
+    "answers": [
+      "soekarno",
+      "ir soekarno",
+      "bung karno"
+    ]
+  },
+  {
+    "prompt": "Siapa wakil presiden pertama Republik Indonesia yang mendampingi Bung Karno?",
+    "answers": [
+      "mohammad hatta",
+      "bung hatta",
+      "hatta"
+    ]
+  },
+  {
+    "prompt": "Lagu kebangsaan negara Republik Indonesia berjudul apa?",
+    "answers": [
+      "indonesia raya"
+    ]
+  },
+  {
+    "prompt": "Siapa pencipta lagu kebangsaan Indonesia Raya?",
+    "answers": [
+      "wage rudolf soepratman",
+      "wr soepratman",
+      "w.r. soepratman"
+    ]
+  },
+  {
+    "prompt": "Kain tradisional Indonesia berpola batik ditetapkan UNESCO sebagai warisan budaya dari negara mana?",
+    "answers": [
+      "indonesia"
+    ]
+  },
+  {
+    "prompt": "Hari libur mingguan yang umumnya menjadi hari istirahat anak sekolah di akhir pekan adalah?",
+    "answers": [
+      "minggu",
+      "hari minggu"
+    ]
+  },
+  {
+    "prompt": "Jumlah jari yang ada pada dua tangan manusia normal adalah berapa?",
+    "answers": [
+      "10",
+      "sepuluh"
+    ]
+  },
+  {
+    "prompt": "Alat optik yang digunakan untuk melihat benda-benda renik atau bakteri mikroskopis adalah?",
+    "answers": [
+      "mikroskop"
+    ]
+  },
+  {
+    "prompt": "Alat optik yang digunakan untuk melihat bintang dan planet di luar angkasa adalah?",
+    "answers": [
+      "teleskop",
+      "teropong"
+    ]
+  },
+  {
+    "prompt": "Alat penunjuk arah mata angin yang jarumnya selalu mengarah ke utara dan selatan adalah?",
+    "answers": [
+      "kompas"
+    ]
+  },
+  {
+    "prompt": "Alat ukur untuk mengecek suhu tubuh seseorang saat sakit atau demam adalah?",
+    "answers": [
+      "termometer"
+    ]
+  },
+  {
+    "prompt": "Zat cair penghilang rasa haus yang paling sehat dan tidak berwarna adalah?",
+    "answers": [
+      "air putih",
+      "air mineral",
+      "air"
+    ]
+  },
+  {
+    "prompt": "Benda berbentuk lembaran tipis yang terbuat dari serat kayu untuk menulis adalah?",
+    "answers": [
+      "kertas"
+    ]
+  },
+  {
+    "prompt": "Wadah pelindung kepala yang wajib dipakai pengendara sepeda motor untuk keselamatan adalah?",
+    "answers": [
+      "helm"
+    ]
+  },
+  {
+    "prompt": "Alat penyedot debu otomatis atau manual untuk membersihkan karpet dan lantai adalah?",
+    "answers": [
+      "vacuum cleaner",
+      "penyedot debu",
+      "sapu"
+    ]
+  },
+  {
+    "prompt": "Alat elektronik dapur yang digunakan untuk mendinginkan dan mengawetkan makanan adalah?",
+    "answers": [
+      "kulkas",
+      "lemari es"
+    ]
+  },
+  {
+    "prompt": "Alat dapur elektronik yang digunakan untuk memasak dan menghangatkan nasi secara otomatis adalah?",
+    "answers": [
+      "rice cooker",
+      "magic com",
+      "magic jar"
+    ]
+  },
+  {
+    "prompt": "Benda kecil panjang dari kayu atau lilin yang dipakai saat tiup lilin ulang tahun adalah?",
+    "answers": [
+      "lilin"
+    ]
+  },
+  {
+    "prompt": "Olahraga raket yang sangat populer di Indonesia dengan pemain legendaris seperti Taufik Hidayat adalah?",
+    "answers": [
+      "bulu tangkis",
+      "badminton"
+    ]
+  },
+  {
+    "prompt": "Olahraga bola besar beregu yang memasukkan bola ke dalam keranjang ring adalah?",
+    "answers": [
+      "basket",
+      "bola basket"
+    ]
+  },
+  {
+    "prompt": "Olahraga 11 lawan 11 yang paling banyak ditonton di dunia adalah?",
+    "answers": [
+      "sepak bola",
+      "bola"
+    ]
+  },
+  {
+    "prompt": "Siapa pesepak bola asal Portugal yang terkenal dengan julukan CR7 dan selebrasi Siuuu?",
+    "answers": [
+      "cristiano ronaldo",
+      "ronaldo",
+      "cr7"
+    ]
+  },
+  {
+    "prompt": "Pesepak bola legendaris asal Argentina yang membawa negaranya juara Piala Dunia 2022 adalah?",
+    "answers": [
+      "messi",
+      "lionel messi"
+    ]
+  },
+  {
+    "prompt": "Warna bendera nasional Republik Indonesia adalah merah dan apa?",
+    "answers": [
+      "putih"
+    ]
+  },
+  {
+    "prompt": "Pada rambu lalu lintas lampu merah, warna hijau menandakan pengendara harus apa?",
+    "answers": [
+      "jalan",
+      "maju"
+    ]
+  },
+  {
+    "prompt": "Pada lampu lalu lintas, warna kuning menandakan pengendara harus apa?",
+    "answers": [
+      "hati-hati",
+      "hati hati",
+      "pelan-pelan"
+    ]
+  },
+  {
+    "prompt": "Pada lampu lalu lintas, warna merah menandakan pengendara harus apa?",
+    "answers": [
+      "berhenti",
+      "stop"
+    ]
+  },
+  {
+    "prompt": "Sebutan untuk tempat bertemunya penjual dan pembeli untuk bertransaksi kebutuhan sehari-hari adalah?",
+    "answers": [
+      "pasar",
+      "supermarket",
+      "mall"
+    ]
+  },
+  {
+    "prompt": "Tempat menyimpan uang dan melakukan transaksi keuangan resmi adalah?",
+    "answers": [
+      "bank"
+    ]
+  },
+  {
+    "prompt": "Kartu plastik kecil yang bisa digunakan untuk mengambil uang di mesin penarik tunai disebut kartu apa?",
+    "answers": [
+      "atm",
+      "kartu atm",
+      "debit"
+    ]
+  },
+  {
+    "prompt": "Nama bandara internasional utama yang terletak di Tangerang Banten dekat Jakarta adalah?",
+    "answers": [
+      "soekarno hatta",
+      "soetta"
+    ]
+  },
+  {
+    "prompt": "Kereta api super cepat pertama di Indonesia yang menghubungkan Jakarta dan Bandung bernama?",
+    "answers": [
+      "whoosh",
+      "kcic",
+      "kereta cepat"
+    ]
+  },
+  {
+    "prompt": "Jembatan terpanjang di Indonesia yang menghubungkan Surabaya dan Pulau Madura adalah Jembatan apa?",
+    "answers": [
+      "suramadu",
+      "jembatan suramadu"
+    ]
+  },
+  {
+    "prompt": "Rumah adat khas Minangkabau Sumatera Barat yang memiliki atap runcing seperti tanduk kerbau bernama?",
+    "answers": [
+      "rumah gadang",
+      "gadang"
+    ]
+  },
+  {
+    "prompt": "Alat musik tiup tradisional khas Sunda Jawa Barat yang terbuat dari bambu adalah?",
+    "answers": [
+      "suling",
+      "seruling"
+    ]
+  },
+  {
+    "prompt": "Alat musik gesek tradisional yang sering dimainkan dalam orkes Melayu atau keroncong adalah?",
+    "answers": [
+      "biola"
+    ]
+  },
+  {
+    "prompt": "Senjata khas tradisional suku Dayak berupa pipa tiup untuk melumpuhkan buruan adalah?",
+    "answers": [
+      "sumpit",
+      "sipet"
+    ]
+  },
+  {
+    "prompt": "Pakaian adat khas pria Jawa yang digunakan sebagai penutup kepala adalah?",
+    "answers": [
+      "blangkon"
+    ]
+  }
+]

@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 
 import type { CommandContext } from "../../types/command";
 import { type GameRewardService, gameRewardService } from "./gameReward.service";
@@ -42,47 +44,55 @@ interface TicTacToeSession {
   state: "waiting" | "active";
 }
 
-const QUIZ_BANK: Record<Exclude<QuizType, "tebakangka">, Question[]> = {
+function loadQuestions(fileName: string, fallback: Question[]): Question[] {
+  const possiblePaths = [
+    path.resolve(process.cwd(), "src/data/games", fileName),
+    path.resolve(process.cwd(), "dist/data/games", fileName),
+    path.resolve(__dirname, "../../data/games", fileName),
+    path.resolve(__dirname, "../../../src/data/games", fileName),
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      try {
+        const raw = fs.readFileSync(p, "utf-8");
+        const parsed = JSON.parse(raw) as unknown;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed as Question[];
+        }
+      } catch {
+        // ignore and fallback
+      }
+    }
+  }
+
+  return fallback;
+}
+
+const FALLBACK_QUIZ: Record<Exclude<QuizType, "tebakangka">, Question[]> = {
   kuis: [
-    {
-      prompt: "Apa ibu kota Indonesia?",
-      answers: ["jakarta"],
-    },
-    {
-      prompt: "Planet apa yang paling dekat dengan matahari?",
-      answers: ["merkurius", "mercury"],
-    },
+    { prompt: "Apa ibu kota Indonesia?", answers: ["jakarta"] },
+    { prompt: "Planet apa yang paling dekat dengan matahari?", answers: ["merkurius", "mercury"] },
   ],
   family100: [
-    {
-      prompt: "Sebutkan sesuatu yang biasanya ada di dapur.",
-      answers: ["kompor", "panci", "wajan", "pisau", "sendok", "piring"],
-    },
-    {
-      prompt: "Sebutkan benda yang sering dibawa ke sekolah.",
-      answers: ["tas", "buku", "pensil", "pulpen", "penghapus", "penggaris"],
-    },
+    { prompt: "Sebutkan sesuatu yang biasanya ada di dapur.", answers: ["kompor", "panci", "wajan", "pisau", "sendok", "piring"] },
+    { prompt: "Sebutkan benda yang sering dibawa ke sekolah.", answers: ["tas", "buku", "pensil", "pulpen", "penghapus", "penggaris"] },
   ],
   tebakkata: [
-    {
-      prompt: "Aku punya kunci tapi tidak punya pintu. Apakah aku?",
-      answers: ["keyboard"],
-    },
-    {
-      prompt: "Kata acak: A M K A N. Susun menjadi kata yang benar.",
-      answers: ["makan"],
-    },
+    { prompt: "Aku punya kunci tapi tidak punya pintu. Apakah aku?", answers: ["keyboard"] },
+    { prompt: "Kata acak: A M K A N. Susun menjadi kata yang benar.", answers: ["makan"] },
   ],
   tebakemoji: [
-    {
-      prompt: "Tebak frasa ini: hujan + uang.",
-      answers: ["hujan uang"],
-    },
-    {
-      prompt: "Tebak frasa ini: rumah + sakit.",
-      answers: ["rumah sakit"],
-    },
+    { prompt: "Tebak frasa ini: hujan + uang.", answers: ["hujan uang"] },
+    { prompt: "Tebak frasa ini: rumah + sakit.", answers: ["rumah sakit"] },
   ],
+};
+
+const QUIZ_BANK: Record<Exclude<QuizType, "tebakangka">, Question[]> = {
+  kuis: loadQuestions("kuis.json", FALLBACK_QUIZ.kuis),
+  family100: loadQuestions("family100.json", FALLBACK_QUIZ.family100),
+  tebakkata: loadQuestions("tebakkata.json", FALLBACK_QUIZ.tebakkata),
+  tebakemoji: loadQuestions("tebakemoji.json", FALLBACK_QUIZ.tebakemoji),
 };
 
 const WIN_LINES = [

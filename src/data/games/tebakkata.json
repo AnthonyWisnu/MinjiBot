@@ -1,0 +1,984 @@
+[
+  {
+    "prompt": "Punya jarum tapi tidak bisa menjahit, apakah aku?",
+    "answers": [
+      "jam",
+      "jam dinding",
+      "arloji"
+    ]
+  },
+  {
+    "prompt": "Makin dipotong justru makin panjang, apakah aku?",
+    "answers": [
+      "kacang panjang"
+    ]
+  },
+  {
+    "prompt": "Makin diisi justru makin ringan dan bisa melayang, apakah aku?",
+    "answers": [
+      "balon gas",
+      "balon udara",
+      "balon"
+    ]
+  },
+  {
+    "prompt": "Dikejar tidak pernah dapat, lari pun dia selalu mengikuti kita kemanapun, apakah aku?",
+    "answers": [
+      "bayangan"
+    ]
+  },
+  {
+    "prompt": "Kalau dibeli warnanya hitam, saat digunakan warnanya merah menyala, dan saat dibuang warnanya abu-abu?",
+    "answers": [
+      "arang"
+    ]
+  },
+  {
+    "prompt": "Punya daun tapi tidak punya batang, ranting, maupun akar, apakah aku?",
+    "answers": [
+      "buku",
+      "pintu"
+    ]
+  },
+  {
+    "prompt": "Punya banyak gigi tapi tidak bisa menggigit ataupun makan, apakah aku?",
+    "answers": [
+      "sisir",
+      "gergaji"
+    ]
+  },
+  {
+    "prompt": "Punya leher tapi tidak punya kepala, punya badan tapi tidak punya kaki, apakah aku?",
+    "answers": [
+      "botol",
+      "baju"
+    ]
+  },
+  {
+    "prompt": "Punya kaki tapi tidak bisa berjalan, selalu diam di tempat untuk diduduki, apakah aku?",
+    "answers": [
+      "kursi",
+      "meja"
+    ]
+  },
+  {
+    "prompt": "Selalu naik dan bertambah setiap tahun tapi tidak pernah bisa turun, apakah aku?",
+    "answers": [
+      "umur",
+      "usia"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang kalau ditutup jadi tongkat, kalau dibuka jadi tenda?",
+    "answers": [
+      "payung"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang selalu basah saat sedang mengeringkan sesuatu?",
+    "answers": [
+      "handuk"
+    ]
+  },
+  {
+    "prompt": "Bisa pecah tanpa harus disentuh atau dijatuhkan, apakah aku?",
+    "answers": [
+      "janji",
+      "suasana",
+      "rekor"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang makin ditarik makin pendek?",
+    "answers": [
+      "rokok"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang kalau dimasukin keluar, tapi kalau dikeluarin malah masuk?",
+    "answers": [
+      "kancing baju",
+      "kancing"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang punya mata banyak tapi tidak bisa melihat sama sekali?",
+    "answers": [
+      "nanas",
+      "dadu",
+      "jarum"
+    ]
+  },
+  {
+    "prompt": "Kalau tidur dia bangun, tapi kalau kita bangun dia malah tidur, apakah aku?",
+    "answers": [
+      "telapak kaki",
+      "kaki"
+    ]
+  },
+  {
+    "prompt": "Pintu apa yang didorong oleh sepuluh orang pun tidak akan pernah terbuka?",
+    "answers": [
+      "pintu geser",
+      "pintu terkunci"
+    ]
+  },
+  {
+    "prompt": "Kue apa yang bagian tengahnya bolong dan disukai polisi di film kartun?",
+    "answers": [
+      "donat"
+    ]
+  },
+  {
+    "prompt": "Lemari apa yang bisa dimasuki ke dalam kantong saku?",
+    "answers": [
+      "lemari seribuan",
+      "lemaribuan",
+      "lima ribuan"
+    ]
+  },
+  {
+    "prompt": "Becak apa yang tidak bisa dicat sama sekali?",
+    "answers": [
+      "becak hilang",
+      "becak tenggelam"
+    ]
+  },
+  {
+    "prompt": "Kera apa yang paling bikin sakit dan sengsara?",
+    "answers": [
+      "keracunan",
+      "kram"
+    ]
+  },
+  {
+    "prompt": "Gajah apa yang belalainya sangat pendek?",
+    "answers": [
+      "gajah pesek"
+    ]
+  },
+  {
+    "prompt": "Kutu apa yang paling mengerikan dan bikin panik orang di jalan?",
+    "answers": [
+      "kutukan"
+    ]
+  },
+  {
+    "prompt": "Ikan apa yang matanya banyak sekali?",
+    "answers": [
+      "ikan teri satu kilo",
+      "ikan teri sekilo"
+    ]
+  },
+  {
+    "prompt": "Ayam apa yang paling besar di dunia?",
+    "answers": [
+      "ayam semesta"
+    ]
+  },
+  {
+    "prompt": "Bebek apa yang jalannya selalu muter ke kiri terus?",
+    "answers": [
+      "bebek dikunci stang",
+      "bebek kesleo"
+    ]
+  },
+  {
+    "prompt": "Tikus apa yang cuma punya dua kaki saat berjalan?",
+    "answers": [
+      "mickey mouse",
+      "miki tikus"
+    ]
+  },
+  {
+    "prompt": "Bebek apa yang jalannya juga pakai dua kaki?",
+    "answers": [
+      "semua bebek",
+      "semua"
+    ]
+  },
+  {
+    "prompt": "Kuda apa yang jalannya paling lambat di dunia?",
+    "answers": [
+      "kuda catur",
+      "kuda mati"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi nama buah segar: G N A M A G",
+    "answers": [
+      "mangga"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi nama buah berduri manis: I N D U R A",
+    "answers": [
+      "durian"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi nama hewan buas: M I A R H U A",
+    "answers": [
+      "harimau"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi perabot rumah tangga: A M R I L E",
+    "answers": [
+      "lemari"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi makanan pokok: E N G O R A S I N G",
+    "answers": [
+      "nasi goreng"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi alat penerangan: P A M L U",
+    "answers": [
+      "lampu"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi tempat belajar mengajar: H K S L O E A",
+    "answers": [
+      "sekolah"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi nama ibukota negara kita: T A R A K A J",
+    "answers": [
+      "jakarta"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi nama pulau wisata terkenal: L A I B",
+    "answers": [
+      "bali"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi bumbu dapur penyedap: G A R M A",
+    "answers": [
+      "garam"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi minuman manis hitam: P I K O",
+    "answers": [
+      "kopi"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi alat tulis siswa: L E P N U P",
+    "answers": [
+      "pulpen"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi alas kaki santai: D A N A S L",
+    "answers": [
+      "sandal"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi hewan berbulu menggemaskan: C K G I U N",
+    "answers": [
+      "kucing"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi hewan setia sahabat manusia: N I J N G A",
+    "answers": [
+      "anjing"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi nama bulan kemerdekaan: T U G S S U A",
+    "answers": [
+      "agustus"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi nama hari libur akhir pekan: G U I M G N",
+    "answers": [
+      "minggu"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi sarana transportasi darat: O L B I M",
+    "answers": [
+      "mobil"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi kendaraan roda dua bermotor: R T M O O",
+    "answers": [
+      "motor"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi alat penunjuk waktu: J A N D I N D I N G",
+    "answers": [
+      "jam dinding"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi makanan berkuah bola daging: S A K B O",
+    "answers": [
+      "bakso"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi makanan khas Padang terenak: G E N R D N A",
+    "answers": [
+      "rendang"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi gorengan kedelai gurih: E P M T E",
+    "answers": [
+      "tempe"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi olahan kedelai putih lembut: A T H U",
+    "answers": [
+      "tahu"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi buah kaya vitamin C warna oranye: R U E K J",
+    "answers": [
+      "jeruk"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi buah tropis merah banyak air: N G A S A M E K",
+    "answers": [
+      "semangka"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi buah kesukaan monyet: N G S A P I",
+    "answers": [
+      "pisang"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi buah bermahkota sisik: S N N A A",
+    "answers": [
+      "nanas"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi bumbu dapur beraroma tajam: N G B W A A",
+    "answers": [
+      "bawang"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi bumbu dapur penghasil rasa pedas: I L B C A A",
+    "answers": [
+      "cabai",
+      "cabe"
+    ]
+  },
+  {
+    "prompt": "Kera apa yang berada di atas pohon dan suka memanjat gedung tinggi?",
+    "answers": [
+      "keranjingan",
+      "kera beneran"
+    ]
+  },
+  {
+    "prompt": "Gelas apa yang tidak bisa diisi air sama sekali?",
+    "answers": [
+      "gelas pecah",
+      "gelas tumpah"
+    ]
+  },
+  {
+    "prompt": "Ban apa yang rasanya gurih manis dan disukai anak-anak?",
+    "answers": [
+      "bandros",
+      "bang-bang"
+    ]
+  },
+  {
+    "prompt": "Bola apa yang mirip sama kucing?",
+    "answers": [
+      "bola-mon",
+      "bola balik"
+    ]
+  },
+  {
+    "prompt": "Rambut apa yang warnanya tidak pernah bisa hitam?",
+    "answers": [
+      "rambutan"
+    ]
+  },
+  {
+    "prompt": "Kota apa yang paling banyak bapak-bapaknya?",
+    "answers": [
+      "purwodadi",
+      "papua"
+    ]
+  },
+  {
+    "prompt": "Kunci apa yang bisa bikin orang goyang dan joget?",
+    "answers": [
+      "kunci-kunci dangdut",
+      "kunci gitar"
+    ]
+  },
+  {
+    "prompt": "Mata apa yang ukurannya paling besar di seluruh dunia?",
+    "answers": [
+      "matahari"
+    ]
+  },
+  {
+    "prompt": "Sapu apa yang selalu menempel di wajah manusia?",
+    "answers": [
+      "saputangan"
+    ]
+  },
+  {
+    "prompt": "Hewan apa yang paling banyak jenis saudaranya?",
+    "answers": [
+      "katak beradik"
+    ]
+  },
+  {
+    "prompt": "Hewan apa yang namanya cuma terdiri dari dua huruf?",
+    "answers": [
+      "udang",
+      "u dan g"
+    ]
+  },
+  {
+    "prompt": "Hewan apa yang paling hening dan tidak pernah bersuara?",
+    "answers": [
+      "semut"
+    ]
+  },
+  {
+    "prompt": "Hewan apa yang kalau jalan selalu miring ke samping?",
+    "answers": [
+      "kepiting"
+    ]
+  },
+  {
+    "prompt": "Nasi apa yang tidak pernah bisa dimakan oleh manusia?",
+    "answers": [
+      "nasi basi",
+      "nasib"
+    ]
+  },
+  {
+    "prompt": "Sayur apa yang jago bela diri dan bisa nyanyi?",
+    "answers": [
+      "sayur kol",
+      "kol"
+    ]
+  },
+  {
+    "prompt": "Jus apa yang paling tidak disukai orang saat berkendara?",
+    "answers": [
+      "justru macet",
+      "jus rem"
+    ]
+  },
+  {
+    "prompt": "Pohon apa yang paling pemberani dan tidak pernah takut?",
+    "answers": [
+      "pohon pisang",
+      "punya jantung"
+    ]
+  },
+  {
+    "prompt": "Daun apa yang tidak bisa ditiup oleh angin kencang?",
+    "answers": [
+      "daun telinga"
+    ]
+  },
+  {
+    "prompt": "Batu apa yang bisa melayang-layang di udara?",
+    "answers": [
+      "batu baterai",
+      "batuk"
+    ]
+  },
+  {
+    "prompt": "Air apa yang paling suka bikin kaget orang?",
+    "answers": [
+      "air mancur",
+      "air mata"
+    ]
+  },
+  {
+    "prompt": "Kopi apa yang bisa bikin orang cepat kaya mendadak?",
+    "answers": [
+      "kopikir sendiri"
+    ]
+  },
+  {
+    "prompt": "Bumi ini bulat, siapa yang pertama kali membuktikannya?",
+    "answers": [
+      "bakso bulat",
+      "tukang bakso"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang kalau dibalik malah berkurang nilainya?",
+    "answers": [
+      "angka 9",
+      "9"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang selalu di depan mata tapi tidak bisa dilihat secara langsung?",
+    "answers": [
+      "masa depan",
+      "bulu mata"
+    ]
+  },
+  {
+    "prompt": "Lubang apa yang paling kecil di tubuh manusia tapi bisa mengeluarkan air?",
+    "answers": [
+      "pori-pori"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang bisa menyala di kegelapan tapi tidak membutuhkan listrik?",
+    "answers": [
+      "kunang-kunang",
+      "lilin"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang selalu menang saat lomba lari melawan angin?",
+    "answers": [
+      "layang-layang"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang kalau dipukul orangnya malah tersenyum senang?",
+    "answers": [
+      "bedug",
+      "rebana",
+      "drum"
+    ]
+  },
+  {
+    "prompt": "Truk apa yang rodanya cuma ada tiga?",
+    "answers": [
+      "truk gambar",
+      "truk mainan"
+    ]
+  },
+  {
+    "prompt": "Mobil apa yang jalannya tidak pernah bisa belok kiri atau kanan?",
+    "answers": [
+      "mobil mogok",
+      "kereta api"
+    ]
+  },
+  {
+    "prompt": "Aku punya kota tapi tak berpohon, punya sungai tapi tak berair, punya gunung tapi tak bertanah. Apakah aku?",
+    "answers": [
+      "peta"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang bisa menangkap burung tanpa harus memegangnya?",
+    "answers": [
+      "kamera",
+      "sangkar"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang kalau dilempar ke atas warnanya hijau, kalau jatuh ke bawah warnanya merah?",
+    "answers": [
+      "semangka"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang selalu diinjak-injak orang tapi tidak pernah marah?",
+    "answers": [
+      "sandal",
+      "sepatu",
+      "lantai",
+      "keset"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang makin kita lihat makin tidak kelihatan?",
+    "answers": [
+      "kegelapan",
+      "kabut"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang bisa menembus kaca tanpa memecahkannya?",
+    "answers": [
+      "cahaya",
+      "sinar"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang punya kepala dan ekor tapi tidak punya tubuh sama sekali?",
+    "answers": [
+      "uang koin",
+      "koin"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang bisa berlari kencang tapi tidak punya kaki sama sekali?",
+    "answers": [
+      "air",
+      "waktu",
+      "angin"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang makin panas justru makin membeku?",
+    "answers": [
+      "telur"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang kalau dipegang dingin tapi kalau dibakar berasap?",
+    "answers": [
+      "es batu",
+      "kayu"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi nama organ pernapasan: U A R P P A R U",
+    "answers": [
+      "paru-paru",
+      "paru paru"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi nama organ pemompa darah: U N J A N T G",
+    "answers": [
+      "jantung"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi indra penciuman manusia: U N D I G H",
+    "answers": [
+      "hidung"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi indra penglihatan manusia: T A M A",
+    "answers": [
+      "mata"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi indra pendengaran manusia: G N A I L T E",
+    "answers": [
+      "telinga"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi makanan khas Bandung manis: N E Y E U M P",
+    "answers": [
+      "peuyeum"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi jajanan pasar ketan kelapa: R P L E P E",
+    "answers": [
+      "lemper"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi olahan daging gulung: D E L R E K P E",
+    "answers": [
+      "perkedel"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi sayuran oranye kelinci: R E T L O W",
+    "answers": [
+      "wortel"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi sayuran hijau Popeye: M Y B A A",
+    "answers": [
+      "bayam"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi buah alpukat: T U L A A P K",
+    "answers": [
+      "alpukat"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi buah merah kecil berbiji luar: B R O T I R E S",
+    "answers": [
+      "stroberi"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi buah ungu manis: S G I M G A N",
+    "answers": [
+      "manggis"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi buah salak: K L A S A",
+    "answers": [
+      "salak"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi hewan tercepat: T C H H E A E",
+    "answers": [
+      "cheetah"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi hewan berleher panjang: H A J A R E P",
+    "answers": [
+      "jerapah"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi hewan berbelalai panjang: H J A G A",
+    "answers": [
+      "gajah"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi hewan bertanduk cula satu: D A B K A",
+    "answers": [
+      "badak"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi hewan mamalia laut cerdas: M B A L U",
+    "answers": [
+      "lumba-lumba",
+      "lumba lumba"
+    ]
+  },
+  {
+    "prompt": "Susun huruf acak ini menjadi ikan predator ganas: U I H",
+    "answers": [
+      "hiu"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang kalau diputar kepalanya langsung mengeluarkan air?",
+    "answers": [
+      "keran",
+      "kran",
+      "keran air"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang selalu dibawa anak sekolah untuk menghapus coretan pensil?",
+    "answers": [
+      "penghapus",
+      "tipe-x",
+      "tipex"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang selalu mengalir dari tempat tinggi ke tempat rendah?",
+    "answers": [
+      "air",
+      "sungai"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang bisa menyerap air sangat banyak tapi badannya berpori-pori?",
+    "answers": [
+      "spons",
+      "busa"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang digunakan untuk mengunci pintu agar rumah aman?",
+    "answers": [
+      "gembok",
+      "kunci"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang berbunyi kencang di pagi hari untuk membangunkan orang tidur?",
+    "answers": [
+      "alarm",
+      "jam beker"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang ada di langit saat malam hari dan bentuknya bisa sabit atau purnama?",
+    "answers": [
+      "bulan"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang digunakan untuk melindungi mata dari terik sinar matahari?",
+    "answers": [
+      "kacamata hitam",
+      "kacamata"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang dipakai di jari manis saat acara pernikahan atau tunangan?",
+    "answers": [
+      "cincin"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang dipakai di pergelangan tangan untuk melihat waktu?",
+    "answers": [
+      "jam tangan",
+      "arloji"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang ada di dinding ruang tamu dan bisa memantulkan bayangan diri kita?",
+    "answers": [
+      "cermin",
+      "kaca"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang mengeluarkan angin sejuk berputar di langit-langit kamar?",
+    "answers": [
+      "kipas angin",
+      "kipas"
+    ]
+  },
+  {
+    "prompt": "Benda elektronik yang membuat ruangan menjadi sangat dingin dan sejuk?",
+    "answers": [
+      "ac",
+      "pendingin ruangan"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang digunakan untuk merapikan pakaian kusut dengan panas?",
+    "answers": [
+      "setrika",
+      "gosokan"
+    ]
+  },
+  {
+    "prompt": "Benda apa yang digunakan untuk mencuci pakaian kotor secara otomatis?",
+    "answers": [
+      "mesin cuci"
+    ]
+  },
+  {
+    "prompt": "Tempat untuk membuang sampah agar lingkungan tetap bersih dan rapi?",
+    "answers": [
+      "tempat sampah",
+      "tong sampah"
+    ]
+  },
+  {
+    "prompt": "Tempat untuk memarkirkan pesawat terbang di bandara?",
+    "answers": [
+      "hanggar",
+      "apron"
+    ]
+  },
+  {
+    "prompt": "Tempat untuk membeli tiket dan menonton film layar lebar terbaru?",
+    "answers": [
+      "bioskop"
+    ]
+  },
+  {
+    "prompt": "Tempat untuk meminjam dan membaca ratusan buku secara gratis?",
+    "answers": [
+      "perpustakaan"
+    ]
+  },
+  {
+    "prompt": "Tempat berobat saat tubuh merasa sakit dan butuh perawatan dokter?",
+    "answers": [
+      "rumah sakit",
+      "puskesmas",
+      "klinik"
+    ]
+  },
+  {
+    "prompt": "Hewan kecil penghasil madu manis alami yang suka hinggap di bunga adalah?",
+    "answers": [
+      "lebah"
+    ]
+  },
+  {
+    "prompt": "Hewan malam penghisap darah manusia yang menimbulkan rasa gatal dan bentol?",
+    "answers": [
+      "nyamuk"
+    ]
+  },
+  {
+    "prompt": "Hewan kecil pekerja keras yang suka bergotong royong membawa makanan manis?",
+    "answers": [
+      "semut"
+    ]
+  },
+  {
+    "prompt": "Hewan berkaki delapan yang pandai membuat jaring perangkap sarang?",
+    "answers": [
+      "laba-laba",
+      "labalaba"
+    ]
+  },
+  {
+    "prompt": "Hewan reptil yang bisa mengubah warna kulitnya sesuai tempat ia menempel?",
+    "answers": [
+      "bunglon"
+    ]
+  },
+  {
+    "prompt": "Hewan laut yang memiliki tinta hitam pekat untuk melarikan diri dari musuh?",
+    "answers": [
+      "cumi-cumi",
+      "cumi",
+      "gurita"
+    ]
+  },
+  {
+    "prompt": "Hewan laut bertentakel yang bentuknya bulat pipih transparan seperti payung?",
+    "answers": [
+      "ubur-ubur",
+      "ubur ubur"
+    ]
+  },
+  {
+    "prompt": "Tanaman gurun yang batangnya berduri tajam dan mampu menyimpan banyak cadangan air?",
+    "answers": [
+      "kaktus"
+    ]
+  },
+  {
+    "prompt": "Tanaman air yang bunganya indah mengapung di atas kolam atau danau tenang?",
+    "answers": [
+      "teratai"
+    ]
+  },
+  {
+    "prompt": "Bumbu dapur penyedap alami yang membuat masakan terasa manis gurih?",
+    "answers": [
+      "gula",
+      "kecap"
+    ]
+  }
+]
