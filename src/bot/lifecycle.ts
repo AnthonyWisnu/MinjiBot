@@ -115,11 +115,13 @@ export class BotLifecycle {
       return;
     }
 
+    if (this.isStopping) {
+      this.socket = null;
+      return;
+    }
+
     const statusCode = getDisconnectStatusCode(update.lastDisconnect?.error);
-    const shouldReconnect =
-      !this.isStopping &&
-      statusCode !== DisconnectReason.loggedOut &&
-      statusCode !== DisconnectReason.badSession;
+    const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
     logger.warn(
       {
@@ -136,7 +138,8 @@ export class BotLifecycle {
       return;
     }
 
-    logger.error("Koneksi WhatsApp tidak direconnect. Login ulang diperlukan.");
+    logger.error("Koneksi WhatsApp di-logout (401). Keluar dari proses agar ditangani PM2.");
+    process.exit(1);
   }
 
   private scheduleReconnect(reason: string): void {
@@ -145,6 +148,10 @@ export class BotLifecycle {
     }
 
     this.reconnectAttempt += 1;
+    if (this.reconnectAttempt > 10) {
+      logger.error("Reconnect WhatsApp gagal 10 kali berturut-turut. Keluar agar PM2 me-restart proses.");
+      process.exit(1);
+    }
     const delayMs = Math.min(
       env.RECONNECT_INITIAL_MS * 2 ** (this.reconnectAttempt - 1),
       env.RECONNECT_MAX_MS,
