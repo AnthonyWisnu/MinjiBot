@@ -29,7 +29,7 @@ export const gameCommands: CommandDefinition[] = [
   },
   {
     name: "tictactoe",
-    execute: (context) => replyGame(context, () => gameService.playTicTacToe(context)),
+    execute: (context) => replyGame(context, () => Promise.resolve(gameService.playTicTacToe(context))),
   },
   {
     name: "nyerah",
@@ -37,9 +37,9 @@ export const gameCommands: CommandDefinition[] = [
   },
 ];
 
-async function replyGame(context: CommandContext, action: () => string): Promise<void> {
+async function replyGame(context: CommandContext, action: () => Promise<string>): Promise<void> {
   try {
-    await context.reply(action());
+    await context.reply(await action());
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Game gagal diproses. Silakan coba lagi."));
   }

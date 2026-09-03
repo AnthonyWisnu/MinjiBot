@@ -562,6 +562,13 @@ export class MemberEconomyService {
 
   // Records game outcome without exposing direct profile mutation to game handlers.
   async recordGameResult(input: RecordGameResultInput): Promise<GroupMemberProfile> {
+    if (input.idempotencyKey) {
+      const existing = await this.txRepo.findByIdempotencyKey(input.idempotencyKey);
+      if (existing) {
+        throw new DuplicateOperationError();
+      }
+    }
+
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
 
@@ -572,6 +579,23 @@ export class MemberEconomyService {
           ...(input.won ? { totalGamesWon: { increment: 1 } } : {}),
         },
       });
+
+      if (input.idempotencyKey) {
+        await this.txRepo.create(
+          {
+            profileId: profile.id,
+            groupJid: input.groupJid,
+            userJid: input.userJid,
+            asset: MemberTransactionAsset.POINT,
+            type: MemberTransactionType.GAME_REWARD,
+            amount: 0,
+            correlationId: input.correlationId,
+            idempotencyKey: input.idempotencyKey,
+            note: input.won ? "game-win-stat" : "game-played-stat",
+          },
+          tx,
+        );
+      }
 
       return updated;
     });

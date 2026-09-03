@@ -1,0 +1,44 @@
+/**
+ * Reward table untuk semua game yang menggunakan persistent member economy.
+ * Nilai ini adalah sumber kebenaran tunggal. Jangan duplikasi di game.service.ts.
+ */
+
+export const KUIS_REWARD = {
+  CORRECT_POINTS: 100,
+  CORRECT_XP: 40,
+  WRONG_XP: 5,
+} as const;
+
+export const TEBAKKATA_REWARD = {
+  CORRECT_POINTS: 125,
+  CORRECT_XP: 50,
+  SURRENDER_XP: 10,
+} as const;
+
+export const TEBAKEMOJI_REWARD = {
+  CORRECT_POINTS: 100,
+  CORRECT_XP: 40,
+  SURRENDER_XP: 10,
+} as const;
+
+export const TEBAKANGKA_REWARD = {
+  BAND_1_3: { POINTS: 200, XP: 80 },
+  BAND_4_7: { POINTS: 150, XP: 60 },
+  BAND_8_PLUS: { POINTS: 100, XP: 40 },
+  FAIL_XP: 10,
+} as const;
+
+export const FAMILY100_REWARD = {
+  ANSWER_POINTS: 75,
+  ANSWER_XP: 30,
+  FINAL_BONUS_POINTS: 50,
+  FINAL_BONUS_XP: 20,
+  CAP_POINTS: 450,
+  CAP_XP: 180,
+} as const;
+
+export function getTebakangkaReward(attempts: number): { points: number; xp: number } {
+  if (attempts <= 3) return { points: TEBAKANGKA_REWARD.BAND_1_3.POINTS, xp: TEBAKANGKA_REWARD.BAND_1_3.XP };
+  if (attempts <= 7) return { points: TEBAKANGKA_REWARD.BAND_4_7.POINTS, xp: TEBAKANGKA_REWARD.BAND_4_7.XP };
+  return { points: TEBAKANGKA_REWARD.BAND_8_PLUS.POINTS, xp: TEBAKANGKA_REWARD.BAND_8_PLUS.XP };
+}

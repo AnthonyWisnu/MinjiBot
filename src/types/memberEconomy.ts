@@ -147,4 +147,6 @@ export interface SetXpInput extends BaseInput {
 
 export interface RecordGameResultInput extends BaseInput {
   won: boolean;
+  idempotencyKey?: string;
+  correlationId?: string;
 }
