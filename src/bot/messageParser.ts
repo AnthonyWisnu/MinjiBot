@@ -63,10 +63,20 @@ export function parseCommandMessage(socket: WASocket, message: WAMessage): Comma
     mentionedJids: extractMentionedJids(content),
     role: "MEMBER",
     quoted: extractQuotedMessage(content),
-    reply: async (replyText: string) => {
+    reply: async (replyText: string, options?: { mentions?: string[] }) => {
+      let mentions = options?.mentions;
+      if (!mentions || mentions.length === 0) {
+        const matches = replyText.match(/@(\d{5,25})/g);
+        if (matches) {
+          mentions = matches.map((m) => `${m.slice(1)}@s.whatsapp.net`);
+        }
+      }
       await socket.sendMessage(
         chatJid,
-        { text: replyText },
+        {
+          text: replyText,
+          mentions,
+        },
         {
           quoted: message,
         },

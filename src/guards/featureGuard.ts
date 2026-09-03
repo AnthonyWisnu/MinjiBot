@@ -43,7 +43,9 @@ export class FeatureGuard {
       return { allowed: true };
     }
 
-    const sender = context.senderUserJid ?? context.senderJid;
+    const sender = typeof context.senderUserJid === "string" && context.senderUserJid.length > 0
+      ? context.senderUserJid
+      : context.senderJid;
     if (sender && roleGuard.isSuperOwner(sender)) {
       return { allowed: true };
     }

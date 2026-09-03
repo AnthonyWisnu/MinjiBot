@@ -36,6 +36,7 @@ function createContext(commandName: string): CommandContext {
     message: {},
     chatJid: "120@g.us",
     senderJid: "6281@s.whatsapp.net",
+    senderUserJid: "6281@s.whatsapp.net",
     isGroup: true,
     commandName,
     args: [],
