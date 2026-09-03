@@ -1,15 +1,26 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { memberProfileViewService } from "../../services/member/memberProfileView.service";
 import type { MemberProfileViewService, ProfileView } from "../../services/member/memberProfileView.service";
 import { roleGuard } from "../../guards/roleGuard";
 import { normalizeUserJid } from "../../utils/jid";
+import { TenantAdminRepository } from "../../repositories/tenantAdmin.repository";
 
-function formatProfileView(view: ProfileView, label: string, isSuperOwner = false): string {
+const tenantAdminRepo = new TenantAdminRepository();
+
+function formatProfileView(
+  view: ProfileView,
+  label: string,
+  role: string,
+  isSuperOwner = false,
+): string {
   if (isSuperOwner) {
     return [
       "*─── [ PROFIL MEMBER ] ───*",
       `• User: ${label}`,
-      "• Role: Super Owner (Master)",
+      `• Role: ${role}`,
       "• Rank: Immortal [MAX]",
       "• XP: 999.999",
       "• Poin: 999.999",
@@ -29,6 +40,7 @@ function formatProfileView(view: ProfileView, label: string, isSuperOwner = fals
   return [
     "*─── [ PROFIL MEMBER ] ───*",
     `• User: ${label}`,
+    `• Role: ${role}`,
     `• Rank: ${rank}`,
     `• XP: ${profile.experience.toLocaleString("id-ID")}`,
     `• Poin: ${profile.pointsBalance.toLocaleString("id-ID")}`,
@@ -46,12 +58,28 @@ async function resolveTargetInfo(
   let canonicalJid = normalizeUserJid(rawJid);
   const mentions = [canonicalJid];
 
-  if (canonicalJid.endsWith("@lid") && context.isGroup) {
+  const rawSocket = (context as { socket?: unknown }).socket;
+  if (
+    canonicalJid.endsWith("@lid") &&
+    context.isGroup &&
+    rawSocket &&
+    typeof rawSocket === "object" &&
+    "groupMetadata" in rawSocket
+  ) {
     try {
-      const metadata = await context.socket.groupMetadata(context.chatJid);
+      const socket = rawSocket as {
+        groupMetadata: (jid: string) => Promise<{
+          participants: {
+            id: string;
+            jid?: string;
+            lid?: string;
+          }[];
+        }>;
+      };
+      const metadata = await socket.groupMetadata(context.chatJid);
       const participant = metadata.participants.find((p) => {
-        const pJid = (p as { jid?: string }).jid;
-        const pLid = (p as { lid?: string }).lid;
+        const pJid = p.jid;
+        const pLid = p.lid;
         const matchId = normalizeUserJid(p.id) === canonicalJid;
         const matchJid = pJid ? normalizeUserJid(pJid) === canonicalJid : false;
         const matchLid = pLid ? normalizeUserJid(pLid) === canonicalJid : false;
@@ -72,6 +100,190 @@ async function resolveTargetInfo(
 
   const phone = canonicalJid.split("@")[0] ?? canonicalJid;
   return { userJid: canonicalJid, phone, mentions };
+}
+
+function getFallbackAvatarBuffer(): Buffer | null {
+  const possiblePaths = [
+    path.resolve(process.cwd(), "assets/minji.png"),
+    path.resolve(process.cwd(), "src/Minji.png"),
+    path.resolve(__dirname, "../../assets/minji.png"),
+    path.resolve(__dirname, "../../../assets/minji.png"),
+    path.resolve(__dirname, "../../Minji.png"),
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      try {
+        return fs.readFileSync(p);
+      } catch {
+        // ignore read error
+      }
+    }
+  }
+  return null;
+}
+
+async function sendProfileMessage(
+  context: CommandContext,
+  text: string,
+  targetUserJid: string,
+  mentions: string[],
+): Promise<void> {
+  const rawSocket = (context as { socket?: unknown }).socket;
+  if (!rawSocket || typeof rawSocket !== "object") {
+    await context.reply(text, { mentions });
+    return;
+  }
+
+  const socket = rawSocket as {
+    sendMessage?: (
+      chatJid: string,
+      content: { image: { url: string } | Buffer; caption: string; mentions?: string[] },
+      options?: { quoted?: unknown },
+    ) => Promise<unknown>;
+    profilePictureUrl?: (jid: string, type?: "image" | "preview") => Promise<string>;
+  };
+
+  if (typeof socket.sendMessage !== "function") {
+    await context.reply(text, { mentions });
+    return;
+  }
+
+  let profilePictureUrl: string | null = null;
+
+  if (typeof socket.profilePictureUrl === "function") {
+    try {
+      profilePictureUrl = await socket.profilePictureUrl(targetUserJid, "image");
+    } catch {
+      for (const altJid of mentions) {
+        if (altJid !== targetUserJid) {
+          try {
+            profilePictureUrl = await socket.profilePictureUrl(altJid, "image");
+            if (profilePictureUrl) break;
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+  }
+
+  if (profilePictureUrl) {
+    try {
+      await socket.sendMessage(
+        context.chatJid,
+        {
+          image: { url: profilePictureUrl },
+          caption: text,
+          mentions,
+        },
+        {
+          quoted: context.message,
+        },
+      );
+      return;
+    } catch {
+      // Fallback to local avatar or text
+    }
+  }
+
+  const fallbackBuffer = getFallbackAvatarBuffer();
+  if (fallbackBuffer) {
+    try {
+      await socket.sendMessage(
+        context.chatJid,
+        {
+          image: fallbackBuffer,
+          caption: text,
+          mentions,
+        },
+        {
+          quoted: context.message,
+        },
+      );
+      return;
+    } catch {
+      // Fallback to text
+    }
+  }
+
+  await context.reply(text, { mentions });
+}
+
+async function resolveMemberRole(
+  context: CommandContext,
+  targetUserJid: string,
+  targetMentions: string[],
+): Promise<string> {
+  // 1. Super Owner
+  if (
+    roleGuard.isSuperOwner(targetUserJid) ||
+    targetMentions.some((jid) => roleGuard.isSuperOwner(jid))
+  ) {
+    return "Super Owner (Master)";
+  }
+
+  // 2. Tenant Owner
+  const ownerJid = context.tenantGroup?.ownerJid;
+  if (ownerJid) {
+    const normOwner = normalizeUserJid(ownerJid);
+    if (normOwner === targetUserJid || targetMentions.includes(normOwner)) {
+      return "Owner Tenant";
+    }
+  }
+
+  // 3. Tenant Admin
+  try {
+    const isTenantAdmin = await tenantAdminRepo.exists(context.chatJid, targetUserJid);
+    if (isTenantAdmin) {
+      return "Tenant Admin";
+    }
+  } catch {
+    // ignore
+  }
+
+  // 4. Admin WhatsApp Grup
+  if (context.isGroup) {
+    try {
+      const rawSocket = (context as { socket?: unknown }).socket;
+      if (rawSocket && typeof rawSocket === "object" && "groupMetadata" in rawSocket) {
+        const socket = rawSocket as {
+          groupMetadata: (jid: string) => Promise<{
+            participants: {
+              id: string;
+              jid?: string;
+              lid?: string;
+              admin?: "admin" | "superadmin" | null;
+            }[];
+          }>;
+        };
+
+        if (typeof socket.groupMetadata === "function") {
+          const metadata = await socket.groupMetadata(context.chatJid);
+          const participant = metadata.participants.find((p) => {
+            const matchId =
+              normalizeUserJid(p.id) === targetUserJid || targetMentions.includes(normalizeUserJid(p.id));
+            const matchJid = p.jid
+              ? normalizeUserJid(p.jid) === targetUserJid || targetMentions.includes(normalizeUserJid(p.jid))
+              : false;
+            const matchLid = p.lid
+              ? normalizeUserJid(p.lid) === targetUserJid || targetMentions.includes(normalizeUserJid(p.lid))
+              : false;
+            return matchId || matchJid || matchLid;
+          });
+
+          if (participant?.admin === "admin" || participant?.admin === "superadmin") {
+            return "Admin Grup";
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 5. Member Biasa
+  return "Member Grup";
 }
 
 async function executeProfile(
@@ -107,9 +319,9 @@ async function executeProfile(
     );
     const label = `@${targetInfo.phone}`;
     const isSuperOwner = roleGuard.isSuperOwner(targetInfo.userJid);
-    await context.reply(formatProfileView(view, label, isSuperOwner), {
-      mentions: targetInfo.mentions,
-    });
+    const role = await resolveMemberRole(context, targetInfo.userJid, targetInfo.mentions);
+    const text = formatProfileView(view, label, role, isSuperOwner);
+    await sendProfileMessage(context, text, targetInfo.userJid, targetInfo.mentions);
   } else {
     // View own profile (creates if not exists).
     const senderInfo = await resolveTargetInfo(context, ownSenderJid);
@@ -119,9 +331,9 @@ async function executeProfile(
     );
     const label = `@${senderInfo.phone}`;
     const isSuperOwner = roleGuard.isSuperOwner(senderInfo.userJid);
-    await context.reply(formatProfileView(view, label, isSuperOwner), {
-      mentions: senderInfo.mentions,
-    });
+    const role = await resolveMemberRole(context, senderInfo.userJid, senderInfo.mentions);
+    const text = formatProfileView(view, label, role, isSuperOwner);
+    await sendProfileMessage(context, text, senderInfo.userJid, senderInfo.mentions);
   }
 }
 
