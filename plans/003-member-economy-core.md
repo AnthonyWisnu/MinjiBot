@@ -2,7 +2,64 @@
 
 ## Status
 
-Planned
+Completed
+
+## Execution Evidence
+
+### Files Added
+
+- `src/types/memberEconomy.ts` - 7 domain error classes + 14 input interfaces
+- `src/services/member/rank.service.ts` - Pure rank resolver (resolveRank, nextRankThreshold, rankProgress), no DB access
+- `src/services/member/memberEconomy.service.ts` - Core service with all balance mutations
+- `tests/memberEconomy.test.ts` - 32 new tests (ok 105 - ok 136)
+
+### Concurrency Strategy
+
+Strategy: `updateMany` with balance predicate + affected-row count check
+
+Pattern:
+```typescript
+const result = await tx.groupMemberProfile.updateMany({
+  where: { id: profile.id, pointsBalance: { gte: amount } },
+  data: { pointsBalance: { decrement: amount } },
+});
+if (result.count === 0) throw new InsufficientPointsError();
+```
+
+Rationale: Atomically validates and updates in a single SQL round-trip.
+If count === 0, a concurrent write already modified the balance or the balance was insufficient.
+No separate SELECT FOR UPDATE needed. Works with PostgreSQL default READ COMMITTED isolation.
+
+### Domain Operations Implemented
+
+| Operation | Method | Atomicity |
+|---|---|---|
+| Find or lazy-create profile | findOrCreateProfile | upsert |
+| Find profile (throw if missing) | findProfile | findUnique |
+| Credit points | creditPoints | tx + update |
+| Debit points | debitPoints | tx + updateMany predicate |
+| Set points (Super Owner) | setPoints | tx + update |
+| Credit limit | creditLimit | tx + update |
+| Reserve limit | reserveLimit | tx + updateMany predicate |
+| Consume limit | consumeLimit | tx + updateMany predicate |
+| Refund limit | refundLimit | tx + updateMany predicate |
+| Set limit (Super Owner) | setLimit | tx + update |
+| Credit XP | creditXp | tx + update |
+| Set XP (Super Owner) | setXp | tx + update |
+| Record game result | recordGameResult | tx + update |
+
+### Validation Results
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 errors |
+| `npm run build` | 0 errors |
+| `npm run test` | 136 pass, 0 fail (32 new tests) |
+
+### Commit
+
+See git log for SHA.
 
 ## Objective
 
