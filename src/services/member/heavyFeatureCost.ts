@@ -10,8 +10,6 @@ export const HEAVY_FEATURE_COST: Partial<Record<HeavyFeatureType, number>> = {
   [HeavyFeatureType.INSTAGRAM_STORY_DOWNLOAD]: 1,
   [HeavyFeatureType.PLAY_SONG]: 1,
   [HeavyFeatureType.SONG_LYRICS]: 1,
-  [HeavyFeatureType.HD_AI_PHOTO]: 2,
-  [HeavyFeatureType.HD_AI_PHOTO_DOCUMENT]: 2,
 };
 
 export function getFeatureCost(feature: HeavyFeatureType): number {

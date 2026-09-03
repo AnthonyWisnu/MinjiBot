@@ -208,3 +208,74 @@ void test("LeaderboardService: display name falls back to phone number from JID"
   const result = await service.getTopRank("g@g.us", "caller@s.whatsapp.net");
   assert.equal(result.entries[0]?.displayName, "628123456789");
 });
+
+void test("profileCommands: shows tagged member profile when mentionedJids provided", async () => {
+  const { createProfileCommands } = await import("../src/commands/member/profile.command");
+  const profile = makeProfile({ userJid: "628222@s.whatsapp.net" });
+  const mockService = {
+    getOwnProfile: (...args: unknown[]) => {
+      void args;
+      return Promise.resolve({
+        profile,
+        rank: "Bronze",
+        createdAtWib: "2026-09-03",
+      });
+    },
+  };
+  const profileCmd = createProfileCommands(mockService).find((c) => c.name === "profile");
+  assert.ok(profileCmd);
+
+  let repliedText = "";
+  const mockContext = {
+    isGroup: true,
+    tenantGroup: { groupJid: "120@g.us" },
+    chatJid: "120@g.us",
+    senderUserJid: "628111@s.whatsapp.net",
+    mentionedJids: ["628222@s.whatsapp.net"],
+    args: ["@628222"],
+    reply: (text: string) => {
+      repliedText = text;
+      return Promise.resolve();
+    },
+  };
+
+  await profileCmd.execute(mockContext as never);
+  assert.ok(repliedText.includes("PROFIL MEMBER"));
+  assert.ok(repliedText.includes("@628222"));
+});
+
+void test("profileCommands: shows quoted member profile when quoted message provided", async () => {
+  const { createProfileCommands } = await import("../src/commands/member/profile.command");
+  const profile = makeProfile({ userJid: "628333@s.whatsapp.net" });
+  const mockService = {
+    getOwnProfile: (...args: unknown[]) => {
+      void args;
+      return Promise.resolve({
+        profile,
+        rank: "Silver",
+        createdAtWib: "2026-09-03",
+      });
+    },
+  };
+  const profileCmd = createProfileCommands(mockService).find((c) => c.name === "profile");
+  assert.ok(profileCmd);
+
+  let repliedText = "";
+  const mockContext = {
+    isGroup: true,
+    tenantGroup: { groupJid: "120@g.us" },
+    chatJid: "120@g.us",
+    senderUserJid: "628111@s.whatsapp.net",
+    mentionedJids: [],
+    quoted: { participantJid: "628333@s.whatsapp.net" },
+    args: [],
+    reply: (text: string) => {
+      repliedText = text;
+      return Promise.resolve();
+    },
+  };
+
+  await profileCmd.execute(mockContext as never);
+  assert.ok(repliedText.includes("PROFIL MEMBER"));
+  assert.ok(repliedText.includes("@628333"));
+});

@@ -52,7 +52,6 @@ function formatFeatureUpdated(tenantGroup: TenantGroup, setting: TenantFeatureSe
     "[STATUS FITUR]",
     `Downloader: ${formatEnabled(setting.downloaderEnabled)}`,
     `HD: ${formatEnabled(setting.hdEnabled)}`,
-    `HD AI: ${formatEnabled(setting.hdAiEnabled)}`,
     `Game: ${formatEnabled(setting.gameEnabled)}`,
     `Welcome: ${formatEnabled(setting.welcomeEnabled)}`,
     `Antilink: ${formatEnabled(setting.antiLinkEnabled)}`,

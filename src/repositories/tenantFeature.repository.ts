@@ -16,7 +16,17 @@ export class TenantFeatureRepository {
   ensureForGroup(groupJid: string): Promise<TenantFeatureSetting> {
     return this.client.tenantFeatureSetting.upsert({
       where: { groupJid },
-      create: { groupJid },
+      create: {
+        groupJid,
+        downloaderEnabled: true,
+        hdEnabled: true,
+        gameEnabled: true,
+        welcomeEnabled: true,
+        antiLinkEnabled: true,
+        antiSpamEnabled: true,
+        reminderEnabled: true,
+        tagAllEnabled: true,
+      },
       update: {},
     });
   }

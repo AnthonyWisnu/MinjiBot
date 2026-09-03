@@ -17,93 +17,77 @@ export class MenuService {
 
   buildOwnerMenu(): string {
     return [
-      "[MENU SUPER OWNER]",
-      "",
-      "[TENANT]",
-      ".pendinggroup",
-      ".activatetenant <nomorList/kode> <nomorOwner> <durasi>",
-      ".listtenant",
-      ".tenantinfo <kode>",
-      ".extendtenant <kode> <durasi>",
-      ".settenantexpire <kode> <YYYY-MM-DD>",
-      ".blocktenant <kode>",
-      ".unblocktenant <kode>",
-      ".removetenant <kode>",
-      "",
-      "[MENU]",
-      ".tenantmenu",
-      ".featuremenu",
-      ".menu",
+      "╭── [ MENU SUPER OWNER ] ──",
+      "│",
+      "│ [TENANT]",
+      "│ • .pendinggroup",
+      "│ • .activatetenant <nomorList/kode> <nomorOwner> <durasi>",
+      "│ • .listtenant [all|removed]",
+      "│ • .tenantinfo <kode>",
+      "│ • .extendtenant <kode> <durasi>",
+      "│ • .settenantexpire <kode> <YYYY-MM-DD>",
+      "│ • .blocktenant / .unblocktenant <kode>",
+      "│ • .removetenant <kode>",
+      "│",
+      "│ [NAVIGASI]",
+      "│ • .tenantmenu",
+      "│ • .featuremenu",
+      "│ • .menu",
+      "╰──────────────────────────",
     ].join("\n");
   }
 
   buildTenantOwnerMenu(): string {
     return [
-      "[MENU TENANT OWNER]",
-      "",
-      "[TENANT]",
-      ".mytenant",
-      ".usetenant <nomor/kode>",
-      ".currenttenant",
-      ".cleartenant",
-      "",
-      "[PENGATURAN TENANT]",
-      ".feature <fitur> <on/off>",
-      ".welcome on",
-      ".welcome off",
-      ".setwelcome <pesan>",
-      ".antilink on",
-      ".antilink off",
-      ".antispam on",
-      ".antispam off",
-      ".addtenantadmin <nomor>",
-      ".removetenantadmin <nomor>",
-      ".listtenantadmin",
-      "",
-      "[FITUR PRIVATE CHAT]",
-      ".tt <link>",
-      ".ig <link>",
-      ".igstory <link>",
-      ".play <nama lagu>",
-      ".lirik <judul/artis>",
-      ".lirik",
-      ".lirik doc <judul/artis>",
-      ".s",
-      ".sticker",
-      ".smeme <teks>",
-      ".gambar",
-      ".toimg",
-      ".hdai",
-      ".hdai doc",
-      "",
-      "[INFO]",
-      ".profile",
-      ".menu",
+      "╭── [ MENU TENANT OWNER ] ──",
+      "│",
+      "│ [PENGELOLAAN TENANT]",
+      "│ • .mytenant",
+      "│ • .usetenant <nomor/kode>",
+      "│ • .currenttenant",
+      "│ • .cleartenant",
+      "│ • .transferowner @user",
+      "│ • .addtenantadmin / .removetenantadmin <nomor>",
+      "│ • .listtenantadmin",
+      "│",
+      "│ [PENGATURAN GRUP]",
+      "│ • .feature <fitur> <on/off>",
+      "│ • .welcome [on|off]",
+      "│ • .setwelcome <pesan>",
+      "│ • .antilink [on|off]",
+      "│ • .antispam [on|off|status|mode <normal|soft|strict>]",
+      "│",
+      "│ [FITUR MEDIA]",
+      "│ • .play <nama lagu>",
+      "│ • .lirik [doc] <judul>",
+      "│ • .tt / .ig / .igstory <url>",
+      "│ • .hd [doc]",
+      "│ • .sticker / .s",
+      "│ • .smeme <teks>",
+      "│ • .gambar <teks>",
+      "│ • .toimg",
+      "│",
+      "│ [INFO]",
+      "│ • .profile [@user]",
+      "│ • .menu",
+      "╰───────────────────────────",
     ].join("\n");
   }
 
   buildFeatureMenu(): string {
     return [
-      "[MENU FITUR]",
-      "",
-      ".feature downloader on",
-      ".feature downloader off",
-      ".feature hd on",
-      ".feature hd off",
-      ".feature hdai on",
-      ".feature hdai off",
-      ".feature welcome on",
-      ".feature welcome off",
-      ".feature antilink on",
-      ".feature antilink off",
-      ".feature antispam on",
-      ".feature antispam off",
-      ".feature reminder on",
-      ".feature reminder off",
-      ".feature tagall on",
-      ".feature tagall off",
-      ".feature game on",
-      ".feature game off",
+      "╭── [ MENU KONTROL FITUR ] ──",
+      "│ Format: .feature <nama> <on/off>",
+      "│",
+      "│ • downloader : download media TikTok/IG",
+      "│ • hd         : penjernih foto standar",
+      "│ • game       : kuis, tebak kata/emoji, tictactoe",
+      "│ • welcome    : pesan sambutan member baru",
+      "│ • antilink   : proteksi link grup lain",
+      "│ • antispam   : proteksi spam pesan",
+      "│ • reminder   : pengingat waktu / alarm",
+      "│ • tagall     : mention semua member grup",
+      "╰────────────────────────────",
     ].join("\n");
   }
 
@@ -117,11 +101,13 @@ export class MenuService {
     }
 
     return [
-      "[BANTUAN MINJIBOT]",
-      "",
-      ".menu",
-      "",
-      "Fitur private hanya tersedia untuk Tenant Owner.",
+      "╭── [ BANTUAN MINJIBOT ] ──",
+      "│",
+      "│ Fitur bot lengkap dapat diakses di grup aktif.",
+      "│ Fitur private chat hanya untuk Tenant Owner.",
+      "│",
+      "│ • .menu",
+      "╰──────────────────────────",
     ].join("\n");
   }
 
@@ -151,28 +137,29 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
   ): string {
     return [
-      "[MENU GRUP SUPER OWNER]",
+      ...this.buildTenantHeader("Super Owner", tenantGroup),
       "",
-      ...this.buildTenantSummaryLines(tenantGroup),
-      "",
-      "[TENANT]",
-      ".tenantinfo <kode>",
-      ".extendtenant <kode> <durasi>",
-      ".blocktenant <kode>",
-      ".unblocktenant <kode>",
-      ".transferowner @user / reply - Memindahkan tenant owner ke user lain.",
-      ".addtenantadmin <nomor>",
-      ".removetenantadmin <nomor>",
-      ".listtenantadmin",
+      "╭── [ TENANT & ADMIN ]",
+      "│ • .tenantinfo <kode>",
+      "│ • .extendtenant <kode> <durasi>",
+      "│ • .blocktenant / .unblocktenant <kode>",
+      "│ • .transferowner @user",
+      "│ • .addtenantadmin / .removetenantadmin <nomor>",
+      "│ • .listtenantadmin",
+      "╰────────────────────────",
       "",
       ...this.buildGroupModerationLines(true),
       "",
-      ...this.buildGroupFeatureLines(featureSetting, true),
+      ...this.buildGroupMediaLines(),
       "",
-      "[MENU]",
-      ".ownermenu",
-      ".tenantmenu",
-      ".featuremenu",
+      ...this.buildGroupGameAndMemberLines(featureSetting),
+      "",
+      "╭── [ PENGATURAN & MENU ]",
+      "│ • .feature <fitur> <on/off>",
+      "│ • .ownermenu",
+      "│ • .tenantmenu",
+      "│ • .featuremenu",
+      "╰────────────────────────",
     ].join("\n");
   }
 
@@ -181,25 +168,28 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
   ): string {
     return [
-      "[MENU GRUP TENANT OWNER]",
+      ...this.buildTenantHeader("Tenant Owner", tenantGroup),
       "",
-      ...this.buildTenantSummaryLines(tenantGroup),
-      "",
-      "[PENGATURAN]",
-      ".feature <fitur> <on/off>",
-      ".transferowner @user / reply - Memindahkan tenant owner ke user lain.",
-      ".addtenantadmin <nomor>",
-      ".removetenantadmin <nomor>",
-      ".listtenantadmin",
+      "╭── [ PENGATURAN TENANT ]",
+      "│ • .feature <fitur> <on/off>",
+      "│ • .welcome [on|off]",
+      "│ • .setwelcome <pesan>",
+      "│ • .transferowner @user",
+      "│ • .addtenantadmin / .removetenantadmin <nomor>",
+      "│ • .listtenantadmin",
+      "╰────────────────────────",
       "",
       ...this.buildGroupModerationLines(true),
       "",
-      "[WELCOME]",
-      ".welcome on",
-      ".welcome off",
-      ".setwelcome <pesan>",
+      ...this.buildGroupMediaLines(),
       "",
-      ...this.buildGroupFeatureLines(featureSetting, true),
+      ...this.buildGroupGameAndMemberLines(featureSetting),
+      "",
+      "╭── [ INFO ]",
+      "│ • .status / .tenantstatus",
+      "│ • .profile [@user]",
+      "│ • .menu",
+      "╰────────────────────────",
     ].join("\n");
   }
 
@@ -208,21 +198,25 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
   ): string {
     return [
-      "[MENU TENANT ADMIN]",
+      ...this.buildTenantHeader("Tenant Admin", tenantGroup),
       "",
-      ...this.buildTenantSummaryLines(tenantGroup),
+      "╭── [ PENGATURAN GRUP ]",
+      "│ • .welcome [on|off]",
+      "│ • .setwelcome <pesan>",
+      "│ • .listtenantadmin",
+      "╰────────────────────────",
       "",
-      "[TENANT]",
-      ".listtenantadmin",
+      ...this.buildGroupModerationLines(false),
       "",
-      ...this.buildGroupModerationLines(true),
+      ...this.buildGroupMediaLines(),
       "",
-      "[WELCOME]",
-      ".welcome on",
-      ".welcome off",
-      ".setwelcome <pesan>",
+      ...this.buildGroupGameAndMemberLines(featureSetting),
       "",
-      ...this.buildGroupFeatureLines(featureSetting, false),
+      "╭── [ INFO ]",
+      "│ • .status / .tenantstatus",
+      "│ • .profile [@user]",
+      "│ • .menu",
+      "╰────────────────────────",
     ].join("\n");
   }
 
@@ -231,115 +225,120 @@ export class MenuService {
     featureSetting: TenantFeatureSetting | null,
   ): string {
     return [
-      "[MENU MINJIBOT]",
+      ...this.buildTenantHeader("Member", tenantGroup),
       "",
-      ...this.buildTenantSummaryLines(tenantGroup),
+      ...this.buildGroupMediaLines(),
       "",
-      ...this.buildGroupFeatureLines(featureSetting, false),
+      ...this.buildGroupGameAndMemberLines(featureSetting),
       "",
-      "[INFO]",
-      ".status",
-      ".tenantstatus",
-      ".profile",
-      ".menu",
+      "╭── [ INFO ]",
+      "│ • .status / .tenantstatus",
+      "│ • .profile [@user]",
+      "│ • .menu",
+      "╰────────────────────────",
     ].join("\n");
   }
 
-  private buildTenantSummaryLines(tenantGroup: TenantGroup | undefined): string[] {
+  private buildTenantHeader(roleLabel: string, tenantGroup: TenantGroup | undefined): string[] {
     if (!tenantGroup) {
-      return ["[TENANT]", "Status: belum terdaftar"];
+      return [
+        "╭── [ MINJIBOT MENU ] ──",
+        `│ Role: ${roleLabel}`,
+        "│ Status: Belum terdaftar sebagai tenant",
+        "╰────────────────────────",
+      ];
     }
 
     return [
-      "[TENANT]",
-      `Grup: ${formatNullableText(tenantGroup.name)}`,
-      `Kode: ${tenantGroup.tenantCode}`,
-      `Status: ${tenantGroup.status.toLowerCase()}`,
-      `Masa aktif sampai: ${formatDateId(tenantGroup.expiresAt)}`,
+      "╭── [ MINJIBOT MENU ] ──",
+      `│ Role   : ${roleLabel}`,
+      `│ Grup   : ${formatNullableText(tenantGroup.name)} (${tenantGroup.tenantCode})`,
+      `│ Status : ${tenantGroup.status.toLowerCase()}`,
+      `│ Aktif  : s/d ${formatDateId(tenantGroup.expiresAt)}`,
+      "╰────────────────────────",
     ];
   }
 
-  private buildGroupFeatureLines(
-    featureSetting: TenantFeatureSetting | null,
-    includeManagementCommands: boolean,
-  ): string[] {
-    const lines = [
-      "[MEDIA]",
-      ".s",
-      ".sticker",
-      ".smeme <teks>",
-      ".gambar",
-      ".toimg",
-      ".play <nama lagu>",
-      ".lirik <judul/artis>",
-      ".lirik",
-      ".lirik doc <judul/artis>",
-      ".afk <alasan>",
+  private buildGroupMediaLines(): string[] {
+    return [
+      "╭── [ MEDIA & TOOLS ]",
+      "│ • .sticker / .s (caption/reply foto)",
+      "│ • .smeme <teks>",
+      "│ • .gambar <teks>",
+      "│ • .toimg (reply sticker)",
+      "│ • .play <nama lagu>",
+      "│ • .lirik [doc] <judul>",
+      "│ • .tt / .ig / .igstory <url>",
+      "│ • .hd [doc]",
+      "│ • .afk [alasan]",
+      "╰────────────────────────",
     ];
+  }
 
-    if (!featureSetting || featureSetting.downloaderEnabled) {
-      lines.push(".tt <link>", ".ig <link>", ".igstory <link>");
-    }
-
-    if (!featureSetting || featureSetting.hdEnabled) {
-      lines.push(".hd", ".hd doc");
-    }
-
-    if (!featureSetting || featureSetting.hdAiEnabled) {
-      lines.push(".hdai", ".hdai doc");
-    }
+  private buildGroupGameAndMemberLines(featureSetting: TenantFeatureSetting | null): string[] {
+    const lines: string[] = [];
 
     if (!featureSetting || featureSetting.reminderEnabled) {
-      lines.push("", "[PENGINGAT]", ".remind <waktu> <pesan>", ".listreminder");
+      lines.push(
+        "╭── [ PENGINGAT ]",
+        "│ • .remind <waktu> <pesan>",
+        "│ • .listreminder",
+        "╰────────────────────────",
+        "",
+      );
     }
 
     if (!featureSetting || featureSetting.tagAllEnabled) {
-      lines.push("", "[TAG SEMUA]", ".tagall <pesan>");
+      lines.push(
+        "╭── [ TAG SEMUA ]",
+        "│ • .tagall <pesan>",
+        "╰────────────────────────",
+        "",
+      );
     }
 
     if (!featureSetting || featureSetting.gameEnabled) {
       lines.push(
+        "╭── [ GAME & REWARD ]",
+        "│ • .kuis",
+        "│ • .family100",
+        "│ • .tebakkata / .tebakemoji / .tebakangka",
+        "│ • .tictactoe @user",
+        "│ • .nyerah",
+        "╰────────────────────────",
         "",
-        "[GAME]",
-        ".kuis",
-        ".family100",
-        ".tebakkata",
-        ".tebakemoji",
-        ".tebakangka",
-        ".tictactoe",
-        ".rank",
-        ".poin",
-        ".profile",
-        ".daily",
       );
     }
 
-    if (includeManagementCommands) {
-      lines.push("", "[PENGATURAN]", ".feature <fitur> <on/off>");
-    }
+    lines.push(
+      "╭── [ MEMBER & EKONOMI ]",
+      "│ • .profile [@user]",
+      "│ • .poin",
+      "│ • .daily",
+      "│ • .rank / .toprank / .toppoint",
+      "│ • .belilimit <jumlah>",
+      "│ • .giftpoint / .giftlimit @user <jumlah>",
+      "╰────────────────────────",
+    );
 
     return lines;
   }
 
   private buildGroupModerationLines(includeAdvancedAntiSpam: boolean): string[] {
     const lines = [
-      "[MODERASI]",
-      ".add <nomor HP>",
-      ".kick @user / reply",
-      ".promote @user / reply",
-      ".demote @user / reply",
-      ".del",
-      ".antilink on",
-      ".antilink off",
-      ".antispam on",
-      ".antispam off",
-      ".antispam status",
+      "╭── [ MODERASI ]",
+      "│ • .add <nomor>",
+      "│ • .kick / .promote / .demote @user",
+      "│ • .del (reply pesan bot)",
+      "│ • .antilink [on|off]",
+      "│ • .antispam [on|off|status]",
     ];
 
     if (includeAdvancedAntiSpam) {
-      lines.push(".antispam mode normal", ".antispam mode soft", ".antispam mode strict");
+      lines.push("│ • .antispam mode <normal|soft|strict>");
     }
 
+    lines.push("╰────────────────────────");
     return lines;
   }
 }

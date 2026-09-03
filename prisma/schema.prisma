@@ -118,13 +118,12 @@ model TenantFeatureSetting {
   groupJid          String   @unique
   downloaderEnabled Boolean  @default(true)
   hdEnabled         Boolean  @default(true)
-  hdAiEnabled       Boolean  @default(true)
-  gameEnabled       Boolean  @default(false)
-  welcomeEnabled    Boolean  @default(false)
-  antiLinkEnabled   Boolean  @default(false)
-  antiSpamEnabled   Boolean  @default(false)
+  gameEnabled       Boolean  @default(true)
+  welcomeEnabled    Boolean  @default(true)
+  antiLinkEnabled   Boolean  @default(true)
+  antiSpamEnabled   Boolean  @default(true)
   reminderEnabled   Boolean  @default(true)
-  tagAllEnabled     Boolean  @default(false)
+  tagAllEnabled     Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

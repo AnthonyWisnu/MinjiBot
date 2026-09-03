@@ -241,7 +241,6 @@ function createFeatureSetting() {
     groupJid: "120@g.us",
     downloaderEnabled: true,
     hdEnabled: true,
-    hdAiEnabled: true,
     gameEnabled: false,
     welcomeEnabled: false,
     antiLinkEnabled: true,
