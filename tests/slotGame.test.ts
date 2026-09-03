@@ -53,3 +53,33 @@ void test("SlotGame: rejects if points balance is less than bet", async () => {
   assert.match(result, /Poin kamu tidak cukup/);
   assert.match(result, /Minimal taruhan: 5 Poin/);
 });
+
+void test("SlotGame: allows Super Owner to play even with 0 points", async () => {
+  const mockRepo = {
+    findOrCreate: () => Promise.resolve({
+      id: "profile-owner",
+      groupJid: "120@g.us",
+      userJid: "62895366009208@s.whatsapp.net",
+      pointsBalance: 0,
+    } as never),
+  };
+
+  const mockPrisma = {
+    groupMemberProfile: {
+      update: () => Promise.resolve({
+        id: "profile-owner",
+        pointsBalance: 0,
+        experience: 0,
+      }),
+    },
+  };
+
+  const service = new SlotGameService(mockRepo as never, mockPrisma as never);
+  const ctx = makeMockContext(0);
+  ctx.role = "SUPER_OWNER";
+  ctx.senderUserJid = "62895366009208@s.whatsapp.net";
+
+  const result = await service.play(ctx);
+  assert.match(result, /MINJI SLOT/);
+  assert.match(result, /Unlimited \(Super Owner\)/);
+});

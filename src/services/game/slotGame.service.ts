@@ -1,6 +1,7 @@
 import { prisma } from "../../repositories/prismaClient";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { SLOT_CONFIG } from "./gameReward.constants";
+import { roleGuard } from "../../guards/roleGuard";
 import type { CommandContext } from "../../types/command";
 
 export const SLOT_SYMBOLS = ["🍒", "🍇", "🍉", "🍊", "🍋", "7️⃣"] as const;
@@ -14,11 +15,13 @@ export interface SlotPlayResult {
   rewardXp: number;
   balancePoints: number;
   won: boolean;
+  isSuperOwner?: boolean;
 }
 
 export class SlotGameService {
   constructor(
     private readonly profileRepo: GroupMemberProfileRepository = new GroupMemberProfileRepository(),
+    private readonly prismaClient: typeof prisma = prisma,
   ) {}
 
   async play(context: CommandContext): Promise<string> {
@@ -30,8 +33,24 @@ export class SlotGameService {
     const userJid = context.senderUserJid;
     const bet = SLOT_CONFIG.BET_POINTS;
 
-    const profile = await this.profileRepo.findOrCreate(groupJid, userJid);
-    if (profile.pointsBalance < bet) {
+    const isSuperOwner = context.role === "SUPER_OWNER" || roleGuard.isSuperOwner(userJid);
+    const isTenantOwner = context.role === "TENANT_OWNER";
+    const isOwner = isSuperOwner || isTenantOwner;
+
+    let profile = await this.profileRepo.findOrCreate(groupJid, userJid);
+
+    // Auto-topup 100 points for Tenant Owner if balance is less than bet
+    if (isTenantOwner && profile.pointsBalance < bet) {
+      profile = await this.prismaClient.groupMemberProfile.update({
+        where: { id: profile.id },
+        data: {
+          pointsBalance: { increment: 100 },
+          totalPointsEarned: { increment: 100 },
+        },
+      });
+    }
+
+    if (!isOwner && profile.pointsBalance < bet) {
       return [
         "Poin kamu tidak cukup untuk memutar slot.",
         `Minimal taruhan: ${String(bet)} Poin.`,
@@ -70,10 +89,11 @@ export class SlotGameService {
       rewardXp = SLOT_CONFIG.MATCH_TWO_XP;
     }
 
-    // Net point change: rewardPoints - bet
-    const netPoints = rewardPoints - bet;
+    // Net point change:
+    // If Super Owner, do not deduct below 0
+    const netPoints = isSuperOwner && profile.pointsBalance < bet ? rewardPoints : rewardPoints - bet;
 
-    const updated = await prisma.groupMemberProfile.update({
+    const updated = await this.prismaClient.groupMemberProfile.update({
       where: { id: profile.id },
       data: {
         pointsBalance: { increment: netPoints },
@@ -92,6 +112,7 @@ export class SlotGameService {
       rewardXp,
       balancePoints: updated.pointsBalance,
       won,
+      isSuperOwner,
     });
   }
 
@@ -110,15 +131,19 @@ export class SlotGameService {
       title = "❌ *BELUM BERUNTUNG!*";
     }
 
+    const sisaPoin = result.isSuperOwner
+      ? "Unlimited (Super Owner)"
+      : `${result.balancePoints.toLocaleString("id-ID")} Poin`;
+
     return [
       "*─── [ MINJI SLOT ] ───*",
       reelLine,
       "",
       title,
-      `• Taruhan  : ${String(result.betPoints)} Poin`,
+      `• Taruhan  : ${String(result.betPoints)} Poin${result.isSuperOwner ? " (Free)" : ""}`,
       `• Hadiah   : ${result.rewardPoints > 0 ? `+${String(result.rewardPoints)}` : "0"} Poin`,
       `• XP       : +${String(result.rewardXp)} XP`,
-      `• Sisa Poin: ${result.balancePoints.toLocaleString("id-ID")} Poin`,
+      `• Sisa Poin: ${sisaPoin}`,
     ].join("\n");
   }
 }
