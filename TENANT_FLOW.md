@@ -2,6 +2,13 @@
 
 # MinjiBot V2 Tenant Flow
 
+> REFACTOR IN PROGRESS - MEMBER ECONOMY
+>
+> Sections describing owner quota flow, quota reserve/consume/refund, and private chat quota
+> rules are LEGACY and are being replaced by member economy. See CODEX_REFACTOR_INSTRUCTIONS.md
+> for the authoritative rules. When this document conflicts with the refactor documents, the
+> refactor documents take precedence.
+
 ## 1. Core Concept
 
 MinjiBot V2 is a fresh WhatsApp bot project.
@@ -10,13 +17,14 @@ The bot is rented per group. One WhatsApp group is one Tenant Group.
 
 Tenant active period belongs to each group.
 
-Heavy feature quota belongs to Tenant Owner.
+LEGACY: Heavy feature quota belongs to Tenant Owner. This is being replaced by member economy.
+
+NEW: Every member has an independent economy profile per group. Heavy features consume member
+limit, not Tenant Owner quota.
 
 There is no premium user system.
 
-There is no private limit.
-
-There is no member self-purchase limit.
+NEW: Members can self-purchase limits using points earned from daily claims and game rewards.
 
 ## 2. Feature Summary
 
@@ -24,16 +32,17 @@ MinjiBot V2 includes these planned feature groups:
 
 1. Tenant rental management.
 2. Role-aware menu.
-3. Tenant Owner quota.
-4. Media downloader.
-5. HD photo.
-6. HD AI photo.
-7. Welcome.
-8. Antilink.
-9. Antispam.
-10. Reminder.
-11. Tag all.
-12. Game later, only after tenant core is stable.
+3. LEGACY: Tenant Owner quota (being replaced by member economy).
+4. NEW: Member economy (profile, points, limit, XP, rank, daily, gifts, leaderboard).
+5. Media downloader.
+6. HD photo.
+7. HD AI photo.
+8. Welcome.
+9. Antilink.
+10. Antispam.
+11. Reminder.
+12. Tag all.
+13. Game (active, with persistent rewards in member economy).
 
 ## 3. Tenant Lifecycle
 
