@@ -2,7 +2,55 @@
 
 ## Status
 
-Planned
+Completed
+
+## Execution Evidence
+
+### Prisma Schema Changes
+
+Enums added:
+- `MemberTransactionAsset` (POINT, LIMIT, EXPERIENCE)
+- `MemberTransactionType` (13 values: INITIAL_BALANCE, DAILY_REWARD, GAME_REWARD, LIMIT_PURCHASE_POINT_DEBIT, LIMIT_PURCHASE_LIMIT_CREDIT, GIFT_SENT, GIFT_RECEIVED, FEATURE_RESERVE, FEATURE_CONSUME, FEATURE_REFUND, SUPER_OWNER_ADD, SUPER_OWNER_SET, CORRECTION)
+
+Enum extended:
+- `HeavyFeatureType` + PLAY_SONG + SONG_LYRICS
+
+Models added:
+- `GroupMemberProfile` (20 fields, @@unique groupJid+userJid, 3 indexes + cascade from TenantGroup)
+- `GroupMemberTransaction` (19 fields, @@unique idempotencyKey, 4 indexes + cascade from GroupMemberProfile)
+
+Relation added to `TenantGroup`:
+- `memberProfiles GroupMemberProfile[]`
+
+### Migration
+
+Name: `20260903000000_add_group_member_profiles`
+Type: Additive only - no DROP, no destructive ALTER
+Applied: Migration SQL written manually (PostgreSQL not reachable at dev time; deploy with `prisma migrate deploy` before restarting bot)
+
+### Repository Files Added
+
+- `src/repositories/groupMemberProfile.repository.ts` - findOrCreate, findByGroupAndUser, findActiveByUser, listTopByExperience, listTopByPoints, getPositionByExperience, getPositionByPoints, updateBalances
+- `src/repositories/groupMemberTransaction.repository.ts` - create, findByIdempotencyKey, listByProfile
+
+### Test File Added
+
+- `tests/groupMemberProfile.test.ts` - 13 new tests (ok 24 to ok 36)
+
+### Validation Results
+
+| Check | Result |
+|---|---|
+| `npx prisma validate` | pass |
+| `npx prisma generate` | pass (Prisma Client v6.19.3) |
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 errors (also fixed 3 pre-existing errors in downloader.service.ts and playAudio.service.ts) |
+| `npm run build` | 0 errors |
+| `npm run test` | 104 pass, 0 fail |
+
+### Commit
+
+See git log for SHA.
 
 ## Objective
 
