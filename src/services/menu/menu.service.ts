@@ -19,25 +19,25 @@ export class MenuService {
     return [
       "╭── [ MENU SUPER OWNER ] ──",
       "│ Mode: Private Chat",
-      "╰──────────────────────────",
+      "╰─────────────────────────",
       "",
       "╭── [ MANAJEMEN TENANT ]",
       "│ • .pendinggroup",
-      "│ • .activatetenant <kode> <noOwner> <durasi>",
-      "│ • .listtenant [all|removed]",
+      "│ • .activatetenant <kode> <owner> <durasi>",
+      "│ • .listtenant",
       "│ • .tenantinfo <kode>",
       "│ • .extendtenant <kode> <durasi>",
-      "│ • .settenantexpire <kode> <YYYY-MM-DD>",
+      "│ • .settenantexpire <kode> <tgl>",
       "│ • .blocktenant <kode>",
       "│ • .unblocktenant <kode>",
       "│ • .removetenant <kode>",
-      "╰──────────────────────────",
+      "╰─────────────────────────",
       "",
       "╭── [ NAVIGASI ]",
       "│ • .tenantmenu",
       "│ • .featuremenu",
       "│ • .menu",
-      "╰──────────────────────────",
+      "╰─────────────────────────",
     ].join("\n");
   }
 
@@ -45,7 +45,7 @@ export class MenuService {
     return [
       "╭── [ MENU TENANT OWNER ] ──",
       "│ Mode: Private Chat",
-      "╰───────────────────────────",
+      "╰─────────────────────────",
       "",
       "╭── [ KONTROL SEWA ]",
       "│ • .mytenant",
@@ -56,7 +56,7 @@ export class MenuService {
       "│ • .addtenantadmin <nomor>",
       "│ • .removetenantadmin <nomor>",
       "│ • .listtenantadmin",
-      "╰───────────────────────────",
+      "╰─────────────────────────",
       "",
       "╭── [ PENGATURAN GRUP ]",
       "│ • .feature <fitur> <on/off>",
@@ -64,7 +64,7 @@ export class MenuService {
       "│ • .setwelcome <pesan>",
       "│ • .antilink [on|off]",
       "│ • .antispam [on|off]",
-      "╰───────────────────────────",
+      "╰─────────────────────────",
       "",
       "╭── [ MEDIA PRIVATE ]",
       "│ • .tt <url>",
@@ -76,12 +76,12 @@ export class MenuService {
       "│ • .gambar <teks>",
       "│ • .toimg",
       "│ • .hd [doc]",
-      "╰───────────────────────────",
+      "╰─────────────────────────",
       "",
       "╭── [ INFORMASI ]",
       "│ • .profile",
       "│ • .menu",
-      "╰───────────────────────────",
+      "╰─────────────────────────",
     ].join("\n");
   }
 
@@ -118,7 +118,7 @@ export class MenuService {
       "│ Hubungi Owner untuk sewa bot.",
       "│",
       "│ • .menu",
-      "╰──────────────────────────",
+      "╰─────────────────────────",
     ].join("\n");
   }
 
@@ -153,7 +153,7 @@ export class MenuService {
       `│ Kode   : ${tenantGroup ? tenantGroup.tenantCode : "-"}`,
       `│ Status : ${tenantGroup ? tenantGroup.status.toLowerCase() : "belum terdaftar"}`,
       `│ Exp    : ${tenantGroup ? formatDateId(tenantGroup.expiresAt) : "-"}`,
-      "╰───────────────────────────────",
+      "╰─────────────────────────",
       "",
       "╭── [ MANAJEMEN TENANT ]",
       "│ • .tenantinfo <kode>",
@@ -164,7 +164,7 @@ export class MenuService {
       "│ • .addtenantadmin <nomor>",
       "│ • .removetenantadmin <nomor>",
       "│ • .listtenantadmin",
-      "╰───────────────────────────────",
+      "╰─────────────────────────",
       "",
       ...this.buildGroupModerationLines(true),
       "",
@@ -184,7 +184,7 @@ export class MenuService {
       "│ • .tenantmenu",
       "│ • .featuremenu",
       "│ • .menu",
-      "╰───────────────────────────────",
+      "╰─────────────────────────",
     ].join("\n");
   }
 
@@ -198,7 +198,7 @@ export class MenuService {
       `│ Kode   : ${tenantGroup ? tenantGroup.tenantCode : "-"}`,
       `│ Status : ${tenantGroup ? tenantGroup.status.toLowerCase() : "belum terdaftar"}`,
       `│ Exp    : ${tenantGroup ? formatDateId(tenantGroup.expiresAt) : "-"}`,
-      "╰──────────────────────────",
+      "╰─────────────────────────",
       "",
       "╭── [ PENGATURAN SEWA ]",
       "│ • .feature <fitur> <on/off>",
@@ -208,7 +208,7 @@ export class MenuService {
       "│ • .addtenantadmin <nomor>",
       "│ • .removetenantadmin <nomor>",
       "│ • .listtenantadmin",
-      "╰──────────────────────────",
+      "╰─────────────────────────",
       "",
       ...this.buildGroupModerationLines(true),
       "",
@@ -225,7 +225,7 @@ export class MenuService {
       "│ • .status",
       "│ • .featuremenu",
       "│ • .menu",
-      "╰──────────────────────────",
+      "╰─────────────────────────",
     ].join("\n");
   }
 
@@ -377,7 +377,7 @@ export class MenuService {
       "│ • .add <nomor>",
       "│ • .promote @user",
       "│ • .demote @user",
-      "│ • .del (reply pesan bot)",
+      "│ • .del",
       "╰─────────────────────────",
     );
 
