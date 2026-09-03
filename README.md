@@ -2,6 +2,8 @@
 
 MinjiBot V2 adalah WhatsApp bot berbasis tenant. Bot memakai Baileys, Prisma PostgreSQL, TypeScript, dan command prefix dari environment.
 
+Bot ini memiliki sistem ekonomi member per grup: setiap member memiliki profil dengan poin, limit, XP, dan rank yang persisten. Limit digunakan untuk mengakses fitur berat (downloader, HD AI, play song, lirik).
+
 ## Development
 
 1. Install dependency.

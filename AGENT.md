@@ -2,6 +2,22 @@
 
 # MinjiBot V2 Agent Guide
 
+> REFACTOR IN PROGRESS - MEMBER ECONOMY
+>
+> The owner quota system described in sections 2.3, 2.3 heavy features, and related architecture rules
+> is LEGACY and scheduled for removal. The authoritative guide for the active refactor is:
+>
+> - CODEX_REFACTOR_INSTRUCTIONS.md (authority document)
+> - REFACTOR_REQUIREMENTS.md
+> - MEMBER_ECONOMY.md
+> - MEMBER_DATABASE.md
+> - MEMBER_COMMANDS.md
+> - MEMBER_MIGRATION.md
+> - MEMBER_TESTING.md
+> - plans/MEMBER_ECONOMY_REFACTOR_PLAN.md
+>
+> When this document conflicts with the refactor documents above, the refactor documents take precedence.
+
 ## 1. Project Identity
 
 Project name: MinjiBot.
@@ -19,10 +35,12 @@ Main business model:
 - Tenant Admin helps manage a tenant group.
 - Member uses public features in an active tenant group.
 - Tenant active period belongs to each group.
-- Heavy feature quota belongs to Tenant Owner.
-- Heavy feature quota can be used across all active groups owned by the Tenant Owner.
-- Tenant Owner can use selected heavy features in private chat for privacy.
-- Member cannot use heavy features in private chat.
+- LEGACY: Heavy feature quota belongs to Tenant Owner. This is being replaced by member economy.
+- NEW: Every member has an independent profile per group with points, limits, XP, and rank.
+- NEW: Heavy features consume member limit, not Tenant Owner quota.
+- NEW: Members can claim daily rewards, purchase limits, and gift assets to other members.
+- NEW: All members including Tenant Owner use normal member profiles for heavy features.
+- NEW: Heavy features are available in private chat using the member profile with the highest available limit across active groups.
 
 ## 2. Mandatory Feature Scope
 
@@ -57,34 +75,48 @@ Required features:
 - Tenant Owner in group sees tenant owner group menu.
 - Super Owner can also use .ownermenu, .tenantmenu, .featuremenu, and .quotamenu.
 
-### 2.3 Tenant Owner Quota
+### 2.3 Tenant Owner Quota - LEGACY (Scheduled for Removal)
 
-Required features:
+This section describes the LEGACY owner quota system. It is being replaced by the member economy
+system. See CODEX_REFACTOR_INSTRUCTIONS.md for the authoritative refactor rules. Do not build
+new features based on this section.
 
-- No premium user system.
-- No private limit system.
-- No member self-purchase limit.
+Legacy features (will be removed in Plan 009):
+
 - Quota belongs to Tenant Owner.
 - Super Owner can add quota to Tenant Owner.
 - Super Owner can set Tenant Owner quota.
-- Tenant Owner can check own quota.
-- Members can check group quota status.
-- Heavy features consume Tenant Owner quota.
-- Quota must reserve before processing and refund on failure.
+- .addquota, .setownerquota, .ownerquota, .listownerquota, .quota commands.
 
-Heavy features that consume quota:
+### 2.3b Member Economy (NEW - Replacing Legacy Quota)
 
-- TikTok video download.
-- Instagram Reels download.
-- Instagram Story download.
-- HD AI photo.
-- HD AI photo document mode.
+Required features:
 
-Light features that do not consume quota:
+- Every member has an independent profile per group (points, limit, XP, rank, streak).
+- Profile is identified by groupJid plus userJid.
+- Daily claim rewards points and XP once per WIB date.
+- Members can purchase limits using points (.belilimit).
+- Members can gift points or limits to others in the same group (.giftpoint, .giftlimit).
+- Heavy features consume member limit, not Tenant Owner quota.
+- Super Owner can add or set member points, limits, and XP via admin commands.
+- Rank is derived from XP (Bronze, Silver, Gold, Platinum, Diamond, Master, Grandmaster).
+- Leaderboards show top 10 by XP (.toprank) and by points (.toppoint).
+- Profile view command (.profile) and member info for Super Owner (.memberinfo @user).
+
+Heavy features that consume member limit:
+
+- TikTok video download (1 limit).
+- Instagram Reels download (1 limit).
+- Instagram Story download (1 limit).
+- Play song (1 limit).
+- Song lyrics (1 limit).
+- HD AI photo (2 limits).
+- HD AI photo document mode (2 limits).
+
+Light features that do not consume limit:
 
 - menu
 - tenant status
-- quota check
 - HD photo fast mode
 - HD photo fast document mode
 - welcome
@@ -92,7 +124,7 @@ Light features that do not consume quota:
 - antispam
 - reminder
 - tagall if enabled
-- game if enabled later
+- game sessions (game rewards earn points and XP)
 
 ### 2.4 Media Downloader
 
@@ -105,10 +137,9 @@ Required commands:
 Rules:
 
 - In group chat, downloader works only in active tenant group with downloaderEnabled true.
-- In group chat, downloader consumes quota from the Tenant Owner of that group.
-- In private chat, downloader works only for Tenant Owner and Super Owner.
-- In private chat, Tenant Owner does not need to select tenant for downloader.
-- Member private chat downloader is rejected.
+- In group chat, downloader consumes 1 member limit from the member who invoked the command.
+- In private chat, downloader is available to any member who has an active profile with sufficient limit in at least one active tenant group.
+- In private chat, limit is charged from the profile with the highest available limit across active groups.
 - Video output must be compatible with WhatsApp Android and iPhone.
 - Use safe video normalization if needed.
 - File size limit must come from .env.
@@ -148,7 +179,7 @@ Rules:
 - Output scale is 4x.
 - Use AI upscale through a local command line dependency such as Real-ESRGAN when available.
 - If dependency is not installed, bot must not crash.
-- This feature consumes 1 Tenant Owner quota.
+- This feature consumes 2 member limits from the invoking member profile.
 - This feature must use a queue.
 - Only one HD AI job should run at a time by default.
 - Output must be compatible with WhatsApp Android and iPhone.

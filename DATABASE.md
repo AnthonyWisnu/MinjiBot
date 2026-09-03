@@ -2,11 +2,21 @@
 
 # MinjiBot V2 Database Design
 
+> REFACTOR IN PROGRESS - MEMBER ECONOMY
+>
+> Sections 4 (TenantOwnerQuota relationship), 5 (quota enums), 6 (TenantOwnerQuota and
+> TenantQuotaTransaction models), 9 (Quota Rules), and 14 (Audit Log quota entries) describe
+> the LEGACY owner quota system scheduled for removal in Plan 009.
+> New member economy schema is defined in MEMBER_DATABASE.md.
+> When this document conflicts with CODEX_REFACTOR_INSTRUCTIONS.md, the refactor document wins.
+
 ## 1. Database Goal
 
 MinjiBot V2 uses a tenant-based database design.
 
-One WhatsApp group is one Tenant Group. A Tenant Owner can own multiple Tenant Groups. Tenant active period belongs to each group. Heavy feature quota belongs to Tenant Owner.
+One WhatsApp group is one Tenant Group. A Tenant Owner can own multiple Tenant Groups. Tenant active period belongs to each group.
+
+LEGACY: Heavy feature quota belongs to Tenant Owner. This is being replaced by member economy where every member has an independent profile per group.
 
 Database must support:
 
@@ -18,8 +28,10 @@ Database must support:
 - Moderation settings per tenant group.
 - Welcome settings per tenant group.
 - Reminder data per tenant group.
-- Tenant Owner quota.
-- Quota transaction history.
+- LEGACY: Tenant Owner quota (scheduled for removal in Plan 009).
+- LEGACY: Quota transaction history (scheduled for removal in Plan 009).
+- NEW: Group member profiles per group (points, limit, XP, rank, streak).
+- NEW: Member transaction ledger.
 - Private tenant session for group-specific settings.
 - Audit logs for important actions.
 
@@ -48,17 +60,20 @@ Do not create:
 - PremiumUser
 - UserDownloadLimit
 - PrivateLimit
-- MemberLimit
-- belilimit table
 - JSON database
 
-Use tenant-based tables.
+These tables ARE now required (member economy refactor):
+
+- GroupMemberProfile
+- GroupMemberTransaction
+
+Use tenant-based and member-economy tables as defined in MEMBER_DATABASE.md.
 
 ## 4. Relationship Summary
 
 ```txt
 Tenant Owner
-  owns quota through TenantOwnerQuota
+  LEGACY: owns quota through TenantOwnerQuota (scheduled for removal)
   owns one or more TenantGroup through ownerJid
 
 TenantGroup
@@ -67,13 +82,20 @@ TenantGroup
   has many TenantAdmin
   has many Reminder
   has many TenantAuditLog
+  NEW: has many GroupMemberProfile (member economy)
 
 TenantAdmin
   belongs to one TenantGroup
 
-TenantOwnerQuota
+LEGACY: TenantOwnerQuota
   belongs to one ownerJid
   has many TenantQuotaTransaction
+  (this relationship will be removed in Plan 009)
+
+NEW: GroupMemberProfile
+  belongs to one TenantGroup (cascade delete)
+  identified by groupJid + userJid
+  has many GroupMemberTransaction
 
 TenantPrivateSession
   stores selected TenantGroup for private group-specific settings
@@ -342,11 +364,13 @@ Rules:
 - Super Owner commands should accept tenantCode.
 - Some commands may also accept list number after .pendinggroup or .listtenant.
 
-## 9. Quota Rules
+## 9. Quota Rules - LEGACY (Scheduled for Removal in Plan 009)
 
-Quota belongs to Tenant Owner.
+This section describes the LEGACY owner quota system. It will be removed when Plan 009 is
+completed. Do not build new features based on these rules. See MEMBER_DATABASE.md for
+the replacement member economy database design.
 
-Rules:
+LEGACY rules (kept for historical reference only):
 
 - ownerJid is unique.
 - remainingQuota is usable quota.
@@ -356,11 +380,8 @@ Rules:
 - Heavy features must reserve quota before processing.
 - If processing succeeds, reserved quota becomes consumed.
 - If processing fails, reserved quota is refunded.
-- Validation failure before processing must not reserve quota.
-- All quota changes must create TenantQuotaTransaction.
-- All quota operations must use Prisma transaction.
 
-Heavy features:
+LEGACY heavy features (now handled by member limit):
 
 ```txt
 TIKTOK_DOWNLOAD
@@ -368,6 +389,8 @@ INSTAGRAM_REELS_DOWNLOAD
 INSTAGRAM_STORY_DOWNLOAD
 HD_AI_PHOTO
 HD_AI_PHOTO_DOCUMENT
+PLAY_SONG (new, in member economy only)
+SONG_LYRICS (new, in member economy only)
 ```
 
 ## 10. Feature Setting Rules

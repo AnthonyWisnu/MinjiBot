@@ -2,6 +2,18 @@
 
 # MinjiBot V2 Implementation Plan
 
+> REFACTOR IN PROGRESS - MEMBER ECONOMY
+>
+> This document partially describes the original architecture. Two legacy systems are now
+> being replaced:
+>
+> 1. Tenant Owner shared quota (TenantOwnerQuota, TenantQuotaTransaction) - LEGACY, removal in Plan 009.
+> 2. In-memory game profile inside game.service.ts (profilesByGroup, PlayerProfile) - TEMPORARY
+>    STATE, will be replaced by persistent GroupMemberProfile in Plan 008.
+>
+> The authoritative refactor guide is CODEX_REFACTOR_INSTRUCTIONS.md. When this document
+> conflicts with refactor documents, the refactor documents take precedence.
+
 ## 1. Tujuan Dokumen
 
 Dokumen ini menjadi acuan kerja bertahap untuk membangun MinjiBot V2.
@@ -13,9 +25,10 @@ Fokus utama:
 - Bot WhatsApp multi-tenant berbasis sewa grup.
 - Satu WhatsApp group adalah satu Tenant Group.
 - Masa aktif tenant melekat ke Tenant Group.
-- Kuota fitur berat melekat ke Tenant Owner.
+- LEGACY: Kuota fitur berat melekat ke Tenant Owner (digantikan oleh member economy).
+- NEW: Setiap member memiliki profil ekonomi independen per grup (poin, limit, XP, rank).
 - Tenant Owner dapat memiliki banyak Tenant Group.
-- Tidak ada premium user, private limit, member limit, atau pembelian limit oleh member.
+- NEW: Member dapat membeli limit dengan poin, klaim daily, dan gift ke member lain.
 
 ## 2. Prinsip Wajib
 

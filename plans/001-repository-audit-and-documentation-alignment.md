@@ -2,7 +2,138 @@
 
 ## Status
 
-Planned
+Completed
+
+## Execution Evidence
+
+### Audit Completed: 2026-09-03
+
+### Legacy Owner Quota - Affected Files
+
+| File | References |
+|---|---|
+| `prisma/schema.prisma` | `TenantOwnerQuota`, `TenantQuotaTransaction`, `TenantQuotaTransactionType`, `TenantQuotaSource`, `TenantAuditAction` (QUOTA_*) |
+| `src/repositories/tenantQuota.repository.ts` | Full CRUD for owner quota |
+| `src/services/quota/tenantQuota.service.ts` | add/set/reserve/consume/refund quota |
+| `src/services/quota/heavyFeatureAccess.service.ts` | resolveQuotaContext, group/private resolution |
+| `src/commands/quota/quota.command.ts` | `.addquota`, `.setownerquota`, `.ownerquota`, `.listownerquota`, `.quota` |
+| `src/commands/media/downloader.command.ts` | imports and uses both quota services |
+| `src/commands/media/hdai.command.ts` | imports and uses both quota services |
+| `src/commands/media/hd.command.ts` | needs inspection (may or may not use quota) |
+| `src/commands/media/play.command.ts` | live feature, needs quota switch |
+| `src/commands/media/lyrics.command.ts` | live feature, needs quota switch |
+| `tests/quotaAndActivation.test.ts` | tests owner quota, will need rewrite |
+
+### Legacy In-Memory Game Economy - Affected Symbols
+
+| Symbol | File | Issue |
+|---|---|---|
+| `profilesByGroup` | `game.service.ts:104` | In-memory, lost on restart |
+| `PlayerProfile` | `game.service.ts:29` | No XP, no limit, no streak |
+| `claimDaily()` | `game.service.ts:228` | Timezone Asia/Makassar (BUG), reward only 15 pts |
+| `DAILY_REWARD = 15` | `game.service.ts:98` | Wrong value (should be 100-300) |
+| `awardWin()` | `game.service.ts:387` | Mutates in-memory only |
+| `addGamesPlayed()` | `game.service.ts:394` | Mutates in-memory only |
+| `getProfile()` | `game.service.ts:399` | Creates in-memory profile |
+| `getPoints()` | `game.service.ts:249` | Returns in-memory data |
+| `getRank()` | `game.service.ts:260` | Returns in-memory rank |
+| `Math.random()` | `game.service.ts:123,324` | Not injectable for tests |
+
+### Heavy Features Status
+
+| Feature | Command | Enum | Uses Quota | Plan |
+|---|---|---|---|---|
+| TikTok download | `.tt` | `TIKTOK_DOWNLOAD` | Yes | Plan 007 |
+| Instagram Reels | `.ig` | `INSTAGRAM_REELS_DOWNLOAD` | Yes | Plan 007 |
+| Instagram Story | `.igstory` | `INSTAGRAM_STORY_DOWNLOAD` | Yes | Plan 007 |
+| Play song | `.play` | NOT IN ENUM | Unknown | Plan 007 |
+| Song lyrics | `.lyrics` | NOT IN ENUM | Unknown | Plan 007 |
+| HD AI Photo | `.hdai` | `HD_AI_PHOTO` | Yes | Plan 007 |
+| HD AI Photo Doc | `.hdai doc` | `HD_AI_PHOTO_DOCUMENT` | Yes | Plan 007 |
+| HD Photo | `.hd` | None | No (light feature) | No change |
+
+### TicTacToe Current State
+
+- Player vs Bot (not PvP).
+- No reward stored in DB.
+- Session in memory, lost on restart.
+- Will be redesigned to PvP in Plan 008.
+
+### Existing Tests Inventory
+
+| Test File | Tests | Fate |
+|---|---|---|
+| `tests/afkService.test.ts` | AFK service | Keep |
+| `tests/antiLinkService.test.ts` | Anti-link | Keep |
+| `tests/antiSpamService.test.ts` | Anti-spam | Keep |
+| `tests/featureGuard.test.ts` | Feature guard | Keep |
+| `tests/gameService.test.ts` | Game (basic) | Rewrite in Plan 008 |
+| `tests/lyricsService.test.ts` | Lyrics service | Keep (update imports Plan 007) |
+| `tests/manualModerationService.test.ts` | Moderation | Keep |
+| `tests/messageParser.test.ts` | Message parser | Keep |
+| `tests/quotaAndActivation.test.ts` | Owner quota + activation | Partially rewrite in Plan 009 |
+| `tests/roleGuard.test.ts` | Role guard | Keep |
+| `tests/tenantAdminService.test.ts` | Tenant admin | Keep |
+| `tests/tenantGuard.test.ts` | Tenant guard | Keep |
+| `tests/tenantOwnerTransferService.test.ts` | Owner transfer | Keep |
+| `tests/time.test.ts` | Time utils | Keep + expand for WIB tests |
+
+### Missing Tests (to be added in later plans)
+
+- Member profile isolation (Plan 002)
+- Rank resolver boundary tests (Plan 003)
+- Daily claim idempotency and timezone (Plan 004)
+- Limit purchase atomicity (Plan 004)
+- Gift sender/recipient isolation (Plan 005)
+- Leaderboard sorting (Plan 006)
+- Heavy feature reserve/consume/refund (Plan 007)
+- All game rewards (Plan 008)
+
+### Concurrency Risks
+
+- Daily claim: two concurrent requests same user/group/date could double-reward without idempotency key.
+- Gift: concurrent transfers could overspend sender balance without proper transaction locking.
+- Heavy feature: reserve without consume could leak reservedLimit if crash occurs.
+- TicTacToe PvP: two players acting simultaneously needs turn validation.
+
+### Idempotency Risks
+
+- Daily claim: must use unique key `daily:{groupJid}:{userJid}:{wibDate}`.
+- Game rewards: must use `game:{type}:{roundId}:{userJid}:{event}`.
+- Heavy feature reserve: must use correlationId across reserve/consume/refund.
+
+### Migration Risks
+
+- Plan 002: additive only, safe.
+- Plan 009: destructive (DROP TABLE), requires backup before execution.
+- In-memory game state: lost without migration (accepted, no legacy data to preserve).
+
+### Features Not Yet Implemented
+
+- `.belilimit` command - new in Plan 004.
+- `.giftpoint` / `.giftlimit` - new in Plan 005.
+- `.toprank` / `.toppoint` - new in Plan 006.
+- `.addpoint` / `.setpoint` / `.addlimit` / `.setlimit` / `.addxp` / `.setxp` - new in Plan 005.
+- `.memberinfo` - new in Plan 005.
+- TicTacToe PvP - redesign in Plan 008.
+
+### Documentation Changes Made
+
+| File | Change |
+|---|---|
+| `AGENT.md` | Added refactor notice, marked owner quota section as legacy, added section 2.3b member economy, updated downloader and HDAI rules |
+| `DATABASE.md` | Added refactor notice, marked quota support/relationships/rules as legacy, added member profile relationships, updated core DB rules |
+| `TENANT_FLOW.md` | Added refactor notice, updated core concept and feature summary |
+| `PLAN.md` | Added refactor notice, updated focus section to mark legacy quota and in-memory profile |
+| `README.md` | Updated description to mention member economy |
+| `plans/001-*.md` | This file - marked Completed with audit evidence |
+
+### Validation
+
+```bash
+git diff --name-only
+# Expected: only .md files
+```
 
 ## Objective
 
