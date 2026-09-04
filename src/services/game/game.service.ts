@@ -43,6 +43,7 @@ interface TicTacToeSession {
   correlationId: string;
   // "waiting" = challenge sent but not accepted; "active" = game in progress.
   state: "waiting" | "active";
+  messageId?: string;
 }
 
 function loadQuestions(fileName: string, fallback: Question[]): Question[] {
@@ -321,7 +322,7 @@ export class GameService {
 
     return [
       `Tantangan dikirim ke ${challengedJid}.`,
-      "Ketik .tictactoe untuk menerima. Tantangan berlaku 5 menit.",
+      "Ketik .tictactoe atau balas/reply pesan ini untuk menerima. Tantangan berlaku 5 menit.",
     ].join("\n");
   }
 
@@ -340,7 +341,7 @@ export class GameService {
         "",
         formatBoard(session.board),
         "",
-        "Gunakan .tictactoe <1-9> untuk melangkah.",
+        "💡 Balas/reply pesan ini dengan angka 1-9 untuk melangkah, atau gunakan .tictactoe <1-9>.",
       ].join("\n");
     }
 
@@ -358,7 +359,7 @@ export class GameService {
       "",
       formatBoard(session.board),
       "",
-      "Gunakan .tictactoe <1-9> untuk melangkah.",
+      "💡 Balas/reply pesan ini dengan angka 1-9 untuk melangkah, atau gunakan .tictactoe <1-9>.",
     ].join("\n");
   }
 
@@ -435,6 +436,8 @@ export class GameService {
       `Giliran: ${nextPlayerJid} (${session.currentTurn})`,
       "",
       formatBoard(session.board),
+      "",
+      "💡 Balas/reply pesan ini dengan angka 1-9 untuk melangkah, atau gunakan .tictactoe <1-9>.",
     ].join("\n");
   }
 
@@ -702,6 +705,17 @@ export class GameService {
 
   setQuizMessageId(groupJid: string, messageId: string): void {
     const session = this.quizSessions.get(groupJid);
+    if (session) {
+      session.messageId = messageId;
+    }
+  }
+
+  getActiveTicTacToe(groupJid: string): TicTacToeSession | undefined {
+    return this.ticTacToeSessions.get(groupJid);
+  }
+
+  setTicTacToeMessageId(groupJid: string, messageId: string): void {
+    const session = this.ticTacToeSessions.get(groupJid);
     if (session) {
       session.messageId = messageId;
     }

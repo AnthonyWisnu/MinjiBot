@@ -64,3 +64,36 @@ void test("GameService: cannot start two quizzes in same group", async () => {
   const second = await service.startOrAnswerQuiz(createContext("111@g.us"), "tebakkata");
   assert.match(second, /Masih ada game aktif/);
 });
+
+void test("GameService: sets and retrieves TicTacToe session and messageId", async () => {
+  const service = new GameService(makeNoopRewardService());
+
+  const challengeCtx = createContext("111@g.us", {
+    senderUserJid: "player1@s.whatsapp.net",
+    mentionedJids: ["player2@s.whatsapp.net"],
+  });
+  const challengeResult = await service.playTicTacToe(challengeCtx);
+  assert.match(challengeResult, /balas\/reply/i);
+
+  service.setTicTacToeMessageId("111@g.us", "msg-challenge-123");
+  const session = service.getActiveTicTacToe("111@g.us");
+  assert.ok(session);
+  assert.equal(session.state, "waiting");
+  assert.equal(session.messageId, "msg-challenge-123");
+
+  const acceptCtx = createContext("111@g.us", {
+    senderUserJid: "player2@s.whatsapp.net",
+  });
+  const acceptResult = await service.playTicTacToe(acceptCtx);
+  assert.match(acceptResult, /Game dimulai/);
+  assert.match(acceptResult, /balas\/reply/i);
+  assert.equal(session.state, "active");
+
+  const moveCtx = createContext("111@g.us", {
+    senderUserJid: "player1@s.whatsapp.net",
+    args: ["5"],
+  });
+  const moveResult = await service.playTicTacToe(moveCtx);
+  assert.match(moveResult, /Langkah diterima/);
+  assert.match(moveResult, /balas\/reply/i);
+});
