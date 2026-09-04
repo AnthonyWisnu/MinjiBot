@@ -3,7 +3,7 @@ import { HeavyFeatureType } from "@prisma/client";
 import {
   downloaderService,
   type DownloadedMediaItem,
-  type DownloaderKind,
+  type ExtractedAudio,
 } from "../../services/media/downloader.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import {
@@ -16,7 +16,7 @@ import {
 export const downloaderCommands: CommandDefinition[] = [
   {
     name: "tt",
-    execute: (context) => handleDownloader(context, "tiktok", HeavyFeatureType.TIKTOK_DOWNLOAD),
+    execute: handleTikTokDownloader,
   },
   {
     name: "ig",
@@ -29,19 +29,16 @@ export const downloaderCommands: CommandDefinition[] = [
 ];
 
 // ─── TikTok (.tt) ──────────────────────────────────────────────────────────
+// Handles: video tanpa watermark, single photo, & photo carousel (max 12 item) + BGM audio
 
-async function handleDownloader(
-  context: CommandContext,
-  kind: DownloaderKind,
-  feature: HeavyFeatureType,
-): Promise<void> {
+async function handleTikTokDownloader(context: CommandContext): Promise<void> {
   const url = context.args[0];
-  if (!url) {
-    await context.reply(`Format command salah.\nGunakan: .${context.commandName} <link>`);
+  if (!url?.toLowerCase().includes("tiktok.com")) {
+    await context.reply("Format command salah.\nGunakan: .tt <link TikTok>");
     return;
   }
 
-  const access = await resolveFeatureAccess(context, feature);
+  const access = await resolveFeatureAccess(context, HeavyFeatureType.TIKTOK_DOWNLOAD);
   if (access === null) return;
 
   const reservation = access.skip ? null : access.reservation;
@@ -54,26 +51,48 @@ async function handleDownloader(
       reserved = true;
     }
 
-    await context.reply("Video TikTok sedang diproses. Mohon tunggu...");
-    const downloadedVideo = await downloaderService.downloadVideo(url, kind);
+    await context.reply("Media TikTok sedang diproses. Mohon tunggu...");
+    const result = await downloaderService.downloadTikTok(url);
 
-    // Kirim video terlebih dahulu
-    await context.socket.sendMessage(
-      context.chatJid,
-      {
-        video: downloadedVideo.buffer,
-        mimetype: downloadedVideo.mimetype,
-        fileName: downloadedVideo.fileName,
-      },
-      { quoted: context.message },
-    );
+    if (result.type === "video") {
+      await context.socket.sendMessage(
+        context.chatJid,
+        {
+          video: result.video.buffer,
+          mimetype: result.video.mimetype,
+          fileName: result.video.fileName,
+        },
+        { quoted: context.message },
+      );
+    } else {
+      if (result.items.length === 1) {
+        const firstItem = result.items[0];
+        if (firstItem) {
+          await sendMediaItem(context, firstItem);
+        }
+      } else {
+        const totalMsg =
+          result.totalCount > result.items.length
+            ? `Terdeteksi ${String(result.totalCount)} foto slide TikTok (mengirim maks. ${String(result.items.length)}). Mengirim satu per satu...`
+            : `Terdeteksi ${String(result.items.length)} foto slide TikTok. Mengirim satu per satu...`;
+        await context.reply(totalMsg);
+
+        for (const item of result.items) {
+          await sendMediaItem(context, item);
+          await sleep(300);
+        }
+      }
+    }
 
     if (reserved && reservation !== null) {
       await consumeFeatureLimit(reservation);
     }
 
-    // Susul dengan audio (best-effort, tidak ganggu user jika gagal)
-    await sendTikTokAudio(context, downloadedVideo.buffer);
+    // Kirim audio / lagu pengiring (BGM) jika tersedia
+    if (result.audio) {
+      await sleep(500);
+      await sendAudioMessage(context, result.audio);
+    }
   } catch (error: unknown) {
     if (reserved && reservation !== null) {
       await refundFeatureLimit(reservation);
@@ -86,10 +105,11 @@ async function handleDownloader(
   }
 }
 
-async function sendTikTokAudio(context: CommandContext, videoBuffer: Buffer): Promise<void> {
+async function sendAudioMessage(
+  context: CommandContext,
+  audio: ExtractedAudio,
+): Promise<void> {
   try {
-    const audio = await downloaderService.extractAudioFromVideo(videoBuffer);
-    await sleep(500);
     await context.socket.sendMessage(
       context.chatJid,
       {
@@ -100,8 +120,7 @@ async function sendTikTokAudio(context: CommandContext, videoBuffer: Buffer): Pr
       { quoted: context.message },
     );
   } catch (error: unknown) {
-    // Gagal extract audio tidak perlu notify user — video sudah terkirim
-    // Hanya log di server
+    // Audio dikirim secara best-effort, tidak menggagalkan perintah jika gagal kirim
     void error;
   }
 }
@@ -111,7 +130,7 @@ async function sendTikTokAudio(context: CommandContext, videoBuffer: Buffer): Pr
 
 async function handleInstagramDownloader(context: CommandContext): Promise<void> {
   const url = context.args[0];
-  if (!url || !url.toLowerCase().includes("instagram.com")) {
+  if (!url?.toLowerCase().includes("instagram.com")) {
     await context.reply("Format command salah.\nGunakan: .ig <link Instagram>");
     return;
   }
@@ -249,9 +268,12 @@ const sleep = (ms: number): Promise<void> =>
 function formatTikTokError(error: unknown): string {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   if (message.includes("max-filesize") || message.includes("maksimal")) {
-    return "Video terlalu besar untuk dikirim.";
+    return "Media TikTok terlalu besar untuk dikirim.";
   }
-  return "Video gagal diambil. Pastikan link masih aktif dan dapat dibuka.";
+  if (message.includes("gagal mengambil foto") || message.includes("tidak ada media")) {
+    return "Konten foto slide TikTok gagal diambil. Pastikan link valid dan publik.";
+  }
+  return "Konten TikTok gagal diambil. Pastikan link masih aktif dan dapat dibuka.";
 }
 
 function formatInstagramError(error: unknown): string {

@@ -118,7 +118,7 @@ Setiap perubahan saldo wajib mencatat baris baru pada tabel `MemberTransactionLe
 ## 5. Fitur Berat (Heavy Features) & Konsumsi Limit
 
 Fitur berat mengonsumsi Limit Member dengan pola isolasi akses:
-- **TikTok Video Downloader (`.tt <link>`)**: Mengonsumsi **1 Limit**. Mendukung download video tanpa watermark via direct API dan fallback yt-dlp.
+- **TikTok Media Downloader (`.tt <link>`)**: Mengonsumsi **1 Limit**. Mendukung download video tanpa watermark, serta foto slide carousel (hingga 12 foto) beserta audio/musik pengiring (BGM) via direct API dan fallback gallery-dl / yt-dlp.
 - **Instagram Downloader (`.ig <link>`)**: Mengonsumsi **1 Limit**. Mendukung single reel/post, carousel foto/video (multi-item), dan story.
 - **YouTube Video Downloader (`.yt <link>`)**: Mengonsumsi **1 Limit**. Menggunakan **Adaptive Smart Resolution**: Prioritas 1 **720p 60fps** dan Prioritas 2 **720p 30fps** (jika estimasi ukuran <= 100MB), dengan fallback dinamis ke **480p** untuk video berdurasi hingga 12 menit. Seluruh video dijamin menggunakan codec **AVC1/H.264 + AAC** mobile-safe agar langsung bisa diputar lancar di WhatsApp tanpa lag.
 - **HD AI Photo (`.hd`)**: Mengonsumsi **2 Limit**. Meningkatkan ketajaman foto menggunakan model AI / GFPGAN.

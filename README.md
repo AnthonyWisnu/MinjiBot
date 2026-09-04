@@ -108,7 +108,7 @@ flowchart TD
 | | `.giftpoint @user <n>` | Send points to a fellow group member | Points |
 | | `.giftlimit @user <n>` | Send limits to a fellow group member | Limit |
 | | `.toppoint` / `.toprank` | View top 10 richest and highest XP members | Free |
-| **Media Engine** | `.tt <url>` | Download TikTok video without watermark | 1 Limit |
+| **Media Engine** | `.tt <url>` | Download TikTok video (no watermark) or Photo Slides (up to 12) + BGM audio | 1 Limit |
 | | `.ig <url>` | Download Instagram Reel, Post, Carousel, or Story | 1 Limit |
 | | `.yt <url>` | Download YouTube video (Adaptive 720p60/720p30/480p, max 12 mins) | 1 Limit |
 | | `.hd` [reply photo] | Enhance photo quality using AI restoration | 2 Limits |
