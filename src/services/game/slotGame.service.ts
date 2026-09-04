@@ -147,7 +147,7 @@ export class SlotGameService {
         const singlePos = Math.floor(Math.random() * 3);
         const temp: SlotSymbol[] = [pair, pair, pair];
         temp[singlePos] = single;
-        reels = [temp[0]!, temp[1]!, temp[2]!];
+        reels = [temp[0] ?? pair, temp[1] ?? pair, temp[2] ?? pair];
         status = "match_two";
         rewardPoints = Math.max(1, Math.round(bet * 1.5));
         rewardXp = SLOT_CONFIG.MATCH_TWO_XP;
@@ -157,7 +157,7 @@ export class SlotGameService {
       won = false;
       status = "loss";
       const shuffled = [...SLOT_SYMBOLS].sort(() => Math.random() - 0.5);
-      reels = [shuffled[0]!, shuffled[1]!, shuffled[2]!];
+      reels = [shuffled[0] ?? "🍒", shuffled[1] ?? "🍇", shuffled[2] ?? "🍉"];
       rewardPoints = 0;
       rewardXp = SLOT_CONFIG.LOSS_XP;
     }

@@ -20,11 +20,14 @@ import { antiSpamCommands } from "./moderation/antiSpam.command";
 import { antiDeleteCommands } from "./moderation/antiDelete.command";
 import { antiViewOnceCommands } from "./moderation/antiViewOnce.command";
 import { manualModerationCommands } from "./moderation/manualModeration.command";
+import { warnCommands } from "./moderation/warn.command";
+import { antiRaidCommands } from "./moderation/antiRaid.command";
 import { reminderCommands } from "./reminder/reminder.command";
 import { tagAllCommands } from "./tagall/tagAll.command";
 import { tenantAdminCommands } from "./tenant/tenantAdmin.command";
 import { tenantFeatureCommands } from "./tenant/tenantFeature.command";
 import { tenantOwnerCommands } from "./tenant/tenantOwner.command";
+import { tenantPanelCommands } from "./tenant/tenantPanel.command";
 import { transferOwnerCommands } from "./tenant/transferOwner.command";
 import { superOwnerTenantCommands } from "./tenant/superOwnerTenant.command";
 import { welcomeCommands } from "./welcome/welcome.command";
@@ -76,6 +79,7 @@ export const commandRouter = new CommandRouter([
   ...menuCommands,
   ...superOwnerTenantCommands,
   ...tenantOwnerCommands,
+  ...tenantPanelCommands,
   ...transferOwnerCommands,
   ...tenantAdminCommands,
   ...tenantFeatureCommands,
@@ -92,6 +96,8 @@ export const commandRouter = new CommandRouter([
   ...antiDeleteCommands,
   ...antiViewOnceCommands,
   ...manualModerationCommands,
+  ...warnCommands,
+  ...antiRaidCommands,
   ...reminderCommands,
   ...tagAllCommands,
   ...gameCommands,

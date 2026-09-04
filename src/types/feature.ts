@@ -9,4 +9,5 @@ export type TenantFeatureKey =
   | "tagall"
   | "antidelete"
   | "antiviewonce"
-  | "goodbye";
+  | "goodbye"
+  | "antiraid";
