@@ -232,6 +232,22 @@ Semua mini game dirancang interaktif, ramah pengguna di WhatsApp, dan memberikan
 3. **Pemberhentian Elegan (Graceful Shutdown)**:
    - Menangani `SIGINT` dan `SIGTERM` dengan menutup koneksi Baileys dan koneksi pool Prisma secara bersih.
 
+### 7.1. Message Interceptor Pipeline & Event Subscribers
+1. **Modular Interceptor Pipeline (`src/bot/pipeline/`)**:
+   - Alur pesan masuk diproses secara berurutan menggunakan pola *Chain of Responsibility* terurut (`MessagePipeline`):
+     - Priority `10`: `PendingTenantInterceptor` (Registrasi tenant pending, cache metadata 6 jam).
+     - Priority `20`: `AntiDeleteInterceptor` (Penyimpanan cache pesan in-memory & background async media caching).
+     - Priority `30`: `AntiViewOnceInterceptor` (Pencegat media 1x lihat).
+     - Priority `35`: `ActivityTrackerInterceptor` (Pencatatan statistik chat grup non-blocking).
+     - Priority `40`: `AfkInterceptor` (Deteksi mention member AFK & pembersihan status sender).
+     - Priority `50`: `AntiLinkInterceptor` (Pembersih tautan grup WhatsApp).
+     - Priority `60`: `AntiSpamInterceptor` (Rate limiting & flood control dengan LRU bounded bucket).
+     - Priority `70`: `InteractiveReplyInterceptor` (Penangkap balasan swipe/reply kuis & tictactoe, mengembalikan `halt: true`).
+   - Mencegah fenomena "God Handler" di `messageHandler.ts` (tetap ramping <100 baris).
+2. **Event Subscribers (`src/bot/subscribers/`)**:
+   - `groupParticipants.subscriber.ts`: Mengalirkan event member baru bergabung ke `antiRaidService` (pertahanan serbuan darurat) lalu ke `welcomeService` (sambutan formal & avatar fallback).
+   - `messageRevoke.subscriber.ts`: Mendeteksi protokol penarikan pesan untuk fitur Anti-Delete.
+
 ---
 
 ## 8. Standar Kode & Aturan untuk AI Agent Berikutnya
@@ -250,7 +266,7 @@ Saat Anda (AI Agent) diminta memperbarui kode MinjiBot, patuhi aturan mutlak ber
    - Gunakan `formatUserSafeError` untuk pesan error yang ramah kepada pengguna tanpa membocorkan stack trace internal server.
 4. **Verifikasi Pengujian**:
    - Sebelum menyetujui perubahan, pastikan `npm run build` bebas dari error tipe TypeScript (`0 error`).
-   - Jalankan unit tests dengan `npm run test`. Seluruh test suite (277+ tests) **wajib lulus 100%**.
+   - Jalankan unit tests dengan `npm run test`. Seluruh test suite (314+ tests) **wajib lulus 100%**.
 5. **Deployment & CI/CD**:
    - Seluruh perubahan yang di-push ke branch `main` di GitHub akan otomatis di-deploy ke VPS oleh GitHub Actions (`.github/workflows/deploy.yml`).
    - **DILARANG KERAS** menjalankan script deploy manual via SSH paralel tepat setelah `git push origin main`, karena akan memicu benturan proses (*race condition* / konflik kunci pada `.git/index.lock` dan `node_modules`). Cukup biarkan GitHub Actions mengeksekusi deployment secara otomatis dan pantau statusnya via API/web.
