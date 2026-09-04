@@ -81,6 +81,7 @@ export class AntiDeleteService {
   }
 
   async cacheMessage(msg: WAMessage): Promise<void> {
+    await Promise.resolve();
     const remoteJid = msg.key.remoteJid;
     const id = msg.key.id;
     if (!remoteJid || !remoteJid.endsWith("@g.us") || !id || !msg.message) {
@@ -97,33 +98,14 @@ export class AntiDeleteService {
     const text = extractTextFromMessageContent(msg.message);
 
     let mediaType: "image" | "sticker" | undefined;
-    let mediaBuffer: Buffer | undefined;
     let caption: string | undefined;
 
     const unwrapped = msg.message;
     if (unwrapped.imageMessage) {
       mediaType = "image";
       caption = unwrapped.imageMessage.caption ?? undefined;
-      const fileLength = Number(unwrapped.imageMessage.fileLength ?? 0);
-      if (fileLength > 0 && fileLength <= MAX_MEDIA_CACHE_BYTES) {
-        try {
-          const buf = await downloadMediaMessage(msg, "buffer", {});
-          mediaBuffer = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
-        } catch {
-          // ignore cache download failure
-        }
-      }
     } else if (unwrapped.stickerMessage) {
       mediaType = "sticker";
-      const fileLength = Number(unwrapped.stickerMessage.fileLength ?? 0);
-      if (fileLength > 0 && fileLength <= MAX_MEDIA_CACHE_BYTES) {
-        try {
-          const buf = await downloadMediaMessage(msg, "buffer", {});
-          mediaBuffer = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
-        } catch {
-          // ignore cache download failure
-        }
-      }
     }
 
     const key = `${groupJid}:${id}`;
@@ -136,16 +118,35 @@ export class AntiDeleteService {
       }
     }
 
-    this.messageCache.set(key, {
+    const cachedItem: CachedMessage = {
       id,
       groupJid,
       senderJid,
       timestamp: Date.now(),
       text: text.trim() ? text.trim() : undefined,
       mediaType,
-      mediaBuffer,
       caption,
-    });
+    };
+    this.messageCache.set(key, cachedItem);
+
+    // Unduh buffer media secara non-blocking di latar belakang agar tidak menghambat pipeline pesan
+    if (mediaType) {
+      const fileLength = Number(
+        unwrapped.imageMessage?.fileLength ?? unwrapped.stickerMessage?.fileLength ?? 0,
+      );
+      if (fileLength > 0 && fileLength <= MAX_MEDIA_CACHE_BYTES) {
+        downloadMediaMessage(msg, "buffer", {})
+          .then((buf) => {
+            const currentEntry = this.messageCache.get(key);
+            if (currentEntry) {
+              currentEntry.mediaBuffer = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+            }
+          })
+          .catch(() => {
+            // Abaikan kegagalan download cache di latar belakang
+          });
+      }
+    }
   }
 
   async handleMessageRevoke(

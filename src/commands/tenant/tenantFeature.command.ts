@@ -54,10 +54,13 @@ function formatFeatureUpdated(tenantGroup: TenantGroup, setting: TenantFeatureSe
     `HD: ${formatEnabled(setting.hdEnabled)}`,
     `Game: ${formatEnabled(setting.gameEnabled)}`,
     `Welcome: ${formatEnabled(setting.welcomeEnabled)}`,
+    `Goodbye: ${formatEnabled(setting.goodbyeEnabled)}`,
     `Antilink: ${formatEnabled(setting.antiLinkEnabled)}`,
     `Antispam: ${formatEnabled(setting.antiSpamEnabled)}`,
     `Reminder: ${formatEnabled(setting.reminderEnabled)}`,
     `Tag all: ${formatEnabled(setting.tagAllEnabled)}`,
+    `Anti-Delete: ${formatEnabled(setting.antiDeleteEnabled)}`,
+    `Anti-ViewOnce: ${formatEnabled(setting.antiViewOnceEnabled)}`,
   ].join("\n");
 }
 

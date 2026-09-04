@@ -126,7 +126,16 @@ export class TagAllService {
       return;
     }
 
-    this.cooldownUntilByGroup.set(groupJid, Date.now() + cooldownSec * 1000);
+    const now = Date.now();
+    this.cooldownUntilByGroup.set(groupJid, now + cooldownSec * 1000);
+
+    if (this.cooldownUntilByGroup.size > 100) {
+      for (const [jid, expiry] of this.cooldownUntilByGroup.entries()) {
+        if (now >= expiry) {
+          this.cooldownUntilByGroup.delete(jid);
+        }
+      }
+    }
   }
 
   private async getGroupMetadata(context: CommandContext): Promise<GroupMetadata> {

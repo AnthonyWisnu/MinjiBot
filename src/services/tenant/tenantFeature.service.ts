@@ -37,14 +37,29 @@ export interface ResolveFeatureTenantInput {
 }
 
 export class TenantFeatureService {
+  private readonly settingCache = new Map<string, { setting: TenantFeatureSetting; cachedAt: number }>();
+  private static readonly CACHE_TTL_MS = 20_000; // 20 detik
+
   constructor(private readonly tenantFeatureRepository = new TenantFeatureRepository()) {}
 
+  invalidateCache(groupJid: string): void {
+    this.settingCache.delete(groupJid);
+  }
+
   async getFeatureSetting(groupJid: string): Promise<TenantFeatureSetting> {
-    return this.tenantFeatureRepository.ensureForGroup(groupJid);
+    const cached = this.settingCache.get(groupJid);
+    const now = Date.now();
+    if (cached && now - cached.cachedAt < TenantFeatureService.CACHE_TTL_MS) {
+      return cached.setting;
+    }
+
+    const setting = await this.tenantFeatureRepository.ensureForGroup(groupJid);
+    this.settingCache.set(groupJid, { setting, cachedAt: now });
+    return setting;
   }
 
   async isFeatureEnabled(groupJid: string, feature: TenantFeatureKey): Promise<boolean> {
-    const setting = await this.tenantFeatureRepository.ensureForGroup(groupJid);
+    const setting = await this.getFeatureSetting(groupJid);
     const field = FEATURE_SETTING_FIELD[feature];
 
     return setting[field];
@@ -56,6 +71,8 @@ export class TenantFeatureService {
     if (input.actorRole === "TENANT_OWNER" && input.tenantGroup.ownerJid !== input.actorJid) {
       throw new Error("Kamu tidak dapat mengatur tenant milik owner lain.");
     }
+
+    this.invalidateCache(input.tenantGroup.groupJid);
 
     return prisma.$transaction(async (tx) => {
       const tenantFeatureRepository = new TenantFeatureRepository(tx);

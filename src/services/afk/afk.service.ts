@@ -139,7 +139,16 @@ export class AfkService {
   }
 
   private markNotified(groupJid: string, userJid: string): void {
-    this.notificationCooldowns.set(this.getCooldownKey(groupJid, userJid), this.now().getTime());
+    const nowTime = this.now().getTime();
+    this.notificationCooldowns.set(this.getCooldownKey(groupJid, userJid), nowTime);
+
+    if (this.notificationCooldowns.size > 200) {
+      for (const [key, timestamp] of this.notificationCooldowns.entries()) {
+        if (nowTime - timestamp >= AFK_REPLY_COOLDOWN_MS) {
+          this.notificationCooldowns.delete(key);
+        }
+      }
+    }
   }
 
   private getCooldownKey(groupJid: string, userJid: string): string {

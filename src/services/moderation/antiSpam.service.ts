@@ -444,11 +444,24 @@ export class AntiSpamService {
     }
   }
 
+  private static readonly MAX_BUCKET_ENTRIES = 1000;
+  private static readonly BUCKET_TTL_MS = 10 * 60 * 1000; // 10 menit
+  private lastBucketCleanupAt = 0;
+
   private getBucket(groupJid: string, senderJid: string): SpamBucket {
+    this.pruneBucketsIfNeeded();
+
     const key = `${groupJid}:${senderJid}`;
     const bucket = this.buckets.get(key);
     if (bucket) {
       return bucket;
+    }
+
+    if (this.buckets.size >= AntiSpamService.MAX_BUCKET_ENTRIES) {
+      const oldestKey = this.buckets.keys().next().value;
+      if (oldestKey) {
+        this.buckets.delete(oldestKey);
+      }
     }
 
     const nextBucket: SpamBucket = {
@@ -459,6 +472,26 @@ export class AntiSpamService {
     this.buckets.set(key, nextBucket);
 
     return nextBucket;
+  }
+
+  private pruneBucketsIfNeeded(): void {
+    const now = Date.now();
+    if (now - this.lastBucketCleanupAt < 60_000) {
+      return;
+    }
+    this.lastBucketCleanupAt = now;
+
+    const expiryThreshold = now - AntiSpamService.BUCKET_TTL_MS;
+    for (const [key, bucket] of this.buckets.entries()) {
+      const latestMessage = bucket.messageTimes[bucket.messageTimes.length - 1] ?? 0;
+      const latestCommand = bucket.commandTimes[bucket.commandTimes.length - 1] ?? 0;
+      const latestMedia = bucket.mediaTimes[bucket.mediaTimes.length - 1] ?? 0;
+      const lastActivity = Math.max(latestMessage, latestCommand, latestMedia, bucket.lastActionAt ?? 0);
+
+      if (lastActivity < expiryThreshold) {
+        this.buckets.delete(key);
+      }
+    }
   }
 }
 

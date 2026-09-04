@@ -1,160 +1,285 @@
-# PLAN.md — MinjiBot Feature Expansion & Development Blueprint
+# PLAN.md — MinjiBot Architectural Refactor & Next-Gen Roadmap
 
-> **Catatan Pengembang / AI Agent:**
-> Dokumen ini adalah **Roadmap Eksekusi Resmi & Sumber Kebenaran** untuk pengembangan fitur baru MinjiBot (V2). Saat jendela konteks (*context window*) mengalami kompresi/reset, jadikan dokumen ini bersama `AGENTS.md` sebagai panduan mutlak agar tidak terjadi halusinasi atau degradasi kode.
-
----
-
-## 1. Visi & Target Pengembangan
-
-MinjiBot adalah bot WhatsApp berbasis **Multi-Tenant Group Rental** (sewa grup independen). Penambahan fitur pada roadmap ini berfokus pada dua pilar utama:
-1. **The Engagement & Viral Studio**: Fitur hiburan visual dan audio yang paling sering di-spam dan dipakai harian oleh member grup (Stiker dengan Watermark Branding, Meme Brat, Converter, Audio FX, Sambutan Bergambar Profil).
-2. **The Admin Powerhouse**: Fitur kontrol dan keamanan grup bernilai jual tinggi yang menjadi alasan utama Tenant Owner bersedia membayar sewa bulanan (Anti-Delete, Hidetag, Anti-ViewOnce).
+> **Dokumen Resmi Arsitektur, QA Hardening, & Roadmap Pengembangan MinjiBot**  
+> Dokumen ini adalah **Single Source of Truth** untuk tahapan refactoring kode, stabilisasi performa (*hardening*), serta pengembangan fitur baru. Dilarang mengubah arsitektur atau mengabaikan prinsip layering yang telah ditentukan di `AGENTS.md`.
 
 ---
 
-## 2. Rincian Modul & Arsitektur Fitur
+## 1. Ringkasan Eksekutif & Keputusan Strategis
 
-### 🏷️ Modul 1: Sticker Branding & Watermark Engine
-Setiap stiker yang dihasilkan bot sebelumnya "polosan". Kita menambahkan injeksi metadata EXIF WebP resmi WhatsApp secara otomatis.
+Setelah sukses menyelesaikan implementasi **Watermark Engine, Brat Sticker, Audio FX Studio, Hidetag, Anti-Delete, Anti-ViewOnce, serta Formal Welcome & GoodBye**, codebase MinjiBot diaudit secara komprehensif dari kacamata **Senior Software Engineer & Lead QA**.
 
-- **Aturan Identitas / Branding (Fixed)**:
-  - **Pack Name**: `MinjiBot Official Pack`
-  - **Author / Publisher**: `MinjiBot`
-  - **DILARANG KERAS** menyisipkan nama personal developer (`anthony`) pada EXIF stiker publik.
-- **Mekanisme Teknis**:
-  - Menyuntikkan chunk `EXIF` di dalam kontainer RIFF WebP menggunakan header TIFF Little-Endian (`II*\0`) dan payload JSON standar WhatsApp:
-    ```json
-    {
-      "sticker-pack-id": "com.minjibot.sticker",
-      "sticker-pack-name": "MinjiBot Official Pack",
-      "sticker-pack-publisher": "MinjiBot",
-      "emojis": ["🤖", "✨"]
-    }
-    ```
-  - Diterapkan otomatis pada seluruh generator stiker:
-    1. `.s` / `.sticker` (gambar biasa & video animasi).
-    2. `.smeme` (stiker meme teks atas & bawah).
-    3. `.brat` (stiker teks estetika Brat).
-- **Fitur Stiker Brat (`.brat <teks>`)**:
-  - Menggunakan template SVG dinamis yang di-render langsung oleh **Sharp** ke format WebP 512×512 (ringan, instan <80ms, tanpa dependensi berat `node-canvas`).
-  - Latar hijau limau khas Brat (`#8ACE00`), font sans-serif hitam, dan efek blur khas album Charli XCX.
-- **Fitur Reverse Converter (`.toimg` & `.tovideo`)**:
-  - `.toimg` ➔ Mengonversi stiker statis menjadi foto PNG (sudah ada di `sticker.service.ts`).
-  - `.tovideo` ➔ Menambahkan alias dan handler resmi untuk mengonversi stiker bergerak (animasi WebP) menjadi video MP4 via FFmpeg.
+Hasil audit menemukan bahwa selain masalah "God Handler", terdapat **9 area kritis (critical smells, memory leaks, dan WhatsApp ban risks)** yang wajib diperbaiki dalam fase refactoring sebelum menambahkan fitur baru:
 
----
-
-### 🖼️ Modul 2: Welcome Photo Sambutan Member Baru
-Peningkatan dari fitur sambutan teks yang sudah ada (`.welcome` & `.setwelcome`):
-
-- **Perilaku & Alur Kerja**:
-  - Ketika member baru masuk grup (event `group-participants.update` action `add`), bot tetap menggunakan kalimat sambutan kustom dari `.setwelcome` masing-masing grup (`{user}`, `{group}`).
-  - Namun, pesan tidak lagi dikirim sebagai teks polosan:
-    1. Bot mencoba mengambil foto profil WhatsApp member baru via `socket.profilePictureUrl(userJid, "image")`.
-    2. **Jika ada foto profil**: Kirim foto profil member tersebut dengan `caption: textSambutan` dan `mentions`.
-    3. **Jika tidak ada foto profil** (privasi tertutup atau kosong): Otomatis fallback mengirimkan foto profil Minji (`assets/minji.png`, foto yang sama seperti yang digunakan pada `.profile @user`) dengan `caption: textSambutan` dan `mentions`.
-- **Keunggulan Teknis**:
-  - Tanpa dependensi canvas berat.
-  - Ringan, cepat, dan foto profil terlihat tajam langsung di WhatsApp.
+1. **Refactoring Arsitektur (Anti "God Handler")**:
+   - Memecah alur monolitik `src/bot/messageHandler.ts` menjadi **Modular Interceptor Pipeline (Chain of Responsibility)**.
+   - Mendekopel logika game reply ke **Interactive Session Service** terpisah.
+   - Memecah event listener Baileys di `src/bot/lifecycle.ts` ke dalam **Event Subscribers**.
+2. **Hardening Stabilitas & Performa (Temuan Audit QA Mendalam)**:
+   - **Eliminasi Badai `groupMetadata` di Pesan Masuk**: Menghapus pemanggilan `socket.groupMetadata` pada setiap pesan masuk di `pendingTenantRegistrationService` yang berisiko ban WhatsApp.
+   - **Pemberantasan Bug Overwrite Setting Startup**: Menghapus `prisma.tenantFeatureSetting.updateMany` di `lifecycle.ts` yang selama ini me-reset paksa konfigurasi kustom tenant saat bot restart.
+   - **Pencegahan Memory Leak**: Membersihkan map in-memory tanpa batas di `AntiSpamService`, `AfkService`, `TagAllService`, dan `GameService` menggunakan TTL / LRU cache.
+   - **Penanganan Zombie Reminder**: Memperbaiki polling loop reminder pada tenant expired yang saat ini berulang tanpa henti setiap 5 detik.
+   - **Asynchronous Media Caching**: Mengubah download media `antiDelete` menjadi non-blocking agar tidak menahan antrean pesan masuk.
+   - **Guard Layer Caching**: Menambahkan cache in-memory jangka pendek (30–60 detik) untuk query role & tenant guard guna memangkas beban database PostgreSQL hingga 80%.
+   - **Welcome Burst Protection**: Mencegah spam dan rate limit saat puluhan member masuk sekaligus dalam satu event.
+3. **Prioritas 0 (P0) — "The Rental Dealbreakers"**:
+   - Fitur esensial moderasi dan manajemen tenant yang menjadi alasan utama penyewa membayar sewa:
+     - Sistem Warning Terpadu (`.warn`, `.unwarn`, `.warns`, `.resetwarn` + Auto-Kick).
+     - Anti-Raid / Anti-Bot Surge Protection (`.antiraid` + Emergency Lockdown).
+     - SaaS Tenant Dashboard (`.panel` / `.tenantstatus`).
+4. **Prioritas 1 (P1) — "Engagement & Social Status"**:
+   - Profile 2.0 Visual Card via Sharp.
+   - Group Stats & Sider Hunter (`.stats`, `.topaktif`, `.silent`).
+   - Viral Studio: Aesthetic Quote (`.quote`) & Tweet Meme (`.tweet`).
+   - Level-Up & Rank Tier Announcement.
+5. **Keputusan Fitur Fake WhatsApp (`.fakechat`) ➔ DROPPED / DIBATALKAN**:
+   - **Alasan Hukum & Keamanan**: Sangat berisiko pelanggaran UU ITE (fitnah, drama palsu, rekayasa bukti transfer) dan memicu *mass-report* yang menyebabkan nomor bot dibanned permanen oleh WhatsApp.
+   - **Kompleksitas & Resource**: Rendering bubble chat asli membutuhkan Puppeteer (boros RAM 300MB+) atau SVG rumit yang tampak kaku di HP.
+   - **Digantikan**: 100% oleh `.quote` dan `.tweet` yang aman, viral, disukai member, dan legal.
 
 ---
 
-### 🎵 Modul 3: Audio Effects Studio via FFmpeg
-Memanfaatkan binary FFmpeg yang sudah aktif di server untuk manipulasi audio tanpa biaya API pihak ketiga:
+## 2. FASE 1: Architectural Refactor — Membasmi "God Handler"
 
-- **Command & Preset Filter**:
-  - **`.bass` [reply audio/vn]**: `equalizer=f=60:width_type=h:width=50:g=15` (meningkatkan frekuensi bass).
-  - **`.chipmunk` [reply audio/vn]**: `asetrate=44100*1.4,aresample=44100` (suara tupai cempreng imut).
-  - **`.slowed` [reply audio/vn]**: `atempo=0.82,aecho=0.8:0.9:1000:0.3` (slowed down + reverb sendu).
-  - **`.nightcore` [reply audio/vn]**: `asetrate=44100*1.25,aresample=44100` (tempo dan nada dinaikkan).
-  - **`.tovn` [reply audio]**: Transcode audio ke format Voice Note resmi WhatsApp (`ptt: true`, gelombang suara hijau).
-- **Resource & Safety Guard**:
-  - Maksimal durasi audio yang diproses: 5 menit (300 detik) untuk mencegah lonjakan CPU VPS.
-  - Direktori pemrosesan menggunakan `createTempDir()` dan selalu dibersihkan di blok `finally`.
+### 2.1. Permasalahan Codebase Saat Ini
+1. **`src/bot/messageHandler.ts` (347 baris)**:
+   - Memanggil 6+ service moderasi secara berurutan dan kaku.
+   - Tercemar oleh **~220 baris kode game reply** (`handleQuizReply` dan `handleTicTacToeReply`), lengkap dengan duplikasi boilerplate `roleGuard`, `tenantGuard`, dan `featureGuard`.
+2. **`src/bot/lifecycle.ts`**:
+   - Listener Baileys (`messages.update`, `group-participants.update`) dicampur langsung di dalam `bindSocketEvents`.
+3. **`src/bot/groupParticipantsHandler.ts`**:
+   - Menghubungkan event peserta grup hanya ke `welcomeService`. Belum siap menerima modul moderasi peserta seperti `antiRaidService`.
+
+### 2.2. Solusi Arsitektur: Interceptor Pipeline Pattern
+
+```
+                       [Incoming WhatsApp Message]
+                                   │
+                                   ▼
+                   ┌───────────────────────────────┐
+                   │   MessageInterceptorPipeline   │
+                   └───────────────┬───────────────┘
+                                   │
+         ┌─────────────────────────┼─────────────────────────┐
+         │                         │                         │
+         ▼ (Order: 10)             ▼ (Order: 20)             ▼ (Order: 30)
+ ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
+ │ PendingTenant │         │  AntiDelete   │         │ AntiViewOnce  │
+ │  Interceptor  │         │  Interceptor  │         │  Interceptor  │
+ └───────────────┘         └───────────────┘         └───────────────┘
+         │                         │                         │
+         ▼ (Order: 40)             ▼ (Order: 50)             ▼ (Order: 60)
+ ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
+ │ActivityTracker│         │      AFK      │         │   AntiLink    │
+ │  Interceptor  │         │  Interceptor  │         │  Interceptor  │
+ └───────────────┘         └───────────────┘         └───────────────┘
+         │                         │                         │
+         ▼ (Order: 70)             ▼ (Order: 80)             │
+ ┌───────────────┐         ┌───────────────┐                 │
+ │   AntiSpam    │         │  Interactive  │                 │
+ │  Interceptor  │         │ReplyHandler*  │                 │
+ └───────────────┘         └───────┬───────┘                 │
+                                   │                         │
+                       (Jika pesan adalah balasan           │
+                        game / sesi interaktif)              │
+                                   │ (Handled: Stop)         ▼ (Lolos semua)
+                                   ▼                 ┌───────────────┐
+                                [SELESAI]            │ Parse Command │
+                                                     └───────┬───────┘
+                                                             ▼
+                                                    [ Command Router ]
+```
+
+### 2.3. Rincian File Refactoring
+1. **`src/bot/pipeline/`**:
+   - `types.ts`: Definisi interface `MessageInterceptor` dan `PipelineContext`.
+   - `messagePipeline.ts`: Engine eksekusi interceptor terurut.
+   - `interceptors/pendingTenant.interceptor.ts`
+   - `interceptors/antiDelete.interceptor.ts`
+   - `interceptors/antiViewOnce.interceptor.ts`
+   - `interceptors/activityTracker.interceptor.ts` (Persiapan data `.stats` P1)
+   - `interceptors/afk.interceptor.ts`
+   - `interceptors/antiLink.interceptor.ts`
+   - `interceptors/antiSpam.interceptor.ts`
+   - `interceptors/interactiveReply.interceptor.ts`
+2. **`src/services/interactiveSession/`**:
+   - Memindahkan seluruh logika `handleQuizReply` dan `handleTicTacToeReply` ke service terisolasi.
+3. **`src/bot/subscribers/`**:
+   - `messageRevoke.subscriber.ts`: Listener Baileys `messages.update` untuk Anti-Delete.
+   - `groupParticipants.subscriber.ts`: Dispatcher event Baileys `group-participants.update` menuju `welcomeService` dan `antiRaidService`.
 
 ---
 
-### 🛡️ Modul 4: The Admin Powerhouse (Daya Tarik Sewa Grup)
+## 3. FASE 2: QA Audit Hardening & Performance Stabilization
 
-#### 1. Hidetag (Pengumuman Bersih)
-- **Kebutuhan**: Mengirim pengumuman penting yang me-mention seluruh member tanpa mengotori ruang chat dengan deretan ratusan nomor HP.
-- **Arsitektur Teknis**:
-  - Command: `.hidetag <pesan pengumuman>`.
-  - Mengambil daftar anggota grup dari `groupMetadata.participants`.
-  - Mengirim pesan dengan parameter Baileys:
-    ```typescript
-    await socket.sendMessage(chatJid, {
-      text: announcementMessage,
-      mentions: participants.map((p) => p.id),
-    });
-    ```
-  - Role Guard: Terkunci khusus untuk `SUPER_OWNER`, `TENANT_OWNER`, dan `TENANT_ADMIN`.
+Berikut adalah 9 area perbaikan hasil audit mendalam yang dieksekusi bersamaan dengan refactoring:
 
-#### 2. Anti-Delete (Deteksi Pesan Ditarik)
-- **Kebutuhan**: Mengungkap pesan teks atau media yang dihapus pengirim (*"This message was deleted"*).
-- **Arsitektur Teknis**:
-  - Event `messages.upsert`: Simpan metadata pesan dalam cache in-memory sementara berbasis LRU (maksimal 300 pesan per grup dengan TTL 1–2 jam agar RAM VPS tetap hemat).
-  - Event `messages.update`: Deteksi `protocolMessage.type === 0` (REVOKE).
-  - Jika ditemukan di cache, bot mengirim respon log:
+| No | Area / File | Permasalahan | Solusi Hardening |
+|---|---|---|---|
+| **1** | `pendingTenantRegistration.service.ts` | `socket.groupMetadata(groupJid)` dipanggil pada **setiap pesan masuk** untuk update nama grup. Membebani koneksi Baileys & memicu ban WhatsApp. | Hanya ambil metadata saat registrasi awal pending atau saat menerima event Baileys `groups.update`. Pasang cache 6 jam. |
+| **2** | `lifecycle.ts` (lines 22-36) | `prisma.tenantFeatureSetting.updateMany` dijalankan setiap bot start. Me-reset paksa setelan tenant yang sudah dimatikan owner (`.antidelete off`, dll). | Hapus pemanggilan `updateMany` di `lifecycle.ts`. Serahkan nilai default pada skema database dan repository `ensureForGroup()`. |
+| **3** | `antiSpam.service.ts` | `buckets = new Map<string, SpamBucket>()` tidak pernah dibersihkan. Memori membengkak (*memory leak*) seiring waktu. | Terapkan interval pembersihan berkala (TTL 10 menit) atau batasi kapasitas dengan LRU cache. |
+| **4** | `afk.service.ts` & `tagAll.service.ts` | Map cooldown (`notificationCooldowns`, `cooldownUntilByGroup`) tidak pernah di-prune. | Bersihkan entri cooldown yang sudah kedaluwarsa secara otomatis. |
+| **5** | `game.service.ts` | Sesi kuis & tictactoe hanya dihapus saat ada yang bermain di grup yang sama. Sesi game terbengkalai mengendap di RAM. | Tambahkan global sweep scheduler setiap 15 menit untuk membatalkan game yang sudah melewati batas TTL. |
+| **6** | `reminder.service.ts` | Jika tenant kadaluarsa/diblokir, reminder pending tidak ditandai `CANCELLED`, sehingga di-query terus tiap 5 detik (*zombie loop*). | Tandai reminder pada tenant non-aktif sebagai `CANCELLED` agar database tidak di-polling tanpa henti. |
+| **7** | `antiDelete.service.ts` | Download media $\le 2\text{MB}$ dijalankan secara synchronous di pipeline pesan masuk, menahan eksekusi bot hingga 2-3 detik jika CDN WA lambat. | Jalankan download buffer media secara non-blocking / background task tanpa mem-block antrean pesan. |
+| **8** | `guards/` (`role`, `tenant`, `feature`) | Menjalankan 4–5 query PostgreSQL identik pada setiap command yang masuk. | Pasang in-memory cache berdurasi 30–60 detik untuk status tenant dan setting fitur grup aktif. |
+| **9** | `welcome.service.ts` | Jika 10+ member masuk sekaligus, bot melakukan spam 10+ foto sambutan dan memicu rate limit WA. | Tambahkan *burst limiter*: jika $>3$ member masuk bersamaan, gabungkan dalam 1 pesan sambutan ringkas tanpa foto individual. |
+
+---
+
+## 4. FASE 3: PRIORITAS 0 (P0) — "The Rental Dealbreakers"
+
+### 4.1. Modul 1: Sistem Warning Terpadu (Tiered Member Discipline)
+- **Tujuan**: Penegakan aturan grup secara bertahap tanpa harus kick manual.
+- **Skema Database (Prisma)**:
+  ```prisma
+  model GroupMemberWarning {
+    id          String   @id @default(uuid())
+    groupJid    String
+    userJid     String
+    issuerJid   String
+    reason      String
+    createdAt   DateTime @default(now())
+
+    tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+    @@index([groupJid, userJid])
+  }
+  ```
+- **Konfigurasi Tenant (`TenantFeatureSetting`)**:
+  - `warnThreshold`: Int @default(3)
+  - `warnAction`: String @default("KICK") // KICK atau MUTE
+- **Commands**:
+  - `.warn @user <alasan>`: Memberikan 1 poin peringatan. Jika mencapai threshold (3), bot otomatis kick member dari grup.
+  - `.unwarn @user`: Menghapus 1 poin peringatan terakhir.
+  - `.warns [@user]`: Melihat riwayat peringatan dan alasan pelanggaran.
+  - `.resetwarn @user`: Mereset seluruh peringatan member menjadi 0.
+- **Role Guard**: Khusus `SUPER_OWNER`, `TENANT_OWNER`, dan `TENANT_ADMIN`.
+
+---
+
+### 4.2. Modul 2: Anti-Raid & Bot Surge Protection
+- **Tujuan**: Melindungi grup sewaan dari serangan spam bot / serbuan akun penyusup saat link grup bocor ke publik.
+- **Mekanisme Teknis (Zero-Lag In-Memory Sliding Window)**:
+  - Dipantau pada `groupParticipants.subscriber.ts` (action: `add`).
+  - Cache sliding window mencatat timestamp kedatangan member per `groupJid`.
+  - **Kondisi Trigger**: $\ge 4$ member baru bergabung dalam rentang waktu $\le 10$ detik (dapat dikonfigurasi).
+  - **Aksi Mitigasi Darurat (Emergency Protocol)**:
+    1. **Lockdown Grup**: Bot otomatis mengubah setelan grup menjadi hanya admin yang dapat mengirim pesan (`socket.groupSettingUpdate(groupJid, 'announcement')`).
+    2. **Cabut Link Undangan**: Bot langsung me-reset tautan undangan grup lama (`socket.groupRevokeInvite(groupJid)`) agar bot penyerang berikutnya tidak bisa masuk.
+    3. **Broadcast Alert**: Mengirim peringatan darurat ke chat grup me-mention para admin dan Tenant Owner:
+       ```text
+       🚨 *[ EMERGENCY ANTI-RAID LOCKDOWN ]* 🚨
+       Terdeteksi serbuan {count} member baru dalam {window} detik!
+       Grup telah dikunci otomatis dan tautan undangan grup telah di-reset.
+       ```
+- **Commands**:
+  - `.antiraid [on|off]`
+  - `.antiraid setting <threshold> <detik>` (misal: `.antiraid setting 5 10`)
+
+---
+
+### 4.3. Modul 3: SaaS Tenant Dashboard (`.panel` / `.tenantstatus`)
+- **Tujuan**: Menghadirkan tampilan status sewa bergaya SaaS premium untuk Tenant Owner dan Super Owner.
+- **Informasi yang Ditampilkan**:
+  - **Identitas Tenant**: Nama grup, ID grup, dan status sewa (`ACTIVE`, `PENDING`, `EXPIRED`).
+  - **Masa Aktif Sewa**: Sisa hari sewa beserta tanggal berakhir (WIB) dengan progress bar status.
+  - **Izin Bot**: Status apakah bot adalah Admin Grup (`✅ Aktif` / `⚠️ Bot Belum Admin`).
+  - **Daftar Pengelola**: Nama/nomor Tenant Owner dan seluruh Tenant Admin.
+  - **Matriks Modul & Fitur**:
+    - 🛡️ Moderasi: AntiLink [ON/OFF], AntiSpam [ON/OFF], AntiDelete [ON/OFF], AntiViewOnce [ON/OFF], AntiRaid [ON/OFF]
+    - 📢 Notifikasi: Welcome [ON/OFF], Goodbye [ON/OFF]
+    - 🎮 Hiburan & Ekonomi: Game [ON/OFF], Media Downloader [ON/OFF]
+  - **Panduan Cepat Admin**: Bantuan instruksi cara mengubah setelan grup.
+- **Role Guard**: Terbuka untuk `TENANT_OWNER`, `TENANT_ADMIN`, dan `SUPER_OWNER`.
+
+---
+
+## 5. FASE 4: PRIORITAS 1 (P1) — "Engagement & Social Status"
+
+### 5.1. Modul 4: Profile 2.0 Visual Card via Sharp
+- **Tujuan**: Mengubah tampilan `.profile` teks polos menjadi kartu grafis PNG estetis (800×450 px) yang siap dipamerkan di grup atau story WhatsApp.
+- **Komponen Kartu Grafis**:
+  - Foto profil WhatsApp pengguna (lingkaran avatar dengan aksen warna sesuai Tier Rank).
+  - Nama panggilan & nomor HP tersamarkan.
+  - Tier Rank Badge: Bronze, Silver, Gold, Platinum, Diamond, Master, Grandmaster.
+  - Progress Bar XP menuju tier berikutnya.
+  - Widget Saldo: Total Poin, Limit, Streak Harian, dan Posisi Leaderboard di grup (#X).
+- **Performa**: Rendering SVG dinamis via **Sharp** lokal tanpa headless browser (<100ms response time).
+
+---
+
+### 5.2. Modul 5: Group Stats & Activity Analytics (`.stats`)
+- **Tujuan**: Memberikan insight aktivitas chat kepada admin grup (mendeteksi member paling aktif dan mendeteksi sider/lurker).
+- **Skema Database**:
+  - Tambahan kolom pada `GroupMemberProfile`:
+    - `messageCount`: Int @default(0)
+    - `lastActiveAt`: DateTime @default(now())
+- **Pencatatan Non-Blocking**:
+  - Ditangani oleh `activityTracker.interceptor.ts` pada setiap pesan non-command yang masuk.
+- **Commands**:
+  - `.stats`: Ringkasan aktivitas grup (total pesan tercatat, waktu teramai, 5 member teraktif).
+  - `.topaktif` / `.topchat`: Peringkat 10 member dengan jumlah chat terbanyak.
+  - `.silent [hari]`: Menampilkan daftar member yang tidak pernah mengirim pesan selama X hari (alat seleksi sider/koleksi nomor pasif).
+
+---
+
+### 5.3. Modul 6: Viral Studio — Aesthetic Quote (`.quote`) & Meme Tweet (`.tweet`)
+- **Tujuan**: Fitur hiburan visual viral sebagai alternatif resmi dari `.fakechat`.
+- **Fitur**:
+  - **`.quote` [reply chat]**:
+    - Mengambil teks chat yang dibalas beserta foto profil & nama pengirim aslinya.
+    - Me-render kartu kutipan elegan dengan latar belakang *dark glassmorphism*, tanda petik editorial, dan teks kutipan rapi.
+    - Opsi: Dikirim sebagai gambar PNG atau stiker WhatsApp (`.quote -s`).
+  - **`.tweet <teks>` / `.tweet @user <teks>`**:
+    - Me-render mockup postingan X (Twitter) Dark Mode lengkap dengan centang verifikasi biru, username, dan statistik likes acak lucu.
+
+---
+
+### 5.4. Modul 7: Automatic Level-Up & Rank Tier Announcement
+- **Tujuan**: Gamifikasi sosial otomatis saat member aktif bermain game atau beraktivitas di grup.
+- **Mekanisme**:
+  - Saat member menerima XP dan tier bertambah (misal dari *Silver* ke *Gold*):
+  - Bot memicu pesan perayaan otomatis berdesain bersih ke grup:
     ```text
-    ⚠️ [PESAN DITARIK TERDETEKSI]
-    Pengirim: @628xxx
-    Waktu: HH:mm WIB
-    Isi Pesan: <pesan yang ditarik>
+    🎉 *[ LEVEL UP! ]* 🏆
+    Selamat kepada @user yang berhasil naik ke tier *GOLD* (5.000+ XP)!
+    Gelar baru dan hak istimewa telah disematkan. Terus tingkatkan keaktifanmu!
     ```
-  - Konfigurasi tenant: `.antidelete [on|off]` (hanya Tenant Owner & Tenant Admin).
-
-#### 3. Anti-ViewOnce (Penyelamat Media Sekali Lihat)
-- **Kebutuhan**: Mengakses kembali foto atau video 1x lihat (*View Once*) yang dikirim ke grup.
-- **Arsitektur Teknis**:
-  - Deteksi pesan ber-flag `viewOnceMessageV2` atau `viewOnceMessage`.
-  - Unduh buffer media via `downloadMediaMessage`.
-  - Kirimkan kembali sebagai media foto/video biasa tanpa flag view once.
-  - Mode konfigurasi:
-    - `.antiviewonce on` ➔ Diteruskan ke grup.
-    - `.antiviewonce admin` ➔ Diteruskan ke private chat Tenant Owner/Admin (menjaga privasi grup bisnis/toko).
 
 ---
 
-## 3. Roadmap Eksekusi Bertahap
+## 6. Matrix Prioritas & Rencana Eksekusi
 
-```
-   ┌────────────────────────────────────────────────────────┐
-   │ FASE 1: Quick Wins & Entertainment Studio [SELESAI]    │
-   │ • Injeksi EXIF Watermark Stiker ("MinjiBot")           │
-   │ • Fitur Stiker Brat (.brat <teks>)                     │
-   │ • Peresmian Command .tovideo                           │
-   │ • Modul Audio FX (.bass, .chipmunk, .slowed, .tovn)   │
-   │ • Welcome Photo Sambutan (PP User / Minji Fallback)    │
-   └──────────────────────────┬─────────────────────────────┘
-                              │
-                              ▼
-   ┌────────────────────────────────────────────────────────┐
-   │ FASE 2: The Admin Powerhouse Core [SELESAI]            │
-   │ • Command .hidetag <pesan> (Invisible Mentions)        │
-   │ • Fitur Anti-Delete (LRU Cache in-memory + Revoke)     │
-   │ • Fitur Anti-ViewOnce (Auto Recovery Media 1x Lihat)   │
-   └──────────────────────────┬─────────────────────────────┘
-                              │
-                              ▼
-   ┌────────────────────────────────────────────────────────┐
-   │ FASE 3: Testing, Verification, & VPS Deploy [SELESAI]  │
-   │ • Unit Tests: 277/277 Tests Passed (100% Pass Rate)    │
-   │ • Upgrade Formal Welcome & GoodBye Templates (Opsi 2)  │
-   │ • Sinkronisasi Dokumentasi AGENTS.md & README.md       │
-   │ • Deploy ke VPS Linux Tencent Lighthouse & PM2         │
-   └────────────────────────────────────────────────────────┘
-```
+| Urutan | Modul / Pekerjaan | Pilar | Target Files Terkait |
+|---|---|---|---|
+| **Step 1** | **Interceptor Pipeline & Decouple Replies** | Architectural Refactor | `src/bot/pipeline/`, `src/bot/messageHandler.ts` |
+| **Step 2** | **Baileys Event Subscribers** | Architectural Refactor | `src/bot/subscribers/`, `src/bot/lifecycle.ts` |
+| **Step 3** | **QA Audit Hardening & Bugfixes** | Performance & Stability | `pendingTenantRegistration.service.ts`, `lifecycle.ts`, `antiSpam.service.ts`, `reminder.service.ts`, `guards/` |
+| **Step 4** | **Sistem Warning Terpadu (`.warn`)** | P0: Dealbreakers | `prisma/schema.prisma`, `src/services/moderation/warn.service.ts` |
+| **Step 5** | **Anti-Raid Protection (`.antiraid`)** | P0: Dealbreakers | `src/services/moderation/antiRaid.service.ts` |
+| **Step 6** | **SaaS Tenant Panel (`.panel`)** | P0: Dealbreakers | `src/services/tenant/tenantPanel.service.ts` |
+| **Step 7** | **Profile 2.0 Card (Sharp)** | P1: Engagement | `src/services/member/profileCard.service.ts` |
+| **Step 8** | **Group Analytics (`.stats`, `.silent`)** | P1: Engagement | `src/services/stats/groupStats.service.ts` |
+| **Step 9** | **Viral Quote & Tweet (`.quote`, `.tweet`)** | P1: Engagement | `src/services/media/quoteCard.service.ts` |
+| **Step 10** | **Level-Up Announcement** | P1: Engagement | `src/services/member/memberEconomy.service.ts` |
 
 ---
 
-## 4. Standar Mutu & Aturan Penulisan Kode (Wajib Dipatuhi)
+## 7. Standar Mutu, CI/CD, & Guardrails
 
-1. **Layering Architecture**: Command Handler (`src/commands/`) ➔ Service Layer (`src/services/`) ➔ Repository (`src/repositories/`).
-2. **Kemandirian Dependency**: Prioritaskan **Sharp** dan **FFmpeg** lokal yang sudah ada. Hindari menambahkan library native berat seperti `node-canvas` yang berisiko error di VPS Linux.
-3. **Pembersihan Resource**: Semua temporary file wajib menggunakan utility `createTempDir()` dan dibersihkan pada blok `finally`.
-4. **Verifikasi Wajib Sebelum Commit**:
-   - `npm run build` ➔ 0 error TypeScript.
-   - `npm run test` ➔ 277 test suites lulus 100%.
-   - Deployment otomatis melalui GitHub Actions ke VPS Tencent Lighthouse.
+1. **Layering Architecture (Wajib)**:
+   - Command Handler ➔ Service Layer ➔ Repository Layer.
+   - **Dilarang keras** memanggil Prisma langsung di dalam Command Handler atau Pipeline Interceptor.
+2. **Kemandirian Dependency**:
+   - Hanya menggunakan **Sharp** dan **FFmpeg** lokal. Dilarang menambah `node-canvas` atau `puppeteer`.
+3. **Pembersihan Resource**:
+   - Seluruh temporary file wajib menggunakan utility `createTempDir()` dan dibersihkan di blok `finally`.
+4. **Verifikasi Pengujian**:
+   - `npm run build` wajib 0 error TypeScript.
+   - Seluruh test suite (277+ unit tests) wajib lulus 100%.
+5. **Protokol Deployment CI/CD**:
+   - Deploy dilakukan secara otomatis oleh GitHub Actions (`.github/workflows/deploy.yml`) saat commit di-push ke branch `main`.
+   - Dilarang menjalankan skrip SSH deploy manual bersamaan dengan GitHub Actions untuk mencegah benturan file lock (`.git/index.lock`).

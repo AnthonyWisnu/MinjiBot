@@ -1,14 +1,12 @@
-import { DisconnectReason, proto, type ConnectionState, type WASocket } from "@whiskeysockets/baileys";
+import { DisconnectReason, type ConnectionState, type WASocket } from "@whiskeysockets/baileys";
 import qrcode from "qrcode-terminal";
 
 import { env } from "../config/env";
 import { logger } from "../config/logger";
-import { prisma, disconnectPrisma } from "../repositories/prismaClient";
-import { createBotSocket } from "./connection";
-import { handleGroupParticipantsUpdate } from "./groupParticipantsHandler";
-import { handleMessagesUpsert } from "./messageHandler";
-import { antiDeleteService } from "../services/moderation/antiDelete.service";
+import { disconnectPrisma } from "../repositories/prismaClient";
 import { reminderScheduler } from "../services/reminder/reminderScheduler";
+import { createBotSocket } from "./connection";
+import { registerEventSubscribers } from "./subscribers";
 
 export class BotLifecycle {
   private socket: WASocket | null = null;
@@ -18,25 +16,6 @@ export class BotLifecycle {
 
   async start(): Promise<void> {
     this.isStopping = false;
-    try {
-      await prisma.tenantFeatureSetting.updateMany({
-        data: {
-          downloaderEnabled: true,
-          hdEnabled: true,
-          gameEnabled: true,
-          welcomeEnabled: true,
-          antiLinkEnabled: true,
-          antiSpamEnabled: true,
-          reminderEnabled: true,
-          tagAllEnabled: true,
-          antiDeleteEnabled: true,
-          antiViewOnceEnabled: true,
-          goodbyeEnabled: true,
-        },
-      });
-    } catch (error: unknown) {
-      logger.warn({ error }, "Default tenant features auto-sync skipped");
-    }
     await this.connect();
   }
 
@@ -62,59 +41,16 @@ export class BotLifecycle {
     try {
       const botSocket = await createBotSocket();
       this.socket = botSocket.socket;
-      this.bindSocketEvents(botSocket.socket, botSocket.saveCreds);
+      registerEventSubscribers(botSocket.socket, {
+        saveCreds: botSocket.saveCreds,
+        onConnectionUpdate: (update) => {
+          this.handleConnectionUpdate(update);
+        },
+      });
     } catch (error: unknown) {
       logger.error({ error }, "Gagal membuat koneksi WhatsApp");
       this.scheduleReconnect("connect-failed");
     }
-  }
-
-  private bindSocketEvents(socket: WASocket, saveCreds: () => Promise<void>): void {
-    socket.ev.on("creds.update", () => {
-      saveCreds().catch((error: unknown) => {
-        logger.error({ error }, "Gagal menyimpan auth state WhatsApp");
-      });
-    });
-
-    socket.ev.on("connection.update", (update) => {
-      this.handleConnectionUpdate(update);
-    });
-
-    socket.ev.on("messages.upsert", (event) => {
-      logger.debug(
-        {
-          messageCount: event.messages.length,
-          type: event.type,
-        },
-        "Pesan WhatsApp diterima",
-      );
-
-      handleMessagesUpsert(socket, event).catch((error: unknown) => {
-        logger.error({ error }, "Batch pesan WhatsApp gagal diproses");
-      });
-    });
-
-    socket.ev.on("group-participants.update", (event) => {
-      handleGroupParticipantsUpdate(socket, event).catch((error: unknown) => {
-        logger.error({ error }, "Update peserta grup gagal diproses");
-      });
-    });
-
-    socket.ev.on("messages.update", (updates) => {
-      for (const item of updates) {
-        const protocolMsg = item.update.message?.protocolMessage;
-        if (
-          protocolMsg?.type === proto.Message.ProtocolMessage.Type.REVOKE &&
-          protocolMsg.key
-        ) {
-          antiDeleteService.handleMessageRevoke(socket, protocolMsg.key).catch((error: unknown) => {
-            logger.error({ error }, "Gagal memproses deteksi pesan ditarik");
-          });
-        }
-      }
-    });
-
-    reminderScheduler.start(socket);
   }
 
   private handleConnectionUpdate(update: Partial<ConnectionState>): void {
