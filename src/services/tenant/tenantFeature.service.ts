@@ -18,6 +18,7 @@ const FEATURE_SETTING_FIELD = {
   tagall: "tagAllEnabled",
   antidelete: "antiDeleteEnabled",
   antiviewonce: "antiViewOnceEnabled",
+  goodbye: "goodbyeEnabled",
 } as const satisfies Record<TenantFeatureKey, keyof TenantFeatureSetting>;
 
 export interface UpdateTenantFeatureInput {

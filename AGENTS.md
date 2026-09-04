@@ -136,9 +136,9 @@ Fitur berat mengonsumsi Limit Member dengan pola isolasi akses:
 - **Audio Effects Studio (`.bass`, `.chipmunk`, `.slowed`, `.nightcore`, `.tovn`)**:
   - Manipulasi file audio dan voice note lokal menggunakan FFmpeg tanpa biaya API eksternal.
   - `.tovn` / `.vn`: Mentranscode audio menjadi format resmi WhatsApp Voice Note (PTT) dengan gelombang suara hijau.
-- **Welcome Photo Sambutan Member Baru**:
-  - Saat ada member baru bergabung di grup aktif (`welcomeEnabled === true`), bot mengambil foto profil WhatsApp member tersebut dan mengirimkannya dengan caption kalimat sambutan kustom dari `.setwelcome`.
-  - Jika member tidak memasang foto profil atau privasinya tertutup, bot secara otomatis menggunakan foto avatar resmi Minji (`assets/minji.png`) sebagai fallback.
+- **Welcome Photo & GoodBye Member Notifications**:
+  - **Welcome (`.welcome [on|off]`, `.setwelcome <pesan>`)**: Saat ada member baru bergabung di grup aktif (`welcomeEnabled === true`), bot mengambil foto profil WhatsApp member tersebut dan mengirimkannya dengan caption kalimat sambutan kustom dari `.setwelcome`. Jika member tidak memasang foto profil atau privasinya tertutup, bot secara otomatis menggunakan foto avatar resmi Minji (`assets/minji.png`) sebagai fallback. Menggunakan template default formal Opsi 2 (tertib aturan & panduan `.menu`).
+  - **GoodBye (`.goodbye [on|off]`, `.setgoodbye <pesan>`)**: Saat ada member keluar atau dikeluarkan dari grup (`goodbyeEnabled === true`), bot mengirimkan notifikasi perpisahan formal dan elegan ke grup dengan mention member tersebut tanpa mencoba menarik foto (mencegah error privasi WA). Otomatis diabaikan jika yang keluar adalah bot itu sendiri.
 
 ### 5.2. Alat Moderasi & Pengawasan Tenant (The Admin Powerhouse)
 Fitur kontrol grup eksklusif untuk penyewa bot (`TENANT_OWNER` & `TENANT_ADMIN`) dan `SUPER_OWNER`:
@@ -223,7 +223,7 @@ Saat Anda (AI Agent) diminta memperbarui kode MinjiBot, patuhi aturan mutlak ber
    - Gunakan `formatUserSafeError` untuk pesan error yang ramah kepada pengguna tanpa membocorkan stack trace internal server.
 4. **Verifikasi Pengujian**:
    - Sebelum menyetujui perubahan, pastikan `npm run build` bebas dari error tipe TypeScript (`0 error`).
-   - Jalankan unit tests dengan `npm run test`. Seluruh test suite (257+ tests) **wajib lulus 100%**.
+   - Jalankan unit tests dengan `npm run test`. Seluruh test suite (277+ tests) **wajib lulus 100%**.
 5. **Deployment & CI/CD**:
    - Seluruh perubahan yang di-push ke branch `main` di GitHub akan otomatis di-deploy ke VPS oleh GitHub Actions (`.github/workflows/deploy.yml`).
    - Perintah deployment di server menggunakan `git reset --hard origin/main` untuk menjamin sinkronisasi tanpa konflik merge.

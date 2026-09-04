@@ -20,9 +20,27 @@ import type { Role } from "../../types/role";
 import { normalizeJid } from "../../utils/jid";
 import { tenantFeatureService } from "../tenant/tenantFeature.service";
 
-const DEFAULT_WELCOME_MESSAGE = "Selamat datang {user} di {group}.";
+export const DEFAULT_WELCOME_MESSAGE = `Selamat datang {user} di *{group}*.
+
+Sebelum berinteraksi, mohon perhatikan hal berikut:
+• Membaca dan menaati aturan di deskripsi grup
+• Menjaga etika, kesopanan, dan ketertiban bersama
+• Ketik *.menu* untuk mengakses perintah bot
+
+Selamat bergabung dan selamat berdiskusi.`;
+
+export const DEFAULT_GOODBYE_MESSAGE = `*[ PEMBERITAHUAN ]*
+{user} telah keluar dari *{group}*.
+
+Terima kasih atas kerja sama dan kebersamaannya selama ini. Sampai jumpa di lain kesempatan.`;
 
 export interface WelcomeConfigResult {
+  tenantGroup: TenantGroup;
+  featureSetting: TenantFeatureSetting;
+  groupSetting: TenantGroupSetting;
+}
+
+export interface GoodbyeConfigResult {
   tenantGroup: TenantGroup;
   featureSetting: TenantFeatureSetting;
   groupSetting: TenantGroupSetting;
@@ -108,11 +126,86 @@ export class WelcomeService {
     });
   }
 
+  async setGoodbyeEnabled(context: CommandContext, enabled: boolean): Promise<GoodbyeConfigResult> {
+    const tenantGroup = await this.resolveManagedTenant(context);
+
+    return prisma.$transaction(async (tx) => {
+      const tenantFeatureRepository = new TenantFeatureRepository(tx);
+      const tenantGroupSettingRepository = new TenantGroupSettingRepository(tx);
+      const tenantAuditRepository = new TenantAuditRepository(tx);
+
+      await tenantFeatureRepository.ensureForGroup(tenantGroup.groupJid);
+      const featureSetting = await tenantFeatureRepository.update(tenantGroup.groupJid, {
+        goodbyeEnabled: enabled,
+      });
+      const groupSetting = await tenantGroupSettingRepository.ensureForGroup(tenantGroup.groupJid);
+
+      await tenantAuditRepository.create({
+        groupJid: tenantGroup.groupJid,
+        actorJid: context.senderUserJid,
+        action: TenantAuditAction.WELCOME_UPDATED,
+        metadata: {
+          tenantCode: tenantGroup.tenantCode,
+          goodbyeEnabled: enabled,
+        },
+      });
+
+      return {
+        tenantGroup,
+        featureSetting,
+        groupSetting,
+      };
+    });
+  }
+
+  async setGoodbyeMessage(
+    context: CommandContext,
+    goodbyeMessage: string,
+  ): Promise<GoodbyeConfigResult> {
+    const tenantGroup = await this.resolveManagedTenant(context);
+
+    return prisma.$transaction(async (tx) => {
+      const tenantFeatureRepository = new TenantFeatureRepository(tx);
+      const tenantGroupSettingRepository = new TenantGroupSettingRepository(tx);
+      const tenantAuditRepository = new TenantAuditRepository(tx);
+
+      const featureSetting = await tenantFeatureRepository.ensureForGroup(tenantGroup.groupJid);
+      await tenantGroupSettingRepository.ensureForGroup(tenantGroup.groupJid);
+      const groupSetting = await tenantGroupSettingRepository.update(tenantGroup.groupJid, {
+        goodbyeMessage,
+      });
+
+      await tenantAuditRepository.create({
+        groupJid: tenantGroup.groupJid,
+        actorJid: context.senderUserJid,
+        action: TenantAuditAction.WELCOME_UPDATED,
+        metadata: {
+          tenantCode: tenantGroup.tenantCode,
+          goodbyeMessageUpdated: true,
+        },
+      });
+
+      return {
+        tenantGroup,
+        featureSetting,
+        groupSetting,
+      };
+    });
+  }
+
   async handleParticipantsUpdate(socket: WASocket, update: GroupParticipantsUpdate): Promise<void> {
-    if (update.action !== "add" || update.participants.length === 0) {
+    if (update.participants.length === 0) {
       return;
     }
 
+    if (update.action === "add") {
+      await this.handleWelcomeEvent(socket, update);
+    } else if (update.action === "remove") {
+      await this.handleGoodbyeEvent(socket, update);
+    }
+  }
+
+  private async handleWelcomeEvent(socket: WASocket, update: GroupParticipantsUpdate): Promise<void> {
     const groupJid = normalizeJid(update.id);
     const tenantGroup = await this.tenantGroupRepository.findByGroupJid(groupJid);
     if (!this.isTenantActive(tenantGroup)) {
@@ -129,7 +222,7 @@ export class WelcomeService {
 
     for (const participant of update.participants) {
       const participantJid = normalizeJid(participant);
-      const text = this.renderWelcomeMessage(
+      const text = this.renderMessage(
         groupSetting.welcomeMessage ?? DEFAULT_WELCOME_MESSAGE,
         tenantGroup,
         [participantJid],
@@ -177,6 +270,45 @@ export class WelcomeService {
     }
   }
 
+  private async handleGoodbyeEvent(socket: WASocket, update: GroupParticipantsUpdate): Promise<void> {
+    const groupJid = normalizeJid(update.id);
+    const tenantGroup = await this.tenantGroupRepository.findByGroupJid(groupJid);
+    if (!this.isTenantActive(tenantGroup)) {
+      return;
+    }
+
+    const featureSetting = await this.tenantFeatureRepository.findByGroupJid(groupJid);
+    if (!featureSetting?.goodbyeEnabled) {
+      return;
+    }
+
+    const groupSetting = await this.tenantGroupSettingRepository.ensureForGroup(groupJid);
+    const botJid = socket.user?.id ? normalizeJid(socket.user.id) : null;
+
+    for (const participant of update.participants) {
+      const participantJid = normalizeJid(participant);
+      if (botJid && participantJid === botJid) {
+        // Skip if the bot itself was removed from the group
+        continue;
+      }
+
+      const text = this.renderMessage(
+        groupSetting.goodbyeMessage ?? DEFAULT_GOODBYE_MESSAGE,
+        tenantGroup,
+        [participantJid],
+      );
+
+      try {
+        await socket.sendMessage(groupJid, {
+          text,
+          mentions: [participantJid],
+        });
+      } catch {
+        // ignore send error on leave
+      }
+    }
+  }
+
   parseWelcomeToggle(value: string): boolean {
     const normalized = value.trim().toLowerCase();
 
@@ -191,12 +323,53 @@ export class WelcomeService {
     throw new Error("Status welcome harus on atau off.");
   }
 
+  parseGoodbyeToggle(value: string): boolean {
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized === "on") {
+      return true;
+    }
+
+    if (normalized === "off") {
+      return false;
+    }
+
+    throw new Error("Status goodbye harus on atau off.");
+  }
+
   assertCanManageWelcome(role: Role): void {
     if (role === "SUPER_OWNER" || role === "TENANT_OWNER" || role === "TENANT_ADMIN") {
       return;
     }
 
     throw new Error("Command welcome hanya dapat digunakan oleh pengelola tenant.");
+  }
+
+  assertCanManageGoodbye(role: Role): void {
+    if (role === "SUPER_OWNER" || role === "TENANT_OWNER" || role === "TENANT_ADMIN") {
+      return;
+    }
+
+    throw new Error("Command goodbye hanya dapat digunakan oleh pengelola tenant.");
+  }
+
+  renderMessage(
+    template: string,
+    tenantGroup: TenantGroup,
+    mentions: string[],
+  ): string {
+    const mentionText = mentions.map((jid) => `@${jid.split("@")[0] ?? jid}`).join(" ");
+    const groupName = tenantGroup.name ?? "grup ini";
+
+    return template.replaceAll("{user}", mentionText).replaceAll("{group}", groupName).trim();
+  }
+
+  renderWelcomeMessage(
+    template: string,
+    tenantGroup: TenantGroup,
+    mentions: string[],
+  ): string {
+    return this.renderMessage(template, tenantGroup, mentions);
   }
 
   private async resolveManagedTenant(context: CommandContext): Promise<TenantGroup> {
@@ -217,17 +390,6 @@ export class WelcomeService {
       !tenantGroup.isBlocked &&
       tenantGroup.expiresAt.getTime() > Date.now(),
     );
-  }
-
-  private renderWelcomeMessage(
-    template: string,
-    tenantGroup: TenantGroup,
-    mentions: string[],
-  ): string {
-    const mentionText = mentions.map((jid) => `@${jid.split("@")[0] ?? jid}`).join(" ");
-    const groupName = tenantGroup.name ?? "grup ini";
-
-    return template.replaceAll("{user}", mentionText).replaceAll("{group}", groupName).trim();
   }
 }
 
