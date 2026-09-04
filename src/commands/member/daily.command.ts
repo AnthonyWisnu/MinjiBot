@@ -46,5 +46,6 @@ async function executeDaily(context: CommandContext): Promise<void> {
 
 export const dailyCommand: CommandDefinition = {
   name: "daily",
+  aliases: ["claim"],
   execute: executeDaily,
 };

@@ -49,7 +49,15 @@ export const gameCommands: CommandDefinition[] = [
 
 async function replyGame(context: CommandContext, action: () => Promise<string>): Promise<void> {
   try {
-    await context.reply(await action());
+    const text = await action();
+    const sent = await context.socket.sendMessage(
+      context.chatJid,
+      { text },
+      { quoted: context.message },
+    );
+    if (sent?.key?.id) {
+      gameService.setQuizMessageId(context.chatJid, sent.key.id);
+    }
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Game gagal diproses. Silakan coba lagi."));
   }

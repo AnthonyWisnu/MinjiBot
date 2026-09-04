@@ -107,12 +107,13 @@ export class GroupMemberProfileRepository {
     return countAbove + 1;
   }
 
-  // Update atomik saldo - dipakai oleh service layer di dalam Prisma transaction.
+  // Update atomik saldo - dipakai oleh service layer di dalam Prisma transaction atau langsung.
   updateBalances(
     id: string,
     data: Prisma.GroupMemberProfileUpdateInput,
-    tx: PrismaTransactionClient,
+    tx?: PrismaTransactionClient,
   ): Promise<GroupMemberProfile> {
-    return tx.groupMemberProfile.update({ where: { id }, data });
+    const client = tx ?? this.client;
+    return client.groupMemberProfile.update({ where: { id }, data });
   }
 }

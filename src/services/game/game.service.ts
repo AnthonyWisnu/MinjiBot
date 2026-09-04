@@ -28,6 +28,7 @@ interface QuizSession {
   family100EarnedByUser: Map<string, { points: number; xp: number }>;
   family100AnswererByAnswer: Map<string, string>;
   numberTarget?: number;
+  messageId?: string;
 }
 
 interface TicTacToeSession {
@@ -145,7 +146,7 @@ export class GameService {
     }
 
     const question = type === "mtk" ? generateMtkQuestion() : pickRandom(this.quizBank[type]);
-    this.quizSessions.set(context.chatJid, {
+    const session: QuizSession = {
       type,
       groupJid: context.chatJid,
       startedBy: context.senderUserJid,
@@ -158,7 +159,20 @@ export class GameService {
       wrongParticipants: new Set(),
       family100EarnedByUser: new Map(),
       family100AnswererByAnswer: new Map(),
-    });
+    };
+    this.quizSessions.set(context.chatJid, session);
+
+    if (type === "family100") {
+      return [
+        `Game dimulai: ${formatGameName(type)}`,
+        "",
+        question.prompt,
+        "",
+        formatFamily100Board(session),
+        "",
+        answerHint(type),
+      ].join("\n");
+    }
 
     return [
       `Game dimulai: ${formatGameName(type)}`,
@@ -558,6 +572,11 @@ export class GameService {
     });
 
     const isLastAnswer = session.answered.size >= session.question.answers.length;
+    const matchedIndex = session.question.answers.findIndex(
+      (ans) => normalizeAnswer(ans) === normalizedAnswer,
+    );
+    const answerDisplay = matchedIndex >= 0 ? session.question.answers[matchedIndex] : normalizedAnswer;
+    const answerNumber = matchedIndex >= 0 ? matchedIndex + 1 : "?";
 
     if (isLastAnswer) {
       const updatedEarned = session.family100EarnedByUser.get(context.senderUserJid) ?? { points: 0, xp: 0 };
@@ -582,26 +601,35 @@ export class GameService {
       this.quizSessions.delete(context.chatJid);
 
       const bonusLines = bonusResult.capped
-        ? ["Bonus jawaban terakhir tidak diterima (cap sudah penuh)."]
-        : [`Bonus jawaban terakhir: ${String(bonusResult.points)} poin, ${String(bonusResult.xp)} XP`];
+        ? ["• Bonus jawaban terakhir tidak diterima (cap sudah penuh)."]
+        : [`• Bonus jawaban terakhir: +${String(bonusResult.points)} Poin, +${String(bonusResult.xp)} XP`];
 
       return [
         "Benar.",
+        `🎉 *Jawaban nomor ${String(answerNumber)}: "${answerDisplay}"*`,
         result.capped
           ? "Reward tidak diterima (cap sudah penuh)."
-          : `Poin bertambah: ${String(result.points)}, XP: ${String(result.xp)}`,
+          : `• Poin bertambah: +${String(result.points)}, XP: +${String(result.xp)}`,
         ...bonusLines,
+        "",
+        formatFamily100Board(session),
+        "",
         `Terjawab: ${String(session.answered.size)}/${String(session.question.answers.length)}`,
         "Game selesai.",
       ].join("\n");
     }
 
+    const remaining = session.question.answers.length - session.answered.size;
     return [
       "Benar.",
+      `✅ *Jawaban nomor ${String(answerNumber)}: "${answerDisplay}"*`,
       result.capped
         ? "Reward tidak diterima (cap sudah penuh)."
-        : `Poin bertambah: ${String(result.points)}, XP: ${String(result.xp)}`,
-      `Terjawab: ${String(session.answered.size)}/${String(session.question.answers.length)}`,
+        : `• Poin bertambah: +${String(result.points)}, XP: +${String(result.xp)}`,
+      "",
+      formatFamily100Board(session),
+      "",
+      `Terjawab: ${String(session.answered.size)}/${String(session.question.answers.length)} (Sisa ${String(remaining)} slot)`,
     ].join("\n");
   }
 
@@ -662,6 +690,34 @@ export class GameService {
     ].join("\n");
   }
 
+  hasActiveQuiz(groupJid: string): boolean {
+    this.cleanupExpired(groupJid);
+    return this.quizSessions.has(groupJid);
+  }
+
+  getActiveQuiz(groupJid: string): QuizSession | undefined {
+    this.cleanupExpired(groupJid);
+    return this.quizSessions.get(groupJid);
+  }
+
+  setQuizMessageId(groupJid: string, messageId: string): void {
+    const session = this.quizSessions.get(groupJid);
+    if (session) {
+      session.messageId = messageId;
+    }
+  }
+
+  async answerQuizFromDirectText(
+    context: CommandContext,
+    answerText: string,
+  ): Promise<string | null> {
+    this.cleanupExpired(context.chatJid);
+    const session = this.quizSessions.get(context.chatJid);
+    if (!session) return null;
+
+    return this.answerQuiz(context, session.type, answerText);
+  }
+
   private cleanupExpired(groupJid: string): void {
     const now = Date.now();
     const quiz = this.quizSessions.get(groupJid);
@@ -679,6 +735,19 @@ export class GameService {
 }
 
 // ---- Pure helpers (no side effects) ----
+
+function formatFamily100Board(session: QuizSession): string {
+  const lines = session.question.answers.map((ans, idx) => {
+    const normalized = normalizeAnswer(ans);
+    if (session.answered.has(normalized)) {
+      const answererJid = session.family100AnswererByAnswer.get(normalized);
+      const tag = answererJid ? ` (@${answererJid.split("@")[0]})` : "";
+      return `${String(idx + 1)}. ${ans}${tag}`;
+    }
+    return `${String(idx + 1)}. ...............`;
+  });
+  return lines.join("\n");
+}
 
 function pickRandom<T>(items: readonly T[]): T {
   const item = items[Math.floor(Math.random() * items.length)];
@@ -732,11 +801,7 @@ function generateMtkQuestion(): Question {
 }
 
 function answerHint(type: QuizType): string {
-  if (type === "family100") {
-    return "Jawab dengan .family100 <jawaban>.";
-  }
-
-  return `Jawab dengan .${type} <jawaban>.`;
+  return `💡 Cukup balas/reply pesan ini untuk menjawab, atau ketik .${type} <jawaban>.`;
 }
 
 function formatBoard(board: TicTacToeCell[]): string {
