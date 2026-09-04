@@ -7,6 +7,9 @@ import {
 } from "@prisma/client";
 import type { WASocket } from "@whiskeysockets/baileys";
 
+import fs from "node:fs";
+import path from "node:path";
+
 import { prisma } from "../../repositories/prismaClient";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
@@ -122,17 +125,56 @@ export class WelcomeService {
     }
 
     const groupSetting = await this.tenantGroupSettingRepository.ensureForGroup(groupJid);
-    const mentions = update.participants.map((participant) => normalizeJid(participant));
-    const text = this.renderWelcomeMessage(
-      groupSetting.welcomeMessage ?? DEFAULT_WELCOME_MESSAGE,
-      tenantGroup,
-      mentions,
-    );
+    const fallbackAvatar = getFallbackMinjiAvatar();
 
-    await socket.sendMessage(groupJid, {
-      text,
-      mentions,
-    });
+    for (const participant of update.participants) {
+      const participantJid = normalizeJid(participant);
+      const text = this.renderWelcomeMessage(
+        groupSetting.welcomeMessage ?? DEFAULT_WELCOME_MESSAGE,
+        tenantGroup,
+        [participantJid],
+      );
+
+      let profilePicUrl: string | null = null;
+      try {
+        const pic = await socket.profilePictureUrl(participantJid, "image");
+        profilePicUrl = pic ?? null;
+      } catch {
+        // user profile picture may be private or not set
+      }
+
+      if (profilePicUrl) {
+        try {
+          await socket.sendMessage(groupJid, {
+            image: { url: profilePicUrl },
+            caption: text,
+            mentions: [participantJid],
+          });
+          continue;
+        } catch {
+          // fallback to local avatar
+        }
+      }
+
+      if (fallbackAvatar) {
+        try {
+          await socket.sendMessage(groupJid, {
+            image: fallbackAvatar,
+            caption: text,
+            mentions: [participantJid],
+          });
+          continue;
+        } catch {
+          // fallback to text message
+        }
+      }
+
+      // Final fallback to text message
+      await socket.sendMessage(groupJid, {
+        text,
+        mentions: [participantJid],
+      });
+    }
   }
 
   parseWelcomeToggle(value: string): boolean {
@@ -187,6 +229,27 @@ export class WelcomeService {
 
     return template.replaceAll("{user}", mentionText).replaceAll("{group}", groupName).trim();
   }
+}
+
+function getFallbackMinjiAvatar(): Buffer | null {
+  const possiblePaths = [
+    path.resolve(process.cwd(), "assets/minji.png"),
+    path.resolve(process.cwd(), "src/Minji.png"),
+    path.resolve(__dirname, "../../assets/minji.png"),
+    path.resolve(__dirname, "../../../assets/minji.png"),
+    path.resolve(__dirname, "../../Minji.png"),
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      try {
+        return fs.readFileSync(p);
+      } catch {
+        // ignore read error
+      }
+    }
+  }
+  return null;
 }
 
 export const welcomeService = new WelcomeService();

@@ -124,6 +124,22 @@ Fitur berat mengonsumsi Limit Member dengan pola isolasi akses:
 - **HD AI Photo (`.hd`)**: Mengonsumsi **2 Limit**. Meningkatkan ketajaman foto menggunakan model AI / GFPGAN.
 - **Play Song & Lyrics (`.play <judul>`, `.lirik <judul>`)**: Mengonsumsi **1 Limit**. Streaming audio MP3 dan pencarian lirik musik.
 
+### 5.1. Studio Kreatif & Media Ringan
+- **Sticker Branding & Watermark Engine**: Seluruh stiker yang dihasilkan bot (`.s`, `.smeme`, `.brat`) disuntik metadata EXIF resmi WhatsApp menggunakan `node-webpmux` dengan identitas:
+  - Pack Name: `MinjiBot Official Pack`
+  - Author / Publisher: `MinjiBot`
+  - **Dilarang keras** memuat nama personal developer pada EXIF stiker publik.
+- **Stiker Teks Brat (`.brat <teks>`)**: Dibuat secara dinamis melalui Sharp SVG template (warna hijau limau `#8ACE00`, font sans-serif tebal hitam, efek blur khas album Charli XCX) ke WebP 512×512 berkecepatan tinggi tanpa dependensi canvas berat.
+- **Reverse Sticker Converter (`.toimg`, `.tovideo`)**:
+  - `.toimg`: Mengonversi stiker statis menjadi gambar PNG.
+  - `.tovideo` / `.tovid`: Mengonversi stiker bergerak/animasi WebP menjadi video MP4 via FFmpeg.
+- **Audio Effects Studio (`.bass`, `.chipmunk`, `.slowed`, `.nightcore`, `.tovn`)**:
+  - Manipulasi file audio dan voice note lokal menggunakan FFmpeg tanpa biaya API eksternal.
+  - `.tovn` / `.vn`: Mentranscode audio menjadi format resmi WhatsApp Voice Note (PTT) dengan gelombang suara hijau.
+- **Welcome Photo Sambutan Member Baru**:
+  - Saat ada member baru bergabung di grup aktif (`welcomeEnabled === true`), bot mengambil foto profil WhatsApp member tersebut dan mengirimkannya dengan caption kalimat sambutan kustom dari `.setwelcome`.
+  - Jika member tidak memasang foto profil atau privasinya tertutup, bot secara otomatis menggunakan foto avatar resmi Minji (`assets/minji.png`) sebagai fallback.
+
 ---
 
 ## 6. Mini Games & Mekanisme Interaktif
