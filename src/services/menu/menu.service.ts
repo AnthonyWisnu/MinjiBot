@@ -91,6 +91,8 @@ export class MenuService {
       "• antispam",
       "• reminder",
       "• tagall",
+      "• antidelete",
+      "• antiviewonce",
     ].join("\n");
   }
 
@@ -335,7 +337,7 @@ export class MenuService {
         lines.push("• .remind <waktu> <pesan>", "• .listreminder");
       }
       if (tagAllOn) {
-        lines.push("• .tagall <pesan>");
+        lines.push("• .tagall / .hidetag <pesan>");
       }
     }
 
@@ -347,6 +349,8 @@ export class MenuService {
       "*─── [ MODERASI GRUP ] ───*",
       "• .antilink [on|off]",
       "• .antispam [on|off|status]",
+      "• .antidelete [on|off]",
+      "• .antiviewonce [on|off]",
     ];
 
     if (includeAdvanced) {

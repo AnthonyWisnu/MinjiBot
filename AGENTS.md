@@ -140,6 +140,19 @@ Fitur berat mengonsumsi Limit Member dengan pola isolasi akses:
   - Saat ada member baru bergabung di grup aktif (`welcomeEnabled === true`), bot mengambil foto profil WhatsApp member tersebut dan mengirimkannya dengan caption kalimat sambutan kustom dari `.setwelcome`.
   - Jika member tidak memasang foto profil atau privasinya tertutup, bot secara otomatis menggunakan foto avatar resmi Minji (`assets/minji.png`) sebagai fallback.
 
+### 5.2. Alat Moderasi & Pengawasan Tenant (The Admin Powerhouse)
+Fitur kontrol grup eksklusif untuk penyewa bot (`TENANT_OWNER` & `TENANT_ADMIN`) dan `SUPER_OWNER`:
+- **HideTag (`.hidetag <pesan>`)**:
+  - Mengirim pesan pengumuman berformat bersih (`📢 *[ PENGUMUMAN ]*`) dengan me-mention seluruh anggota grup secara tersembunyi (*invisible mentions* di background pesan) tanpa mengotori layar chat dengan ratusan nomor HP.
+  - Mengikuti sistem cooldown tag-all yang dikonfigurasi per grup (`tagAllCooldownSec`).
+- **Anti-Delete (`.antidelete [on|off]`)**:
+  - Mendeteksi pesan yang ditarik/dihapus (*revoke*) oleh pengirim di dalam grup.
+  - Memanfaatkan in-memory LRU Cache berkecepatan tinggi (kapasitas 500 pesan, batas ukuran media 2MB, TTL 2 jam) untuk menjaga konsumsi RAM VPS tetap minimal dan aman.
+  - Saat pesan ditarik, bot secara otomatis mengirimkan ulang isi pesan asli (teks, gambar, atau stiker) dengan mencantumkan identitas pengirim (`@user`) dan waktu pengiriman (WIB).
+- **Anti-ViewOnce (`.antiviewonce [on|off]`)**:
+  - Mendeteksi pesan gambar atau video 1x lihat (*View Once*) yang dikirimkan ke grup.
+  - Mengunduh stream buffer media secara instan via `downloadMediaMessage` dan mengirimkannya kembali ke grup sebagai media foto/video reguler dengan menyertakan kredit pengirim dan caption aslinya.
+
 ---
 
 ## 6. Mini Games & Mekanisme Interaktif

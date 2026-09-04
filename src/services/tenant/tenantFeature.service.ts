@@ -16,6 +16,8 @@ const FEATURE_SETTING_FIELD = {
   antispam: "antiSpamEnabled",
   reminder: "reminderEnabled",
   tagall: "tagAllEnabled",
+  antidelete: "antiDeleteEnabled",
+  antiviewonce: "antiViewOnceEnabled",
 } as const satisfies Record<TenantFeatureKey, keyof TenantFeatureSetting>;
 
 export interface UpdateTenantFeatureInput {

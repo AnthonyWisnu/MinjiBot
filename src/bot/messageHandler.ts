@@ -10,6 +10,8 @@ import { afkService } from "../services/afk/afk.service";
 import { gameService } from "../services/game/game.service";
 import { antiLinkService } from "../services/moderation/antiLink.service";
 import { antiSpamService } from "../services/moderation/antiSpam.service";
+import { antiDeleteService } from "../services/moderation/antiDelete.service";
+import { antiViewOnceService } from "../services/moderation/antiViewOnce.service";
 import { pendingTenantRegistrationService } from "../services/tenant/pendingTenantRegistration.service";
 import { getMessageSenderJid, getPreferredUserJid, isGroupJid, isStatusBroadcastJid } from "../utils/jid";
 import type { CommandContext } from "../types/command";
@@ -35,6 +37,8 @@ async function handleIncomingMessage(
   message: MessagesUpsertEvent["messages"][number],
 ): Promise<void> {
   await registerPendingTenantIfNeeded(socket, message);
+  await antiDeleteService.cacheMessage(message);
+  await antiViewOnceService.handleViewOnce(socket, message);
   await afkService.handleIncomingMessage(socket, message);
   await antiLinkService.handleIncomingMessage(socket, message);
   await antiSpamService.handleIncomingMessage(socket, message);

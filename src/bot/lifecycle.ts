@@ -1,4 +1,4 @@
-import { DisconnectReason, type ConnectionState, type WASocket } from "@whiskeysockets/baileys";
+import { DisconnectReason, proto, type ConnectionState, type WASocket } from "@whiskeysockets/baileys";
 import qrcode from "qrcode-terminal";
 
 import { env } from "../config/env";
@@ -7,6 +7,7 @@ import { prisma, disconnectPrisma } from "../repositories/prismaClient";
 import { createBotSocket } from "./connection";
 import { handleGroupParticipantsUpdate } from "./groupParticipantsHandler";
 import { handleMessagesUpsert } from "./messageHandler";
+import { antiDeleteService } from "../services/moderation/antiDelete.service";
 import { reminderScheduler } from "../services/reminder/reminderScheduler";
 
 export class BotLifecycle {
@@ -28,6 +29,8 @@ export class BotLifecycle {
           antiSpamEnabled: true,
           reminderEnabled: true,
           tagAllEnabled: true,
+          antiDeleteEnabled: true,
+          antiViewOnceEnabled: true,
         },
       });
     } catch (error: unknown) {
@@ -94,6 +97,20 @@ export class BotLifecycle {
       handleGroupParticipantsUpdate(socket, event).catch((error: unknown) => {
         logger.error({ error }, "Update peserta grup gagal diproses");
       });
+    });
+
+    socket.ev.on("messages.update", (updates) => {
+      for (const item of updates) {
+        const protocolMsg = item.update.message?.protocolMessage;
+        if (
+          protocolMsg?.type === proto.Message.ProtocolMessage.Type.REVOKE &&
+          protocolMsg.key
+        ) {
+          antiDeleteService.handleMessageRevoke(socket, protocolMsg.key).catch((error: unknown) => {
+            logger.error({ error }, "Gagal memproses deteksi pesan ditarik");
+          });
+        }
+      }
     });
 
     reminderScheduler.start(socket);

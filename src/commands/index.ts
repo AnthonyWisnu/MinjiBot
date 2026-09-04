@@ -17,6 +17,8 @@ import { audioEffectCommands } from "./media/audioEffect.command";
 import { menuCommands } from "./menu.command";
 import { antiLinkCommands } from "./moderation/antiLink.command";
 import { antiSpamCommands } from "./moderation/antiSpam.command";
+import { antiDeleteCommands } from "./moderation/antiDelete.command";
+import { antiViewOnceCommands } from "./moderation/antiViewOnce.command";
 import { manualModerationCommands } from "./moderation/manualModeration.command";
 import { reminderCommands } from "./reminder/reminder.command";
 import { tagAllCommands } from "./tagall/tagAll.command";
@@ -87,6 +89,8 @@ export const commandRouter = new CommandRouter([
   ...welcomeCommands,
   ...antiLinkCommands,
   ...antiSpamCommands,
+  ...antiDeleteCommands,
+  ...antiViewOnceCommands,
   ...manualModerationCommands,
   ...reminderCommands,
   ...tagAllCommands,

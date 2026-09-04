@@ -120,18 +120,20 @@ model TenantAdmin {
 }
 
 model TenantFeatureSetting {
-  id                String   @id @default(cuid())
-  groupJid          String   @unique
-  downloaderEnabled Boolean  @default(true)
-  hdEnabled         Boolean  @default(true)
-  gameEnabled       Boolean  @default(true)
-  welcomeEnabled    Boolean  @default(true)
-  antiLinkEnabled   Boolean  @default(true)
-  antiSpamEnabled   Boolean  @default(true)
-  reminderEnabled   Boolean  @default(true)
-  tagAllEnabled     Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  groupJid            String   @unique
+  downloaderEnabled   Boolean  @default(true)
+  hdEnabled           Boolean  @default(true)
+  gameEnabled         Boolean  @default(true)
+  welcomeEnabled      Boolean  @default(true)
+  antiLinkEnabled     Boolean  @default(true)
+  antiSpamEnabled     Boolean  @default(true)
+  reminderEnabled     Boolean  @default(true)
+  tagAllEnabled       Boolean  @default(true)
+  antiDeleteEnabled   Boolean  @default(true)
+  antiViewOnceEnabled Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
 }
