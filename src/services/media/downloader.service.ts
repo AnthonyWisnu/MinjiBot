@@ -61,6 +61,10 @@ export interface ExtractedAudio {
   mimetype: "audio/mpeg";
 }
 
+export type TikTokDownloadResult =
+  | { type: "video"; video: DownloadedVideo; audio?: ExtractedAudio }
+  | { type: "images"; items: DownloadedMediaItem[]; totalCount: number; audio?: ExtractedAudio };
+
 interface TikWmResponse {
   code: number;
   msg: string;
@@ -69,10 +73,18 @@ interface TikWmResponse {
     hdplay?: string;
     wmplay?: string;
     title?: string;
+    images?: string[];
+    music?: string;
+    music_info?: {
+      id?: string;
+      title?: string;
+      play?: string;
+      author?: string;
+    };
   };
 }
 
-async function downloadTikTokDirect(url: string): Promise<DownloadedVideo> {
+async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> {
   const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`;
   const response = await fetch(apiUrl, {
     headers: {
@@ -90,6 +102,92 @@ async function downloadTikTokDirect(url: string): Promise<DownloadedVideo> {
     throw new Error(`TikWM API response error: ${json.msg || "Unknown error"}`);
   }
 
+  // Unduh audio / musik latar jika tersedia di respon API
+  let audio: ExtractedAudio | undefined;
+  const musicUrl = json.data.music ?? json.data.music_info?.play;
+  if (musicUrl) {
+    try {
+      const musicRes = await fetch(musicUrl, {
+        headers: {
+          "User-Agent": DEFAULT_USER_AGENT,
+          Referer: "https://www.tikwm.com/",
+        },
+        signal: AbortSignal.timeout(env.DOWNLOADER_TIMEOUT_MS),
+      });
+      if (musicRes.ok) {
+        const musicBuf = Buffer.from(await musicRes.arrayBuffer());
+        const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
+        if (musicBuf.byteLength > 0 && musicBuf.byteLength <= maxBytes) {
+          audio = {
+            buffer: musicBuf,
+            mimetype: "audio/mpeg",
+          };
+        }
+      }
+    } catch (err) {
+      logger.warn({ err }, "Gagal mengunduh audio TikWM langsung");
+    }
+  }
+
+  // Deteksi jika konten adalah slide foto TikTok
+  if (Array.isArray(json.data.images) && json.data.images.length > 0) {
+    const totalCount = json.data.images.length;
+    const targetUrls = json.data.images.slice(0, 12);
+
+    const imageResults = await Promise.all(
+      targetUrls.map(async (imgUrl, i): Promise<DownloadedMediaItem | null> => {
+        try {
+          const imgRes = await fetch(imgUrl, {
+            headers: {
+              "User-Agent": DEFAULT_USER_AGENT,
+              Referer: "https://www.tikwm.com/",
+            },
+            signal: AbortSignal.timeout(env.DOWNLOADER_TIMEOUT_MS),
+          });
+          if (!imgRes.ok) return null;
+
+          let imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+          let mime = "image/jpeg";
+          let ext = ".jpg";
+
+          try {
+            const meta = await sharp(imgBuffer).metadata();
+            if (meta.format === "webp" || meta.format === "png") {
+              imgBuffer = Buffer.from(await sharp(imgBuffer).jpeg({ quality: 95 }).toBuffer());
+              mime = "image/jpeg";
+              ext = ".jpg";
+            }
+          } catch {
+            // Biarkan buffer asli jika sharp tidak mengenali
+          }
+
+          return {
+            buffer: imgBuffer,
+            fileName: `minjibot-tiktok-${String(i + 1)}${ext}`,
+            mimetype: mime,
+            mediaType: "image",
+          };
+        } catch (err) {
+          logger.warn({ err, imgUrl }, "Gagal mengunduh slide gambar TikTok");
+          return null;
+        }
+      }),
+    );
+
+    const items = imageResults.filter((item): item is DownloadedMediaItem => item !== null);
+    if (items.length === 0) {
+      throw new Error("Gagal mengambil foto slide TikTok.");
+    }
+
+    return {
+      type: "images",
+      items,
+      totalCount,
+      audio,
+    };
+  }
+
+  // Jika bukan slide foto, proses sebagai video
   const videoUrl = json.data.play ?? json.data.hdplay ?? json.data.wmplay;
   if (!videoUrl) {
     throw new Error("Link video TikTok tidak ditemukan dalam respon API.");
@@ -116,44 +214,120 @@ async function downloadTikTokDirect(url: string): Promise<DownloadedVideo> {
   }
 
   return {
-    buffer,
-    fileName: "minjibot-tiktok.mp4",
-    mimetype: "video/mp4",
+    type: "video",
+    video: {
+      buffer,
+      fileName: "minjibot-tiktok.mp4",
+      mimetype: "video/mp4",
+    },
+    audio,
   };
 }
 
 export class DownloaderService {
   /**
-   * Download TikTok video (unchanged from original).
+   * Download TikTok media — unified handler for video and photo slides carousel (up to 12 items).
+   * Also extracts/provides background audio (BGM) if available.
    */
-  async downloadVideo(url: string, kind: DownloaderKind): Promise<DownloadedVideo> {
-    const parsedUrl = parseSupportedUrl(url, kind);
+  async downloadTikTok(url: string): Promise<TikTokDownloadResult> {
+    const parsedUrl = parseSupportedUrl(url, "tiktok");
     const startedAt = Date.now();
 
-    if (kind === "tiktok") {
-      try {
-        const directResult = await downloadTikTokDirect(parsedUrl.toString());
-        logger.info(
-          {
-            kind,
-            elapsedMs: Date.now() - startedAt,
-            sizeBytes: directResult.buffer.byteLength,
-            mode: "tikwm-direct",
-          },
-          "Downloader selesai",
-        );
-        return directResult;
-      } catch (error: unknown) {
-        logger.warn({ error }, "TikTok direct API gagal, mencoba fallback yt-dlp");
+    // 1. Direct TikWM API (Fast & watermark-free)
+    try {
+      const directResult = await downloadTikTokDirect(parsedUrl.toString());
+      if (directResult.type === "video" && !directResult.audio) {
+        try {
+          directResult.audio = await this.extractAudioFromVideo(directResult.video.buffer);
+        } catch (err) {
+          logger.warn({ err }, "Extract audio dari video TikWM gagal");
+        }
       }
+
+      logger.info(
+        {
+          elapsedMs: Date.now() - startedAt,
+          type: directResult.type,
+          itemCount: directResult.type === "images" ? directResult.items.length : 1,
+          hasAudio: !!directResult.audio,
+          mode: "tikwm-direct",
+        },
+        "TikTok download selesai",
+      );
+
+      return directResult;
+    } catch (error: unknown) {
+      logger.warn({ error }, "TikTok direct API gagal, mencoba fallback gallery-dl / yt-dlp");
     }
 
-    const tempDir = await createTempDir("download");
-    const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
-    const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
-    const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
-
+    // 2. Fallback using gallery-dl (supports photos & videos) and yt-dlp
+    const tempDir = await createTempDir("tt-download");
     try {
+      let items: DownloadedMediaItem[] = [];
+
+      try {
+        await this.runGalleryDlTikTok(parsedUrl.toString(), tempDir);
+        items = await scanDownloadedMediaFiles(tempDir);
+      } catch (gdlErr) {
+        logger.warn({ gdlErr }, "gallery-dl TikTok gagal, mencoba yt-dlp");
+      }
+
+      if (items.length > 0) {
+        const imageItems = items.filter((it) => it.mediaType === "image");
+        if (imageItems.length > 0) {
+          const targetItems = imageItems.slice(0, 12);
+          let audio: ExtractedAudio | undefined;
+          try {
+            audio = await this.downloadTikTokAudioFallback(parsedUrl.toString());
+          } catch (err) {
+            logger.warn({ err }, "Fallback audio extraction untuk slide TikTok gagal");
+          }
+
+          logger.info(
+            {
+              elapsedMs: Date.now() - startedAt,
+              type: "images",
+              itemCount: targetItems.length,
+              hasAudio: !!audio,
+              mode: "gallery-dl",
+            },
+            "TikTok slide download selesai",
+          );
+
+          return {
+            type: "images",
+            items: targetItems,
+            totalCount: imageItems.length,
+            audio,
+          };
+        }
+
+        const videoItem = items.find((it) => it.mediaType === "video") ?? items[0];
+        if (videoItem) {
+          let audio: ExtractedAudio | undefined;
+          try {
+            audio = await this.extractAudioFromVideo(videoItem.buffer);
+          } catch (err) {
+            logger.warn({ err }, "Extract audio fallback video gagal");
+          }
+
+          return {
+            type: "video",
+            video: {
+              buffer: videoItem.buffer,
+              fileName: "minjibot-tiktok.mp4",
+              mimetype: "video/mp4",
+            },
+            audio,
+          };
+        }
+      }
+
+      // 3. Fallback terakhir: yt-dlp video download
+      const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
+      const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
+      const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
+
       await this.runTikTokArgs(parsedUrl.toString(), rawOutputTemplate);
       const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
       const outputPath = await prepareMobileVideo(
@@ -164,24 +338,51 @@ export class DownloaderService {
       await assertFileSizeAllowed(outputPath);
       const buffer = await readFile(outputPath);
 
+      let audio: ExtractedAudio | undefined;
+      try {
+        audio = await this.extractAudioFromVideo(buffer);
+      } catch (err) {
+        logger.warn({ err }, "Extract audio fallback yt-dlp gagal");
+      }
+
       logger.info(
         {
-          kind,
           elapsedMs: Date.now() - startedAt,
+          type: "video",
           sizeBytes: buffer.byteLength,
-          mode: outputPath === rawVideoPath ? "direct" : path.basename(outputPath, ".mp4"),
+          hasAudio: !!audio,
+          mode: "yt-dlp",
         },
-        "Downloader selesai",
+        "TikTok download selesai",
       );
 
       return {
-        buffer,
-        fileName: "minjibot-video.mp4",
-        mimetype: "video/mp4",
+        type: "video",
+        video: {
+          buffer,
+          fileName: "minjibot-tiktok.mp4",
+          mimetype: "video/mp4",
+        },
+        audio,
       };
     } finally {
       await removeTempDir(tempDir);
     }
+  }
+
+  /**
+   * Download TikTok video (backward-compatible method).
+   */
+  async downloadVideo(url: string, kind: DownloaderKind): Promise<DownloadedVideo> {
+    if (kind === "tiktok") {
+      const result = await this.downloadTikTok(url);
+      if (result.type === "video") {
+        return result.video;
+      }
+      throw new Error("Link TikTok merupakan slide foto. Gunakan command .tt untuk mengunduh foto slide.");
+    }
+
+    throw new Error(`downloadVideo tidak mendukung kind: ${kind}`);
   }
 
   /**
@@ -409,6 +610,57 @@ export class DownloaderService {
 
     args.push(url);
     await runProcess(env.GALLERY_DL_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+  }
+
+  private async runGalleryDlTikTok(url: string, tempDir: string): Promise<void> {
+    const args: string[] = [
+      "--range",
+      "1-12",
+      "--no-mtime",
+      "-D",
+      tempDir,
+    ];
+
+    const cookiesPath = env.TIKTOK_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
+    if (cookiesPath && existsSync(cookiesPath)) {
+      args.push("--cookies", cookiesPath);
+    }
+
+    args.push(url);
+    await runProcess(env.GALLERY_DL_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+  }
+
+  private async downloadTikTokAudioFallback(url: string): Promise<ExtractedAudio> {
+    const tempDir = await createTempDir("tt-audio-fb");
+    const outputPath = path.join(tempDir, "audio.mp3");
+
+    try {
+      const args = [
+        "--no-warnings",
+        "--no-playlist",
+        "-x",
+        "--audio-format",
+        "mp3",
+        "-o",
+        outputPath,
+      ];
+
+      const cookiesPath = env.TIKTOK_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
+      if (cookiesPath && existsSync(cookiesPath)) {
+        args.push("--cookies", cookiesPath);
+      }
+
+      args.push(url);
+      await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+
+      const buffer = await readFile(outputPath);
+      return {
+        buffer,
+        mimetype: "audio/mpeg",
+      };
+    } finally {
+      await removeTempDir(tempDir);
+    }
   }
 }
 
