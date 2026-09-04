@@ -171,7 +171,7 @@ export class MenuService {
       "*─── [ PENGATURAN ] ───*",
       "• .feature <fitur> <on/off>",
       "• .status",
-      "• .tenantstatus",
+      "• .panel / .tenantstatus",
       "• .ownermenu",
       "• .tenantmenu",
       "• .featuremenu",
@@ -212,7 +212,7 @@ export class MenuService {
       ...this.buildGroupEconomyLines(),
       "",
       "*─── [ INFORMASI ] ───*",
-      "• .tenantstatus",
+      "• .panel / .tenantstatus",
       "• .status",
       "• .featuremenu",
       "• .menu",
@@ -245,7 +245,7 @@ export class MenuService {
       ...this.buildGroupEconomyLines(),
       "",
       "*─── [ INFORMASI ] ───*",
-      "• .tenantstatus",
+      "• .panel / .tenantstatus",
       "• .status",
       "• .menu",
     ].join("\n");
@@ -357,13 +357,21 @@ export class MenuService {
       "• .antispam [on|off|status]",
       "• .antidelete [on|off]",
       "• .antiviewonce [on|off]",
+      "• .antiraid [on|off|status]",
     ];
 
     if (includeAdvanced) {
       lines.push("• .antispam mode <mode>");
+      lines.push("• .antiraid setting <threshold> <detik>");
     }
 
     lines.push(
+      "• .grup [buka|tutup]",
+      "• .warn @user [alasan]",
+      "• .unwarn @user",
+      "• .warns [@user]",
+      "• .resetwarn @user",
+      "• .setwarn <jumlah>",
       "• .kick @user",
       "• .add <nomor>",
       "• .promote @user",

@@ -98,6 +98,7 @@ model TenantGroup {
   afkStatuses    AfkStatus[]
   auditLogs      TenantAuditLog[]
   memberProfiles GroupMemberProfile[]
+  warnings       GroupMemberWarning[]
 
   @@index([ownerJid])
   @@index([status])
@@ -133,6 +134,7 @@ model TenantFeatureSetting {
   antiDeleteEnabled   Boolean  @default(true)
   antiViewOnceEnabled Boolean  @default(true)
   goodbyeEnabled      Boolean  @default(true)
+  antiRaidEnabled     Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -148,6 +150,10 @@ model TenantGroupSetting {
   antiSpamMode         AntiSpamMode @default(NORMAL)
   tagAllCooldownSec    Int          @default(600)
   remindAllCooldownSec Int          @default(600)
+  warnThreshold        Int          @default(3)
+  warnAction           String       @default("KICK")
+  antiRaidThreshold    Int          @default(4)
+  antiRaidWindowSec    Int          @default(10)
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
 
@@ -270,4 +276,18 @@ model GroupMemberTransaction {
   @@index([profileId, createdAt])
   @@index([correlationId])
   @@index([createdAt])
+}
+
+model GroupMemberWarning {
+  id        String   @id @default(cuid())
+  groupJid  String
+  userJid   String
+  issuerJid String
+  reason    String
+  createdAt DateTime @default(now())
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@index([groupJid, userJid])
+  @@index([groupJid, createdAt])
 }

@@ -19,6 +19,7 @@ const FEATURE_SETTING_FIELD = {
   antidelete: "antiDeleteEnabled",
   antiviewonce: "antiViewOnceEnabled",
   goodbye: "goodbyeEnabled",
+  antiraid: "antiRaidEnabled",
 } as const satisfies Record<TenantFeatureKey, keyof TenantFeatureSetting>;
 
 export interface UpdateTenantFeatureInput {

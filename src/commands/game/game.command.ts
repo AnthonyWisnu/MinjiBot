@@ -55,7 +55,7 @@ async function replyGame(context: CommandContext, action: () => Promise<string>)
       { text },
       { quoted: context.message },
     );
-    if (sent?.key?.id) {
+    if (sent?.key.id) {
       gameService.setQuizMessageId(context.chatJid, sent.key.id);
       gameService.setTicTacToeMessageId(context.chatJid, sent.key.id);
     }
