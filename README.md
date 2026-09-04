@@ -114,6 +114,13 @@ flowchart TD
 | | `.hd` [reply photo] | Enhance photo quality using AI restoration | 2 Limits |
 | | `.play <query>` | Stream & send MP3 audio track | 1 Limit |
 | | `.lirik <query>` | Search song lyrics | 1 Limit |
+| | `.s` / `.sticker` | Create sticker from photo/short video with official MinjiBot watermark | Free |
+| | `.smeme <text>` | Create top/bottom meme sticker with official MinjiBot watermark | Free |
+| | `.brat <text>` | Create Brat aesthetic text sticker (Charli XCX style) with MinjiBot watermark | Free |
+| | `.toimg` / `.tovideo` | Convert static sticker to PNG image or animated sticker to MP4 video | Free |
+| | `.bass` / `.chipmunk` | Apply bass boost or chipmunk vocal effect to audio/VN | Free |
+| | `.slowed` / `.nightcore`| Apply slowed+reverb or nightcore tempo effect to audio/VN | Free |
+| | `.tovn` | Convert any audio track into official WhatsApp Voice Note (PTT) | Free |
 | **Mini Games** | `.slot` [amount \| allin] | Play dynamic educational fruit slot machine | Variable |
 | | `.family100` | Start interactive Family 100 survey game | Free |
 | | `.tictactoe @user` | Challenge a member to a TicTacToe PvP battle | Free |

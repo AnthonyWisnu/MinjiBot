@@ -4,9 +4,13 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { spawn } from "node:child_process";
+import webp from "node-webpmux";
 
 import { env } from "../../config/env";
 import { createTempDir, removeTempDir } from "../../utils/tempFile";
+
+export const DEFAULT_STICKER_PACK = "MinjiBot Official Pack";
+export const DEFAULT_STICKER_AUTHOR = "MinjiBot";
 
 const STICKER_SIZE = 512;
 const ANIMATED_STICKER_SECONDS = 6;
@@ -33,11 +37,12 @@ export type StickerToMediaResult = StickerImageResult | StickerVideoResult;
 
 export class StickerService {
   async createSticker(inputBuffer: Buffer, sourceType: StickerSourceType): Promise<Buffer> {
-    if (sourceType === "image") {
-      return this.createStaticSticker(inputBuffer);
-    }
+    const rawBuffer =
+      sourceType === "image"
+        ? await this.createStaticSticker(inputBuffer)
+        : await this.createAnimatedSticker(inputBuffer);
 
-    return this.createAnimatedSticker(inputBuffer);
+    return addStickerMetadata(rawBuffer);
   }
 
   async stickerToMedia(inputBuffer: Buffer, isAnimated: boolean): Promise<StickerToMediaResult> {
@@ -83,7 +88,7 @@ export class StickerService {
       .png()
       .toBuffer();
 
-    return sharp(baseImage)
+    const memeWebp = await sharp(baseImage)
       .composite([
         {
           input: Buffer.from(createMemeTextSvg(normalizedTopText, normalizedBottomText)),
@@ -96,6 +101,26 @@ export class StickerService {
         effort: 4,
       })
       .toBuffer();
+
+    return addStickerMetadata(memeWebp);
+  }
+
+  async createBratSticker(text: string): Promise<Buffer> {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      throw new Error("Teks stiker brat tidak boleh kosong.");
+    }
+
+    const svgString = createBratSvg(trimmed);
+    const bratWebp = await sharp(Buffer.from(svgString))
+      .resize(STICKER_SIZE, STICKER_SIZE)
+      .webp({
+        quality: 85,
+        effort: 4,
+      })
+      .toBuffer();
+
+    return addStickerMetadata(bratWebp);
   }
 
   private async isAnimatedSticker(inputBuffer: Buffer): Promise<boolean> {
@@ -359,6 +384,90 @@ function escapeSvgText(text: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function createBratSvg(text: string): string {
+  const words = text.trim().split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    if ((currentLine + " " + word).trim().length <= 16) {
+      currentLine = (currentLine + " " + word).trim();
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  if (lines.length === 0) lines.push(text.trim());
+
+  const maxLines = lines.slice(0, 8);
+  const fontSize =
+    maxLines.length <= 2 ? 62 : maxLines.length <= 4 ? 46 : maxLines.length <= 6 ? 36 : 28;
+  const lineHeight = fontSize * 1.18;
+  const totalHeight = maxLines.length * lineHeight;
+  const startY = (STICKER_SIZE - totalHeight) / 2 + fontSize * 0.85;
+
+  const tspans = maxLines
+    .map(
+      (line, i) =>
+        `<tspan x="256" y="${String(Math.round(startY + i * lineHeight))}">${escapeSvgText(line)}</tspan>`,
+    )
+    .join("");
+
+  return [
+    `<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">`,
+    `  <defs>`,
+    `    <filter id="brat-blur" x="-20%" y="-20%" width="140%" height="140%">`,
+    `      <feGaussianBlur in="SourceGraphic" stdDeviation="0.7"/>`,
+    `    </filter>`,
+    `  </defs>`,
+    `  <rect width="512" height="512" fill="#8ACE00"/>`,
+    `  <text x="256" y="${String(Math.round(startY))}"`,
+    `    font-family="Arial, Helvetica, sans-serif"`,
+    `    font-size="${String(fontSize)}"`,
+    `    font-weight="bold"`,
+    `    text-anchor="middle"`,
+    `    fill="#000000"`,
+    `    filter="url(#brat-blur)"`,
+    `    letter-spacing="-1">${tspans}</text>`,
+    `</svg>`,
+  ].join("\n");
+}
+
+export async function addStickerMetadata(
+  webpBuffer: Buffer,
+  packName: string = DEFAULT_STICKER_PACK,
+  author: string = DEFAULT_STICKER_AUTHOR,
+): Promise<Buffer> {
+  try {
+    const json = {
+      "sticker-pack-id": "com.minjibot.sticker",
+      "sticker-pack-name": packName,
+      "sticker-pack-publisher": author,
+      "emojis": ["🤖", "✨"],
+    };
+
+    const exifHeader = Buffer.from([
+      0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00,
+    ]);
+    const jsonBuffer = Buffer.from(JSON.stringify(json), "utf-8");
+    const jsonLen = jsonBuffer.length;
+    const lenBuffer = Buffer.alloc(4);
+    lenBuffer.writeUInt32LE(jsonLen, 0);
+    const offsetBuffer = Buffer.alloc(4);
+    offsetBuffer.writeUInt32LE(0x16, 0);
+
+    const exifData = Buffer.concat([exifHeader, lenBuffer, offsetBuffer, jsonBuffer]);
+
+    const img = new webp.Image();
+    await img.load(webpBuffer);
+    img.exif = exifData;
+    return await img.save(null);
+  } catch {
+    return webpBuffer;
+  }
 }
 
 export const stickerService = new StickerService();

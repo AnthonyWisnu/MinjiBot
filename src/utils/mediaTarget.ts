@@ -8,7 +8,7 @@ export interface ImageMediaTarget {
   mimetype?: string;
 }
 
-export type MediaTargetType = "image" | "video" | "sticker";
+export type MediaTargetType = "image" | "video" | "sticker" | "audio";
 
 export interface MediaTarget {
   type: MediaTargetType;
@@ -95,6 +95,7 @@ function extractMediaInfo(
   const imageMessage = unwrappedContent?.imageMessage;
   const videoMessage = unwrappedContent?.videoMessage;
   const stickerMessage = unwrappedContent?.stickerMessage;
+  const audioMessage = unwrappedContent?.audioMessage;
 
   if (imageMessage) {
     return {
@@ -119,6 +120,15 @@ function extractMediaInfo(
       fileLength: toNumber(stickerMessage.fileLength),
       mimetype: stickerMessage.mimetype ?? undefined,
       isAnimated: Boolean(stickerMessage.isAnimated),
+    };
+  }
+
+  if (audioMessage) {
+    return {
+      type: "audio",
+      fileLength: toNumber(audioMessage.fileLength),
+      mimetype: audioMessage.mimetype ?? undefined,
+      seconds: toNumber(audioMessage.seconds),
     };
   }
 

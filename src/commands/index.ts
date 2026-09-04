@@ -13,6 +13,7 @@ import { hdCommands } from "./media/hd.command";
 import { lyricsCommands } from "./media/lyrics.command";
 import { playCommands } from "./media/play.command";
 import { stickerCommands } from "./media/sticker.command";
+import { audioEffectCommands } from "./media/audioEffect.command";
 import { menuCommands } from "./menu.command";
 import { antiLinkCommands } from "./moderation/antiLink.command";
 import { antiSpamCommands } from "./moderation/antiSpam.command";
@@ -79,6 +80,7 @@ export const commandRouter = new CommandRouter([
   ...afkCommands,
   ...hdCommands,
   ...stickerCommands,
+  ...audioEffectCommands,
   ...playCommands,
   ...lyricsCommands,
   ...downloaderCommands,

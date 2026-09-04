@@ -21,8 +21,17 @@ export const stickerCommands: CommandDefinition[] = [
     execute: handleStickerToImage,
   },
   {
+    name: "tovideo",
+    aliases: ["tovid", "togif"],
+    execute: handleStickerToVideo,
+  },
+  {
     name: "smeme",
     execute: handleStickerMeme,
+  },
+  {
+    name: "brat",
+    execute: handleBratSticker,
   },
 ];
 
@@ -101,6 +110,74 @@ async function handleStickerToImage(context: CommandContext): Promise<void> {
       {
         image: output.buffer,
         mimetype: output.mimetype,
+      },
+      { quoted: context.message },
+    );
+  } catch (error: unknown) {
+    await context.reply(formatStickerError(error));
+  }
+}
+
+async function handleStickerToVideo(context: CommandContext): Promise<void> {
+  try {
+    if (!isMediaCommandAllowed(context)) {
+      await context.reply(
+        "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+      );
+      return;
+    }
+
+    const target = resolveMediaTarget(context, ["sticker"]);
+    if (!target) {
+      await context.reply("Reply sticker bergerak/animasi dengan command .tovideo.");
+      return;
+    }
+
+    assertBufferSizeAllowed(target.fileLength, MAX_STICKER_INPUT_MB);
+    const inputBuffer = await downloadTargetMedia(context, target, "sticker-tovideo-download");
+    assertBufferSizeAllowed(inputBuffer.byteLength, MAX_STICKER_INPUT_MB);
+
+    const output = await stickerService.stickerToMedia(inputBuffer, true);
+    if (output.type === "video") {
+      await context.socket.sendMessage(
+        context.chatJid,
+        {
+          video: output.buffer,
+          mimetype: output.mimetype,
+          fileName: output.fileName,
+        },
+        { quoted: context.message },
+      );
+      return;
+    }
+
+    await context.reply("Stiker ini bukan stiker bergerak/animasi. Gunakan .toimg untuk stiker biasa.");
+  } catch (error: unknown) {
+    await context.reply(formatStickerError(error));
+  }
+}
+
+async function handleBratSticker(context: CommandContext): Promise<void> {
+  try {
+    if (!isMediaCommandAllowed(context)) {
+      await context.reply(
+        "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+      );
+      return;
+    }
+
+    const text = context.argsText.trim();
+    if (!text) {
+      await context.reply("Format command salah.\nGunakan: .brat <teks>\nContoh: .brat kamu nanya");
+      return;
+    }
+
+    const stickerBuffer = await stickerService.createBratSticker(text);
+
+    await context.socket.sendMessage(
+      context.chatJid,
+      {
+        sticker: stickerBuffer,
       },
       { quoted: context.message },
     );
