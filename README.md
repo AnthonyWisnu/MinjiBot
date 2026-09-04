@@ -57,7 +57,7 @@
 ### 🚀 5. High-Throughput Media Downloader Pipeline
 - **TikTok (`.tt`)**: Watermark-free HD video download with direct fast-API extraction and robust yt-dlp fallback.
 - **Instagram (`.ig`)**: Unified downloader supporting Reels, Posts, multi-slide Carousels, and Stories.
-- **YouTube (`.yt`)**: High-compatibility 480p mobile video stream extraction (max 12 mins) with automatic AVC1/AAC remuxing via FFmpeg.
+- **YouTube (`.yt`)**: Smart Adaptive Resolution Engine prioritizing **720p 60FPS** and **720p 30FPS** for crystal-clear high-definition fidelity (`<= 100MB`), with intelligent dynamic fallback to **480p** for extended videos (up to 12 minutes). Remuxed with mobile-safe **AVC1 (H.264) + AAC** for instant, native playback on all iOS & Android devices.
 - **AI Image Enhancer (`.hd`)**: Upscales and sharpens low-res photos with AI face restoration.
 
 ### 🛡️ 6. Enterprise Resilience & Auto-Reconnect
@@ -110,7 +110,7 @@ flowchart TD
 | | `.toppoint` / `.toprank` | View top 10 richest and highest XP members | Free |
 | **Media Engine** | `.tt <url>` | Download TikTok video without watermark | 1 Limit |
 | | `.ig <url>` | Download Instagram Reel, Post, Carousel, or Story | 1 Limit |
-| | `.yt <url>` | Download YouTube video (max 12 min, 480p MP4) | 1 Limit |
+| | `.yt <url>` | Download YouTube video (Adaptive 720p60/720p30/480p, max 12 mins) | 1 Limit |
 | | `.hd` [reply photo] | Enhance photo quality using AI restoration | 2 Limits |
 | | `.play <query>` | Stream & send MP3 audio track | 1 Limit |
 | | `.lirik <query>` | Search song lyrics | 1 Limit |
