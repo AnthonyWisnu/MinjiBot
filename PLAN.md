@@ -121,7 +121,7 @@ Memanfaatkan binary FFmpeg yang sudah aktif di server untuk manipulasi audio tan
 
 ```
    ┌────────────────────────────────────────────────────────┐
-   │ FASE 1: Quick Wins & Entertainment Studio              │
+   │ FASE 1: Quick Wins & Entertainment Studio [SELESAI]    │
    │ • Injeksi EXIF Watermark Stiker ("MinjiBot")           │
    │ • Fitur Stiker Brat (.brat <teks>)                     │
    │ • Peresmian Command .tovideo                           │
@@ -131,18 +131,18 @@ Memanfaatkan binary FFmpeg yang sudah aktif di server untuk manipulasi audio tan
                               │
                               ▼
    ┌────────────────────────────────────────────────────────┐
-   │ FASE 2: The Admin Powerhouse Core                      │
-   │ • Command .hidetag <pesan>                             │
+   │ FASE 2: The Admin Powerhouse Core [SELESAI]            │
+   │ • Command .hidetag <pesan> (Invisible Mentions)        │
    │ • Fitur Anti-Delete (LRU Cache in-memory + Revoke)     │
-   │ • Fitur Anti-ViewOnce (Grup / Private Admin Forward)   │
+   │ • Fitur Anti-ViewOnce (Auto Recovery Media 1x Lihat)   │
    └──────────────────────────┬─────────────────────────────┘
                               │
                               ▼
    ┌────────────────────────────────────────────────────────┐
-   │ FASE 3: Testing, Verification, & Deploy                │
-   │ • Unit Tests & TypeScript 0 error                      │
+   │ FASE 3: Testing, Verification, & VPS Deploy [AKTIF]    │
+   │ • Unit Tests: 271/271 Tests Passed (100% Pass Rate)    │
    │ • Sinkronisasi Dokumentasi AGENTS.md & README.md       │
-   │ • Deploy ke VPS via GitHub Actions                     │
+   │ • Deploy ke VPS Linux Tencent Lighthouse & PM2         │
    └────────────────────────────────────────────────────────┘
 ```
 
@@ -155,5 +155,5 @@ Memanfaatkan binary FFmpeg yang sudah aktif di server untuk manipulasi audio tan
 3. **Pembersihan Resource**: Semua temporary file wajib menggunakan utility `createTempDir()` dan dibersihkan pada blok `finally`.
 4. **Verifikasi Wajib Sebelum Commit**:
    - `npm run build` ➔ 0 error TypeScript.
-   - `npm run test` ➔ 257+ test suites lulus 100%.
+   - `npm run test` ➔ 271 test suites lulus 100%.
    - Deployment otomatis melalui GitHub Actions ke VPS Tencent Lighthouse.

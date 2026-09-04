@@ -6,4 +6,6 @@ export type TenantFeatureKey =
   | "antilink"
   | "antispam"
   | "reminder"
-  | "tagall";
+  | "tagall"
+  | "antidelete"
+  | "antiviewonce";

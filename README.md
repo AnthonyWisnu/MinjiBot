@@ -9,7 +9,7 @@
 [![Baileys](https://img.shields.io/badge/WhatsApp%20Engine-Baileys-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://github.com/WhiskeySockets/Baileys)
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Prisma](https://img.shields.io/badge/ORM-Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io)
-[![Tests](https://img.shields.io/badge/Tests-257%20Passed-brightgreen?style=for-the-badge&logo=jest&logoColor=white)]()
+[![Tests](https://img.shields.io/badge/Tests-271%20Passed-brightgreen?style=for-the-badge&logo=jest&logoColor=white)]()
 [![PM2](https://img.shields.io/badge/Process%20Manager-PM2-2B037A?style=for-the-badge&logo=pm2&logoColor=white)](https://pm2.keymetrics.io)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
 
@@ -128,6 +128,9 @@ flowchart TD
 | | `.tebakkata` / `.tebakemoji` | Guessing riddles with direct reply answer | Free |
 | | `.nyerah` | Surrender active quiz or TicTacToe game | Free |
 | **Tenant Admin** | `.groupinfo` | View current group rental status and active time | Free |
+| | `.hidetag <msg>` | Broadcast announcement with hidden mentions | Free |
+| | `.antidelete` [on \| off] | Reveal deleted / revoked messages with sender info | Free |
+| | `.antiviewonce` [on \| off]| Secure and reveal 1x view-once photos and videos | Free |
 | | `.antilink` [on \| off] | Toggle group anti-invite link moderation | Free |
 | | `.antispam` [mode] | Configure spam protection (normal/soft/strict) | Free |
 | | `.setwelcome <msg>` | Customize group greeting message | Free |
