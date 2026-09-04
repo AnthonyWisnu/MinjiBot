@@ -284,6 +284,8 @@ export class MenuService {
       "• .sticker / .s",
       "• .smeme <teks>",
       "• .brat <teks>",
+      "• .quote [-s] [teks]",
+      "• .tweet [@user] <teks>",
       "• .toimg / .tovideo",
       "• .bass / .chipmunk",
       "• .slowed / .nightcore",
@@ -329,6 +331,8 @@ export class MenuService {
       "• .rank",
       "• .toprank",
       "• .toppoint",
+      "• .stats",
+      "• .topaktif",
     ];
   }
 
@@ -372,6 +376,7 @@ export class MenuService {
       "• .warns [@user]",
       "• .resetwarn @user",
       "• .setwarn <jumlah>",
+      "• .silent [hari]",
       "• .kick @user",
       "• .add <nomor>",
       "• .promote @user",

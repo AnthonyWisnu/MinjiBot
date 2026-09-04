@@ -116,4 +116,80 @@ export class GroupMemberProfileRepository {
     const client = tx ?? this.client;
     return client.groupMemberProfile.update({ where: { id }, data });
   }
+
+  // Catat aktivitas pesan member (non-blocking)
+  async recordActivity(groupJid: string, userJid: string): Promise<void> {
+    await this.client.groupMemberProfile.upsert({
+      where: { groupJid_userJid: { groupJid, userJid } },
+      create: {
+        groupJid,
+        userJid,
+        limitBalance: INITIAL_LIMIT_BALANCE,
+        totalLimitsEarned: INITIAL_LIMIT_BALANCE,
+        messageCount: 1,
+        lastActiveAt: new Date(),
+      },
+      update: {
+        messageCount: { increment: 1 },
+        lastActiveAt: new Date(),
+      },
+    });
+  }
+
+  // Top aktif chat - untuk .topaktif / .topchat
+  listTopByMessageCount(groupJid: string, limit = 10): Promise<GroupMemberProfile[]> {
+    return this.client.groupMemberProfile.findMany({
+      where: { groupJid, messageCount: { gt: 0 } },
+      orderBy: { messageCount: "desc" },
+      take: limit,
+    });
+  }
+
+  // Ringkasan aktivitas grup - untuk .stats
+  async getGroupActivityStats(groupJid: string): Promise<{
+    totalMessages: number;
+    activeMembers: number;
+    latestActiveAt: Date | null;
+  }> {
+    const aggregate = await this.client.groupMemberProfile.aggregate({
+      where: { groupJid },
+      _sum: { messageCount: true },
+      _count: { id: true },
+      _max: { lastActiveAt: true },
+    });
+
+    return {
+      totalMessages: aggregate._sum.messageCount ?? 0,
+      activeMembers: aggregate._count.id,
+      latestActiveAt: aggregate._max.lastActiveAt,
+    };
+  }
+
+  // Daftar member pasif / sider - untuk .silent
+  findInactiveMembers(groupJid: string, since: Date): Promise<GroupMemberProfile[]> {
+    return this.client.groupMemberProfile.findMany({
+      where: {
+        groupJid,
+        OR: [
+          { messageCount: 0 },
+          { lastActiveAt: { lt: since } },
+        ],
+      },
+      orderBy: { lastActiveAt: "asc" },
+    });
+  }
+
+  // Daftar user JID yang aktif mengirim pesan sejak tanggal tertentu
+  async listActiveUserJidsSince(groupJid: string, since: Date): Promise<string[]> {
+    const active = await this.client.groupMemberProfile.findMany({
+      where: {
+        groupJid,
+        messageCount: { gt: 0 },
+        lastActiveAt: { gte: since },
+      },
+      select: { userJid: true },
+    });
+
+    return active.map((profile) => profile.userJid);
+  }
 }

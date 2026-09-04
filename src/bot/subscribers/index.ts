@@ -2,6 +2,7 @@ import type { ConnectionState, WASocket } from "@whiskeysockets/baileys";
 
 import { logger } from "../../config/logger";
 import { reminderScheduler } from "../../services/reminder/reminderScheduler";
+import { levelUpNotifierService } from "../../services/member/levelUpNotifier.service";
 import { handleMessagesUpsert } from "../messageHandler";
 import { handleGroupParticipantsUpdate } from "./groupParticipants.subscriber";
 import { handleMessagesUpdate } from "./messageRevoke.subscriber";
@@ -55,4 +56,5 @@ export function registerEventSubscribers(
   });
 
   reminderScheduler.start(socket);
+  levelUpNotifierService.setSocket(socket);
 }

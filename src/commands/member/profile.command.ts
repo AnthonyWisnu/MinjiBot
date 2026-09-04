@@ -4,6 +4,7 @@ import path from "node:path";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { memberProfileViewService } from "../../services/member/memberProfileView.service";
 import type { MemberProfileViewService, ProfileView } from "../../services/member/memberProfileView.service";
+import { profileCardService } from "../../services/member/profileCard.service";
 import { roleGuard } from "../../guards/roleGuard";
 import { normalizeUserJid } from "../../utils/jid";
 import { TenantAdminRepository } from "../../repositories/tenantAdmin.repository";
@@ -123,11 +124,20 @@ function getFallbackAvatarBuffer(): Buffer | null {
   return null;
 }
 
+interface SendProfileCardOptions {
+  view: ProfileView;
+  label: string;
+  phone: string;
+  role: string;
+  isSuperOwner: boolean;
+}
+
 async function sendProfileMessage(
   context: CommandContext,
   text: string,
   targetUserJid: string,
   mentions: string[],
+  cardOptions?: SendProfileCardOptions,
 ): Promise<void> {
   const rawSocket = (context as { socket?: unknown }).socket;
   if (!rawSocket || typeof rawSocket !== "object") {
@@ -138,7 +148,7 @@ async function sendProfileMessage(
   const socket = rawSocket as {
     sendMessage?: (
       chatJid: string,
-      content: { image: { url: string } | Buffer; caption: string; mentions?: string[] },
+      content: { image: Buffer; caption: string; mentions?: string[] },
       options?: { quoted?: unknown },
     ) => Promise<unknown>;
     profilePictureUrl?: (jid: string, type?: "image" | "preview") => Promise<string>;
@@ -149,17 +159,29 @@ async function sendProfileMessage(
     return;
   }
 
-  let profilePictureUrl: string | null = null;
+  let avatarBuffer: Buffer | null = null;
 
   if (typeof socket.profilePictureUrl === "function") {
     try {
-      profilePictureUrl = await socket.profilePictureUrl(targetUserJid, "image");
+      const profilePictureUrl = await socket.profilePictureUrl(targetUserJid, "image");
+      if (profilePictureUrl) {
+        const res = await fetch(profilePictureUrl);
+        if (res.ok) {
+          avatarBuffer = Buffer.from(await res.arrayBuffer());
+        }
+      }
     } catch {
       for (const altJid of mentions) {
         if (altJid !== targetUserJid) {
           try {
-            profilePictureUrl = await socket.profilePictureUrl(altJid, "image");
-            if (profilePictureUrl) break;
+            const profilePictureUrl = await socket.profilePictureUrl(altJid, "image");
+            if (profilePictureUrl) {
+              const res = await fetch(profilePictureUrl);
+              if (res.ok) {
+                avatarBuffer = Buffer.from(await res.arrayBuffer());
+                break;
+              }
+            }
           } catch {
             // ignore
           }
@@ -168,32 +190,23 @@ async function sendProfileMessage(
     }
   }
 
-  if (profilePictureUrl) {
-    try {
-      await socket.sendMessage(
-        context.chatJid,
-        {
-          image: { url: profilePictureUrl },
-          caption: text,
-          mentions,
-        },
-        {
-          quoted: context.message,
-        },
-      );
-      return;
-    } catch {
-      // Fallback to local avatar or text
-    }
-  }
+  avatarBuffer ??= getFallbackAvatarBuffer();
 
-  const fallbackBuffer = getFallbackAvatarBuffer();
-  if (fallbackBuffer) {
+  if (cardOptions) {
     try {
+      const cardBuffer = await profileCardService.generateCard({
+        view: cardOptions.view,
+        label: cardOptions.label,
+        phone: cardOptions.phone,
+        role: cardOptions.role,
+        isSuperOwner: cardOptions.isSuperOwner,
+        avatarBuffer,
+      });
+
       await socket.sendMessage(
         context.chatJid,
         {
-          image: fallbackBuffer,
+          image: cardBuffer,
           caption: text,
           mentions,
         },
@@ -321,7 +334,13 @@ async function executeProfile(
     const isSuperOwner = roleGuard.isSuperOwner(targetInfo.userJid);
     const role = await resolveMemberRole(context, targetInfo.userJid, targetInfo.mentions);
     const text = formatProfileView(view, label, role, isSuperOwner);
-    await sendProfileMessage(context, text, targetInfo.userJid, targetInfo.mentions);
+    await sendProfileMessage(context, text, targetInfo.userJid, targetInfo.mentions, {
+      view,
+      label,
+      phone: targetInfo.phone,
+      role,
+      isSuperOwner,
+    });
   } else {
     // View own profile (creates if not exists).
     const senderInfo = await resolveTargetInfo(context, ownSenderJid);
@@ -333,7 +352,13 @@ async function executeProfile(
     const isSuperOwner = roleGuard.isSuperOwner(senderInfo.userJid);
     const role = await resolveMemberRole(context, senderInfo.userJid, senderInfo.mentions);
     const text = formatProfileView(view, label, role, isSuperOwner);
-    await sendProfileMessage(context, text, senderInfo.userJid, senderInfo.mentions);
+    await sendProfileMessage(context, text, senderInfo.userJid, senderInfo.mentions, {
+      view,
+      label,
+      phone: senderInfo.phone,
+      role,
+      isSuperOwner,
+    });
   }
 }
 
