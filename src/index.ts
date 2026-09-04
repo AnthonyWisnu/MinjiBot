@@ -1,8 +1,17 @@
 import { BotLifecycle } from "./bot/lifecycle";
 import { env } from "./config/env";
 import { logger } from "./config/logger";
+import { cleanAllStaleTempDirs, sweepStaleTempFiles } from "./utils/tempFile";
 
 async function main(): Promise<void> {
+  // Bersihkan sisa file sementara jika bot sebelumnya restart mendadak
+  await cleanAllStaleTempDirs();
+
+  // Jadwalkan pembersihan otomatis setiap 1 jam untuk file temp berusia > 30 menit
+  setInterval(() => {
+    void sweepStaleTempFiles();
+  }, 60 * 60 * 1000).unref();
+
   logger.info(
     {
       environment: env.NODE_ENV,
