@@ -23,7 +23,7 @@ jobs:
 
             cd /home/anthony/MinjiBot
             git fetch origin main
-            git pull --ff-only origin main
+            git reset --hard origin/main
 
             npm ci || npm install
             npx prisma generate
