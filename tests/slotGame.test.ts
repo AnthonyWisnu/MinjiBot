@@ -83,3 +83,87 @@ void test("SlotGame: allows Super Owner to play even with 0 points", async () =>
   assert.match(result, /MINJI SLOT/);
   assert.match(result, /Unlimited \(Super Owner\)/);
 });
+
+void test("SlotGame: accepts custom bet amount", async () => {
+  const mockRepo = {
+    findOrCreate: () => Promise.resolve({
+      id: "profile-1",
+      groupJid: "120@g.us",
+      userJid: "628@s.whatsapp.net",
+      pointsBalance: 100,
+      totalGamesPlayed: 0,
+    } as never),
+  };
+
+  const mockPrisma = {
+    groupMemberProfile: {
+      update: ({ data }: { data: { pointsBalance: unknown; totalGamesPlayed: unknown } }) =>
+        Promise.resolve({
+          id: "profile-1",
+          pointsBalance: 80,
+          experience: 1,
+        }),
+    },
+  };
+
+  const service = new SlotGameService(mockRepo as never, mockPrisma as never);
+  const ctx = makeMockContext(100);
+  ctx.args = ["20"];
+  ctx.argsText = "20";
+
+  const result = await service.play(ctx);
+  assert.match(result, /Taruhan\s+:\s+20 Poin/);
+});
+
+void test("SlotGame: rejects custom bet exceeding balance", async () => {
+  const mockRepo = {
+    findOrCreate: () => Promise.resolve({
+      id: "profile-1",
+      groupJid: "120@g.us",
+      userJid: "628@s.whatsapp.net",
+      pointsBalance: 30,
+      totalGamesPlayed: 0,
+    } as never),
+  };
+
+  const service = new SlotGameService(mockRepo as never);
+  const ctx = makeMockContext(30);
+  ctx.args = ["50"];
+  ctx.argsText = "50";
+
+  const result = await service.play(ctx);
+  assert.match(result, /Poin kamu tidak cukup untuk taruhan ini/);
+});
+
+void test("SlotGame: accepts allin bet", async () => {
+  const mockRepo = {
+    findOrCreate: () => Promise.resolve({
+      id: "profile-1",
+      groupJid: "120@g.us",
+      userJid: "628@s.whatsapp.net",
+      pointsBalance: 500,
+      totalGamesPlayed: 15,
+    } as never),
+  };
+
+  const mockPrisma = {
+    groupMemberProfile: {
+      update: () =>
+        Promise.resolve({
+          id: "profile-1",
+          pointsBalance: 0,
+          experience: 1,
+        }),
+    },
+  };
+
+  const service = new SlotGameService(mockRepo as never, mockPrisma as never);
+  const ctx = makeMockContext(500);
+  ctx.args = ["allin"];
+  ctx.argsText = "allin";
+
+  const result = await service.play(ctx);
+  // Either wins all-in or hits educational rungkad total message
+  assert.match(result, /(ALL-IN|MINJI SLOT)/);
+});
+

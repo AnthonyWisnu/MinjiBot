@@ -311,7 +311,7 @@ export class MenuService {
       "*─── [ SALDO & PROFIL ] ───*",
       "• .profile [@user]",
       "• .poin",
-      "• .daily",
+      "• .daily / .claim",
       "• .belilimit <jumlah>",
       "• .giftpoint @user <jumlah>",
       "• .giftlimit @user <jumlah>",

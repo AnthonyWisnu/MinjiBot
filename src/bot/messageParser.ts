@@ -85,6 +85,65 @@ export function parseCommandMessage(socket: WASocket, message: WAMessage): Comma
   };
 }
 
+export function parseRawMessageContext(socket: WASocket, message: WAMessage): CommandContext | null {
+  if (message.key.fromMe) {
+    return null;
+  }
+
+  const chatJid = message.key.remoteJid;
+  if (!chatJid || isStatusBroadcastJid(chatJid)) {
+    return null;
+  }
+
+  const content = unwrapMessageContent(message.message);
+  if (!content) {
+    return null;
+  }
+
+  const text = extractMessageText(content).trim();
+  const senderJid = getMessageSenderJid(chatJid, message.key.participant);
+  const senderAltJids = getMessageSenderAltJids(message);
+  const senderUserJid = getPreferredUserJid(
+    senderAltJids.includes(senderJid) ? senderAltJids : [senderJid, ...senderAltJids],
+  );
+
+  return {
+    socket,
+    message,
+    chatJid,
+    senderJid,
+    senderUserJid,
+    senderAltJids,
+    isGroup: isGroupJid(chatJid),
+    commandName: "",
+    args: text.length > 0 ? text.split(/\s+/) : [],
+    argsText: text,
+    text,
+    mentionedJids: extractMentionedJids(content),
+    role: "MEMBER",
+    quoted: extractQuotedMessage(content),
+    reply: async (replyText: string, options?: { mentions?: string[] }) => {
+      let mentions = options?.mentions;
+      if (!mentions || mentions.length === 0) {
+        const matches = replyText.match(/@(\d{5,25})/g);
+        if (matches) {
+          mentions = matches.map((m) => `${m.slice(1)}@s.whatsapp.net`);
+        }
+      }
+      await socket.sendMessage(
+        chatJid,
+        {
+          text: replyText,
+          mentions,
+        },
+        {
+          quoted: message,
+        },
+      );
+    },
+  };
+}
+
 function extractMentionedJids(content: WAMessageContent): string[] {
   const contextInfo = getContextInfo(content);
 
