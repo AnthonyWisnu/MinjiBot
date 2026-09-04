@@ -9,7 +9,7 @@
 [![Baileys](https://img.shields.io/badge/WhatsApp%20Engine-Baileys-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://github.com/WhiskeySockets/Baileys)
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Prisma](https://img.shields.io/badge/ORM-Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io)
-[![Tests](https://img.shields.io/badge/Tests-277%20Passed-brightgreen?style=for-the-badge&logo=jest&logoColor=white)]()
+[![Tests](https://img.shields.io/badge/Tests-314%20Passed-brightgreen?style=for-the-badge&logo=jest&logoColor=white)]()
 [![PM2](https://img.shields.io/badge/Process%20Manager-PM2-2B037A?style=for-the-badge&logo=pm2&logoColor=white)](https://pm2.keymetrics.io)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
 
@@ -31,6 +31,7 @@
 - **Per-Group Tenant Isolation**: WhatsApp groups operate as independent tenants. Zero global premium clutter.
 - **Automated Lifecycle**: State transitions (`PENDING` ➔ `ACTIVE` ➔ `EXPIRED` ➔ `BLOCKED` ➔ `REMOVED`).
 - **Flexible Management**: Super Owner activates & extends rentals; Tenant Owner manages group settings; Tenant Admin assists with moderation.
+- **SaaS Tenant Panel (`.panel` / `.tenantstatus`)**: Full-featured administrative dashboard presenting live group information, active remaining rental days, bot admin privileges, and modular switchboard.
 
 ### 💎 2. Persistent Group Member Economy
 - **Group-Scoped Balances**: Composite identity `(groupJid, userJid)`. Balances in Group A do not bleed into Group B.
@@ -40,8 +41,22 @@
   - **XP & Tiers**: Permanent rank progression (*Bronze, Silver, Gold, Platinum, Diamond, Master, Grandmaster*).
 - **Daily Rewards (`.daily` / `.claim`)**: 100–300 Points, 50 XP, chance of bonus Limit, with daily streak multipliers reset at 00:00 WIB.
 - **P2P Economy**: Peer gifting (`.giftpoint`, `.giftlimit`) and limit exchange (`.belilimit`).
+- **Automatic Level-Up Announcements**: Real-time celebration broadcast in chat when a member ascends to a higher rank tier.
 
-### 🎰 3. Educational Anti-Greed Slot Machine
+### 🛡️ 3. The Admin Powerhouse (Rental Dealbreakers)
+- **Tiered Warning System (`.warn`, `.unwarn`, `.warns`, `.resetwarn`, `.setwarn`)**: Progressive discipline enforcement with automatic kick upon reaching threshold (default 3 warnings), reason tracking, and protected account immunity.
+- **Anti-Raid & Bot Surge Defense (`.antiraid`, `.grup <buka|tutup>`)**: High-speed in-memory sliding window detecting abnormal join surges ($\ge 4$ members in $\le 10$s) to auto-lock the group to announcement mode, revoke invitation links, and alert administrators.
+- **HideTag (`.hidetag <pesan>`)**: Broadcast announcements with invisible background mentions to keep chat screens uncluttered.
+- **Anti-Delete (`.antidelete`) & Anti-ViewOnce (`.antiviewonce`)**: Catch revoked messages via fast in-memory LRU cache and reveal ephemeral media automatically.
+
+### 🎨 4. Social Status & Viral Studio
+- **Profile 2.0 Glassmorphism Card (`.profile`)**: High-resolution 800×450 visual card rendered locally with Sharp (no browser overhead), featuring circular avatar mask, tier badge, dynamic colors, XP progress bar, and 4 statistical counters.
+- **Group Analytics & Sider Hunter (`.stats`, `.topaktif`, `.silent [hari]`)**: Non-blocking message counter, top 10 most active chatters leaderboard, and silent member detector to cull lurkers.
+- **Viral Studio (`.quote`, `.tweet`)**:
+  - `.quote` [reply]: Editorial quote card generator with optional WhatsApp sticker flag (`-s`).
+  - `.tweet <teks>` / `.tweet @user <teks>`: Twitter / X Dark Mode tweet mockup generator with verified blue check and deterministic metrics.
+
+### 🎰 5. Educational Anti-Greed Slot Machine
 - **Authentic Visuals**: Fruit emojis + lucky 7️⃣ (`🍒 🍇 🍉 🍊 🍋 7️⃣`).
 - **Dynamic Weighted RNG (The Reality Trap)**:
   - Spins 1–3 (*Beginner's Luck*): ~65% win probability.
@@ -49,18 +64,19 @@
   - Spins 11+ (*The Grind*): ~20% win probability.
   - **ALL-IN Bet Mode**: Win probability plummets to **~6%**, delivering a harsh lesson and educational advisory against real-money gambling addiction.
 
-### 🎮 4. Interactive Group Gaming Suite
+### 🎮 6. Interactive Group Gaming Suite
 - **Family 100 Survey Board**: Hidden survey slots (`...............`) that reveal out-of-order upon correct guesses with answerer attribution. Supports direct message reply/quote.
 - **TicTacToe PvP**: Turn-based grid battle with **Swipe-to-Reply** challenge acceptance and move placement (`1`–`9`).
 - **Brain Teasers**: Math calculation (`.mtk`), Word Scramble (`.tebakkata`), Emoji Riddles (`.tebakemoji`), and Number Guessing (`.tebakangka`).
 
-### 🚀 5. High-Throughput Media Downloader Pipeline
+### 🚀 7. High-Throughput Media Downloader Pipeline
 - **TikTok (`.tt`)**: Watermark-free HD video download with direct fast-API extraction and robust yt-dlp fallback.
 - **Instagram (`.ig`)**: Unified downloader supporting Reels, Posts, multi-slide Carousels, and Stories.
 - **YouTube (`.yt`)**: Smart Adaptive Resolution Engine prioritizing **720p 60FPS** and **720p 30FPS** for crystal-clear high-definition fidelity (`<= 100MB`), with intelligent dynamic fallback to **480p** for extended videos (up to 12 minutes). Remuxed with mobile-safe **AVC1 (H.264) + AAC** for instant, native playback on all iOS & Android devices.
 - **AI Image Enhancer (`.hd`)**: Upscales and sharpens low-res photos with AI face restoration.
 
-### 🛡️ 6. Enterprise Resilience & Auto-Reconnect
+### 🛡️ 8. Enterprise Resilience & Auto-Reconnect
+- **Modular Interceptor Pipeline**: Chain of Responsibility message processor decoupled from commands.
 - **500 Status Interceptor**: Intercepts WhatsApp stream acknowledgment glitches and badSession glitches without destroying credentials, triggering an exponential backoff reconnect loop.
 - **Dual JID Normalization**: Seamlessly resolves both WhatsApp Phone JIDs (`@s.whatsapp.net`) and Linked Device IDs (`@lid`).
 
@@ -70,28 +86,39 @@
 
 ```mermaid
 flowchart TD
-    WA[WhatsApp Network] <--> |Baileys WebSockets| BL[Lifecycle & Stream Manager]
-    BL --> |Messages Upsert| MP[Message Parser & Normalizer]
+    WA[WhatsApp Network] <--> |Baileys WebSockets| BL[Lifecycle & Subscribers]
+    BL --> |Event Subscribers| ES[Group Participants & Message Revoke]
+    BL --> |Messages Upsert| MIP[Modular Interceptor Pipeline]
     
+    subgraph Interceptor Pipeline Chain
+        MIP --> IP1[PendingTenant Interceptor]
+        IP1 --> IP2[AntiDelete & AntiViewOnce Interceptors]
+        IP2 --> IP3[Activity Tracker Interceptor]
+        IP3 --> IP4[AFK & AntiLink Interceptors]
+        IP4 --> IP5[AntiSpam Interceptor]
+        IP5 --> IP6[Interactive Reply Interceptor]
+    end
+
     subgraph Security & Access Layer
-        MP --> RG[Role Guard]
+        IP6 --> |Uncaught by Pipeline| RG[Role Guard]
         RG --> TG[Tenant Guard]
         TG --> FG[Feature Guard]
     end
     
     subgraph Application Service Layer
-        FG --> CR[Command Router & Reply Interceptor]
-        CR --> DS[Media Downloader Service]
-        CR --> ES[Member Economy Service]
+        FG --> CR[Command Router]
+        CR --> DS[Media & Downloader Service]
+        CR --> VS[Viral Studio & Profile Card Service]
+        CR --> MS[Moderation & Warn Service]
+        CR --> ESV[Member Economy Service]
         CR --> GS[Game Engine & PvP Service]
-        CR --> TS[Tenant Management Service]
+        CR --> TS[Tenant Management & Panel Service]
     end
     
     subgraph Data & Storage Layer
-        ES --> RL[Transaction Ledger Repository]
-        GS --> GP[Group Member Profile Repository]
-        TS --> TR[Tenant Group Repository]
-        RL & GP & TR --> PR[Prisma ORM]
+        ESV & MS & TS --> RL[Ledger & Warning Repositories]
+        GS & VS --> GP[Group Member Profile Repository]
+        RL & GP --> PR[Prisma ORM]
         PR <--> PG[(PostgreSQL Database)]
     end
 ```
@@ -102,12 +129,17 @@ flowchart TD
 
 | Category | Command | Description | Limit / Cost |
 |---|---|---|---|
-| **Member Economy** | `.daily` / `.claim` | Claim daily points, XP, and streak bonus | Free |
-| | `.profile` [@user] | View personal or tagged member's profile & rank | Free |
+| **Member Economy & Status** | `.daily` / `.claim` | Claim daily points, XP, and streak bonus | Free |
+| | `.profile` [@user] | Generate Glassmorphism 2.0 visual card with avatar, rank, and XP bar | Free |
 | | `.belilimit <count>` | Exchange 1,000 Points per Limit | Points |
 | | `.giftpoint @user <n>` | Send points to a fellow group member | Points |
 | | `.giftlimit @user <n>` | Send limits to a fellow group member | Limit |
 | | `.toppoint` / `.toprank` | View top 10 richest and highest XP members | Free |
+| **Activity Analytics** | `.stats` | Group activity analytics (total chats, active hours, top chatters) | Free |
+| | `.topaktif` / `.topchat` | Top 10 most active members by message count | Free |
+| | `.silent [hari]` | Sider hunter: detect members with 0 messages over X days (default 7) | Free |
+| **Viral Studio** | `.quote` [reply] [-s] | Render dark glassmorphism quote card (add `-s` for WhatsApp sticker) | Free |
+| | `.tweet` [@user] `<text>`| Render Dark Mode X / Twitter tweet mockup with verified blue badge | Free |
 | **Media Engine** | `.tt <url>` | Download TikTok video (no watermark) or Photo Slides (up to 12) + BGM audio | 1 Limit |
 | | `.ig <url>` | Download Instagram Reel, Post, Carousel, or Story | 1 Limit |
 | | `.yt <url>` | Download YouTube video (Adaptive 720p60/720p30/480p, max 12 mins) | 1 Limit |
@@ -127,17 +159,25 @@ flowchart TD
 | | `.mtk` / `.math` | Math challenge with direct reply answer | Free |
 | | `.tebakkata` / `.tebakemoji` | Guessing riddles with direct reply answer | Free |
 | | `.nyerah` | Surrender active quiz or TicTacToe game | Free |
-| **Tenant Admin** | `.groupinfo` | View current group rental status and active time | Free |
-| | `.hidetag <msg>` | Broadcast announcement with hidden mentions | Free |
-| | `.antidelete` [on \| off] | Reveal deleted / revoked messages with sender info | Free |
-| | `.antiviewonce` [on \| off]| Secure and reveal 1x view-once photos and videos | Free |
-| | `.antilink` [on \| off] | Toggle group anti-invite link moderation | Free |
-| | `.antispam` [mode] | Configure spam protection (normal/soft/strict) | Free |
-| | `.welcome` [on \| off] | Toggle welcome message greeting | Free |
-| | `.setwelcome <msg>` | Customize group greeting message | Free |
-| | `.goodbye` [on \| off] | Toggle goodbye notification on member leave | Free |
-| | `.setgoodbye <msg>` | Customize group goodbye message | Free |
-| | `.reminder <time> <msg>` | Set automatic group reminder | Free |
+| **Tenant Moderation (P0)**| `.warn @user <alasan>` | Give disciplinary warning (Auto-kick on threshold) | Free (Admin) |
+| | `.unwarn @user` | Remove latest warning from member | Free (Admin) |
+| | `.warns [@user]` | View warning history and violation list | Free (Admin) |
+| | `.resetwarn @user` | Reset all warnings for a member | Free (Admin) |
+| | `.setwarn <1-10>` | Set warning threshold before auto-kick | Free (Admin) |
+| | `.antiraid` [on \| off] | Toggle anti-raid surge defense | Free (Admin) |
+| | `.antiraid setting <n> <s>`| Configure surge threshold ($n$ members in $s$ seconds) | Free (Admin) |
+| | `.grup <buka \| tutup>` | Manually lock or unlock group chat | Free (Admin) |
+| | `.panel` / `.tenantstatus`| Open SaaS administrative dashboard and modular switchboard | Free (Admin) |
+| | `.hidetag <msg>` | Broadcast announcement with hidden mentions | Free (Admin) |
+| | `.antidelete` [on \| off] | Reveal deleted / revoked messages with sender info | Free (Admin) |
+| | `.antiviewonce` [on \| off]| Secure and reveal 1x view-once photos and videos | Free (Admin) |
+| | `.antilink` [on \| off] | Toggle group anti-invite link moderation | Free (Admin) |
+| | `.antispam` [mode] | Configure spam protection (normal/soft/strict) | Free (Admin) |
+| | `.welcome` [on \| off] | Toggle welcome message greeting | Free (Admin) |
+| | `.setwelcome <msg>` | Customize group greeting message | Free (Admin) |
+| | `.goodbye` [on \| off] | Toggle goodbye notification on member leave | Free (Admin) |
+| | `.setgoodbye <msg>` | Customize group goodbye message | Free (Admin) |
+| | `.reminder <time> <msg>` | Set automatic group reminder | Free (Admin) |
 | **Super Owner** | `.tenant list` | List all tenant groups and rental statuses | Admin |
 | | `.tenant activate <id> <d>`| Activate group rental for *d* days | Admin |
 | | `.tenant extend <id> <d>` | Extend group rental period | Admin |
@@ -229,11 +269,11 @@ npm run test
 ```
 
 ```text
-# tests 257
+# tests 314
 # suites 0
-# pass 257
+# pass 314
 # fail 0
-# duration_ms 10440.973
+# duration_ms 12755.0539
 ```
 
 ---
