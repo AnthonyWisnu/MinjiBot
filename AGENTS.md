@@ -152,6 +152,33 @@ Fitur kontrol grup eksklusif untuk penyewa bot (`TENANT_OWNER` & `TENANT_ADMIN`)
 - **Anti-ViewOnce (`.antiviewonce [on|off]`)**:
   - Mendeteksi pesan gambar atau video 1x lihat (*View Once*) yang dikirimkan ke grup.
   - Mengunduh stream buffer media secara instan via `downloadMediaMessage` dan mengirimkannya kembali ke grup sebagai media foto/video reguler dengan menyertakan kredit pengirim dan caption aslinya.
+- **Sistem Warning Terpadu (`.warn`, `.unwarn`, `.warns`, `.resetwarn`, `.setwarn`)**:
+  - Penegakan disiplin berjenjang terhadap member pelanggar aturan. Memberikan akumulasi poin peringatan hingga batas ambang (`warnThreshold`, default: 3).
+  - Saat batas tercapai, bot secara otomatis mengeluarkan member dari grup (*Auto-Kick*) jika bot berstatus admin, dan mereset riwayat pelanggarannya secara atomik.
+  - Akun terproteksi (`Bot`, `Tenant Owner`, dan `Super Owner`) kebal terhadap peringatan.
+- **Anti-Raid & Bot Surge Protection (`.antiraid`, `.grup <buka|tutup>`)**:
+  - Deteksi serbuan bot penyerang menggunakan *zero-lag in-memory sliding window* (default: $\ge 4$ member baru bergabung dalam interval $\le 10$ detik).
+  - Memicu protokol mitigasi darurat: otomatis mengunci grup ke mode pengumuman (*Announcement*), mencabut tautan undangan grup (*Revoke Invite Link*), dan menyiarkan peringatan darurat ke chat dengan me-mention seluruh admin grup.
+  - Dilengkapi *lockdown cooldown* 60 detik untuk mencegah badai siaran darurat berulang.
+- **SaaS Tenant Dashboard (`.panel` / `.tenantstatus`)**:
+  - Dashboard eksekutif bergaya SaaS premium untuk `TENANT_OWNER`, `TENANT_ADMIN`, dan `SUPER_OWNER`.
+  - Menyajikan informasi lengkap: identitas grup, kode tenant, sisa masa aktif sewa (hari & jam WIB), status izin admin bot di grup, susunan tim pengelola, matriks switch ON/OFF seluruh modul (moderasi, notifikasi, utilitas), dan panduan kontrol cepat admin.
+
+### 5.3. Fitur Engagement & Status Sosial (Social Currency Engine)
+- **Profile 2.0 Visual Card (`.profile`)**:
+  - Mengonversi tampilan profil teks polos menjadi kartu grafis *glassmorphism* modern (800×450 px) dalam format PNG siap share via Sharp lokal tanpa browser headless.
+  - Menampilkan avatar bundar pengguna, nama panggilan, nomor HP tersamarkan, badge Tier Rank dengan aksen warna dinamis, progress bar XP ke tier berikutnya, serta 4 widget statistik (Poin, Limit, Streak Harian, Leaderboard Rank #X).
+- **Group Activity Analytics & Sider Hunter (`.stats`, `.topaktif` / `.topchat`, `.silent [hari]`)**:
+  - Mencatat aktivitas chat anggota secara non-blocking di database via `ActivityTrackerInterceptor`.
+  - `.stats`: Ringkasan statistik aktivitas grup (total pesan, rentang tanggal, 5 pengirim pesan teraktif).
+  - `.topaktif` / `.topchat`: Papan peringkat 10 anggota paling aktif di grup tenant.
+  - `.silent [hari]`: Alat seleksi sider/koleksi nomor pasif untuk mendeteksi anggota yang tidak pernah mengirim pesan selama X hari terakhir (default: 7 hari).
+- **Viral Studio: Aesthetic Quote & Meme Tweet (`.quote`, `.tweet`)**:
+  - Alternatif legal, aman, dan viral tanpa risiko rekayasa fitnah fake-chat.
+  - `.quote` [reply pesan]: Merender kartu kutipan editorial *dark glassmorphism* beresolusi tinggi dengan tipografi rapi, foto profil, dan watermark MinjiBot. Opsi flag `-s` untuk langsung dikirim sebagai stiker WhatsApp.
+  - `.tweet <teks>` / `.tweet @user <teks>`: Merender mockup postingan X (Twitter) Dark Mode lengkap dengan foto profil, centang verifikasi biru, username @minjibot, dan statistik likes/retweets deterministik.
+- **Automatic Level-Up & Rank Tier Announcement**:
+  - Setiap kali member memperoleh XP (dari game kuis/tictactoe/daily) dan melompat ke tier rank yang lebih tinggi (Bronze ➔ Silver ➔ Gold ➔ Platinum ➔ Diamond ➔ Master ➔ Grandmaster), bot secara otomatis mengirim ucapan selamat selebrasi berformat elegan ke chat grup.
 
 ---
 

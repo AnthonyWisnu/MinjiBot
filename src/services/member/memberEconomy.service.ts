@@ -10,6 +10,8 @@ import {
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../../repositories/groupMemberTransaction.repository";
 import { prisma } from "../../repositories/prismaClient";
+import { levelUpNotifierService, type LevelUpNotification } from "./levelUpNotifier.service";
+import { resolveRank } from "./rank.service";
 import type {
   CreditLimitInput,
   CreditPointsInput,
@@ -118,6 +120,7 @@ export class MemberEconomyService {
     private readonly profileRepo: ProfileStore = new GroupMemberProfileRepository(),
     private readonly txRepo: TxStore = new GroupMemberTransactionRepository(),
     private readonly db: TransactionalDb = prisma,
+    private readonly levelUpNotifier: { notifyLevelUp(event: LevelUpNotification): Promise<void> } = levelUpNotifierService,
   ) {}
 
   // ---- Profile ----
@@ -497,10 +500,13 @@ export class MemberEconomyService {
       }
     }
 
-    return this.db.$transaction(async (tx) => {
-      const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
+    let oldExperience = 0;
 
-      const updated = await tx.groupMemberProfile.update({
+    const updated = await this.db.$transaction(async (tx) => {
+      const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
+      oldExperience = profile.experience;
+
+      const updatedProfile = await tx.groupMemberProfile.update({
         where: { id: profile.id },
         data: { experience: { increment: input.amount } },
       });
@@ -515,7 +521,7 @@ export class MemberEconomyService {
           type: MemberTransactionType[input.type],
           amount: input.amount,
           balanceBefore: profile.experience,
-          balanceAfter: updated.experience,
+          balanceAfter: updatedProfile.experience,
           correlationId: input.correlationId,
           idempotencyKey: input.idempotencyKey,
           note: input.note,
@@ -523,17 +529,35 @@ export class MemberEconomyService {
         tx,
       );
 
-      return updated;
+      return updatedProfile;
     });
+
+    const oldRank = resolveRank(oldExperience);
+    const newRank = resolveRank(updated.experience);
+
+    if (newRank !== oldRank && updated.experience > oldExperience) {
+      void this.levelUpNotifier.notifyLevelUp({
+        groupJid: input.groupJid,
+        userJid: input.userJid,
+        oldRank,
+        newRank,
+        newXp: updated.experience,
+      });
+    }
+
+    return updated;
   }
 
   async setXp(input: SetXpInput): Promise<GroupMemberProfile> {
     validateNonNegativeAmount(input.amount);
 
-    return this.db.$transaction(async (tx) => {
-      const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
+    let oldExperience = 0;
 
-      const updated = await tx.groupMemberProfile.update({
+    const updated = await this.db.$transaction(async (tx) => {
+      const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
+      oldExperience = profile.experience;
+
+      const updatedProfile = await tx.groupMemberProfile.update({
         where: { id: profile.id },
         data: { experience: input.amount },
       });
@@ -548,14 +572,29 @@ export class MemberEconomyService {
           type: MemberTransactionType.SUPER_OWNER_SET,
           amount: input.amount,
           balanceBefore: profile.experience,
-          balanceAfter: updated.experience,
+          balanceAfter: updatedProfile.experience,
           note: input.note,
         },
         tx,
       );
 
-      return updated;
+      return updatedProfile;
     });
+
+    const oldRank = resolveRank(oldExperience);
+    const newRank = resolveRank(updated.experience);
+
+    if (newRank !== oldRank && updated.experience > oldExperience) {
+      void this.levelUpNotifier.notifyLevelUp({
+        groupJid: input.groupJid,
+        userJid: input.userJid,
+        oldRank,
+        newRank,
+        newXp: updated.experience,
+      });
+    }
+
+    return updated;
   }
 
   // ---- Game statistics ----

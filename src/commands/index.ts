@@ -13,6 +13,7 @@ import { hdCommands } from "./media/hd.command";
 import { lyricsCommands } from "./media/lyrics.command";
 import { playCommands } from "./media/play.command";
 import { stickerCommands } from "./media/sticker.command";
+import { quoteCardCommands } from "./media/quoteCard.command";
 import { audioEffectCommands } from "./media/audioEffect.command";
 import { menuCommands } from "./menu.command";
 import { antiLinkCommands } from "./moderation/antiLink.command";
@@ -31,6 +32,7 @@ import { tenantPanelCommands } from "./tenant/tenantPanel.command";
 import { transferOwnerCommands } from "./tenant/transferOwner.command";
 import { superOwnerTenantCommands } from "./tenant/superOwnerTenant.command";
 import { welcomeCommands } from "./welcome/welcome.command";
+import { groupStatsCommands } from "./stats/groupStats.command";
 
 export class CommandRouter {
   private readonly commands = new Map<string, CommandDefinition>();
@@ -86,6 +88,7 @@ export const commandRouter = new CommandRouter([
   ...afkCommands,
   ...hdCommands,
   ...stickerCommands,
+  ...quoteCardCommands,
   ...audioEffectCommands,
   ...playCommands,
   ...lyricsCommands,
@@ -107,4 +110,5 @@ export const commandRouter = new CommandRouter([
   ...memberAdminCommands,
   ...profileCommands,
   ...leaderboardCommands,
+  ...groupStatsCommands,
 ]);

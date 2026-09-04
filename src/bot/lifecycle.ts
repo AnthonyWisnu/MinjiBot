@@ -5,6 +5,7 @@ import { env } from "../config/env";
 import { logger } from "../config/logger";
 import { disconnectPrisma } from "../repositories/prismaClient";
 import { reminderScheduler } from "../services/reminder/reminderScheduler";
+import { levelUpNotifierService } from "../services/member/levelUpNotifier.service";
 import { createBotSocket } from "./connection";
 import { registerEventSubscribers } from "./subscribers";
 
@@ -33,6 +34,7 @@ export class BotLifecycle {
     }
 
     reminderScheduler.stop();
+    levelUpNotifierService.setSocket(null);
     await disconnectPrisma();
     logger.info({ reason }, "Lifecycle MinjiBot dihentikan");
   }
