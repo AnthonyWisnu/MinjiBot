@@ -1,4 +1,4 @@
-# AGENT.md — MinjiBot Master System Guide
+# AGENTS.md — MinjiBot Master System Guide
 
 > **Catatan Penting untuk AI Agent / Developer:**
 > Dokumen ini adalah **sumber kebenaran tunggal (Single Source of Truth)** untuk seluruh arsitektur, domain bisnis, relasi database, siklus hidup koneksi WhatsApp, dan konvensi penulisan kode MinjiBot. Saat menambahkan fitur baru atau melakukan refactoring, wajib patuhi aturan dan prinsip yang tercantum di sini.
