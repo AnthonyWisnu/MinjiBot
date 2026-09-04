@@ -578,7 +578,8 @@ export class GameService {
     const matchedIndex = session.question.answers.findIndex(
       (ans) => normalizeAnswer(ans) === normalizedAnswer,
     );
-    const answerDisplay = matchedIndex >= 0 ? session.question.answers[matchedIndex] : normalizedAnswer;
+    const answerDisplay =
+      (matchedIndex >= 0 ? session.question.answers[matchedIndex] : normalizedAnswer) ?? "";
     const answerNumber = matchedIndex >= 0 ? matchedIndex + 1 : "?";
 
     if (isLastAnswer) {
@@ -732,13 +733,36 @@ export class GameService {
     return this.answerQuiz(context, session.type, answerText);
   }
 
+  sweepExpiredSessions(): void {
+    const now = Date.now();
+    for (const [groupJid, quiz] of this.quizSessions.entries()) {
+      if (now - quiz.createdAt > SESSION_TTL_MS) {
+        this.quizSessions.delete(groupJid);
+      }
+    }
+
+    for (const [groupJid, ttt] of this.ticTacToeSessions.entries()) {
+      const ttl = ttt.state === "waiting" ? WAITING_TTL_MS : MOVE_TTL_MS;
+      const lastActivity = ttt.state === "waiting" ? ttt.createdAt : ttt.lastMoveAt;
+      if (now - lastActivity > ttl * 2) {
+        this.ticTacToeSessions.delete(groupJid);
+      }
+    }
+  }
+
+  private lastSweepAt = 0;
+
   private cleanupExpired(groupJid: string): void {
     const now = Date.now();
+    if (now - this.lastSweepAt > 60_000) {
+      this.lastSweepAt = now;
+      this.sweepExpiredSessions();
+    }
+
     const quiz = this.quizSessions.get(groupJid);
     if (quiz && now - quiz.createdAt > SESSION_TTL_MS) {
       this.quizSessions.delete(groupJid);
     }
-    // TicTacToe expiry handled in checkTicTacToeTimeout (async, awards rewards).
   }
 
   private assertGroup(context: CommandContext): void {
@@ -755,7 +779,7 @@ function formatFamily100Board(session: QuizSession): string {
     const normalized = normalizeAnswer(ans);
     if (session.answered.has(normalized)) {
       const answererJid = session.family100AnswererByAnswer.get(normalized);
-      const tag = answererJid ? ` (@${answererJid.split("@")[0]})` : "";
+      const tag = answererJid ? ` (@${answererJid.split("@")[0] ?? ""})` : "";
       return `${String(idx + 1)}. ${ans}${tag}`;
     }
     return `${String(idx + 1)}. ...............`;

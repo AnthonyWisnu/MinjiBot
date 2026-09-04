@@ -15,6 +15,9 @@ export interface PendingTenantRegistrationInput {
 }
 
 export class PendingTenantRegistrationService {
+  private static readonly METADATA_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 jam
+  private readonly lastMetadataCheck = new Map<string, number>();
+
   constructor(private readonly tenantGroupRepository = new TenantGroupRepository()) {}
 
   async registerIfNeeded(input: PendingTenantRegistrationInput): Promise<TenantGroup | null> {
@@ -86,6 +89,15 @@ export class PendingTenantRegistrationService {
   }
 
   private async updateGroupNameIfNeeded(socket: WASocket, tenantGroup: TenantGroup): Promise<void> {
+    // Jika nama grup sudah tersimpan, batasi pengecekan ke server WhatsApp maksimal sekali per 6 jam
+    if (tenantGroup.name) {
+      const lastCheck = this.lastMetadataCheck.get(tenantGroup.groupJid) ?? 0;
+      if (Date.now() - lastCheck < PendingTenantRegistrationService.METADATA_CHECK_INTERVAL_MS) {
+        return;
+      }
+    }
+
+    this.lastMetadataCheck.set(tenantGroup.groupJid, Date.now());
     const groupName = await this.loadGroupName(socket, tenantGroup.groupJid);
 
     if (!groupName || groupName === tenantGroup.name) {

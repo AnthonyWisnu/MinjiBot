@@ -218,6 +218,23 @@ export class WelcomeService {
     }
 
     const groupSetting = await this.tenantGroupSettingRepository.ensureForGroup(groupJid);
+
+    // Proteksi burst: jika lebih dari 3 member masuk sekaligus, kirim 1 pesan kolektif tanpa spam foto
+    if (update.participants.length > 3) {
+      const normalizedParticipants = update.participants.map((p) => normalizeJid(p));
+      const text = this.renderMessage(
+        groupSetting.welcomeMessage ?? DEFAULT_WELCOME_MESSAGE,
+        tenantGroup,
+        normalizedParticipants,
+      );
+
+      await socket.sendMessage(groupJid, {
+        text,
+        mentions: normalizedParticipants,
+      });
+      return;
+    }
+
     const fallbackAvatar = getFallbackMinjiAvatar();
 
     for (const participant of update.participants) {

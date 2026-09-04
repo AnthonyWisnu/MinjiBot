@@ -130,6 +130,11 @@ export class ReminderService {
   async sendDueReminder(socket: WASocket, reminder: Reminder): Promise<void> {
     const tenantGroup = await this.tenantGroupRepository.findByGroupJid(reminder.groupJid);
     if (!this.isTenantActive(tenantGroup)) {
+      await this.reminderRepository.markSent(reminder.id);
+      logger.info(
+        { reminderId: reminder.id, groupJid: reminder.groupJid },
+        "Reminder dilewati dan ditandai selesai karena tenant tidak aktif atau masa sewa habis",
+      );
       return;
     }
 

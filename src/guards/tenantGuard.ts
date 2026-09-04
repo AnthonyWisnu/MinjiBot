@@ -98,19 +98,45 @@ export class TenantGuard {
     };
   }
 
+  private readonly tenantCache = new Map<string, { tenant: TenantGroup | null; cachedAt: number }>();
+  private static readonly CACHE_TTL_MS = 20_000; // 20 detik
+
+  invalidateCache(groupJid: string): void {
+    this.tenantCache.delete(groupJid);
+  }
+
   isInfoCommand(commandName: string): boolean {
     return EXPIRED_ALLOWED_COMMANDS.has(commandName.toLowerCase());
   }
 
   private async loadCurrentTenant(groupJid: string, actorJid: string): Promise<TenantGroup | null> {
-    const tenantGroup = await this.tenantGroupRepository.findByGroupJid(groupJid);
+    const cached = this.tenantCache.get(groupJid);
+    const now = Date.now();
+    let tenantGroup: TenantGroup | null;
+
+    if (cached && now - cached.cachedAt < TenantGuard.CACHE_TTL_MS) {
+      tenantGroup = cached.tenant;
+    } else {
+      tenantGroup = await this.tenantGroupRepository.findByGroupJid(groupJid);
+      this.tenantCache.set(groupJid, { tenant: tenantGroup, cachedAt: now });
+
+      if (this.tenantCache.size > 500) {
+        for (const [key, item] of this.tenantCache.entries()) {
+          if (now - item.cachedAt >= TenantGuard.CACHE_TTL_MS) {
+            this.tenantCache.delete(key);
+          }
+        }
+      }
+    }
 
     if (
       tenantGroup?.status === TenantStatus.ACTIVE &&
       tenantGroup.expiresAt &&
-      tenantGroup.expiresAt.getTime() <= Date.now()
+      tenantGroup.expiresAt.getTime() <= now
     ) {
-      return this.markExpired(tenantGroup, actorJid);
+      const expired = await this.markExpired(tenantGroup, actorJid);
+      this.tenantCache.set(groupJid, { tenant: expired, cachedAt: now });
+      return expired;
     }
 
     return tenantGroup;
