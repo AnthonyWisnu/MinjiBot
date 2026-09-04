@@ -57,6 +57,7 @@ async function replyGame(context: CommandContext, action: () => Promise<string>)
     );
     if (sent?.key?.id) {
       gameService.setQuizMessageId(context.chatJid, sent.key.id);
+      gameService.setTicTacToeMessageId(context.chatJid, sent.key.id);
     }
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Game gagal diproses. Silakan coba lagi."));

@@ -12,6 +12,7 @@ import { antiLinkService } from "../services/moderation/antiLink.service";
 import { antiSpamService } from "../services/moderation/antiSpam.service";
 import { pendingTenantRegistrationService } from "../services/tenant/pendingTenantRegistration.service";
 import { getMessageSenderJid, getPreferredUserJid, isGroupJid, isStatusBroadcastJid } from "../utils/jid";
+import type { CommandContext } from "../types/command";
 import { parseCommandMessage, parseRawMessageContext } from "./messageParser";
 
 type MessagesUpsertEvent = BaileysEventMap["messages.upsert"];
@@ -38,9 +39,9 @@ async function handleIncomingMessage(
   await antiLinkService.handleIncomingMessage(socket, message);
   await antiSpamService.handleIncomingMessage(socket, message);
 
-  // Cek apakah pesan ini adalah balasan (reply/quote) langsung ke soal kuis yang sedang aktif
-  const handledQuiz = await handleQuizReplyIfNeeded(socket, message);
-  if (handledQuiz) {
+  // Cek apakah pesan ini adalah balasan (reply/quote) langsung ke game (kuis/tictactoe) yang sedang aktif
+  const handledGame = await handleGameReplyIfNeeded(socket, message);
+  if (handledGame) {
     return;
   }
 
@@ -117,16 +118,13 @@ async function registerPendingTenantIfNeeded(
   }
 }
 
-async function handleQuizReplyIfNeeded(
+async function handleGameReplyIfNeeded(
   socket: WASocket,
   message: MessagesUpsertEvent["messages"][number],
 ): Promise<boolean> {
   if (message.key.fromMe) return false;
   const chatJid = message.key.remoteJid;
   if (!chatJid || !isGroupJid(chatJid) || isStatusBroadcastJid(chatJid)) return false;
-
-  const session = gameService.getActiveQuiz(chatJid);
-  if (!session) return false;
 
   const rawContext = parseRawMessageContext(socket, message);
   if (!rawContext || !rawContext.text || rawContext.text.startsWith(env.COMMAND_PREFIX)) {
@@ -135,6 +133,26 @@ async function handleQuizReplyIfNeeded(
 
   const quoted = rawContext.quoted;
   if (!quoted) return false;
+
+  // 1. Cek apakah membalas kuis aktif
+  const handledQuiz = await handleQuizReply(socket, message, rawContext, quoted);
+  if (handledQuiz) return true;
+
+  // 2. Cek apakah membalas TicTacToe aktif (accept tantangan atau melangkah 1-9)
+  const handledTicTacToe = await handleTicTacToeReply(socket, message, rawContext, quoted);
+  if (handledTicTacToe) return true;
+
+  return false;
+}
+
+async function handleQuizReply(
+  socket: WASocket,
+  message: MessagesUpsertEvent["messages"][number],
+  rawContext: CommandContext,
+  quoted: NonNullable<CommandContext["quoted"]>,
+): Promise<boolean> {
+  const session = gameService.getActiveQuiz(rawContext.chatJid);
+  if (!session) return false;
 
   const botUserJid = socket.user?.id ? getPreferredUserJid([socket.user.id]) : undefined;
   const isQuotingQuiz =
@@ -164,19 +182,160 @@ async function handleQuizReplyIfNeeded(
 
     const replyText = await gameService.answerQuizFromDirectText(rawContext, rawContext.text);
     if (replyText) {
-      await rawContext.reply(replyText);
+      const sent = await socket.sendMessage(
+        rawContext.chatJid,
+        { text: replyText },
+        { quoted: message },
+      );
+      if (sent?.key?.id) {
+        gameService.setQuizMessageId(rawContext.chatJid, sent.key.id);
+      }
       return true;
     }
   } catch (error: unknown) {
     logger.error(
       {
         error,
-        chatJid,
+        chatJid: rawContext.chatJid,
         senderJid: rawContext.senderJid,
         gameType: session.type,
       },
       "Evaluasi jawaban kuis via reply gagal",
     );
+  }
+
+  return false;
+}
+
+async function handleTicTacToeReply(
+  socket: WASocket,
+  message: MessagesUpsertEvent["messages"][number],
+  rawContext: CommandContext,
+  quoted: NonNullable<CommandContext["quoted"]>,
+): Promise<boolean> {
+  const session = gameService.getActiveTicTacToe(rawContext.chatJid);
+  if (!session) return false;
+
+  const botUserJid = socket.user?.id ? getPreferredUserJid([socket.user.id]) : undefined;
+  const isBotMessage =
+    (session.messageId && quoted.id === session.messageId) ||
+    (botUserJid && quoted.participantJid && quoted.participantJid.split("@")[0] === botUserJid.split("@")[0]);
+
+  // Skenario 1: Sesi menunggu konfirmasi tantangan (state: "waiting")
+  if (session.state === "waiting") {
+    const isQuotingChallenge =
+      (session.messageId && quoted.id === session.messageId) ||
+      (quoted.text && quoted.text.includes("Tantangan dikirim")) ||
+      (isBotMessage && quoted.text && quoted.text.includes("tictactoe"));
+
+    if (!isQuotingChallenge) return false;
+
+    try {
+      rawContext.commandName = "tictactoe";
+      rawContext.args = [];
+      rawContext.argsText = "";
+      rawContext.role = await roleGuard.resolveRole({
+        chatJid: rawContext.chatJid,
+        senderJid: rawContext.senderJid,
+        senderAltJids: rawContext.senderAltJids,
+        isGroup: rawContext.isGroup,
+      });
+
+      const tenantAccess = await tenantGuard.checkGroupCommandAccess(rawContext);
+      if (!tenantAccess.allowed) return false;
+      if (tenantAccess.tenantGroup) {
+        rawContext.tenantGroup = tenantAccess.tenantGroup;
+      }
+
+      const featureAccess = await featureGuard.checkCommandFeature(rawContext);
+      if (!featureAccess.allowed) return false;
+
+      const replyText = await gameService.playTicTacToe(rawContext);
+      if (replyText) {
+        const sent = await socket.sendMessage(
+          rawContext.chatJid,
+          { text: replyText },
+          { quoted: message },
+        );
+        if (sent?.key?.id) {
+          gameService.setTicTacToeMessageId(rawContext.chatJid, sent.key.id);
+        }
+        return true;
+      }
+    } catch (error: unknown) {
+      logger.error(
+        {
+          error,
+          chatJid: rawContext.chatJid,
+          senderJid: rawContext.senderJid,
+        },
+        "Accept TicTacToe via reply gagal",
+      );
+    }
+    return false;
+  }
+
+  // Skenario 2: Permainan sedang berlangsung (state: "active")
+  if (session.state === "active") {
+    const trimmedText = rawContext.text.trim();
+    if (!/^\d+$/.test(trimmedText)) {
+      return false;
+    }
+
+    const isQuotingBoard =
+      (session.messageId && quoted.id === session.messageId) ||
+      (quoted.text &&
+        (quoted.text.includes("Giliran:") ||
+          quoted.text.includes("Game dimulai") ||
+          quoted.text.includes("Langkah diterima") ||
+          quoted.text.includes("Tic tac toe")));
+
+    if (!isQuotingBoard) return false;
+
+    try {
+      rawContext.commandName = "tictactoe";
+      rawContext.args = [trimmedText];
+      rawContext.argsText = trimmedText;
+      rawContext.role = await roleGuard.resolveRole({
+        chatJid: rawContext.chatJid,
+        senderJid: rawContext.senderJid,
+        senderAltJids: rawContext.senderAltJids,
+        isGroup: rawContext.isGroup,
+      });
+
+      const tenantAccess = await tenantGuard.checkGroupCommandAccess(rawContext);
+      if (!tenantAccess.allowed) return false;
+      if (tenantAccess.tenantGroup) {
+        rawContext.tenantGroup = tenantAccess.tenantGroup;
+      }
+
+      const featureAccess = await featureGuard.checkCommandFeature(rawContext);
+      if (!featureAccess.allowed) return false;
+
+      const replyText = await gameService.playTicTacToe(rawContext);
+      if (replyText) {
+        const sent = await socket.sendMessage(
+          rawContext.chatJid,
+          { text: replyText },
+          { quoted: message },
+        );
+        if (sent?.key?.id) {
+          gameService.setTicTacToeMessageId(rawContext.chatJid, sent.key.id);
+        }
+        return true;
+      }
+    } catch (error: unknown) {
+      logger.error(
+        {
+          error,
+          chatJid: rawContext.chatJid,
+          senderJid: rawContext.senderJid,
+          move: trimmedText,
+        },
+        "Move TicTacToe via reply gagal",
+      );
+    }
+    return false;
   }
 
   return false;
