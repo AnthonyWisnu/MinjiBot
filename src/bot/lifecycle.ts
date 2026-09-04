@@ -31,6 +31,7 @@ export class BotLifecycle {
           tagAllEnabled: true,
           antiDeleteEnabled: true,
           antiViewOnceEnabled: true,
+          goodbyeEnabled: true,
         },
       });
     } catch (error: unknown) {

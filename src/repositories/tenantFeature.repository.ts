@@ -28,6 +28,7 @@ export class TenantFeatureRepository {
         tagAllEnabled: true,
         antiDeleteEnabled: true,
         antiViewOnceEnabled: true,
+        goodbyeEnabled: true,
       },
       update: {},
     });
