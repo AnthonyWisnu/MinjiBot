@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: deploy-vps-minjibot
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,20 +22,36 @@ jobs:
           password: ${{ secrets.DROPLET_PASSWORD }}
           port: 22
           script: |
-            set -e
-            export PATH="/usr/local/bin:/usr/bin:$PATH"
+            (
+              flock -x -w 300 200 || { echo "ERROR: Deployment lain sedang berjalan di server (timeout 300 detik tercapai)"; exit 1; }
 
-            cd /home/anthony/MinjiBot
-            git fetch origin main
-            git reset --hard origin/main
+              set -e
+              export PATH="/usr/local/bin:/usr/bin:$PATH"
 
-            npm ci || npm install
-            npx prisma generate
-            npx prisma db push --skip-generate --accept-data-loss
-            npm run build
+              cd /home/anthony/MinjiBot
 
-            pm2 describe minjibot > /dev/null \
-              && pm2 restart minjibot --update-env \
-              || pm2 start dist/index.js --name minjibot
+              # Bersihkan stale lock Git jika ada proses sebelumnya yang terhenti
+              rm -f .git/index.lock
 
-            pm2 save
+              echo "=== 1. Mengambil pembaruan branch main ==="
+              git fetch origin main
+              git reset --hard origin/main
+
+              echo "=== 2. Memperbarui dependensi NPM ==="
+              npm ci || npm install
+
+              echo "=== 3. Menjalankan sinkronisasi database Prisma ==="
+              npx prisma generate
+              npx prisma db push --skip-generate --accept-data-loss
+
+              echo "=== 4. Kompilasi TypeScript ==="
+              npm run build
+
+              echo "=== 5. Memuat ulang proses bot di PM2 ==="
+              pm2 describe minjibot > /dev/null \
+                && pm2 restart minjibot --update-env \
+                || pm2 start dist/index.js --name minjibot
+
+              pm2 save
+              echo "=== Deployment MinjiBot Selesai dengan Sukses ==="
+            ) 200>/tmp/minjibot_deploy.lock

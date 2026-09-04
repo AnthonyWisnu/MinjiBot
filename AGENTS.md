@@ -226,4 +226,5 @@ Saat Anda (AI Agent) diminta memperbarui kode MinjiBot, patuhi aturan mutlak ber
    - Jalankan unit tests dengan `npm run test`. Seluruh test suite (277+ tests) **wajib lulus 100%**.
 5. **Deployment & CI/CD**:
    - Seluruh perubahan yang di-push ke branch `main` di GitHub akan otomatis di-deploy ke VPS oleh GitHub Actions (`.github/workflows/deploy.yml`).
-   - Perintah deployment di server menggunakan `git reset --hard origin/main` untuk menjamin sinkronisasi tanpa konflik merge.
+   - **DILARANG KERAS** menjalankan script deploy manual via SSH paralel tepat setelah `git push origin main`, karena akan memicu benturan proses (*race condition* / konflik kunci pada `.git/index.lock` dan `node_modules`). Cukup biarkan GitHub Actions mengeksekusi deployment secara otomatis dan pantau statusnya via API/web.
+   - Script deployment di GitHub Actions dilindungi oleh antrean `concurrency` dan Linux `flock` (`/tmp/minjibot_deploy.lock`) serta pembersihan otomatis *stale git lock*.
