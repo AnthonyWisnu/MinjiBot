@@ -430,4 +430,81 @@ void test("AntiDelete: ignores revoke when sender is Super Owner or Tenant Owner
   });
 
   assert.equal(sentMessages.length, 0, "Super owner deleted message must not be reposted");
+
+  // 3. Super Owner sends message with LID participant and participantPn -> MUST BE IGNORED
+  await service.cacheMessage({
+    key: {
+      remoteJid: "120363001@g.us",
+      id: "SUPER_OWNER_LID_MSG",
+      participant: "205703230791875@lid", // LID format
+      participantPn: "62895366009208@s.whatsapp.net", // Matches super owner
+      fromMe: false,
+    } as any,
+    message: { conversation: "Tess dari web" },
+  });
+
+  await service.handleMessageRevoke(mockSocket, {
+    remoteJid: "120363001@g.us",
+    id: "SUPER_OWNER_LID_MSG",
+    participant: "205703230791875@lid",
+  });
+
+  assert.equal(sentMessages.length, 0, "Super owner message with LID must not be reposted");
+
+  // 4. Super Owner sends message with LID only, resolved via groupMetadata -> MUST BE IGNORED
+  const mockSocketWithMetadata = {
+    user: { id: "628000@s.whatsapp.net" },
+    sendMessage: async (_jid: string, content: any) => {
+      sentMessages.push(content);
+      return {};
+    },
+    groupMetadata: async () => ({
+      id: "120363001@g.us",
+      participants: [
+        {
+          id: "62895366009208@s.whatsapp.net",
+          lid: "999888777@lid",
+        },
+      ],
+    }),
+  } as unknown as WASocket;
+
+  await service.cacheMessage({
+    key: {
+      remoteJid: "120363001@g.us",
+      id: "SUPER_OWNER_METADATA_LID",
+      participant: "999888777@lid",
+      fromMe: false,
+    } as any,
+    message: { conversation: "pesan via metadata lid" },
+  });
+
+  await service.handleMessageRevoke(mockSocketWithMetadata, {
+    remoteJid: "120363001@g.us",
+    id: "SUPER_OWNER_METADATA_LID",
+    participant: "999888777@lid",
+  });
+
+  assert.equal(sentMessages.length, 0, "Super owner message resolved via groupMetadata must not be reposted");
+
+  // 5. Normal member deletes message -> MUST BE REPOSTED
+  await service.cacheMessage({
+    key: {
+      remoteJid: "120363001@g.us",
+      id: "MEMBER_MSG",
+      participant: "628111222333@s.whatsapp.net",
+      fromMe: false,
+    },
+    message: { conversation: "pesan dari member biasa" },
+  });
+
+  await service.handleMessageRevoke(mockSocket, {
+    remoteJid: "120363001@g.us",
+    id: "MEMBER_MSG",
+    participant: "628111222333@s.whatsapp.net",
+  });
+
+  assert.equal(sentMessages.length, 1, "Regular member deleted message must be reposted");
+  assert.ok(sentMessages[0].text.includes("pesan dari member biasa"));
+  assert.ok(sentMessages[0].text.includes("@628111222333"));
 });

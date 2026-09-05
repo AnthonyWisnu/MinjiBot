@@ -13,11 +13,19 @@ import {
 
 import { env } from "../../config/env";
 import { prisma } from "../../repositories/prismaClient";
+import type { CommandContext } from "../../types/command";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
-import type { CommandContext } from "../../types/command";
-import { normalizeJid, getMessageSenderJid, normalizeUserJid } from "../../utils/jid";
+import {
+  normalizeJid,
+  getMessageSenderJid,
+  normalizeUserJid,
+  getPreferredUserJid,
+  getUniqueNormalizedJids,
+  getIdentityCandidateJids,
+  isPhoneUserJid,
+} from "../../utils/jid";
 import { extractTextFromMessageContent } from "../../utils/messageText";
 import { tenantFeatureService } from "../tenant/tenantFeature.service";
 
@@ -29,6 +37,7 @@ interface CachedMessage {
   id: string;
   groupJid: string;
   senderJid: string;
+  senderAltJids?: string[];
   timestamp: number;
   text?: string;
   mediaType?: "image" | "sticker";
@@ -81,7 +90,7 @@ export class AntiDeleteService {
     });
   }
 
-  async cacheMessage(msg: WAMessage): Promise<void> {
+  async cacheMessage(msg: WAMessage, botJid?: string | null): Promise<void> {
     await Promise.resolve();
     const remoteJid = msg.key.remoteJid;
     const id = msg.key.id;
@@ -95,7 +104,19 @@ export class AntiDeleteService {
     }
 
     const groupJid = normalizeJid(remoteJid);
-    const senderJid = getMessageSenderJid(remoteJid, msg.key.participant);
+    const rawSenderJid = getMessageSenderJid(remoteJid, msg.key.participant);
+    const senderAltJids = getUniqueNormalizedJids([
+      remoteJid,
+      msg.key.participant,
+      (msg.key as any).senderPn,
+      (msg.key as any).participantPn,
+      (msg.key as any).senderLid,
+      (msg.key as any).participantLid,
+      msg.key.fromMe ? botJid : undefined,
+    ]);
+    const senderJid = getPreferredUserJid(
+      senderAltJids.includes(rawSenderJid) ? senderAltJids : [rawSenderJid, ...senderAltJids],
+    );
     const text = extractTextFromMessageContent(msg.message);
 
     let mediaType: "image" | "sticker" | undefined;
@@ -129,6 +150,7 @@ export class AntiDeleteService {
       id,
       groupJid,
       senderJid,
+      senderAltJids,
       timestamp: Date.now(),
       text: text.trim() ? text.trim() : undefined,
       mediaType,
@@ -189,11 +211,50 @@ export class AntiDeleteService {
 
     // Super Owner, Tenant Owner, dan Bot kebal dari Anti-Delete
     const botJid = socket.user?.id;
-    if (this.isProtectedSender(cached.senderJid, tenantGroup, botJid)) {
+    const allSenderCandidates = getUniqueNormalizedJids([
+      cached.senderJid,
+      ...(cached.senderAltJids ?? []),
+      key.participant,
+      (key as any).participantPn,
+      (key as any).senderPn,
+      key.fromMe ? botJid : undefined,
+    ]);
+
+    // Jika kandidat masih ada LID, coba resolve via groupMetadata jika socket mendukung
+    if (
+      allSenderCandidates.some((j) => j.endsWith("@lid")) &&
+      typeof socket.groupMetadata === "function"
+    ) {
+      try {
+        const metadata = await socket.groupMetadata(groupJid);
+        const matchedParticipant = metadata.participants.find((p) => {
+          const cand = getIdentityCandidateJids(p.id ?? "", [(p as any).jid, (p as any).lid]);
+          return cand.some((c) => allSenderCandidates.includes(c));
+        });
+        if (matchedParticipant) {
+          const participantCand = getIdentityCandidateJids(matchedParticipant.id ?? "", [
+            (matchedParticipant as any).jid,
+            (matchedParticipant as any).lid,
+          ]);
+          allSenderCandidates.push(...participantCand);
+        }
+      } catch {
+        // Abaikan jika metadata grup gagal diambil
+      }
+    }
+
+    if (this.isProtectedSender(cached.senderJid, allSenderCandidates, tenantGroup, botJid)) {
       return;
     }
 
-    const senderPhone = cached.senderJid.split("@")[0] ?? cached.senderJid;
+    const preferredPhoneJid =
+      allSenderCandidates.find((j) => isPhoneUserJid(j)) ?? cached.senderJid;
+    const senderPhone = preferredPhoneJid.split("@")[0] ?? preferredPhoneJid;
+    const mentions = getUniqueNormalizedJids([
+      cached.senderJid,
+      ...(cached.senderAltJids ?? []),
+      ...allSenderCandidates,
+    ]);
     const timeStr = new Date(cached.timestamp).toLocaleTimeString("id-ID", {
       timeZone: "Asia/Jakarta",
       hour: "2-digit",
@@ -206,7 +267,7 @@ export class AntiDeleteService {
       await socket.sendMessage(groupJid, {
         image: cached.mediaBuffer,
         caption: `${header}\n\nPesan: ${cached.caption ?? "(Foto)"}`,
-        mentions: [cached.senderJid],
+        mentions,
       });
       return;
     }
@@ -214,7 +275,7 @@ export class AntiDeleteService {
     if (cached.mediaBuffer && cached.mediaType === "sticker") {
       await socket.sendMessage(groupJid, {
         text: `${header}\n\nPesan: (Stiker di bawah)`,
-        mentions: [cached.senderJid],
+        mentions,
       });
       await socket.sendMessage(groupJid, {
         sticker: cached.mediaBuffer,
@@ -225,7 +286,7 @@ export class AntiDeleteService {
     const messageContent = cached.text ?? cached.caption ?? "(Pesan tanpa teks)";
     await socket.sendMessage(groupJid, {
       text: `${header}\n\nIsi Pesan:\n${messageContent}`,
-      mentions: [cached.senderJid],
+      mentions,
     });
   }
 
@@ -264,22 +325,38 @@ export class AntiDeleteService {
 
   isProtectedSender(
     senderJid: string,
-    tenantGroup: TenantGroup | null,
-    botJid?: string | null,
+    senderAltJidsOrTenantGroup?: string[] | TenantGroup | null,
+    tenantGroupOrBotJid?: TenantGroup | string | null,
+    maybeBotJid?: string | null,
   ): boolean {
-    const normalizedSender = normalizeUserJid(senderJid);
-    const superOwnerJids = env.SUPER_OWNER_JIDS.map((j) => normalizeUserJid(j));
+    let senderAltJids: string[] = [];
+    let tenantGroup: TenantGroup | null = null;
+    let botJid: string | null = null;
 
-    if (superOwnerJids.includes(normalizedSender)) {
-      return true;
+    if (Array.isArray(senderAltJidsOrTenantGroup)) {
+      senderAltJids = senderAltJidsOrTenantGroup;
+      tenantGroup = (tenantGroupOrBotJid as TenantGroup) ?? null;
+      botJid = maybeBotJid ?? null;
+    } else {
+      tenantGroup = (senderAltJidsOrTenantGroup as TenantGroup) ?? null;
+      botJid = (tenantGroupOrBotJid as string) ?? null;
     }
 
-    if (tenantGroup?.ownerJid && normalizeUserJid(tenantGroup.ownerJid) === normalizedSender) {
-      return true;
-    }
+    const candidateJids = getIdentityCandidateJids(senderJid, senderAltJids);
+    const superOwnerJids = new Set(env.SUPER_OWNER_JIDS.map((j) => normalizeUserJid(j)));
 
-    if (botJid && normalizeUserJid(botJid) === normalizedSender) {
-      return true;
+    for (const jid of candidateJids) {
+      if (superOwnerJids.has(jid)) {
+        return true;
+      }
+
+      if (tenantGroup?.ownerJid && normalizeUserJid(tenantGroup.ownerJid) === jid) {
+        return true;
+      }
+
+      if (botJid && normalizeUserJid(botJid) === jid) {
+        return true;
+      }
     }
 
     return false;
