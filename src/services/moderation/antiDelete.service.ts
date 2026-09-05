@@ -11,12 +11,13 @@ import {
   type WASocket,
 } from "@whiskeysockets/baileys";
 
+import { env } from "../../config/env";
 import { prisma } from "../../repositories/prismaClient";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import type { CommandContext } from "../../types/command";
-import { normalizeJid, getMessageSenderJid } from "../../utils/jid";
+import { normalizeJid, getMessageSenderJid, normalizeUserJid } from "../../utils/jid";
 import { extractTextFromMessageContent } from "../../utils/messageText";
 import { tenantFeatureService } from "../tenant/tenantFeature.service";
 
@@ -186,6 +187,12 @@ export class AntiDeleteService {
       return;
     }
 
+    // Super Owner, Tenant Owner, dan Bot kebal dari Anti-Delete
+    const botJid = socket.user?.id;
+    if (this.isProtectedSender(cached.senderJid, tenantGroup, botJid)) {
+      return;
+    }
+
     const senderPhone = cached.senderJid.split("@")[0] ?? cached.senderJid;
     const timeStr = new Date(cached.timestamp).toLocaleTimeString("id-ID", {
       timeZone: "Asia/Jakarta",
@@ -253,6 +260,29 @@ export class AntiDeleteService {
       !tenantGroup.isBlocked &&
       tenantGroup.expiresAt.getTime() > Date.now(),
     );
+  }
+
+  isProtectedSender(
+    senderJid: string,
+    tenantGroup: TenantGroup | null,
+    botJid?: string | null,
+  ): boolean {
+    const normalizedSender = normalizeUserJid(senderJid);
+    const superOwnerJids = env.SUPER_OWNER_JIDS.map((j) => normalizeUserJid(j));
+
+    if (superOwnerJids.includes(normalizedSender)) {
+      return true;
+    }
+
+    if (tenantGroup?.ownerJid && normalizeUserJid(tenantGroup.ownerJid) === normalizedSender) {
+      return true;
+    }
+
+    if (botJid && normalizeUserJid(botJid) === normalizedSender) {
+      return true;
+    }
+
+    return false;
   }
 
   private cleanExpiredCache(): void {
