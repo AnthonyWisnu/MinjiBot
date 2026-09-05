@@ -20,7 +20,7 @@ export class AntiDeleteInterceptor implements MessageInterceptor {
       return null;
     }
 
-    await antiDeleteService.cacheMessage(context.message);
+    await antiDeleteService.cacheMessage(context.message, context.socket.user?.id);
     return null;
   }
 }
