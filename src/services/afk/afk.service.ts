@@ -102,7 +102,7 @@ export class AfkService {
             `${userMention} yang kamu panggil sedang AFK.`,
             "",
             `• *Alasan* : ${status.reason}`,
-            `• *Sejak*  : ${durationText} lalu`,
+            `• *Sejak* : ${durationText} lalu`,
             "",
             `Pesanmu akan disampaikan saat ${userMention} kembali aktif. Mohon ditunggu ya! 🙏`,
           ].join("\n"),
