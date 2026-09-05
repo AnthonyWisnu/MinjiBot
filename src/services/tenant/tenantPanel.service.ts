@@ -42,12 +42,12 @@ export class TenantPanelService {
     }
 
     // 3. Bot Admin Status
-    let botAdminStatus = "⚠️ Tidak diketahui (Chat Pribadi)";
+    let botAdminStatus = "Chat Pribadi";
     if (context.isGroup && context.chatJid === tenantGroup.groupJid) {
       const isBotAdmin = await this.checkBotIsAdmin(context.socket, context.chatJid);
       botAdminStatus = isBotAdmin
-        ? "✅ Admin Grup (Fitur moderasi aktif)"
-        : "⚠️ Bukan Admin (Jadikan bot admin agar moderasi berfungsi)";
+        ? "✅ Admin Grup (Aktif)"
+        : "⚠️ Bukan Admin (Jadikan admin)";
     }
 
     // 4. Expiry / Active Days
@@ -55,12 +55,11 @@ export class TenantPanelService {
 
     // 5. Build Panel Text
     const lines = [
-      "╔══════════════════════════════════╗",
-      "║    ⚡ MINJIBOT TENANT PANEL ⚡    ║",
-      "╚══════════════════════════════════╝",
+      "╭── ⚡ *MINJIBOT TENANT PANEL* ──╮",
+      `│ 🏢 *${tenantGroup.name ?? "Tanpa Nama"}*`,
+      "╰────────────────────────╯",
       "",
-      "🏢 *INFORMASI TENANT*",
-      `• Nama Grup   : ${tenantGroup.name ?? "Tanpa Nama"}`,
+      "📋 *INFORMASI SEWA*",
       `• Tenant Code : ${tenantGroup.tenantCode}`,
       `• Status Sewa : ${this.formatStatusBadge(tenantGroup.status)}`,
       `• Masa Aktif  : ${expiryInfo}`,
@@ -71,14 +70,14 @@ export class TenantPanelService {
       `• Tenant Admin : ${this.formatAdminList(tenantAdmins.map((a) => a.userJid))}`,
       "",
       "🛡️ *MODERASI & KEAMANAN*",
-      `• Anti-Link     : ${this.fmtBool(feature.antiLinkEnabled)} (Auto-Kick: ${this.fmtBool(groupSetting.antiLinkAutoKick)})`,
+      `• Anti-Link     : ${this.fmtBool(feature.antiLinkEnabled)} (Kick: ${this.fmtBool(groupSetting.antiLinkAutoKick)})`,
       `• Anti-Spam     : ${this.fmtBool(feature.antiSpamEnabled)} (Mode: ${groupSetting.antiSpamMode})`,
       `• Anti-Delete   : ${this.fmtBool(feature.antiDeleteEnabled)}`,
       `• Anti-ViewOnce : ${this.fmtBool(feature.antiViewOnceEnabled)}`,
-      `• Anti-Raid     : ${this.fmtBool(feature.antiRaidEnabled)} (${String(groupSetting.antiRaidThreshold)} member / ${String(groupSetting.antiRaidWindowSec)}s)`,
-      `• Peringatan    : Max ${String(groupSetting.warnThreshold)}x (Aksi: ${groupSetting.warnAction})`,
+      `• Anti-Raid     : ${this.fmtBool(feature.antiRaidEnabled)} (Surge: ${String(groupSetting.antiRaidThreshold)}/${String(groupSetting.antiRaidWindowSec)}s)`,
+      `• Peringatan    : Max ${String(groupSetting.warnThreshold)}x (${groupSetting.warnAction})`,
       "",
-      "📢 *NOTIFIKASI & SAMBUTAN*",
+      "📢 *NOTIFIKASI*",
       `• Welcome Msg   : ${this.fmtBool(feature.welcomeEnabled)}`,
       `• Goodbye Msg   : ${this.fmtBool(feature.goodbyeEnabled)}`,
       "",
@@ -90,11 +89,10 @@ export class TenantPanelService {
       `• Tag All       : ${this.fmtBool(feature.tagAllEnabled)}`,
       "",
       "⚙️ *PANDUAN KONTROL CEPAT*",
-      "• .feature <fitur> <on/off> ➔ Ubah status fitur",
+      "• .feature <fitur> <on/off>",
       "• .setwelcome / .setgoodbye <teks>",
-      "• .setwarn <1-10> ➔ Atur batas peringatan",
-      "• .antiraid setting <threshold> <detik>",
-      "• .grup <buka|tutup> ➔ Kunci / buka chat",
+      "• .setwarn <1-10> | .antiraid setting",
+      "• .grup <buka|tutup>",
     ];
 
     return {
@@ -203,7 +201,7 @@ function formatDateTimeWib(date: Date): string {
     year: "numeric",
   }).format(date);
 
-  return `${formatted} WIB`;
+  return formatted;
 }
 
 export const tenantPanelService = new TenantPanelService();

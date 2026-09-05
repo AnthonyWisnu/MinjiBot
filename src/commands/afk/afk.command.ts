@@ -22,7 +22,15 @@ async function handleAfk(context: CommandContext): Promise<void> {
       context.argsText,
     );
 
-    await context.reply(["[AFK] Status AFK aktif.", `Alasan: ${status.reason}`].join("\n"));
+    await context.reply(
+      [
+        "💤 *[ AFK DIAKTIFKAN ]*",
+        `• Status : Aktif`,
+        `• Alasan : ${status.reason}`,
+        "",
+        "Sistem akan mencatat pesan jika ada yang mencarimu. Ketik pesan apapun di grup untuk mematikan mode AFK.",
+      ].join("\n"),
+    );
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Status AFK gagal diproses."));
   }
