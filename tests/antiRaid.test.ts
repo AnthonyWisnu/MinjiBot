@@ -40,7 +40,6 @@ function createMockAntiRaid(options?: {
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: true,
-    antiViewOnceEnabled: true,
     goodbyeEnabled: true,
     antiRaidEnabled: options?.antiRaidEnabled ?? true,
     createdAt: new Date(),

@@ -31,7 +31,7 @@ async function handleIncomingMessage(
   const remoteJid = message.key.remoteJid;
   const isGroup = Boolean(remoteJid && isGroupJid(remoteJid));
 
-  // 1. Eksekusi interceptor pipeline terurut (PendingTenant, AntiDelete, AntiViewOnce, AFK, AntiLink, AntiSpam, InteractiveReply)
+  // 1. Eksekusi interceptor pipeline terurut (PendingTenant, AntiDelete, AFK, AntiLink, AntiSpam, InteractiveReply)
   const halted = await defaultMessagePipeline.execute({
     socket,
     message,

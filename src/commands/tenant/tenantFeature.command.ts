@@ -60,7 +60,6 @@ function formatFeatureUpdated(tenantGroup: TenantGroup, setting: TenantFeatureSe
     `Reminder: ${formatEnabled(setting.reminderEnabled)}`,
     `Tag all: ${formatEnabled(setting.tagAllEnabled)}`,
     `Anti-Delete: ${formatEnabled(setting.antiDeleteEnabled)}`,
-    `Anti-ViewOnce: ${formatEnabled(setting.antiViewOnceEnabled)}`,
     `Anti-Raid: ${formatEnabled(setting.antiRaidEnabled)}`,
   ].join("\n");
 }

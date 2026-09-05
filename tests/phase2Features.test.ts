@@ -5,7 +5,6 @@ import { TenantStatus } from "@prisma/client";
 import type { proto, WAMessage, WASocket } from "@whiskeysockets/baileys";
 
 import { AntiDeleteService } from "../src/services/moderation/antiDelete.service";
-import { AntiViewOnceService } from "../src/services/moderation/antiViewOnce.service";
 import { TagAllService } from "../src/services/tagall/tagAll.service";
 import type { CommandContext } from "../src/types/command";
 
@@ -166,7 +165,6 @@ void test("AntiDelete: caches incoming message and restores it upon revoke", asy
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: true,
-    antiViewOnceEnabled: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -250,7 +248,6 @@ void test("AntiDelete: ignores revoke when antiDeleteEnabled is false", async ()
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: false, // OFF!
-    antiViewOnceEnabled: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -282,47 +279,6 @@ void test("AntiDelete: ignores revoke when antiDeleteEnabled is false", async ()
   assert.equal(sentMessages.length, 0);
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 3. AntiViewOnce Tests
-// ─────────────────────────────────────────────────────────────────────────────
-
-void test("AntiViewOnce: parseAntiViewOnceToggle parses 'on' and 'off' correctly", () => {
-  const service = new AntiViewOnceService();
-  assert.equal(service.parseAntiViewOnceToggle("on"), true);
-  assert.equal(service.parseAntiViewOnceToggle("ON"), true);
-  assert.equal(service.parseAntiViewOnceToggle("off"), false);
-  assert.equal(service.parseAntiViewOnceToggle("OFF"), false);
-  assert.throws(() => service.parseAntiViewOnceToggle("invalid"), {
-    message: "Status antiviewonce harus on atau off.",
-  });
-});
-
-void test("AntiViewOnce: ignores non-viewOnce messages", async () => {
-  const service = new AntiViewOnceService();
-  let called = false;
-
-  const mockSocket = {
-    sendMessage: async () => {
-      called = true;
-      return {};
-    },
-  } as unknown as WASocket;
-
-  const normalMsg: WAMessage = {
-    key: {
-      remoteJid: "120363001@g.us",
-      id: "NORMAL_MSG",
-      participant: "62812345678@s.whatsapp.net",
-      fromMe: false,
-    },
-    message: {
-      conversation: "halo bukan view once",
-    },
-  };
-
-  await service.handleViewOnce(mockSocket, normalMsg);
-  assert.equal(called, false);
-});
 
 void test("messageRevoke.subscriber: handles WAMessageStubType.REVOKE when message is null", async () => {
   const { handleMessagesUpdate } = await import("../src/bot/subscribers/messageRevoke.subscriber");
@@ -431,7 +387,6 @@ void test("AntiDelete: ignores revoke when sender is Super Owner or Tenant Owner
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: true,
-    antiViewOnceEnabled: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -475,73 +430,4 @@ void test("AntiDelete: ignores revoke when sender is Super Owner or Tenant Owner
   });
 
   assert.equal(sentMessages.length, 0, "Super owner deleted message must not be reposted");
-});
-
-void test("AntiViewOnce: ignores viewOnce when sender is Super Owner or Tenant Owner", async () => {
-  let called = false;
-  const mockSocket = {
-    user: { id: "628000@s.whatsapp.net" },
-    sendMessage: async () => {
-      called = true;
-      return {};
-    },
-  } as unknown as WASocket;
-
-  const mockTenantGroup: TenantGroup = {
-    id: "tenant-1",
-    groupJid: "120363001@g.us",
-    tenantCode: "MNJ001",
-    name: "Test Group",
-    status: TenantStatus.ACTIVE,
-    ownerJid: "628999@s.whatsapp.net",
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    isBlocked: false,
-    approvedAt: new Date(),
-    activatedAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  const mockFeatureSetting: TenantFeatureSetting = {
-    id: "feature-1",
-    groupJid: "120363001@g.us",
-    downloaderEnabled: true,
-    hdEnabled: true,
-    gameEnabled: true,
-    welcomeEnabled: true,
-    antiLinkEnabled: true,
-    antiSpamEnabled: true,
-    reminderEnabled: true,
-    tagAllEnabled: true,
-    antiDeleteEnabled: true,
-    antiViewOnceEnabled: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  const mockGroupRepo = { findByGroupJid: async () => mockTenantGroup };
-  const mockFeatureRepo = { findByGroupJid: async () => mockFeatureSetting };
-  const service = new AntiViewOnceService(mockGroupRepo as any, mockFeatureRepo as any);
-
-  // Tenant Owner sends View Once -> MUST BE IGNORED
-  const ownerViewOnce: WAMessage = {
-    key: {
-      remoteJid: "120363001@g.us",
-      id: "VO_OWNER",
-      participant: "628999@s.whatsapp.net",
-      fromMe: false,
-    },
-    message: {
-      viewOnceMessage: {
-        message: {
-          imageMessage: {
-            url: "https://example.com/img.jpg",
-          },
-        },
-      },
-    },
-  };
-
-  await service.handleViewOnce(mockSocket, ownerViewOnce);
-  assert.equal(called, false, "Tenant owner view-once must not be forwarded");
 });

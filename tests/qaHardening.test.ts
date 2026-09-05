@@ -52,7 +52,6 @@ void test("WelcomeService burst protection: sends single batch message if >3 par
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: true,
-    antiViewOnceEnabled: true,
     goodbyeEnabled: true,
     createdAt: new Date(),
     updatedAt: new Date(),

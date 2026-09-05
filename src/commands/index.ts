@@ -19,7 +19,6 @@ import { menuCommands } from "./menu.command";
 import { antiLinkCommands } from "./moderation/antiLink.command";
 import { antiSpamCommands } from "./moderation/antiSpam.command";
 import { antiDeleteCommands } from "./moderation/antiDelete.command";
-import { antiViewOnceCommands } from "./moderation/antiViewOnce.command";
 import { manualModerationCommands } from "./moderation/manualModeration.command";
 import { warnCommands } from "./moderation/warn.command";
 import { antiRaidCommands } from "./moderation/antiRaid.command";
@@ -97,7 +96,6 @@ export const commandRouter = new CommandRouter([
   ...antiLinkCommands,
   ...antiSpamCommands,
   ...antiDeleteCommands,
-  ...antiViewOnceCommands,
   ...manualModerationCommands,
   ...warnCommands,
   ...antiRaidCommands,

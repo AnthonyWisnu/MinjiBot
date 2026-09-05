@@ -132,7 +132,6 @@ model TenantFeatureSetting {
   reminderEnabled     Boolean  @default(true)
   tagAllEnabled       Boolean  @default(true)
   antiDeleteEnabled   Boolean  @default(true)
-  antiViewOnceEnabled Boolean  @default(true)
   goodbyeEnabled      Boolean  @default(true)
   antiRaidEnabled     Boolean  @default(true)
   createdAt           DateTime @default(now())
