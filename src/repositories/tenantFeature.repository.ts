@@ -27,7 +27,6 @@ export class TenantFeatureRepository {
         reminderEnabled: true,
         tagAllEnabled: true,
         antiDeleteEnabled: true,
-        antiViewOnceEnabled: true,
         goodbyeEnabled: true,
         antiRaidEnabled: true,
       },

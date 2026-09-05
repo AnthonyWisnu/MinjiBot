@@ -133,7 +133,7 @@ void test("createDefaultMessagePipeline: registers all standard interceptors in 
   const pipeline = createDefaultMessagePipeline();
   const interceptors = pipeline.getInterceptors();
 
-  assert.equal(interceptors.length, 8);
+  assert.equal(interceptors.length, 7);
 
   const priorities = interceptors.map((i) => i.priority);
   const sortedPriorities = [...priorities].sort((a, b) => a - b);
@@ -143,7 +143,6 @@ void test("createDefaultMessagePipeline: registers all standard interceptors in 
   assert.deepEqual(names, [
     "PendingTenantInterceptor",
     "AntiDeleteInterceptor",
-    "AntiViewOnceInterceptor",
     "ActivityTrackerInterceptor",
     "AfkInterceptor",
     "AntiLinkInterceptor",

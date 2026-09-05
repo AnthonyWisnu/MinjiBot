@@ -72,7 +72,6 @@ export class TenantPanelService {
       `• *Anti-Link*: ${this.fmtBool(feature.antiLinkEnabled)} (Kick: ${this.fmtBool(groupSetting.antiLinkAutoKick)})`,
       `• *Anti-Spam*: ${this.fmtBool(feature.antiSpamEnabled)} (${groupSetting.antiSpamMode})`,
       `• *Anti-Delete*: ${this.fmtBool(feature.antiDeleteEnabled)}`,
-      `• *Anti-ViewOnce*: ${this.fmtBool(feature.antiViewOnceEnabled)}`,
       `• *Anti-Raid*: ${this.fmtBool(feature.antiRaidEnabled)} (${String(groupSetting.antiRaidThreshold)}/10s)`,
       `• *Peringatan*: Max ${String(groupSetting.warnThreshold)}x (${groupSetting.warnAction})`,
       "",

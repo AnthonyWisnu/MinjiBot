@@ -94,7 +94,6 @@ export class MenuService {
       "• reminder",
       "• tagall",
       "• antidelete",
-      "• antiviewonce",
     ].join("\n");
   }
 
@@ -360,7 +359,6 @@ export class MenuService {
       "• .antilink [on|off]",
       "• .antispam [on|off|status]",
       "• .antidelete [on|off]",
-      "• .antiviewonce [on|off]",
       "• .antiraid [on|off|status]",
     ];
 

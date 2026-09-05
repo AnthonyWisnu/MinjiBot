@@ -47,7 +47,7 @@
 - **Tiered Warning System (`.warn`, `.unwarn`, `.warns`, `.resetwarn`, `.setwarn`)**: Progressive discipline enforcement with automatic kick upon reaching threshold (default 3 warnings), reason tracking, and protected account immunity.
 - **Anti-Raid & Bot Surge Defense (`.antiraid`, `.grup <buka|tutup>`)**: High-speed in-memory sliding window detecting abnormal join surges ($\ge 4$ members in $\le 10$s) to auto-lock the group to announcement mode, revoke invitation links, and alert administrators.
 - **HideTag (`.hidetag <pesan>`)**: Broadcast announcements with invisible background mentions to keep chat screens uncluttered.
-- **Anti-Delete (`.antidelete`) & Anti-ViewOnce (`.antiviewonce`)**: Catch revoked messages via fast in-memory LRU cache and reveal ephemeral media automatically.
+- **Anti-Delete (`.antidelete`)**: Catch revoked messages via fast in-memory LRU cache and reveal deleted content automatically.
 
 ### 🎨 4. Social Status & Viral Studio
 - **Profile 2.0 Glassmorphism Card (`.profile`)**: High-resolution 800×450 visual card rendered locally with Sharp (no browser overhead), featuring circular avatar mask, tier badge, dynamic colors, XP progress bar, and 4 statistical counters.
@@ -92,7 +92,7 @@ flowchart TD
     
     subgraph Interceptor Pipeline Chain
         MIP --> IP1[PendingTenant Interceptor]
-        IP1 --> IP2[AntiDelete & AntiViewOnce Interceptors]
+        IP1 --> IP2[AntiDelete Interceptor]
         IP2 --> IP3[Activity Tracker Interceptor]
         IP3 --> IP4[AFK & AntiLink Interceptors]
         IP4 --> IP5[AntiSpam Interceptor]
@@ -170,7 +170,6 @@ flowchart TD
 | | `.panel` / `.tenantstatus`| Open SaaS administrative dashboard and modular switchboard | Free (Admin) |
 | | `.hidetag <msg>` | Broadcast announcement with hidden mentions | Free (Admin) |
 | | `.antidelete` [on \| off] | Reveal deleted / revoked messages with sender info | Free (Admin) |
-| | `.antiviewonce` [on \| off]| Secure and reveal 1x view-once photos and videos | Free (Admin) |
 | | `.antilink` [on \| off] | Toggle group anti-invite link moderation | Free (Admin) |
 | | `.antispam` [mode] | Configure spam protection (normal/soft/strict) | Free (Admin) |
 | | `.welcome` [on \| off] | Toggle welcome message greeting | Free (Admin) |

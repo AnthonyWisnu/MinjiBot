@@ -17,7 +17,6 @@ const FEATURE_SETTING_FIELD = {
   reminder: "reminderEnabled",
   tagall: "tagAllEnabled",
   antidelete: "antiDeleteEnabled",
-  antiviewonce: "antiViewOnceEnabled",
   goodbye: "goodbyeEnabled",
   antiraid: "antiRaidEnabled",
 } as const satisfies Record<TenantFeatureKey, keyof TenantFeatureSetting>;

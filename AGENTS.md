@@ -149,9 +149,6 @@ Fitur kontrol grup eksklusif untuk penyewa bot (`TENANT_OWNER` & `TENANT_ADMIN`)
   - Mendeteksi pesan yang ditarik/dihapus (*revoke*) oleh pengirim di dalam grup.
   - Memanfaatkan in-memory LRU Cache berkecepatan tinggi (kapasitas 500 pesan, batas ukuran media 2MB, TTL 2 jam) untuk menjaga konsumsi RAM VPS tetap minimal dan aman.
   - Saat pesan ditarik, bot secara otomatis mengirimkan ulang isi pesan asli (teks, gambar, atau stiker) dengan mencantumkan identitas pengirim (`@user`) dan waktu pengiriman (WIB).
-- **Anti-ViewOnce (`.antiviewonce [on|off]`)**:
-  - Mendeteksi pesan gambar atau video 1x lihat (*View Once*) yang dikirimkan ke grup.
-  - Mengunduh stream buffer media secara instan via `downloadMediaMessage` dan mengirimkannya kembali ke grup sebagai media foto/video reguler dengan menyertakan kredit pengirim dan caption aslinya.
 - **Sistem Warning Terpadu (`.warn`, `.unwarn`, `.warns`, `.resetwarn`, `.setwarn`)**:
   - Penegakan disiplin berjenjang terhadap member pelanggar aturan. Memberikan akumulasi poin peringatan hingga batas ambang (`warnThreshold`, default: 3).
   - Saat batas tercapai, bot secara otomatis mengeluarkan member dari grup (*Auto-Kick*) jika bot berstatus admin, dan mereset riwayat pelanggarannya secara atomik.
@@ -237,7 +234,6 @@ Semua mini game dirancang interaktif, ramah pengguna di WhatsApp, dan memberikan
    - Alur pesan masuk diproses secara berurutan menggunakan pola *Chain of Responsibility* terurut (`MessagePipeline`):
      - Priority `10`: `PendingTenantInterceptor` (Registrasi tenant pending, cache metadata 6 jam).
      - Priority `20`: `AntiDeleteInterceptor` (Penyimpanan cache pesan in-memory & background async media caching).
-     - Priority `30`: `AntiViewOnceInterceptor` (Pencegat media 1x lihat).
      - Priority `35`: `ActivityTrackerInterceptor` (Pencatatan statistik chat grup non-blocking).
      - Priority `40`: `AfkInterceptor` (Deteksi mention member AFK & pembersihan status sender).
      - Priority `50`: `AntiLinkInterceptor` (Pembersih tautan grup WhatsApp).

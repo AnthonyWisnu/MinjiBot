@@ -89,7 +89,6 @@ void test("GoodBye Event: sends formal notice when participant is removed", asyn
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: true,
-    antiViewOnceEnabled: true,
     goodbyeEnabled: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -177,7 +176,6 @@ void test("GoodBye Event: ignores when goodbyeEnabled is false", async () => {
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: true,
-    antiViewOnceEnabled: true,
     goodbyeEnabled: false, // OFF!
     createdAt: new Date(),
     updatedAt: new Date(),

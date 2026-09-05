@@ -38,7 +38,6 @@ function createMockPanelService(options?: {
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: true,
-    antiViewOnceEnabled: true,
     goodbyeEnabled: true,
     antiRaidEnabled: true,
     createdAt: new Date(),

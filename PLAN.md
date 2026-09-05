@@ -97,7 +97,6 @@ Hasil audit menemukan bahwa selain masalah "God Handler", terdapat **9 area krit
    - `messagePipeline.ts`: Engine eksekusi interceptor terurut.
    - `interceptors/pendingTenant.interceptor.ts`
    - `interceptors/antiDelete.interceptor.ts`
-   - `interceptors/antiViewOnce.interceptor.ts`
    - `interceptors/activityTracker.interceptor.ts` (Persiapan data `.stats` P1)
    - `interceptors/afk.interceptor.ts`
    - `interceptors/antiLink.interceptor.ts`
@@ -189,7 +188,7 @@ Berikut adalah 9 area perbaikan hasil audit mendalam yang dieksekusi bersamaan d
   - **Izin Bot**: Status apakah bot adalah Admin Grup (`✅ Aktif` / `⚠️ Bot Belum Admin`).
   - **Daftar Pengelola**: Nama/nomor Tenant Owner dan seluruh Tenant Admin.
   - **Matriks Modul & Fitur**:
-    - 🛡️ Moderasi: AntiLink [ON/OFF], AntiSpam [ON/OFF], AntiDelete [ON/OFF], AntiViewOnce [ON/OFF], AntiRaid [ON/OFF]
+    - 🛡️ Moderasi: AntiLink [ON/OFF], AntiSpam [ON/OFF], AntiDelete [ON/OFF], AntiRaid [ON/OFF]
     - 📢 Notifikasi: Welcome [ON/OFF], Goodbye [ON/OFF]
     - 🎮 Hiburan & Ekonomi: Game [ON/OFF], Media Downloader [ON/OFF]
   - **Panduan Cepat Admin**: Bantuan instruksi cara mengubah setelan grup.
