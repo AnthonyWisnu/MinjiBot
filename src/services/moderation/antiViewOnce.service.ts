@@ -68,7 +68,15 @@ export class AntiViewOnceService {
       return;
     }
 
+    const rawContent =
+      msg.message.ephemeralMessage?.message ??
+      msg.message.documentWithCaptionMessage?.message ??
+      msg.message;
+
     const innerMessage =
+      rawContent?.viewOnceMessage?.message ??
+      rawContent?.viewOnceMessageV2?.message ??
+      rawContent?.viewOnceMessageV2Extension?.message ??
       msg.message.viewOnceMessage?.message ??
       msg.message.viewOnceMessageV2?.message ??
       msg.message.viewOnceMessageV2Extension?.message;
@@ -94,7 +102,8 @@ export class AntiViewOnceService {
       return;
     }
 
-    const senderJid = getMessageSenderJid(remoteJid, msg.key.participant);
+    const participantJid = msg.key.participant ?? (msg.key.fromMe ? socket.user?.id : undefined);
+    const senderJid = getMessageSenderJid(remoteJid, participantJid);
     const senderPhone = senderJid.split("@")[0] ?? senderJid;
 
     try {

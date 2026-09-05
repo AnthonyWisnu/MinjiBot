@@ -323,3 +323,73 @@ void test("AntiViewOnce: ignores non-viewOnce messages", async () => {
   await service.handleViewOnce(mockSocket, normalMsg);
   assert.equal(called, false);
 });
+
+void test("messageRevoke.subscriber: handles WAMessageStubType.REVOKE when message is null", async () => {
+  const { handleMessagesUpdate } = await import("../src/bot/subscribers/messageRevoke.subscriber");
+  const { antiDeleteService } = await import("../src/services/moderation/antiDelete.service");
+
+  let revokedKey: any = null;
+  const originalHandler = antiDeleteService.handleMessageRevoke.bind(antiDeleteService);
+  antiDeleteService.handleMessageRevoke = async (_socket, key) => {
+    revokedKey = key;
+  };
+
+  try {
+    const mockSocket = {} as unknown as WASocket;
+    // Baileys standard REVOKE event: message is null, stubType is 1
+    await handleMessagesUpdate(mockSocket, [
+      {
+        key: {
+          remoteJid: "120363001@g.us",
+          id: "DELETED_MSG_ID",
+          participant: "628111@s.whatsapp.net",
+        },
+        update: {
+          message: null,
+          messageStubType: 1, // WAMessageStubType.REVOKE
+        },
+      },
+    ]);
+
+    assert.ok(revokedKey !== null);
+    assert.equal(revokedKey.id, "DELETED_MSG_ID");
+  } finally {
+    antiDeleteService.handleMessageRevoke = originalHandler;
+  }
+});
+
+void test("AntiDeleteInterceptor: triggers handleMessageRevoke on REVOKE protocol message in upsert", async () => {
+  const { AntiDeleteInterceptor } = await import("../src/bot/pipeline/interceptors/antiDelete.interceptor");
+  const { antiDeleteService } = await import("../src/services/moderation/antiDelete.service");
+
+  let revokedKey: any = null;
+  const originalHandler = antiDeleteService.handleMessageRevoke.bind(antiDeleteService);
+  antiDeleteService.handleMessageRevoke = async (_socket, key) => {
+    revokedKey = key;
+  };
+
+  try {
+    const interceptor = new AntiDeleteInterceptor();
+    const context: any = {
+      socket: {},
+      message: {
+        key: { remoteJid: "120363001@g.us", id: "REVOKE_MSG_ID" },
+        message: {
+          protocolMessage: {
+            type: 0, // REVOKE
+            key: {
+              remoteJid: "120363001@g.us",
+              id: "TARGET_MSG_ID",
+            },
+          },
+        },
+      },
+    };
+
+    await interceptor.intercept(context);
+    assert.ok(revokedKey !== null);
+    assert.equal(revokedKey.id, "TARGET_MSG_ID");
+  } finally {
+    antiDeleteService.handleMessageRevoke = originalHandler;
+  }
+});

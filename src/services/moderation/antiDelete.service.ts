@@ -100,7 +100,13 @@ export class AntiDeleteService {
     let mediaType: "image" | "sticker" | undefined;
     let caption: string | undefined;
 
-    const unwrapped = msg.message;
+    const unwrapped =
+      msg.message.ephemeralMessage?.message ??
+      msg.message.viewOnceMessage?.message ??
+      msg.message.viewOnceMessageV2?.message ??
+      msg.message.documentWithCaptionMessage?.message ??
+      msg.message;
+
     if (unwrapped.imageMessage) {
       mediaType = "image";
       caption = unwrapped.imageMessage.caption ?? undefined;
