@@ -393,3 +393,155 @@ void test("AntiDeleteInterceptor: triggers handleMessageRevoke on REVOKE protoco
     antiDeleteService.handleMessageRevoke = originalHandler;
   }
 });
+
+void test("AntiDelete: ignores revoke when sender is Super Owner or Tenant Owner", async () => {
+  const sentMessages: any[] = [];
+  const mockSocket = {
+    user: { id: "628000@s.whatsapp.net" },
+    sendMessage: async (_jid: string, content: any) => {
+      sentMessages.push(content);
+      return {};
+    },
+  } as unknown as WASocket;
+
+  const mockTenantGroup: TenantGroup = {
+    id: "tenant-1",
+    groupJid: "120363001@g.us",
+    tenantCode: "MNJ001",
+    name: "Test Group",
+    status: TenantStatus.ACTIVE,
+    ownerJid: "628999@s.whatsapp.net", // Tenant Owner
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    isBlocked: false,
+    approvedAt: new Date(),
+    activatedAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockFeatureSetting: TenantFeatureSetting = {
+    id: "feature-1",
+    groupJid: "120363001@g.us",
+    downloaderEnabled: true,
+    hdEnabled: true,
+    gameEnabled: true,
+    welcomeEnabled: true,
+    antiLinkEnabled: true,
+    antiSpamEnabled: true,
+    reminderEnabled: true,
+    tagAllEnabled: true,
+    antiDeleteEnabled: true,
+    antiViewOnceEnabled: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockGroupRepo = { findByGroupJid: async () => mockTenantGroup };
+  const mockFeatureRepo = { findByGroupJid: async () => mockFeatureSetting };
+  const service = new AntiDeleteService(mockGroupRepo as any, mockFeatureRepo as any);
+
+  // 1. Tenant Owner deletes a message -> MUST BE IGNORED
+  await service.cacheMessage({
+    key: {
+      remoteJid: "120363001@g.us",
+      id: "OWNER_MSG",
+      participant: "628999@s.whatsapp.net", // Matches tenant owner
+      fromMe: false,
+    },
+    message: { conversation: "pesan rahasia owner" },
+  });
+
+  await service.handleMessageRevoke(mockSocket, {
+    remoteJid: "120363001@g.us",
+    id: "OWNER_MSG",
+  });
+
+  assert.equal(sentMessages.length, 0, "Tenant owner deleted message must not be reposted");
+
+  // 2. Super Owner deletes a message -> MUST BE IGNORED
+  await service.cacheMessage({
+    key: {
+      remoteJid: "120363001@g.us",
+      id: "SUPER_OWNER_MSG",
+      participant: "62895366009208@s.whatsapp.net", // Matches super owner
+      fromMe: false,
+    },
+    message: { conversation: "pesan rahasia super owner" },
+  });
+
+  await service.handleMessageRevoke(mockSocket, {
+    remoteJid: "120363001@g.us",
+    id: "SUPER_OWNER_MSG",
+  });
+
+  assert.equal(sentMessages.length, 0, "Super owner deleted message must not be reposted");
+});
+
+void test("AntiViewOnce: ignores viewOnce when sender is Super Owner or Tenant Owner", async () => {
+  let called = false;
+  const mockSocket = {
+    user: { id: "628000@s.whatsapp.net" },
+    sendMessage: async () => {
+      called = true;
+      return {};
+    },
+  } as unknown as WASocket;
+
+  const mockTenantGroup: TenantGroup = {
+    id: "tenant-1",
+    groupJid: "120363001@g.us",
+    tenantCode: "MNJ001",
+    name: "Test Group",
+    status: TenantStatus.ACTIVE,
+    ownerJid: "628999@s.whatsapp.net",
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    isBlocked: false,
+    approvedAt: new Date(),
+    activatedAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockFeatureSetting: TenantFeatureSetting = {
+    id: "feature-1",
+    groupJid: "120363001@g.us",
+    downloaderEnabled: true,
+    hdEnabled: true,
+    gameEnabled: true,
+    welcomeEnabled: true,
+    antiLinkEnabled: true,
+    antiSpamEnabled: true,
+    reminderEnabled: true,
+    tagAllEnabled: true,
+    antiDeleteEnabled: true,
+    antiViewOnceEnabled: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockGroupRepo = { findByGroupJid: async () => mockTenantGroup };
+  const mockFeatureRepo = { findByGroupJid: async () => mockFeatureSetting };
+  const service = new AntiViewOnceService(mockGroupRepo as any, mockFeatureRepo as any);
+
+  // Tenant Owner sends View Once -> MUST BE IGNORED
+  const ownerViewOnce: WAMessage = {
+    key: {
+      remoteJid: "120363001@g.us",
+      id: "VO_OWNER",
+      participant: "628999@s.whatsapp.net",
+      fromMe: false,
+    },
+    message: {
+      viewOnceMessage: {
+        message: {
+          imageMessage: {
+            url: "https://example.com/img.jpg",
+          },
+        },
+      },
+    },
+  };
+
+  await service.handleViewOnce(mockSocket, ownerViewOnce);
+  assert.equal(called, false, "Tenant owner view-once must not be forwarded");
+});
