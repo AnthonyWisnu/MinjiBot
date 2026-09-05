@@ -60,10 +60,53 @@ void test("AfkService clears AFK status when user sends regular message", async 
   );
 
   assert.equal(store.items.size, 0);
-  assert.equal(
+  assert.match(
     socket.sentMessages[0]?.content.text,
-    "[AFK] Selamat datang kembali.\nAFK dinonaktifkan setelah 12 menit.",
+    /STATUS UPDATE/,
   );
+  assert.match(
+    socket.sentMessages[0]?.content.text,
+    /Waktu Rehat : 12 menit/,
+  );
+  assert.match(
+    socket.sentMessages[0]?.content.text,
+    /Tidak ada panggilan masuk/,
+  );
+});
+
+void test("AfkService tracks callers and mentions them when AFK user returns", async () => {
+  let now = new Date("2026-06-27T01:00:00.000Z");
+  const store = new MemoryAfkStore(now);
+  const { AfkService } = await import("../src/services/afk/afk.service");
+  const service = new AfkService(store, () => now);
+  await service.setAfkStatus("120@g.us", "6282@s.whatsapp.net", "makan siang");
+
+  // User 6281 tags user 6282 while AFK
+  now = new Date("2026-06-27T01:05:00.000Z");
+  const socket = createSocket();
+  await service.handleIncomingMessage(
+    socket,
+    createMentionMessage("halo @6282", "120@g.us", "6281@s.whatsapp.net", ["6282@s.whatsapp.net"]),
+  );
+
+  assert.equal(socket.sentMessages.length, 1);
+  assert.match(socket.sentMessages[0]?.content.text, /PEMBERITAHUAN AFK/);
+  assert.match(socket.sentMessages[0]?.content.text, /makan siang/i);
+
+  // User 6282 returns
+  now = new Date("2026-06-27T01:20:00.000Z");
+  await service.handleIncomingMessage(
+    socket,
+    createTextMessage("halo saya kembali", "120@g.us", "6282@s.whatsapp.net"),
+  );
+
+  assert.equal(socket.sentMessages.length, 2);
+  const returnMsg = socket.sentMessages[1];
+  assert.match(returnMsg?.content.text, /STATUS UPDATE/);
+  assert.match(returnMsg?.content.text, /Dicari oleh @6281 \(1 orang\)/);
+  // Mentions must include both returning user and the caller
+  assert.ok(returnMsg?.content.mentions?.includes("6282@s.whatsapp.net"));
+  assert.ok(returnMsg?.content.mentions?.includes("6281@s.whatsapp.net"));
 });
 
 void test("AfkService replies when AFK user is mentioned", async () => {

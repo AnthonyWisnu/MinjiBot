@@ -25,6 +25,7 @@ export interface AfkStatusStore {
 
 export class AfkService {
   private readonly notificationCooldowns = new Map<string, number>();
+  private readonly mentionsWhileAfk = new Map<string, Set<string>>();
 
   constructor(
     private readonly repository: AfkStatusStore = new AfkStatusRepository(),
@@ -32,9 +33,12 @@ export class AfkService {
   ) {}
 
   async setAfkStatus(groupJid: string, userJid: string, reason: string): Promise<AfkStatus> {
+    const normalizedUser = normalizeUserJid(userJid);
+    this.mentionsWhileAfk.delete(this.getCooldownKey(groupJid, normalizedUser));
+
     return this.repository.setAfkStatus({
       groupJid,
-      userJid: normalizeUserJid(userJid),
+      userJid: normalizedUser,
       reason: normalizeReason(reason),
     });
   }
@@ -60,19 +64,47 @@ export class AfkService {
     }
 
     const statuses = await this.repository.getAfkStatusesByUsers(groupJid, targetJids);
+    if (statuses.length === 0) {
+      return;
+    }
+
+    const senderJid = getMessageSenderJid(groupJid, message.key.participant);
+    const normalizedSender = senderJid ? normalizeUserJid(senderJid) : null;
+
+    // Catat pemanggil ke dalam daftar mentionsWhileAfk
+    for (const status of statuses) {
+      if (normalizedSender && normalizedSender !== status.userJid) {
+        const afkKey = this.getCooldownKey(groupJid, status.userJid);
+        let callers = this.mentionsWhileAfk.get(afkKey);
+        if (!callers) {
+          callers = new Set<string>();
+          this.mentionsWhileAfk.set(afkKey, callers);
+        }
+        callers.add(normalizedSender);
+      }
+    }
+
     const notifiedStatuses = statuses
       .filter((status) => this.canNotify(groupJid, status.userJid))
       .slice(0, MAX_AFK_RESPONSES_PER_MESSAGE);
 
     for (const status of notifiedStatuses) {
       this.markNotified(groupJid, status.userJid);
+      const userMention = `@${status.userJid.split("@")[0] ?? status.userJid}`;
+      const durationText = formatDuration(this.now().getTime() - status.startedAt.getTime());
+
       await socket.sendMessage(
         groupJid,
         {
           text: [
-            `[AFK] ${formatUserLabel(status.userJid)} sedang AFK.`,
-            `Alasan: ${status.reason}`,
-            `Sejak: ${formatDuration(this.now().getTime() - status.startedAt.getTime())} lalu.`,
+            "💤 *[ PEMBERITAHUAN AFK ]*",
+            "",
+            `${userMention} yang kamu panggil sedang AFK.`,
+            "",
+            `• *Alasan* : ${status.reason}`,
+            `• *Sejak*  : ${durationText} lalu`,
+            "",
+            `Pesanmu akan disampaikan saat ${userMention} kembali aktif. Mohon ditunggu ya! 🙏`,
           ].join("\n"),
           mentions: [status.userJid],
         },
@@ -105,15 +137,49 @@ export class AfkService {
         continue;
       }
 
+      const afkKey = this.getCooldownKey(groupJid, candidateJid);
+      const callersSet = this.mentionsWhileAfk.get(afkKey);
+      this.mentionsWhileAfk.delete(afkKey);
+
+      const callersList = callersSet ? Array.from(callersSet) : [];
+      let callsSummary = "Tidak ada panggilan masuk";
+      if (callersList.length > 0) {
+        if (callersList.length <= 4) {
+          const callerTags = callersList.map((j) => `@${j.split("@")[0] ?? ""}`).join(", ");
+          callsSummary = `Dicari oleh ${callerTags} (${String(callersList.length)} orang)`;
+        } else {
+          const firstThree = callersList
+            .slice(0, 3)
+            .map((j) => `@${j.split("@")[0] ?? ""}`)
+            .join(", ");
+          const remaining = callersList.length - 3;
+          callsSummary = `Dicari oleh ${firstThree}, dan ${String(remaining)} lainnya (${String(callersList.length)} orang)`;
+        }
+      }
+
+      const userMention = `@${candidateJid.split("@")[0] ?? candidateJid}`;
+      const durationText = formatDuration(this.now().getTime() - status.startedAt.getTime());
+
+      const returnText = [
+        `🔔 *[ STATUS UPDATE ]* — ${userMention} telah kembali aktif`,
+        "",
+        "Status AFK kamu telah dinonaktifkan secara otomatis.",
+        "",
+        "📋 *Ringkasan Sesi*:",
+        `• Waktu Rehat : ${durationText}`,
+        `• Alasan      : ${status.reason}`,
+        `• Panggilan   : ${callsSummary}`,
+        "",
+        "Selamat melanjutkan aktivitas dan obrolan di grup! 🚀",
+      ].join("\n");
+
+      const mentions = [...new Set([candidateJid, ...callersList])];
+
       await socket.sendMessage(
         groupJid,
         {
-          text: [
-            "[AFK] Selamat datang kembali.",
-            `AFK dinonaktifkan setelah ${formatDuration(
-              this.now().getTime() - status.startedAt.getTime(),
-            )}.`,
-          ].join("\n"),
+          text: returnText,
+          mentions,
         },
         { quoted: message },
       );
@@ -149,6 +215,13 @@ export class AfkService {
         }
       }
     }
+
+    if (this.mentionsWhileAfk.size > 200) {
+      const oldestKey = this.mentionsWhileAfk.keys().next().value;
+      if (oldestKey) {
+        this.mentionsWhileAfk.delete(oldestKey);
+      }
+    }
   }
 
   private getCooldownKey(groupJid: string, userJid: string): string {
@@ -167,10 +240,6 @@ function isAfkCommand(text: string): boolean {
   const normalizedText = text.toLowerCase();
 
   return normalizedText === afkCommand || normalizedText.startsWith(`${afkCommand} `);
-}
-
-function formatUserLabel(userJid: string): string {
-  return userJid.split("@")[0] ?? userJid;
 }
 
 function formatDuration(durationMs: number): string {
