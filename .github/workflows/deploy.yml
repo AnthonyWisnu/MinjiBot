@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency:
   group: deploy-vps-minjibot
@@ -11,47 +12,40 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, vps-minji]
 
     steps:
-      - name: Deploy to Tencent Lighthouse VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USERNAME }}
-          password: ${{ secrets.DROPLET_PASSWORD }}
-          port: 22
-          script: |
-            (
-              flock -x -w 300 200 || { echo "ERROR: Deployment lain sedang berjalan di server (timeout 300 detik tercapai)"; exit 1; }
+      - name: Deploy Local MinjiBot Instance
+        run: |
+          (
+            flock -x -w 300 200 || { echo "ERROR: Another deployment is active in server"; exit 1; }
 
-              set -e
-              export PATH="/usr/local/bin:/usr/bin:$PATH"
+            set -e
+            export PATH="/usr/local/bin:/usr/bin:$PATH"
 
-              cd /home/anthony/MinjiBot
+            cd /home/anthony/MinjiBot
 
-              # Bersihkan stale lock Git jika ada proses sebelumnya yang terhenti
-              rm -f .git/index.lock
+            rm -f .git/index.lock
 
-              echo "=== 1. Mengambil pembaruan branch main ==="
-              git fetch origin main
-              git reset --hard origin/main
+            echo "=== 1. Fetching latest main ==="
+            git fetch origin main
+            git reset --hard origin/main
 
-              echo "=== 2. Memperbarui dependensi NPM ==="
-              npm ci || npm install
+            echo "=== 2. Installing NPM dependencies ==="
+            npm ci || npm install
 
-              echo "=== 3. Menjalankan sinkronisasi database Prisma ==="
-              npx prisma generate
-              npx prisma db push --skip-generate --accept-data-loss
+            echo "=== 3. Prisma Database Synchronization ==="
+            npx prisma generate
+            npx prisma db push --skip-generate --accept-data-loss
 
-              echo "=== 4. Kompilasi TypeScript ==="
-              npm run build
+            echo "=== 4. Compiling TypeScript ==="
+            nice -n 10 npm run build
 
-              echo "=== 5. Memuat ulang proses bot di PM2 ==="
-              pm2 describe minjibot > /dev/null \
-                && pm2 restart minjibot --update-env \
-                || pm2 start dist/index.js --name minjibot
+            echo "=== 5. Reloading MinjiBot in PM2 ==="
+            pm2 describe minjibot > /dev/null \
+              && pm2 restart minjibot --update-env \
+              || pm2 start dist/index.js --name minjibot
 
-              pm2 save
-              echo "=== Deployment MinjiBot Selesai dengan Sukses ==="
-            ) 200>/tmp/minjibot_deploy.lock
+            pm2 save
+            echo "=== Deployment MinjiBot Completed Successfully ==="
+          ) 200>/tmp/minjibot_deploy.lock
