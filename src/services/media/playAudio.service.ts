@@ -46,6 +46,9 @@ export class PlayAudioService {
   }
 }
 
+const DEFAULT_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
 function runYtDlp(videoUrl: string, outputTemplate: string): Promise<void> {
   const cookiesPath = env.YOUTUBE_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
   const args = [
@@ -53,6 +56,8 @@ function runYtDlp(videoUrl: string, outputTemplate: string): Promise<void> {
     "bestaudio/best",
     "--no-playlist",
     "--no-warnings",
+    "--user-agent",
+    DEFAULT_USER_AGENT,
     "--extractor-args",
     "youtube:player_client=android,web,tv,ios",
     "-o",

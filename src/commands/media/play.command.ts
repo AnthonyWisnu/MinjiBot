@@ -110,7 +110,7 @@ async function prepareFirstAvailableAudio(videos: YoutubeSearchResult[]): Promis
       lastError = error;
       logger.warn(
         {
-          error,
+          errorMessage: getErrorMessage(error),
           videoId: video.videoId,
           title: video.title,
         },
