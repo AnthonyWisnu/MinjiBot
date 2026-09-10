@@ -9,7 +9,7 @@
 [![Baileys](https://img.shields.io/badge/WhatsApp%20Engine-Baileys-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://github.com/WhiskeySockets/Baileys)
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Prisma](https://img.shields.io/badge/ORM-Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io)
-[![Tests](https://img.shields.io/badge/Tests-314%20Passed-brightgreen?style=for-the-badge&logo=jest&logoColor=white)]()
+[![Test Suite](https://img.shields.io/badge/Test%20Suite-All%20Passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)]()
 [![PM2](https://img.shields.io/badge/Process%20Manager-PM2-2B037A?style=for-the-badge&logo=pm2&logoColor=white)](https://pm2.keymetrics.io)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
 
@@ -47,7 +47,7 @@
 - **Tiered Warning System (`.warn`, `.unwarn`, `.warns`, `.resetwarn`, `.setwarn`)**: Progressive discipline enforcement with automatic kick upon reaching threshold (default 3 warnings), reason tracking, and protected account immunity.
 - **Anti-Raid & Bot Surge Defense (`.antiraid`, `.grup <buka|tutup>`)**: High-speed in-memory sliding window detecting abnormal join surges ($\ge 4$ members in $\le 10$s) to auto-lock the group to announcement mode, revoke invitation links, and alert administrators.
 - **HideTag (`.hidetag <pesan>`)**: Broadcast announcements with invisible background mentions to keep chat screens uncluttered.
-- **Anti-Delete (`.antidelete`)**: Catch revoked messages via fast in-memory LRU cache and reveal deleted content automatically.
+- **Anti-Delete (`.antidelete`)**: Catch revoked messages via fast in-memory LRU cache and reveal deleted content automatically. Features Super Owner and Tenant Owner immunity with dual LID-to-Phone-JID normalization.
 
 ### 🎨 4. Social Status & Viral Studio
 - **Profile 2.0 Glassmorphism Card (`.profile`)**: High-resolution 800×450 visual card rendered locally with Sharp (no browser overhead), featuring circular avatar mask, tier badge, dynamic colors, XP progress bar, and 4 statistical counters.
@@ -72,7 +72,7 @@
 ### 🚀 7. High-Throughput Media Downloader Pipeline
 - **TikTok (`.tt`)**: Watermark-free HD video download with direct fast-API extraction and robust yt-dlp fallback.
 - **Instagram (`.ig`)**: Unified downloader supporting Reels, Posts, multi-slide Carousels, and Stories.
-- **YouTube (`.yt`)**: Smart Adaptive Resolution Engine prioritizing **720p 60FPS** and **720p 30FPS** for crystal-clear high-definition fidelity (`<= 100MB`), with intelligent dynamic fallback to **480p** for extended videos (up to 12 minutes). Remuxed with mobile-safe **AVC1 (H.264) + AAC** for instant, native playback on all iOS & Android devices.
+- **YouTube (`.yt`)**: Smart Adaptive Resolution Engine prioritizing **720p 60FPS** and **720p 30FPS** for crystal-clear high-definition fidelity (`<= 100MB`), with intelligent dynamic fallback to **480p** for extended videos (up to 12 minutes). Remuxed with mobile-safe **AVC1 (H.264) + AAC** for instant, native playback on all iOS & Android devices. Ekstraksi audio dilengkapi custom browser user-agent dan isolasi error logging terstruktur.
 - **AI Image Enhancer (`.hd`)**: Upscales and sharpens low-res photos with AI face restoration.
 
 ### 🛡️ 8. Enterprise Resilience & Auto-Reconnect
@@ -239,12 +239,16 @@ MinjiBot is engineered for zero-downtime, continuous deployment to Linux VPS ser
 
 ### Automated CI/CD Workflow (`.github/workflows/deploy.yml`)
 
-Every push to branch `main` triggers automated remote deployment over SSH:
+Every push to branch `main` triggers automated native deployment through a secure **GitHub Actions Self-Hosted Runner** directly on the VPS:
 
-```
-[git push origin main] ➔ [GitHub Actions] ➔ [SSH into VPS] ➔ [git reset --hard origin/main]
-                                                                        │
-[PM2 Zero-Downtime Reload] ◄── [npm run build] ◄── [prisma generate & push]
+```text
+[git push origin main] ➔ [GitHub Actions Self-Hosted Runner (vps-minji)]
+                                      │
+[flock atomic concurrency lock] ➔ [git reset --hard origin/main]
+                                      │
+[npx prisma generate & push] ➔ [nice -n 10 npm run build]
+                                      │
+[PM2 Zero-Downtime Reload] ◄──────────┘
 ```
 
 To run manually with PM2:
@@ -261,19 +265,13 @@ pm2 save
 
 ## 🧪 Test Suite
 
-MinjiBot enforces strict unit and integration testing across all core modules:
+MinjiBot enforces strict unit and integration testing across all core modules (Prisma schemas, interceptors, economy ledger, command handlers, and media adapters):
 
 ```bash
 npm run test
 ```
 
-```text
-# tests 314
-# suites 0
-# pass 314
-# fail 0
-# duration_ms 12755.0539
-```
+All test suites and integration specifications pass with zero regressions before every release.
 
 ---
 
