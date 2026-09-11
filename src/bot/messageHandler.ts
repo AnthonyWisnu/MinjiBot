@@ -6,6 +6,7 @@ import { featureGuard } from "../guards/featureGuard";
 import { roleGuard } from "../guards/roleGuard";
 import { tenantGuard } from "../guards/tenantGuard";
 import { isGroupJid } from "../utils/jid";
+import { reportCommandExecution, reportIncomingMessage } from "../services/telemetry.service";
 import { parseCommandMessage } from "./messageParser";
 import { defaultMessagePipeline } from "./pipeline";
 
@@ -31,6 +32,18 @@ async function handleIncomingMessage(
   const remoteJid = message.key.remoteJid;
   const isGroup = Boolean(remoteJid && isGroupJid(remoteJid));
 
+  // Laporkan metrik pesan masuk ke Pulse Analytics secara asinkron (fire-and-forget)
+  reportIncomingMessage({
+    isGroup,
+    hasMedia: Boolean(
+      message.message?.imageMessage ||
+        message.message?.videoMessage ||
+        message.message?.documentMessage ||
+        message.message?.audioMessage ||
+        message.message?.stickerMessage,
+    ),
+  });
+
   // 1. Eksekusi interceptor pipeline terurut (PendingTenant, AntiDelete, AFK, AntiLink, AntiSpam, InteractiveReply)
   const halted = await defaultMessagePipeline.execute({
     socket,
@@ -51,6 +64,7 @@ async function handleIncomingMessage(
   }
 
   // 3. Resolusi Guard dan Eksekusi Command
+  const commandStartTime = Date.now();
   try {
     context.role = await roleGuard.resolveRole({
       chatJid: context.chatJid,
@@ -76,7 +90,24 @@ async function handleIncomingMessage(
     }
 
     await commandRouter.handle(context);
+
+    reportCommandExecution({
+      command: context.commandName,
+      role: context.role,
+      isGroup: context.isGroup,
+      status: "success",
+      executionTimeMs: Date.now() - commandStartTime,
+    });
   } catch (error: unknown) {
+    reportCommandExecution({
+      command: context.commandName,
+      role: context.role,
+      isGroup: context.isGroup,
+      status: "error",
+      executionTimeMs: Date.now() - commandStartTime,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+
     logger.error(
       {
         error,
