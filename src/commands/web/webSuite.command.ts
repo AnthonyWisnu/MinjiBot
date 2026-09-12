@@ -90,19 +90,6 @@ async function handleSpotify(context: CommandContext): Promise<void> {
 
     const playerUrl = `${baseUrl}/player/${session.sessionId}`;
 
-    let cardImage: Buffer | undefined;
-    try {
-      cardImage = await webCardGeneratorService.generateStreamDeckCard({
-        title: video.title,
-        channelTitle: video.channelTitle,
-        durationSeconds: video.durationSeconds,
-        thumbnail: video.thumbnail,
-        url: playerUrl,
-      });
-    } catch {
-      // ignore
-    }
-
     await interactiveMessageService.sendCtaUrlMessage(context.socket, context.chatJid, {
       header: "SPOTIFY STREAM DECK // MINJIBOT",
       body: [
@@ -110,11 +97,10 @@ async function handleSpotify(context: CommandContext): Promise<void> {
         `Channel: ${video.channelTitle}`,
         `Durasi: ${Math.floor(video.durationSeconds / 60)}m ${video.durationSeconds % 60}s`,
         "",
-        "Klik tombol di bawah untuk membuka pemutar web dengan seekbar, lirik lagu, dan visualizer.",
+        "Gunakan tombol di bawah untuk membuka pemutar web dengan seekbar, lirik lagu, dan visualizer.",
       ].join("\n"),
       buttonText: "Buka Web Player",
       url: playerUrl,
-      cardImage,
       quoted: context.message,
     });
 
@@ -128,15 +114,15 @@ async function handleSpotify(context: CommandContext): Promise<void> {
           context.chatJid,
           {
             audio: audioResult.buffer,
-            mimetype: "audio/mp4",
+            mimetype: "audio/mpeg",
             ptt: false,
+            fileName: `${video.title}.mp3`,
             contextInfo: {
               externalAdReply: {
                 title: video.title,
-                body: `Spotify // ${video.channelTitle}`,
+                body: `${video.channelTitle} • Spotify Music`,
                 mediaType: 1,
                 thumbnailUrl: video.thumbnail || `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`,
-                ...(cardImage ? { thumbnail: cardImage } : {}),
                 sourceUrl: playerUrl,
                 renderLargerThumbnail: true,
                 showAdAttribution: true,

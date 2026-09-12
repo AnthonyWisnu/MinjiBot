@@ -227,7 +227,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
       assert.strictEqual(capturedMessages.length, 2);
 
       const audioMsg = capturedMessages[1];
-      assert.strictEqual(audioMsg.content?.mimetype, "audio/mp4");
+      assert.strictEqual(audioMsg.content?.mimetype, "audio/mpeg");
       assert.strictEqual(audioMsg.content?.ptt, false);
       assert.strictEqual(audioMsg.content?.audio, fakeBuffer);
 
