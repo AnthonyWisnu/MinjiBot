@@ -32,6 +32,7 @@ import { transferOwnerCommands } from "./tenant/transferOwner.command";
 import { superOwnerTenantCommands } from "./tenant/superOwnerTenant.command";
 import { welcomeCommands } from "./welcome/welcome.command";
 import { groupStatsCommands } from "./stats/groupStats.command";
+import { webSuiteCommands } from "./web/webSuite.command";
 
 export class CommandRouter {
   private readonly commands = new Map<string, CommandDefinition>();
@@ -109,4 +110,5 @@ export const commandRouter = new CommandRouter([
   ...profileCommands,
   ...leaderboardCommands,
   ...groupStatsCommands,
+  ...webSuiteCommands,
 ]);

@@ -258,6 +258,8 @@ export class MenuService {
       "*─── [ MINJIBOT MENU ] ───*",
       `Grup: ${this.formatGroupName(tenantGroup)}`,
       "",
+      ...this.buildWebSuiteLines(),
+      "",
       ...this.buildGroupMediaLines(),
       "",
       ...this.buildGroupGameLines(featureSetting),
@@ -275,6 +277,19 @@ export class MenuService {
   private formatGroupName(tenantGroup: TenantGroup | undefined): string {
     if (!tenantGroup) return "Grup Umum";
     return formatNullableText(tenantGroup.name);
+  }
+
+  private buildWebSuiteLines(): string[] {
+    return [
+      "*─── [ WEB APP & ARCADE ] ───*",
+      "• .ythtml [lagu] (Spotify Player)",
+      "• .arcade (Dino, Snake, Block, 2048, Flappy)",
+      "• .catur (Dans Catur FIDE & Bot AI)",
+      "• .soundboard (Meme SFX & Kirim VN)",
+      "• .spin (Roda Hoki Berhadiah)",
+      "• .topweb (Hall of Fame Web)",
+      "• .claim <token> (Klaim Hadiah Skor)",
+    ];
   }
 
   private buildGroupMediaLines(): string[] {
