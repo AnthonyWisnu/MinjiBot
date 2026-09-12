@@ -9,6 +9,7 @@ import { levelUpNotifierService } from "../services/member/levelUpNotifier.servi
 import { createBotSocket } from "./connection";
 import { registerEventSubscribers } from "./subscribers";
 import { alertServer } from "../services/alertServer";
+import { webServerService } from "../services/web/webServer.service";
 
 export class BotLifecycle {
   private socket: WASocket | null = null;
@@ -19,6 +20,7 @@ export class BotLifecycle {
   async start(): Promise<void> {
     this.isStopping = false;
     alertServer.start();
+    webServerService.start();
     await this.connect();
   }
 
@@ -32,6 +34,8 @@ export class BotLifecycle {
 
     alertServer.setSocket(null);
     alertServer.stop();
+    webServerService.setSocket(null);
+    webServerService.stop();
 
     if (this.socket) {
       this.socket.end(undefined);
@@ -49,6 +53,7 @@ export class BotLifecycle {
       const botSocket = await createBotSocket();
       this.socket = botSocket.socket;
       alertServer.setSocket(botSocket.socket);
+      webServerService.setSocket(botSocket.socket);
       registerEventSubscribers(botSocket.socket, {
         saveCreds: botSocket.saveCreds,
         onConnectionUpdate: (update) => {
@@ -70,6 +75,7 @@ export class BotLifecycle {
     if (update.connection === "open") {
       this.reconnectAttempt = 0;
       alertServer.setSocket(this.socket);
+      webServerService.setSocket(this.socket);
       logger.info("Koneksi WhatsApp terbuka");
       return;
     }
@@ -80,6 +86,7 @@ export class BotLifecycle {
 
     if (this.isStopping) {
       alertServer.setSocket(null);
+      webServerService.setSocket(null);
       this.socket = null;
       return;
     }
@@ -96,6 +103,7 @@ export class BotLifecycle {
     );
 
     alertServer.setSocket(null);
+    webServerService.setSocket(null);
     this.socket = null;
 
     if (shouldReconnect) {

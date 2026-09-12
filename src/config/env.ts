@@ -41,6 +41,8 @@ const envSchema = z.object({
   FFMPEG_PATH: optionalPathSchema,
   AI_UPSCALE_BIN: optionalPathSchema,
   GALLERY_DL_BIN: z.string().default("gallery-dl"),
+  WEB_SERVER_PORT: z.coerce.number().int().positive().default(3004),
+  WEB_BASE_URL: z.string().default("http://localhost:3004"),
 });
 
 export type Env = z.infer<typeof envSchema>;
