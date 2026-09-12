@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hall of Fame Leaderboard // MinjiBot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: #0b0d12;
+      background-image: radial-gradient(circle at 50% 0%, #15241b 0%, #0b0d12 60%);
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 12px 12px 60px 12px;
+    }
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Header Card */
+    .header-card {
+      background: #141822;
+      border: 1px solid #232a39;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: center;
+    }
+    .brand-sub {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1DB954;
+      letter-spacing: 1px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .brand-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    /* Type Selector Tabs */
+    .tab-row {
+      display: flex;
+      background: #0c0f16;
+      border: 1px solid #202736;
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: #1DB954;
+      color: #0b0d12;
+      font-weight: 800;
+      box-shadow: 0 0 12px rgba(29, 185, 84, 0.4);
+    }
+
+    /* Podium Top 3 */
+    .podium-container {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 0 8px;
+    }
+    .podium-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .avatar-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #1e2534;
+      border: 2px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      position: relative;
+    }
+    .podium-col.rank-1 .avatar-circle {
+      width: 60px;
+      height: 60px;
+      border-color: #fbbf24;
+      box-shadow: 0 0 16px rgba(251, 191, 36, 0.4);
+      background: #2b2311;
+      color: #fbbf24;
+    }
+    .podium-col.rank-2 .avatar-circle {
+      border-color: #cbd5e1;
+      box-shadow: 0 0 12px rgba(203, 213, 225, 0.3);
+      color: #cbd5e1;
+    }
+    .podium-col.rank-3 .avatar-circle {
+      border-color: #d97706;
+      box-shadow: 0 0 12px rgba(217, 119, 6, 0.3);
+      color: #d97706;
+    }
+    .crown-tag {
+      position: absolute;
+      top: -12px;
+      font-size: 14px;
+    }
+    .podium-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f1f5f9;
+      max-width: 90px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+    .podium-val {
+      font-size: 12px;
+      font-weight: 800;
+      color: #1DB954;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .podium-bar {
+      width: 100%;
+      border-radius: 10px 10px 0 0;
+      background: #141822;
+      border: 1px solid #232a39;
+      border-bottom: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .podium-col.rank-1 .podium-bar { height: 80px; color: #fbbf24; background: #1f1a0e; border-color: #fbbf24; }
+    .podium-col.rank-2 .podium-bar { height: 60px; color: #cbd5e1; background: #171c26; border-color: #64748b; }
+    .podium-col.rank-3 .podium-bar { height: 45px; color: #d97706; background: #1d150b; border-color: #d97706; }
+
+    /* Leaderboard List (Ranks 4-10) */
+    .list-card {
+      background: #12161f;
+      border: 1px solid #1f2737;
+      border-radius: 16px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .entry-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: #0d1017;
+      border: 1px solid #1c2331;
+      border-radius: 10px;
+      transition: all 0.15s;
+    }
+    .entry-row:hover {
+      border-color: #334155;
+      background: #131823;
+    }
+    .entry-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pos-badge {
+      width: 24px;
+      font-size: 12px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #64748b;
+      text-align: center;
+    }
+    .entry-meta {
+      display: flex;
+      flex-direction: column;
+    }
+    .entry-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .rank-tier {
+      font-size: 9px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+    }
+    .entry-val {
+      font-size: 13px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #1DB954;
+    }
+
+    /* Bottom Community Nav Hub */
+    .comm-nav {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .comm-link {
+      flex: 1;
+      background: #141822;
+      border: 1px solid #232a39;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 8px;
+      border-radius: 8px;
+      text-align: center;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .comm-link.active {
+      border-color: #1DB954;
+      color: #1DB954;
+      background: #0e2014;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <div class="brand-sub">COMMUNITY HALL OF FAME</div>
+      <div class="brand-title">Papan Peringkat</div>
+
+      <div class="tab-row">
+        <button class="tab-btn active" id="tab-xp" onclick="switchType('xp')">TOP LEVEL & XP</button>
+        <button class="tab-btn" id="tab-points" onclick="switchType('points')">SALDO POINTS</button>
+      </div>
+    </div>
+
+    <!-- Podium Top 3 Area -->
+    <div class="podium-container" id="podium-area">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- Rank 4-10 List Card -->
+    <div class="list-card" id="entries-list">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- Nav Hub Switcher -->
+    <div class="comm-nav">
+      <a href="/community/leaderboard" class="comm-link active">LEADERBOARD</a>
+      <a href="/community/spin" class="comm-link">SPIN THE WHEEL</a>
+      <a href="/arcade" class="comm-link">ARCADE ZONE</a>
+    </div>
+  </div>
+
+  <script>
+    let currentType = 'xp';
+
+    async function loadLeaderboard() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const groupJid = urlParams.get('group') || '';
+
+      try {
+        const res = await fetch(`/api/community/leaderboard?type=${currentType}&group=${groupJid}`);
+        const data = await res.json();
+        if (data.success && data.entries && data.entries.length > 0) {
+          renderLeaderboard(data.entries);
+        } else {
+          renderFallback();
+        }
+      } catch (e) {
+        renderFallback();
+      }
+    }
+
+    function switchType(t) {
+      currentType = t;
+      document.getElementById('tab-xp').classList.toggle('active', t === 'xp');
+      document.getElementById('tab-points').classList.toggle('active', t === 'points');
+      loadLeaderboard();
+    }
+
+    function renderLeaderboard(entries) {
+      const podiumEl = document.getElementById('podium-area');
+      const listEl = document.getElementById('entries-list');
+
+      const top1 = entries[0];
+      const top2 = entries[1];
+      const top3 = entries[2];
+
+      const valLabel = currentType === 'xp' ? 'XP' : 'PTS';
+
+      podiumEl.innerHTML = `
+        <!-- Rank 2 -->
+        <div class="podium-col rank-2">
+          <div class="avatar-circle">${top2 ? top2.displayName.slice(0, 2).toUpperCase() : '2'}</div>
+          <div class="podium-name">${top2 ? top2.displayName : '-'}</div>
+          <div class="podium-val">${top2 ? top2.value.toLocaleString() + ' ' + valLabel : '0'}</div>
+          <div class="podium-bar">2</div>
+        </div>
+
+        <!-- Rank 1 -->
+        <div class="podium-col rank-1">
+          <div class="avatar-circle">
+            <span class="crown-tag">&#9813;</span>
+            ${top1 ? top1.displayName.slice(0, 2).toUpperCase() : '1'}
+          </div>
+          <div class="podium-name">${top1 ? top1.displayName : '-'}</div>
+          <div class="podium-val">${top1 ? top1.value.toLocaleString() + ' ' + valLabel : '0'}</div>
+          <div class="podium-bar">1</div>
+        </div>
+
+        <!-- Rank 3 -->
+        <div class="podium-col rank-3">
+          <div class="avatar-circle">${top3 ? top3.displayName.slice(0, 2).toUpperCase() : '3'}</div>
+          <div class="podium-name">${top3 ? top3.displayName : '-'}</div>
+          <div class="podium-val">${top3 ? top3.value.toLocaleString() + ' ' + valLabel : '0'}</div>
+          <div class="podium-bar">3</div>
+        </div>
+      `;
+
+      // Ranks 4 to 10
+      const rest = entries.slice(3);
+      if (rest.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;font-size:11px;color:#64748b;padding:12px;">Tidak ada peringkat lainnya</div>';
+        return;
+      }
+
+      listEl.innerHTML = rest.map(e => `
+        <div class="entry-row">
+          <div class="entry-left">
+            <div class="pos-badge">${e.position}</div>
+            <div class="entry-meta">
+              <div class="entry-name">${e.displayName}</div>
+              <div class="rank-tier">${e.rank || 'MEMBER'}</div>
+            </div>
+          </div>
+          <div class="entry-val">${e.value.toLocaleString()} ${valLabel}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderFallback() {
+      // Demo preview if fresh empty DB
+      const mockEntries = [
+        { position: 1, displayName: "AlphaPlayer", value: 4500, rank: "Grandmaster" },
+        { position: 2, displayName: "CyberMinji", value: 3820, rank: "Master" },
+        { position: 3, displayName: "NeonKnight", value: 3100, rank: "Diamond" },
+        { position: 4, displayName: "RetroGamer", value: 2450, rank: "Platinum" },
+        { position: 5, displayName: "DansChess", value: 1980, rank: "Gold" },
+        { position: 6, displayName: "PixelWarrior", value: 1420, rank: "Silver" },
+        { position: 7, displayName: "ShadowBot", value: 950, rank: "Bronze" },
+      ];
+      renderLeaderboard(mockEntries);
+    }
+
+    loadLeaderboard();
+  </script>
+</body>
+</html>

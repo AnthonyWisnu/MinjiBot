@@ -12,6 +12,8 @@ import { youtubeStreamService } from "../media/youtubeStream.service";
 import { lyricsService } from "../media/lyrics.service";
 import { soundboardService } from "../media/soundboard.service";
 import { chessDuelService } from "../game/chessDuel.service";
+import { leaderboardService } from "../member/leaderboard.service";
+import { arcadeRewardService } from "../game/arcadeReward.service";
 
 export class WebServerService {
   private app: Express;
@@ -283,6 +285,70 @@ export class WebServerService {
       res.json({ success: true, state });
     });
 
+    // ─── API: Community & Gamification Endpoints ────────────────────────────
+
+    // 15. Get Community Leaderboard
+    this.app.get("/api/community/leaderboard", async (req, res) => {
+      try {
+        const type = req.query.type === "points" ? "points" : "xp";
+        const groupJid = typeof req.query.group === "string" && req.query.group.trim() ? req.query.group.trim() : "global@g.us";
+        const callerJid = typeof req.query.user === "string" && req.query.user.trim() ? req.query.user.trim() : "caller@s.whatsapp.net";
+
+        const result = type === "points"
+          ? await leaderboardService.getTopPoint(groupJid, callerJid)
+          : await leaderboardService.getTopRank(groupJid, callerJid);
+
+        res.json({
+          success: true,
+          type,
+          count: result.entries.length,
+          entries: result.entries,
+          callerPosition: result.callerPosition,
+        });
+      } catch (err: unknown) {
+        logger.warn({ err }, "Leaderboard database query failed, returning fallback");
+        res.json({
+          success: true,
+          type: req.query.type === "points" ? "points" : "xp",
+          count: 0,
+          entries: [],
+          callerPosition: null,
+          fallback: true,
+        });
+      }
+    });
+
+    // 16. Claim Game / Spin Reward Token
+    this.app.post("/api/arcade/claim-reward", async (req, res) => {
+      try {
+        const { token, groupJid, userJid } = req.body;
+        if (!token) {
+          res.status(400).json({ error: "Token reward wajib disertakan." });
+          return;
+        }
+
+        const targetGroup = groupJid || "global@g.us";
+        const targetUser = userJid || "user@s.whatsapp.net";
+
+        const result = await arcadeRewardService.claimToken(token, targetGroup, targetUser);
+        if (!result.success) {
+          res.status(400).json({ success: false, error: result.message });
+          return;
+        }
+
+        res.json({
+          success: true,
+          message: result.message,
+          game: result.game,
+          pointsAwarded: result.pointsAwarded,
+          xpAwarded: result.xpAwarded,
+        });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Gagal mengklaim reward";
+        res.status(500).json({ error: message });
+      }
+    });
+
     // ─── Web Views / Pages ──────────────────────────────────────────────────
 
     // Spotify Search Catalog Page (Screenshot 1)
@@ -380,6 +446,26 @@ export class WebServerService {
       }
     });
 
+    // Community Leaderboard Page
+    this.app.get("/community/leaderboard", (_req, res) => {
+      const filePath = path.join(staticDir, "community", "leaderboard.html");
+      if (existsSync(filePath)) {
+        res.sendFile(filePath);
+      } else {
+        res.status(404).send("Leaderboard page not found");
+      }
+    });
+
+    // Lucky Spin Wheel Page
+    this.app.get("/community/spin", (_req, res) => {
+      const filePath = path.join(staticDir, "community", "spin.html");
+      if (existsSync(filePath)) {
+        res.sendFile(filePath);
+      } else {
+        res.status(404).send("Spin the wheel page not found");
+      }
+    });
+
     // Root Deck Dashboard
     this.app.get("/", (_req, res) => {
       res.send(`
@@ -409,6 +495,8 @@ export class WebServerService {
               <a href="/arcade">&rarr; RETRO ARCADE HUB</a>
               <a href="/catur">&rarr; DANS CATUR (FIDE CHESS)</a>
               <a href="/duel">&rarr; STRATEGY ARENA (DUEL ZONE)</a>
+              <a href="/community/leaderboard">&rarr; LEADERBOARD HALL OF FAME</a>
+              <a href="/community/spin">&rarr; SPIN THE WHEEL (LUCKY DRAW)</a>
             </div>
           </div>
         </body>
