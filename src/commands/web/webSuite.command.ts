@@ -36,7 +36,8 @@ export const webSuiteCommands: CommandDefinition[] = [
     execute: handleTopWeb,
   },
   {
-    name: "claim",
+    name: "claimreward",
+    aliases: ["claimtoken", "klaim"],
     execute: handleClaim,
   },
 ];
@@ -214,8 +215,8 @@ async function handleClaim(context: CommandContext): Promise<void> {
   if (!token) {
     await context.reply([
       "Format command salah.",
-      "Gunakan: .claim <token-reward>",
-      "Contoh: .claim ARCADE-DINO-240-ABC123",
+      "Gunakan: .claimreward <token-reward>",
+      "Contoh: .claimreward ARCADE-DINO-240-ABC123",
       "",
       "Dapatkan token reward dari bermain di .arcade, .catur, atau memutar .spin.",
     ].join("\n"));

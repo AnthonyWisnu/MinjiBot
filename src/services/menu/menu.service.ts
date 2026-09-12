@@ -288,7 +288,7 @@ export class MenuService {
       "• .soundboard (Meme SFX & Kirim VN)",
       "• .spin (Roda Hoki Berhadiah)",
       "• .topweb (Hall of Fame Web)",
-      "• .claim <token> (Klaim Hadiah Skor)",
+      "• .claimreward <token> (Klaim Hadiah Skor)",
     ];
   }
 

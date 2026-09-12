@@ -89,7 +89,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
       "soundboard",
       "spin",
       "topweb",
-      "claim",
+      "claimreward",
     ]);
 
     assert.ok(getCommand("ytweb"));
@@ -105,6 +105,8 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
     assert.ok(getCommand("luckydraw"));
     assert.ok(getCommand("leaderboardweb"));
     assert.ok(getCommand("halloffame"));
+    assert.ok(getCommand("claimtoken"));
+    assert.ok(getCommand("klaim"));
   });
 
   it("handleYtHtml tanpa argumen: mengirim katalog pencarian gaya Spotify", async () => {
@@ -261,17 +263,17 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
   });
 
   it("handleClaim: memvalidasi format input dan mengklaim token reward", async () => {
-    const cmd = getCommand("claim");
+    const cmd = getCommand("claimreward");
 
     // Case 1: Tanpa token
-    const ctxEmpty = createContext({ commandName: "claim", argsText: "" });
+    const ctxEmpty = createContext({ commandName: "claimreward", argsText: "" });
     await cmd.execute(ctxEmpty);
     assert.ok(replies[0]?.includes("Format command salah"));
 
     // Case 2: Token valid
     replies = [];
     const ctxValid = createContext({
-      commandName: "claim",
+      commandName: "claimreward",
       argsText: "ARCADE-FLAPPY-160-TST789",
     });
     await cmd.execute(ctxValid);
