@@ -9,6 +9,7 @@ export interface YoutubeSearchResult {
   title: string;
   url: string;
   videoId: string;
+  thumbnail: string;
 }
 
 export class YoutubeSearchService {
@@ -41,6 +42,10 @@ export class YoutubeSearchService {
       title: video.title,
       url: video.url,
       videoId: video.videoId,
+      thumbnail:
+        (video as unknown as { thumbnail?: string }).thumbnail ||
+        (video as unknown as { image?: string }).image ||
+        `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`,
     }));
   }
 }

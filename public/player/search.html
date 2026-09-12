@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Spotify Search Catalog // MinjiBot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: #0b0d11;
+      background-image: radial-gradient(circle at 50% 0%, #17241c 0%, #0b0d11 60%);
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 12px;
+    }
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .spotify-card {
+      background: #14171f;
+      border: 1px solid #232733;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.85);
+      position: relative;
+    }
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+    .spotify-icon {
+      width: 18px;
+      height: 18px;
+      fill: #1DB954;
+    }
+    .live-badge {
+      background: #0f2918;
+      border: 1px solid #1DB954;
+      color: #1DB954;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      letter-spacing: 0.5px;
+    }
+    .instruction {
+      font-size: 11px;
+      color: #717e94;
+      margin-bottom: 14px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .search-bar-wrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .search-input {
+      flex: 1;
+      background: #0e1017;
+      border: 1px solid #242936;
+      color: #fff;
+      font-size: 13px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 10px 14px;
+      border-radius: 20px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus {
+      border-color: #1DB954;
+    }
+    .search-btn {
+      background: #1DB954;
+      color: #000;
+      font-weight: 700;
+      font-size: 12px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 0 18px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s, background 0.2s;
+    }
+    .search-btn:active {
+      transform: scale(0.96);
+    }
+    .track-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 200px;
+    }
+    .track-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+      background: #10121a;
+      border: 1px solid #1c202b;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .track-item:active {
+      background: #191c28;
+      transform: scale(0.98);
+    }
+    .track-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #1c202a;
+      flex-shrink: 0;
+    }
+    .track-meta {
+      flex: 1;
+      min-width: 0;
+    }
+    .track-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .track-artist {
+      font-size: 10px;
+      color: #8391a7;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .track-stats {
+      text-align: right;
+      flex-shrink: 0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .track-duration {
+      font-size: 11px;
+      color: #8e9bb0;
+    }
+    .track-score {
+      font-size: 10px;
+      color: #1DB954;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #1c202c;
+    }
+    .page-btn {
+      background: #1c202c;
+      border: 1px solid #282f40;
+      color: #cbd5e1;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .page-indicator {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #8b99ad;
+    }
+    .loading-spinner {
+      display: none;
+      text-align: center;
+      padding: 30px;
+      color: #1DB954;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+    .footer-bar {
+      text-align: center;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #4a5568;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="spotify-card">
+      <div class="header-row">
+        <div class="brand-title">
+          <svg class="spotify-icon" viewBox="0 0 24 24">
+            <path d="M12 2C6.477 2 2 6.477 2 12c0 5.524 4.477 10 10 10s10-4.476 10-10c0-5.523-4.477-10-10-10zm4.586 14.424c-.18.295-.563.387-.857.208-2.35-1.435-5.308-1.76-8.79-1.026-.334.076-.665-.133-.74-.468-.077-.333.132-.664.466-.74 3.808-.804 7.08-.435 9.713 1.168.294.18.386.564.208.858zm1.224-2.723c-.227.369-.714.484-1.083.257-2.69-1.654-6.79-2.133-9.97-1.167-.417.126-.856-.11-.983-.526-.127-.416.11-.855.526-.982 3.633-1.103 8.156-.566 11.253 1.336.37.227.484.714.257 1.082zm.106-2.836C14.693 8.92 9.385 8.742 6.29 9.682c-.496.15-1.02-.134-1.17-.63-.15-.495.134-1.02.63-1.17 3.553-1.078 9.42-.871 13.13 1.333.447.265.592.842.327 1.289-.265.447-.842.592-1.289.327z"/>
+          </svg>
+          <span id="headerQueryLabel">Hasil untuk "..." (0)</span>
+        </div>
+        <span class="live-badge">LIVE</span>
+      </div>
+
+      <p class="instruction">Ketuk salah satu lagu untuk memutar.</p>
+
+      <form id="searchForm" class="search-bar-wrap">
+        <input type="text" id="queryInput" class="search-input" placeholder="Cari judul lagu..." required />
+        <button type="submit" class="search-btn">Cari</button>
+      </form>
+
+      <div id="loadingIndicator" class="loading-spinner">
+        MENCARI TRACK YOUTUBE...
+      </div>
+
+      <div id="trackList" class="track-list">
+        <!-- Track items will be dynamically injected here -->
+      </div>
+
+      <div class="pagination-bar">
+        <button id="prevBtn" class="page-btn">&uarr;</button>
+        <span id="pageIndicator" class="page-indicator">1/1</span>
+        <button id="nextBtn" class="page-btn">&darr;</button>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      MINJIBOT AUDIO ENGINE // SPOTIFY INTEGRATION
+    </div>
+  </div>
+
+  <script>
+    let allTracks = [];
+    let currentPage = 1;
+    const pageSize = 7;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialQuery = urlParams.get('q') || 'kessoku band';
+    const chatJid = urlParams.get('chatJid') || '';
+    const userJid = urlParams.get('userJid') || '';
+
+    const queryInput = document.getElementById('queryInput');
+    const headerLabel = document.getElementById('headerQueryLabel');
+    const trackList = document.getElementById('trackList');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    queryInput.value = initialQuery;
+
+    async function performSearch(query) {
+      if (!query.trim()) return;
+      loadingIndicator.style.display = 'block';
+      trackList.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/player/search?q=${encodeURIComponent(query)}&limit=15`);
+        const data = await res.json();
+        allTracks = data.results || [];
+        currentPage = 1;
+        headerLabel.textContent = `Hasil untuk "${query}" (${allTracks.length})`;
+        renderPage();
+      } catch (err) {
+        trackList.innerHTML = '<div style="text-align:center;color:#ff5555;padding:20px;font-size:12px;">Gagal memuat track lagu.</div>';
+      } finally {
+        loadingIndicator.style.display = 'none';
+        trackList.style.display = 'flex';
+      }
+    }
+
+    function renderPage() {
+      trackList.innerHTML = '';
+      const totalPages = Math.ceil(allTracks.length / pageSize) || 1;
+      pageIndicator.textContent = `${currentPage}/${totalPages}`;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const visibleTracks = allTracks.slice(startIndex, startIndex + pageSize);
+
+      if (visibleTracks.length === 0) {
+        trackList.innerHTML = '<div style="text-align:center;color:#888;padding:20px;font-size:12px;">Tidak ada video ditemukan.</div>';
+        return;
+      }
+
+      visibleTracks.forEach((track, index) => {
+        const item = document.createElement('div');
+        item.className = 'track-item';
+        
+        // Match percentage random generation (55% - 98%)
+        const matchScore = 55 + Math.floor(Math.random() * 40);
+
+        item.innerHTML = `
+          <img src="${track.thumbnail}" class="track-thumb" alt="${track.title}" loading="lazy" />
+          <div class="track-meta">
+            <div class="track-title" title="${track.title}">${track.title}</div>
+            <div class="track-artist">${track.channelTitle}</div>
+          </div>
+          <div class="track-stats">
+            <div class="track-duration">${track.durationText}</div>
+            <div class="track-score">&starf; ${matchScore}%</div>
+          </div>
+        `;
+
+        item.addEventListener('click', async () => {
+          item.style.opacity = '0.5';
+          try {
+            const resp = await fetch('/api/player/session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                videoId: track.videoId,
+                videoUrl: track.url,
+                title: track.title,
+                channelTitle: track.channelTitle,
+                durationSeconds: track.durationSeconds,
+                thumbnail: track.thumbnail,
+                chatJid,
+                userJid
+              })
+            });
+            const sessionData = await resp.json();
+            if (sessionData.sessionId) {
+              window.location.href = `/player/${sessionData.sessionId}`;
+            }
+          } catch (e) {
+            alert('Gagal membuat sesi pemutar.');
+            item.style.opacity = '1';
+          }
+        });
+
+        trackList.appendChild(item);
+      });
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderPage();
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      const totalPages = Math.ceil(allTracks.length / pageSize) || 1;
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderPage();
+      }
+    });
+
+    document.getElementById('searchForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      performSearch(queryInput.value);
+    });
+
+    performSearch(initialQuery);
+  </script>
+</body>
+</html>

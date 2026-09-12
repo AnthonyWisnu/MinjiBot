@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Now Playing Video // MinjiBot Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: #0c0e12;
+      background-image: radial-gradient(circle at 50% 10%, #152219 0%, #0c0e12 65%);
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 12px;
+    }
+    .deck-container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .player-card {
+      background: #14171f;
+      border: 1px solid #242936;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.9);
+      position: relative;
+    }
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .header-text {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #cbd5e1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .header-subtext {
+      font-size: 10px;
+      color: #7a889b;
+      max-width: 260px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+    .sound-icon {
+      width: 18px;
+      height: 18px;
+      color: #94a3b8;
+    }
+    /* Video Box Screen */
+    .video-box {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #08090c;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #202532;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .video-overlay-poster {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: opacity 0.3s;
+    }
+    /* Title & Platform */
+    .meta-box {
+      margin-top: 12px;
+    }
+    .video-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .platform-label {
+      font-size: 11px;
+      color: #8391a6;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+    /* Scrubber Progress */
+    .scrubber-container {
+      margin-top: 10px;
+    }
+    .scrubber-slider {
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: #252c3b;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      accent-color: #1DB954;
+    }
+    .scrubber-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 4px rgba(0,0,0,0.5);
+      cursor: pointer;
+    }
+    .time-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #7b889b;
+      margin-top: 4px;
+    }
+    /* Controls Bar */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      margin-top: 10px;
+    }
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s, color 0.15s;
+    }
+    .ctrl-btn:active {
+      transform: scale(0.9);
+    }
+    .play-btn-circle {
+      width: 44px;
+      height: 44px;
+      background: #1DB954;
+      border-radius: 50%;
+      color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(29, 185, 84, 0.4);
+    }
+    .play-btn-circle:active {
+      transform: scale(0.92);
+    }
+    .aux-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #1f2533;
+    }
+    .volume-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .volume-slider {
+      width: 80px;
+      height: 4px;
+      accent-color: #cbd5e1;
+      cursor: pointer;
+    }
+    /* Diagnostics Panel */
+    .diag-panel {
+      margin-top: 16px;
+      background: #0f1218;
+      border: 1px solid #1f2430;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .diag-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .diag-title {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #94a3b8;
+    }
+    .diag-status-badge {
+      background: #382c0f;
+      border: 1px solid #ca8a04;
+      color: #facc15;
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .metric-card {
+      background: #141820;
+      border: 1px solid #1c212d;
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+    .metric-label {
+      font-size: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+    .metric-value {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-top: 2px;
+    }
+    .diag-progress-bar {
+      width: 100%;
+      height: 3px;
+      background: #1e2533;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .diag-progress-fill {
+      width: 0%;
+      height: 100%;
+      background: #00F0FF;
+      box-shadow: 0 0 6px #00F0FF;
+      transition: width 0.2s;
+    }
+    .terminal-window {
+      background: #07090c;
+      border: 1px solid #171b23;
+      border-radius: 6px;
+      padding: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #a0aec0;
+      height: 110px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .log-line {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .log-green { color: #10b981; }
+    .log-cyan { color: #00F0FF; }
+
+    /* Lyrics Drawer */
+    .lyrics-toggle-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      color: #1DB954;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .lyrics-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 50;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .lyrics-sheet {
+      width: 100%;
+      max-width: 440px;
+      background: #131722;
+      border-top: 2px solid #1DB954;
+      border-radius: 20px 20px 0 0;
+      padding: 18px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .lyrics-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .lyrics-body {
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #e2e8f0;
+      white-space: pre-line;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div class="deck-container">
+    <div class="player-card">
+      <div class="header-bar">
+        <div>
+          <div class="header-text">NOW PLAYING VIDEO</div>
+          <div id="headerSub" class="header-subtext">Memuat metadata video...</div>
+        </div>
+        <svg class="sound-icon" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+      </div>
+
+      <!-- Video Canvas Screen -->
+      <div class="video-box">
+        <video id="playerVideo" playsinline preload="auto"></video>
+        <div id="videoPoster" class="video-overlay-poster"></div>
+      </div>
+
+      <!-- Title & Channel -->
+      <div class="meta-box">
+        <div id="videoTitle" class="video-title">Memuat judul...</div>
+        <div id="videoChannel" class="platform-label">YouTube</div>
+      </div>
+
+      <!-- Scrubber -->
+      <div class="scrubber-container">
+        <input type="range" id="progressBar" class="scrubber-slider" value="0" min="0" max="100" step="0.1" />
+        <div class="time-labels">
+          <span id="currentTime">0:00</span>
+          <span id="totalDuration">0:00</span>
+        </div>
+      </div>
+
+      <!-- Main Controls -->
+      <div class="controls-row">
+        <button id="prevBtn" class="ctrl-btn" title="Mundur 10s">
+          <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+        <button id="playPauseBtn" class="play-btn-circle" title="Play/Pause">
+          <svg id="playIcon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="pauseIcon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button id="nextBtn" class="ctrl-btn" title="Maju 10s">
+          <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="m6 18 8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+      </div>
+
+      <!-- Aux Controls (Volume, Repeat) -->
+      <div class="aux-controls">
+        <button id="loopBtn" class="ctrl-btn" title="Loop Toggle">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+        <div class="volume-wrap">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" class="sound-icon"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.05" value="1" />
+        </div>
+      </div>
+
+      <!-- Diagnostics Panel (Screenshot 2 Style) -->
+      <div class="diag-panel">
+        <div class="diag-header">
+          <span class="diag-title">STREAM DECK / TELEMETRY</span>
+          <span id="streamStatusBadge" class="diag-status-badge">BUFFERING</span>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">MIME</div>
+            <div class="metric-value">video/mp4</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">DOWNLOADED</div>
+            <div id="metricDownloaded" class="metric-value">0.00 MB</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">TOTAL</div>
+            <div id="metricTotal" class="metric-value">STREAMING</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">PROGRESS</div>
+            <div id="metricProgress" class="metric-value">0.0%</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">CHUNKS</div>
+            <div id="metricChunks" class="metric-value">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">LOOP</div>
+            <div id="metricLoop" class="metric-value">OFF</div>
+          </div>
+        </div>
+
+        <div class="diag-progress-bar">
+          <div id="diagProgressFill" class="diag-progress-fill"></div>
+        </div>
+
+        <!-- Terminal Log Window -->
+        <div id="terminalWindow" class="terminal-window">
+          <div class="log-line log-cyan">[SYS] Initializing stream channel...</div>
+        </div>
+      </div>
+
+      <!-- Lyrics Drawer Button -->
+      <button id="openLyricsBtn" class="lyrics-toggle-btn">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        LIHAT LIRIK LAGU (LRCLIB)
+      </button>
+    </div>
+  </div>
+
+  <!-- Lyrics Modal Sheet -->
+  <div id="lyricsModal" class="lyrics-modal">
+    <div class="lyrics-sheet">
+      <div class="lyrics-header">
+        <strong style="color:#1DB954;font-family:'JetBrains Mono',monospace;">LYRICS / LIRIK</strong>
+        <button id="closeLyricsBtn" style="background:none;border:none;color:#cbd5e1;font-size:18px;cursor:pointer;">&times;</button>
+      </div>
+      <div id="lyricsContent" class="lyrics-body">
+        Memuat lirik dari LRCLIB...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const pathParts = window.location.pathname.split('/');
+    const sessionId = pathParts[pathParts.length - 1];
+
+    const video = document.getElementById('playerVideo');
+    const poster = document.getElementById('videoPoster');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const progressBar = document.getElementById('progressBar');
+    const currentTimeLabel = document.getElementById('currentTime');
+    const totalDurationLabel = document.getElementById('totalDuration');
+    const headerSub = document.getElementById('headerSub');
+    const videoTitle = document.getElementById('videoTitle');
+    const videoChannel = document.getElementById('videoChannel');
+    const loopBtn = document.getElementById('loopBtn');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const streamStatusBadge = document.getElementById('streamStatusBadge');
+    const metricDownloaded = document.getElementById('metricDownloaded');
+    const metricProgress = document.getElementById('metricProgress');
+    const metricChunks = document.getElementById('metricChunks');
+    const metricLoop = document.getElementById('metricLoop');
+    const diagProgressFill = document.getElementById('diagProgressFill');
+    const terminalWindow = document.getElementById('terminalWindow');
+    const openLyricsBtn = document.getElementById('openLyricsBtn');
+    const closeLyricsBtn = document.getElementById('closeLyricsBtn');
+    const lyricsModal = document.getElementById('lyricsModal');
+    const lyricsContent = document.getElementById('lyricsContent');
+
+    let isSeeking = false;
+    let totalSeconds = 0;
+    let chunkCounter = 0;
+    let bytesReceived = 0;
+    let sessionTitle = '';
+
+    function logTerminal(text, colorClass = '') {
+      const line = document.createElement('div');
+      line.className = `log-line ${colorClass}`;
+      line.textContent = text;
+      terminalWindow.appendChild(line);
+      terminalWindow.scrollTop = terminalWindow.scrollHeight;
+    }
+
+    function formatTime(secs) {
+      if (isNaN(secs) || secs < 0) return '0:00';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    async function initSession() {
+      try {
+        logTerminal(`[SYS] Resolving session: ${sessionId.substring(0, 8)}...`, 'log-cyan');
+        const res = await fetch(`/api/player/info/${sessionId}`);
+        if (!res.ok) throw new Error('Session invalid atau kadaluwarsa');
+        
+        const data = await res.json();
+        const session = data.session;
+        sessionTitle = session.title;
+
+        headerSub.textContent = session.title;
+        videoTitle.textContent = session.title;
+        videoChannel.textContent = `${session.channelTitle} // YouTube`;
+        totalSeconds = session.durationSeconds || 0;
+        totalDurationLabel.textContent = formatTime(totalSeconds);
+
+        if (session.thumbnail) {
+          poster.style.backgroundImage = `url('${session.thumbnail}')`;
+        }
+
+        logTerminal(`[META] Title: ${session.title.substring(0, 32)}...`);
+        logTerminal(`[STREAM] Connecting to media pipe /api/stream/${sessionId}...`, 'log-cyan');
+
+        // Attach video stream source
+        video.src = `/api/stream/${sessionId}`;
+        video.load();
+
+        logTerminal(`Video source attached`, 'log-green');
+        logTerminal(`Player ready`, 'log-green');
+        streamStatusBadge.textContent = 'BUFFERING';
+
+        // Simulate chunk telemetry counter
+        const chunkInterval = setInterval(() => {
+          if (video.readyState >= 2) {
+            chunkCounter += Math.floor(Math.random() * 8) + 4;
+            bytesReceived += 64 * 1024;
+            const mb = (bytesReceived / (1024 * 1024)).toFixed(2);
+            metricChunks.textContent = chunkCounter;
+            metricDownloaded.textContent = `${mb} MB`;
+            logTerminal(`Binary chunk: 64.00 KB`);
+
+            if (chunkCounter > 80) {
+              clearInterval(chunkInterval);
+              streamStatusBadge.textContent = 'COMPLETE';
+              streamStatusBadge.style.borderColor = '#1DB954';
+              streamStatusBadge.style.color = '#1DB954';
+              streamStatusBadge.style.background = '#0f2918';
+              logTerminal(`Download complete`, 'log-green');
+              logTerminal(`Stream buffer synchronized`, 'log-green');
+            }
+          }
+        }, 400);
+
+      } catch (err) {
+        logTerminal(`[ERR] ${err.message}`, 'log-line');
+        videoTitle.textContent = 'Sesi Tidak Valid';
+        streamStatusBadge.textContent = 'ERROR';
+      }
+    }
+
+    // Playback Events
+    playPauseBtn.addEventListener('click', () => {
+      if (video.paused) {
+        video.play();
+        poster.style.opacity = '0';
+      } else {
+        video.pause();
+      }
+    });
+
+    video.addEventListener('play', () => {
+      playIcon.style.display = 'none';
+      pauseIcon.style.display = 'block';
+      poster.style.opacity = '0';
+    });
+
+    video.addEventListener('pause', () => {
+      playIcon.style.display = 'block';
+      pauseIcon.style.display = 'none';
+    });
+
+    video.addEventListener('timeupdate', () => {
+      if (!isSeeking) {
+        currentTimeLabel.textContent = formatTime(video.currentTime);
+        const duration = video.duration || totalSeconds || 1;
+        const progress = (video.currentTime / duration) * 100;
+        progressBar.value = progress;
+        metricProgress.textContent = `${progress.toFixed(1)}%`;
+        diagProgressFill.style.width = `${progress}%`;
+      }
+    });
+
+    progressBar.addEventListener('input', () => {
+      isSeeking = true;
+      const duration = video.duration || totalSeconds;
+      currentTimeLabel.textContent = formatTime((progressBar.value / 100) * duration);
+    });
+
+    progressBar.addEventListener('change', () => {
+      const duration = video.duration || totalSeconds;
+      video.currentTime = (progressBar.value / 100) * duration;
+      isSeeking = false;
+    });
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      video.currentTime = Math.max(0, video.currentTime - 10);
+      logTerminal(`[ACTION] Seek backward -10s`);
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      video.currentTime = Math.min(video.duration || totalSeconds, video.currentTime + 10);
+      logTerminal(`[ACTION] Seek forward +10s`);
+    });
+
+    loopBtn.addEventListener('click', () => {
+      video.loop = !video.loop;
+      metricLoop.textContent = video.loop ? 'ON' : 'OFF';
+      loopBtn.style.color = video.loop ? '#1DB954' : '#cbd5e1';
+      logTerminal(`[CFG] Loop mode: ${video.loop ? 'ENABLED' : 'DISABLED'}`);
+    });
+
+    volumeSlider.addEventListener('input', (e) => {
+      video.volume = e.target.value;
+    });
+
+    // Lyrics Drawer Trigger
+    openLyricsBtn.addEventListener('click', async () => {
+      lyricsModal.style.display = 'flex';
+      if (sessionTitle && lyricsContent.textContent.includes('Memuat')) {
+        try {
+          const res = await fetch(`/api/player/lyrics?query=${encodeURIComponent(sessionTitle)}`);
+          const data = await res.json();
+          if (data.lyrics) {
+            lyricsContent.textContent = data.lyrics;
+          } else {
+            lyricsContent.textContent = 'Lirik tidak ditemukan untuk lagu ini.';
+          }
+        } catch (_) {
+          lyricsContent.textContent = 'Gagal memuat lirik.';
+        }
+      }
+    });
+
+    closeLyricsBtn.addEventListener('click', () => {
+      lyricsModal.style.display = 'none';
+    });
+
+    lyricsModal.addEventListener('click', (e) => {
+      if (e.target === lyricsModal) {
+        lyricsModal.style.display = 'none';
+      }
+    });
+
+    initSession();
+  </script>
+</body>
+</html>
