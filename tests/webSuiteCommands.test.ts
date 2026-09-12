@@ -25,9 +25,14 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
     capturedMessages = [];
     replies = [];
     mockSocket = {
+      user: { id: "bot@s.whatsapp.net" },
       sendMessage: async (jid: string, content: any, options?: any) => {
         capturedMessages.push({ jid, content, options });
         return undefined as any;
+      },
+      relayMessage: async (jid: string, message: any, options?: any) => {
+        capturedMessages.push({ jid, content: message, options });
+        return "msg-id";
       },
       waUploadToServer: async () => ({
         url: "https://mmg.whatsapp.net/m1",
@@ -356,11 +361,12 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
   it("interactiveMessageService: melakukan fallback ke markdown teks biasa jika nativeFlowMessage gagal", async () => {
     let callCount = 0;
     const failingSocket = {
+      relayMessage: async () => {
+        callCount++;
+        throw new Error("Protocol buffer unsupported");
+      },
       sendMessage: async (jid: string, content: any) => {
         callCount++;
-        if (content.viewOnceMessage) {
-          throw new Error("Protocol buffer unsupported");
-        }
         return undefined as any;
       },
     } as unknown as WASocket;
@@ -376,7 +382,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
       },
     );
 
-    // Call 1 failed with viewOnceMessage, Call 2 succeeded with text fallback
+    // Call 1 failed with relayMessage, Call 2 succeeded with text fallback
     assert.strictEqual(callCount, 2);
   });
 });

@@ -14,6 +14,9 @@ import { soundboardService } from "../media/soundboard.service";
 import { chessDuelService } from "../game/chessDuel.service";
 import { leaderboardService } from "../member/leaderboard.service";
 import { arcadeRewardService } from "../game/arcadeReward.service";
+import { playerRouter } from "../../web/routes/player.route";
+import { streamRouter } from "../../web/routes/stream.route";
+import { arcadeRouter } from "../../web/routes/arcade.route";
 
 export class WebServerService {
   private app: Express;
@@ -58,6 +61,11 @@ export class WebServerService {
   }
 
   private setupRoutes(): void {
+    // Mount modular routes first
+    this.app.use(playerRouter);
+    this.app.use(streamRouter);
+    this.app.use(arcadeRouter);
+
     const staticDir = this.resolveStaticDir();
 
     // Health Check Endpoint

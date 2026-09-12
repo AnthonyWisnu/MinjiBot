@@ -1,10 +1,9 @@
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { interactiveMessageService } from "../../services/whatsapp/interactiveMessage.service";
+import { whatsAppWebViewService } from "../../services/whatsapp/whatsAppWebView.service";
 import { youtubeSearchService } from "../../services/media/youtubeSearch.service";
-import { playerSessionService } from "../../services/web/playerSession.service";
 import { arcadeRewardService } from "../../services/game/arcadeReward.service";
 import { webCardGeneratorService } from "../../services/web/webCardGenerator.service";
-import { playAudioService } from "../../services/media/playAudio.service";
 import { logger } from "../../config/logger";
 
 export const webSuiteCommands: CommandDefinition[] = [
@@ -15,7 +14,7 @@ export const webSuiteCommands: CommandDefinition[] = [
   },
   {
     name: "arcade",
-    aliases: ["gamehub", "minigames"],
+    aliases: ["gamehub", "minigames", "retro"],
     execute: handleArcade,
   },
   {
@@ -48,18 +47,35 @@ export const webSuiteCommands: CommandDefinition[] = [
 async function handleSpotify(context: CommandContext): Promise<void> {
   const query = context.argsText.trim();
   const baseUrl = interactiveMessageService.getBaseUrl();
+  const isSpotify = context.commandName.toLowerCase() === "spotify";
 
   if (!query) {
-    // Tanpa parameter: sajikan katalog pencarian gaya Spotify
-    const url = `${baseUrl}/player/search`;
+    if (isSpotify) {
+      const url = `${baseUrl}/player/search`;
+      await interactiveMessageService.sendCtaUrlMessage(context.socket, context.chatJid, {
+        header: "SPOTIFY SEARCH CATALOG // MINJIBOT",
+        body: [
+          "Akses antarmuka katalog musik Spotify Dark untuk mencari lagu dan streaming langsung di pemutar web.",
+          "",
+          "Gunakan: .spotify <judul lagu/link>",
+        ].join("\n"),
+        buttonText: "Buka Spotify Catalog",
+        url,
+        quoted: context.message,
+      });
+      return;
+    }
+
+    const url = `${baseUrl}/arcade`;
     await interactiveMessageService.sendCtaUrlMessage(context.socket, context.chatJid, {
-      header: "SPOTIFY SEARCH CATALOG // MINJIBOT",
+      header: "YOUTUBE WEBVIEW // MINJIBOT",
       body: [
-        "Akses antarmuka katalog musik Spotify Dark untuk mencari lagu dan streaming langsung di pemutar web.",
+        "Akses antarmuka WebView interaktif untuk memutar video atau audio YouTube langsung di WhatsApp.",
         "",
-        "Gunakan: .spotify <judul lagu/link>",
+        "Gunakan: .ythtml <judul lagu/link>",
+        "Contoh: .ythtml Alan Walker Faded",
       ].join("\n"),
-      buttonText: "Buka Spotify Catalog",
+      buttonText: "Buka Web Suite",
       url,
       quoted: context.message,
     });
@@ -76,96 +92,47 @@ async function handleSpotify(context: CommandContext): Promise<void> {
       return;
     }
 
-    // Buat sesi pemutar audio/video
-    const session = playerSessionService.createSession({
-      videoId: video.videoId,
-      videoUrl: video.url,
-      title: video.title,
-      channelTitle: video.channelTitle,
-      durationSeconds: video.durationSeconds,
-      thumbnail: video.thumbnail || `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`,
-      chatJid: context.chatJid,
-      userJid: context.senderUserJid,
-    });
+    const header = isSpotify ? "SPOTIFY STREAM DECK // MINJIBOT" : "YOUTUBE WEBVIEW // MINJIBOT";
 
-    const playerUrl = `${baseUrl}/player/${session.sessionId}`;
-
-    await interactiveMessageService.sendCtaUrlMessage(context.socket, context.chatJid, {
-      header: "SPOTIFY STREAM DECK // MINJIBOT",
-      body: [
-        `Judul: ${video.title}`,
-        `Channel: ${video.channelTitle}`,
-        `Durasi: ${Math.floor(video.durationSeconds / 60)}m ${video.durationSeconds % 60}s`,
-        "",
-        "Gunakan tombol di bawah untuk membuka pemutar web dengan seekbar, lirik lagu, dan visualizer.",
-      ].join("\n"),
-      buttonText: "Buka Web Player",
-      url: playerUrl,
+    await whatsAppWebViewService.openPlayer(context.socket, context.chatJid, {
+      video: {
+        videoId: video.videoId,
+        url: video.url,
+        title: video.title,
+        channelTitle: video.channelTitle,
+        durationSeconds: video.durationSeconds,
+        thumbnail: video.thumbnail || `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`,
+      },
+      header,
+      senderUserJid: context.senderUserJid,
       quoted: context.message,
+      sendInChatAudio: true,
     });
-
-    // Kirim stream audio langsung ke WhatsApp agar lagu bisa di-play langsung tanpa browser
-    if (video.durationSeconds > 0 && video.durationSeconds <= 15 * 60) {
-      let tempDir: string | undefined;
-      try {
-        const audioResult = await playAudioService.prepareMp3Audio(video.url);
-        tempDir = audioResult.tempDir;
-        await context.socket.sendMessage(
-          context.chatJid,
-          {
-            audio: audioResult.buffer,
-            mimetype: "audio/mpeg",
-            ptt: false,
-          },
-          { quoted: context.message },
-        );
-      } catch (audioErr: unknown) {
-        logger.warn(
-          { audioErr, title: video.title },
-          "Pengiriman audio in-chat WhatsApp gagal, pengguna tetap dapat membuka tautan web player",
-        );
-      } finally {
-        if (tempDir) {
-          await playAudioService.cleanup(tempDir);
-        }
-      }
-    }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Gagal memproses lagu";
+    logger.error({ err, query }, "Gagal handleSpotify/ythtml");
     await context.reply(`Terjadi kesalahan: ${msg}`);
   }
 }
 
 async function handleArcade(context: CommandContext): Promise<void> {
-  const baseUrl = interactiveMessageService.getBaseUrl();
-  const url = `${baseUrl}/arcade?chat=${encodeURIComponent(context.chatJid)}&user=${encodeURIComponent(context.senderUserJid)}`;
+  const sub = (context.args[0] || "").toLowerCase().trim();
+  let selectedGame: "dino" | "block-blast" | "chess" | undefined;
 
-  let cardImage: Buffer | undefined;
+  if (sub === "dino") selectedGame = "dino";
+  else if (sub === "block" || sub === "blockblast" || sub === "block-blast") selectedGame = "block-blast";
+  else if (sub === "chess" || sub === "catur") selectedGame = "chess";
+
   try {
-    cardImage = await webCardGeneratorService.generateArcadeCard();
-  } catch {
-    // ignore
+    await whatsAppWebViewService.openArcade(context.socket, context.chatJid, {
+      game: selectedGame,
+      senderUserJid: context.senderUserJid,
+      quoted: context.message,
+    });
+  } catch (err: unknown) {
+    logger.error({ err, sub }, "Gagal handleArcade");
+    await context.reply("Gagal membuka MinjiBot Arcade.");
   }
-
-  await interactiveMessageService.sendCtaUrlMessage(context.socket, context.chatJid, {
-    header: "RETRO ARCADE HUB // MINJIBOT",
-    body: [
-      "Selamat datang di Retro Arcade Hub MinjiBot!",
-      "",
-      "Daftar Game Tersedia:",
-      "1. Dino Runner (Lompat & Merunduk)",
-      "2. Snake Retro (Ular Klasik Neon)",
-      "3. Block Blast (Puzzle Balok 8x8)",
-      "4. 2048 Puzzle (Geser & Gabung Angka)",
-      "5. Flappy Minji (Mengepak Lewati Pilar)",
-      "",
-      "Kumpulkan skor tertinggi dan dapatkan token reward untuk saldo Points & XP Anda.",
-    ].join("\n"),
-    buttonText: "Buka Arcade Zone",
-    url,
-    cardImage,
-    quoted: context.message,
-  });
 }
 
 async function handleCatur(context: CommandContext): Promise<void> {

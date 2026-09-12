@@ -143,6 +143,8 @@ flowchart TD
 | **Media Engine** | `.tt <url>` | Download TikTok video (no watermark) or Photo Slides (up to 12) + BGM audio | 1 Limit |
 | | `.ig <url>` | Download Instagram Reel, Post, Carousel, or Story | 1 Limit |
 | | `.yt <url>` | Download YouTube video (Adaptive 720p60/720p30/480p, max 12 mins) | 1 Limit |
+| | `.ythtml <query/url>` | Open in-app YouTube HTML5 Web Player with seekbar and audio streaming | 1 Limit |
+| | `.spotify <query/url>` | Play/stream audio track with YouTube Web Player & in-chat MP3 delivery | 1 Limit |
 | | `.hd` [reply photo] | Enhance photo quality using AI restoration | 2 Limits |
 | | `.play <query>` | Stream & send MP3 audio track | 1 Limit |
 | | `.lirik <query>` | Search song lyrics | 1 Limit |
@@ -153,7 +155,8 @@ flowchart TD
 | | `.bass` / `.chipmunk` | Apply bass boost or chipmunk vocal effect to audio/VN | Free |
 | | `.slowed` / `.nightcore`| Apply slowed+reverb or nightcore tempo effect to audio/VN | Free |
 | | `.tovn` | Convert any audio track into official WhatsApp Voice Note (PTT) | Free |
-| **Mini Games** | `.slot` [amount \| allin] | Play dynamic educational fruit slot machine | Variable |
+| **Mini Games** | `.arcade` | Open retro Arcade hub (Dino Runner, Block Blast 8x8, Royal Chess) | Free |
+| | `.slot` [amount \| allin] | Play dynamic educational fruit slot machine | Variable |
 | | `.family100` | Start interactive Family 100 survey game | Free |
 | | `.tictactoe @user` | Challenge a member to a TicTacToe PvP battle | Free |
 | | `.mtk` / `.math` | Math challenge with direct reply answer | Free |
