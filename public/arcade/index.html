@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MinjiBot Retro Arcade Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      background-color: #0a0c10;
+      background-image: radial-gradient(circle at 50% 0%, #16241a 0%, #0a0c10 65%);
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 8px 8px 90px 8px; /* space for bottom sheet */
+    }
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Top HUD Card */
+    .hud-card {
+      background: #12151d;
+      border: 1px solid #202634;
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+    .hud-title-area {
+      display: flex;
+      flex-direction: column;
+    }
+    .hud-game-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #00F0FF;
+      letter-spacing: 0.5px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .hud-bot-tag {
+      font-size: 10px;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .score-box {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .score-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .score-label {
+      font-size: 9px;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .score-val {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1DB954;
+    }
+    .score-val.hi {
+      color: #fbbf24;
+    }
+
+    /* Game Stage Arena */
+    .stage-card {
+      background: #0d1017;
+      border: 1px solid #1c2230;
+      border-radius: 16px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      min-height: 400px;
+      box-shadow: 0 14px 35px rgba(0,0,0,0.7);
+      overflow: hidden;
+    }
+
+    canvas.game-canvas {
+      background: #06080c;
+      border: 1px solid #181d28;
+      border-radius: 10px;
+      display: block;
+      width: 100%;
+      height: 320px;
+      touch-action: none;
+    }
+
+    /* Game Controls Container */
+    .controls-container {
+      width: 100%;
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .touch-btn {
+      background: #181d29;
+      border: 1px solid #2d3648;
+      color: #f8fafc;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+      flex: 1;
+    }
+    .touch-btn:active {
+      background: #1DB954;
+      color: #0b0d11;
+      border-color: #1DB954;
+      transform: scale(0.96);
+    }
+    .touch-btn.jump {
+      background: #0f2b18;
+      border-color: #1DB954;
+      color: #1DB954;
+    }
+    .touch-btn.duck {
+      background: #251b14;
+      border-color: #f97316;
+      color: #f97316;
+    }
+
+    /* D-Pad for Snake */
+    .dpad-container {
+      display: grid;
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(2, 46px);
+      gap: 6px;
+      justify-content: center;
+      margin-top: 6px;
+    }
+    .dpad-btn {
+      background: #181d29;
+      border: 1px solid #2d3648;
+      color: #38bdf8;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .dpad-btn:active {
+      background: #38bdf8;
+      color: #0b0d11;
+    }
+
+    /* 2048 Swipe/Pad */
+    .pad-2048 {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    /* Block Blast polyomino shapes container */
+    .block-shapes-shelf {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      margin-top: 8px;
+      background: #080a0f;
+      border-radius: 10px;
+      padding: 8px;
+      border: 1px solid #1a202c;
+    }
+    .shape-card {
+      background: #131722;
+      border: 1px solid #242c3d;
+      border-radius: 8px;
+      padding: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 65px;
+      min-height: 65px;
+      transition: all 0.15s;
+    }
+    .shape-card.selected {
+      border-color: #1DB954;
+      background: #0e2417;
+      box-shadow: 0 0 10px rgba(29, 185, 84, 0.4);
+    }
+
+    /* Game Over Overlay */
+    .overlay-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(8, 10, 15, 0.88);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 20;
+      padding: 20px;
+      text-align: center;
+    }
+    .overlay-modal.active {
+      display: flex;
+    }
+    .overlay-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ef4444;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .overlay-score-box {
+      background: #141720;
+      border: 1px solid #252c3c;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .overlay-btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+      width: 100%;
+      max-width: 280px;
+    }
+    .btn-restart {
+      flex: 1;
+      background: #1DB954;
+      border: none;
+      color: #090c10;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .btn-claim {
+      flex: 1;
+      background: #181d28;
+      border: 1px solid #2f384c;
+      color: #38bdf8;
+      font-weight: 700;
+      font-size: 11px;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Bottom Sheet Navigation (Screenshot 4 style) */
+    .bottom-sheet-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #10131b;
+      border-top: 1px solid #212837;
+      padding: 8px 12px 14px 12px;
+      display: flex;
+      justify-content: center;
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.85);
+      z-index: 100;
+    }
+    .nav-inner {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-inner::-webkit-scrollbar { display: none; }
+    .tab-pill {
+      flex: 1;
+      min-width: 76px;
+      background: #181c26;
+      border: 1px solid #262e40;
+      border-radius: 10px;
+      padding: 8px 6px;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      text-align: center;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .tab-pill.active {
+      background: #1DB954;
+      color: #0b0d11;
+      border-color: #1DB954;
+      box-shadow: 0 0 12px rgba(29, 185, 84, 0.4);
+    }
+
+    /* Claim Modal Alert */
+    #claim-alert {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #141824;
+      border: 1px solid #38bdf8;
+      color: #e0f2fe;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.3s;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+      max-width: 90%;
+      text-align: center;
+    }
+    #claim-alert.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Top HUD -->
+    <div class="hud-card">
+      <div class="hud-title-area">
+        <div class="hud-game-title" id="hud-game-title">DINO RUNNER</div>
+        <div class="hud-bot-tag">MINJIBOT RETRO ARCADE // SUITE</div>
+      </div>
+      <div class="score-box">
+        <div class="score-item">
+          <span class="score-label">SKOR</span>
+          <span class="score-val" id="score-display">0</span>
+        </div>
+        <div class="score-item">
+          <span class="score-label">TERBAIK</span>
+          <span class="score-val hi" id="hiscore-display">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage Arena -->
+    <div class="stage-card">
+      <canvas id="game-canvas" class="game-canvas" width="400" height="320"></canvas>
+
+      <!-- Controls Zone (Dynamic per game) -->
+      <div id="controls-zone" class="controls-container">
+        <!-- Injected via JS based on active game -->
+      </div>
+
+      <!-- Game Over Modal -->
+      <div class="overlay-modal" id="gameover-modal">
+        <div class="overlay-title">GAME OVER</div>
+        <div class="overlay-score-box">
+          <div style="font-size: 10px; color: #94a3b8;">SKOR AKHIR</div>
+          <div style="font-size: 22px; font-weight: 800; color: #1DB954; margin: 4px 0;" id="modal-final-score">0</div>
+          <div style="font-size: 10px; color: #fbbf24;" id="modal-new-record" style="display:none;">REKOR BARU!</div>
+        </div>
+        <div class="overlay-btn-row">
+          <button class="btn-restart" onclick="restartActiveGame()">MAIN LAGI</button>
+          <button class="btn-claim" onclick="claimGameReward()">KLAIM TOKEN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Sheet Navigation -->
+  <nav class="bottom-sheet-nav">
+    <div class="nav-inner">
+      <button class="tab-pill active" data-game="dino">DINO RUNNER</button>
+      <button class="tab-pill" data-game="snake">SNAKE</button>
+      <button class="tab-pill" data-game="block">BLOCK BLAST</button>
+      <button class="tab-pill" data-game="2048">2048</button>
+      <button class="tab-pill" data-game="flappy">FLAPPY MINJI</button>
+    </div>
+  </nav>
+
+  <!-- Claim Alert Toast -->
+  <div id="claim-alert"></div>
+
+  <script>
+    // ─── Procedural Audio FX Engine (Web Audio API) ───────────────────────────
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playTone(freq, duration, type = "sine", gainVal = 0.15) {
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function sfxJump() { playTone(450, 0.15, "square", 0.1); }
+    function sfxCoin() { playTone(987, 0.08, "square", 0.15); setTimeout(() => playTone(1318, 0.2, "square", 0.15), 80); }
+    function sfxDie() { playTone(140, 0.35, "sawtooth", 0.2); }
+    function sfxClear() { playTone(523, 0.1, "sine", 0.2); setTimeout(() => playTone(784, 0.2, "sine", 0.2), 100); }
+
+    // ─── Global State & DOM ──────────────────────────────────────────────────
+    let activeGameKey = "dino";
+    let score = 0;
+    let hiScore = 0;
+    let isGameOver = false;
+    let animLoopId = null;
+
+    const canvas = document.getElementById("game-canvas");
+    const ctx = canvas.getContext("2d");
+    const hudTitle = document.getElementById("hud-game-title");
+    const scoreDisplay = document.getElementById("score-display");
+    const hiScoreDisplay = document.getElementById("hiscore-display");
+    const controlsZone = document.getElementById("controls-zone");
+    const gameOverModal = document.getElementById("gameover-modal");
+    const modalFinalScore = document.getElementById("modal-final-score");
+    const modalNewRecord = document.getElementById("modal-new-record");
+    const claimAlert = document.getElementById("claim-alert");
+
+    // Load Minji Sprite
+    const minjiImg = new Image();
+    minjiImg.src = "/assets/minji.png";
+
+    function setScore(val) {
+      score = val;
+      scoreDisplay.textContent = score;
+      if (score > hiScore) {
+        hiScore = score;
+        hiScoreDisplay.textContent = hiScore;
+        localStorage.setItem("minji_arcade_hiscore_" + activeGameKey, hiScore);
+      }
+    }
+
+    function triggerGameOver() {
+      if (isGameOver) return;
+      isGameOver = true;
+      sfxDie();
+      modalFinalScore.textContent = score;
+      modalNewRecord.style.display = (score >= hiScore && score > 0) ? "block" : "none";
+      gameOverModal.classList.add("active");
+    }
+
+    function hideGameOver() {
+      isGameOver = false;
+      gameOverModal.classList.remove("active");
+    }
+
+    function showClaimToast(msg) {
+      claimAlert.textContent = msg;
+      claimAlert.className = "show";
+      setTimeout(() => { claimAlert.className = ""; }, 3500);
+    }
+
+    function claimGameReward() {
+      const token = "ARCADE-" + activeGameKey.toUpperCase() + "-" + score + "-" + Math.floor(Date.now() / 1000).toString(16);
+      showClaimToast("Token skor: " + token + " (Kirim token ini ke WhatsApp MinjiBot untuk reward)");
+    }
+
+    // ─── 1. DINO RUNNER ENGINE ──────────────────────────────────────────────
+    const dinoGame = {
+      dino: { x: 40, y: 220, w: 26, h: 36, vy: 0, grounded: true, ducking: false },
+      obstacles: [],
+      speed: 4.5,
+      spawnTimer: 0,
+      groundY: 256,
+
+      init() {
+        this.dino = { x: 40, y: 220, w: 26, h: 36, vy: 0, grounded: true, ducking: false };
+        this.obstacles = [];
+        this.speed = 4.5;
+        this.spawnTimer = 0;
+        setScore(0);
+        renderDinoControls();
+      },
+
+      jump() {
+        if (this.dino.grounded && !this.dino.ducking) {
+          this.dino.vy = -11.5;
+          this.dino.grounded = false;
+          sfxJump();
+        }
+      },
+
+      duck(isDucking) {
+        this.dino.ducking = isDucking;
+        if (isDucking) {
+          this.dino.h = 22;
+          this.dino.w = 34;
+        } else {
+          this.dino.h = 36;
+          this.dino.w = 26;
+        }
+      },
+
+      update() {
+        if (isGameOver) return;
+
+        // Physics
+        this.dino.y += this.dino.vy;
+        if (!this.dino.grounded) {
+          this.dino.vy += 0.65; // gravity
+        }
+
+        const baseline = this.groundY - this.dino.h;
+        if (this.dino.y >= baseline) {
+          this.dino.y = baseline;
+          this.dino.vy = 0;
+          this.dino.grounded = true;
+        }
+
+        // Spawn obstacles
+        this.spawnTimer++;
+        if (this.spawnTimer > Math.max(55, 110 - Math.floor(score / 50))) {
+          this.spawnTimer = 0;
+          const isDrone = Math.random() > 0.65 && score > 80;
+          if (isDrone) {
+            this.obstacles.push({ x: canvas.width + 20, y: this.groundY - 55, w: 24, h: 16, type: "drone" });
+          } else {
+            const h = Math.random() > 0.5 ? 32 : 24;
+            this.obstacles.push({ x: canvas.width + 20, y: this.groundY - h, w: 16, h: h, type: "cactus" });
+          }
+        }
+
+        // Move obstacles & collision
+        for (let i = this.obstacles.length - 1; i >= 0; i--) {
+          const obs = this.obstacles[i];
+          obs.x -= this.speed;
+
+          // AABB Collision check
+          if (
+            this.dino.x < obs.x + obs.w &&
+            this.dino.x + this.dino.w > obs.x &&
+            this.dino.y < obs.y + obs.h &&
+            this.dino.y + this.dino.h > obs.y
+          ) {
+            triggerGameOver();
+            return;
+          }
+
+          if (obs.x + obs.w < 0) {
+            this.obstacles.splice(i, 1);
+            setScore(score + 10);
+            if (score % 100 === 0) {
+              sfxCoin();
+              this.speed += 0.25;
+            }
+          }
+        }
+      },
+
+      draw() {
+        // Clear
+        ctx.fillStyle = "#07090e";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Ground line
+        ctx.strokeStyle = "#1DB954";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, this.groundY);
+        ctx.lineTo(canvas.width, this.groundY);
+        ctx.stroke();
+
+        // Draw Dino (or Minji avatar)
+        if (minjiImg.complete && minjiImg.naturalWidth !== 0) {
+          ctx.drawImage(minjiImg, this.dino.x, this.dino.y, this.dino.w, this.dino.h);
+        } else {
+          ctx.fillStyle = "#1DB954";
+          ctx.fillRect(this.dino.x, this.dino.y, this.dino.w, this.dino.h);
+        }
+
+        // Draw obstacles
+        for (const obs of this.obstacles) {
+          if (obs.type === "drone") {
+            ctx.fillStyle = "#f43f5e";
+            ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          } else {
+            ctx.fillStyle = "#22c55e";
+            ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          }
+        }
+      }
+    };
+
+    function renderDinoControls() {
+      controlsZone.innerHTML = `
+        <button class="touch-btn duck" id="btn-duck">DUCK</button>
+        <button class="touch-btn jump" id="btn-jump">JUMP</button>
+      `;
+      const btnJump = document.getElementById("btn-jump");
+      const btnDuck = document.getElementById("btn-duck");
+
+      btnJump.addEventListener("touchstart", (e) => { e.preventDefault(); dinoGame.jump(); });
+      btnJump.addEventListener("mousedown", () => dinoGame.jump());
+
+      btnDuck.addEventListener("touchstart", (e) => { e.preventDefault(); dinoGame.duck(true); });
+      btnDuck.addEventListener("touchend", (e) => { e.preventDefault(); dinoGame.duck(false); });
+      btnDuck.addEventListener("mousedown", () => dinoGame.duck(true));
+      btnDuck.addEventListener("mouseup", () => dinoGame.duck(false));
+    }
+
+    // ─── 2. SNAKE RETRO ENGINE ──────────────────────────────────────────────
+    const snakeGame = {
+      gridSize: 16,
+      tileCountX: 25,
+      tileCountY: 20,
+      snake: [],
+      dir: { x: 1, y: 0 },
+      nextDir: { x: 1, y: 0 },
+      food: { x: 10, y: 10 },
+      tickCount: 0,
+      speedTicks: 6,
+
+      init() {
+        this.tileCountX = Math.floor(canvas.width / this.gridSize);
+        this.tileCountY = Math.floor(canvas.height / this.gridSize);
+        this.snake = [
+          { x: 5, y: 10 },
+          { x: 4, y: 10 },
+          { x: 3, y: 10 },
+        ];
+        this.dir = { x: 1, y: 0 };
+        this.nextDir = { x: 1, y: 0 };
+        this.spawnFood();
+        this.tickCount = 0;
+        setScore(0);
+        renderSnakeControls();
+      },
+
+      spawnFood() {
+        this.food = {
+          x: Math.floor(Math.random() * this.tileCountX),
+          y: Math.floor(Math.random() * this.tileCountY)
+        };
+      },
+
+      setDirection(dx, dy) {
+        if (this.dir.x !== -dx || this.dir.y !== -dy) {
+          this.nextDir = { x: dx, y: dy };
+        }
+      },
+
+      update() {
+        if (isGameOver) return;
+        this.tickCount++;
+        if (this.tickCount < this.speedTicks) return;
+        this.tickCount = 0;
+
+        this.dir = this.nextDir;
+        const head = { x: this.snake[0].x + this.dir.x, y: this.snake[0].y + this.dir.y };
+
+        // Wall collision
+        if (head.x < 0 || head.x >= this.tileCountX || head.y < 0 || head.y >= this.tileCountY) {
+          triggerGameOver();
+          return;
+        }
+
+        // Self collision
+        for (let i = 0; i < this.snake.length; i++) {
+          if (this.snake[i].x === head.x && this.snake[i].y === head.y) {
+            triggerGameOver();
+            return;
+          }
+        }
+
+        this.snake.unshift(head);
+
+        // Food eaten
+        if (head.x === this.food.x && head.y === this.food.y) {
+          sfxCoin();
+          setScore(score + 10);
+          this.spawnFood();
+        } else {
+          this.snake.pop();
+        }
+      },
+
+      draw() {
+        ctx.fillStyle = "#07090e";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw food
+        ctx.fillStyle = "#ef4444";
+        ctx.shadowColor = "#ef4444";
+        ctx.shadowBlur = 8;
+        ctx.fillRect(this.food.x * this.gridSize + 2, this.food.y * this.gridSize + 2, this.gridSize - 4, this.gridSize - 4);
+        ctx.shadowBlur = 0;
+
+        // Draw snake
+        for (let i = 0; i < this.snake.length; i++) {
+          ctx.fillStyle = (i === 0) ? "#1DB954" : "#10b981";
+          ctx.fillRect(this.snake[i].x * this.gridSize + 1, this.snake[i].y * this.gridSize + 1, this.gridSize - 2, this.gridSize - 2);
+        }
+      }
+    };
+
+    function renderSnakeControls() {
+      controlsZone.innerHTML = `
+        <div class="dpad-container">
+          <div></div>
+          <button class="dpad-btn" onclick="snakeGame.setDirection(0, -1)">&uarr;</button>
+          <div></div>
+          <button class="dpad-btn" onclick="snakeGame.setDirection(-1, 0)">&larr;</button>
+          <button class="dpad-btn" onclick="snakeGame.setDirection(0, 1)">&darr;</button>
+          <button class="dpad-btn" onclick="snakeGame.setDirection(1, 0)">&rarr;</button>
+        </div>
+      `;
+    }
+
+    // ─── 3. BLOCK BLAST ENGINE ──────────────────────────────────────────────
+    const blockGame = {
+      gridSize: 8,
+      cellSize: 36,
+      offsetX: 56,
+      offsetY: 16,
+      grid: [],
+      shelf: [],
+      selectedShapeIdx: null,
+
+      shapes: [
+        [[1]], // 1x1
+        [[1, 1]], // 1x2
+        [[1], [1]], // 2x1
+        [[1, 1, 1]], // 1x3
+        [[1], [1], [1]], // 3x1
+        [[1, 1], [1, 1]], // 2x2
+        [[1, 0], [1, 1]], // L shape
+        [[1, 1, 1], [0, 1, 0]], // T shape
+      ],
+
+      init() {
+        this.grid = Array(this.gridSize).fill(null).map(() => Array(this.gridSize).fill(0));
+        this.refillShelf();
+        setScore(0);
+        renderBlockControls();
+      },
+
+      refillShelf() {
+        this.shelf = [];
+        for (let i = 0; i < 3; i++) {
+          const randShape = this.shapes[Math.floor(Math.random() * this.shapes.length)];
+          this.shelf.push(randShape);
+        }
+        this.selectedShapeIdx = 0;
+        renderBlockShelf();
+      },
+
+      canPlace(shape, r, c) {
+        for (let i = 0; i < shape.length; i++) {
+          for (let j = 0; j < shape[i].length; j++) {
+            if (shape[i][j]) {
+              const nr = r + i;
+              const nc = c + j;
+              if (nr < 0 || nr >= this.gridSize || nc < 0 || nc >= this.gridSize) return false;
+              if (this.grid[nr][nc]) return false;
+            }
+          }
+        }
+        return true;
+      },
+
+      placeShape(r, c) {
+        if (this.selectedShapeIdx === null || !this.shelf[this.selectedShapeIdx]) return;
+        const shape = this.shelf[this.selectedShapeIdx];
+        if (!this.canPlace(shape, r, c)) return;
+
+        // Place blocks
+        let blocksPlaced = 0;
+        for (let i = 0; i < shape.length; i++) {
+          for (let j = 0; j < shape[i].length; j++) {
+            if (shape[i][j]) {
+              this.grid[r + i][c + j] = 1;
+              blocksPlaced++;
+            }
+          }
+        }
+
+        sfxJump();
+        setScore(score + blocksPlaced * 2);
+        this.shelf[this.selectedShapeIdx] = null;
+
+        // Check clear rows / cols
+        this.checkClears();
+
+        // If all 3 used, refill
+        if (this.shelf.every(s => s === null)) {
+          this.refillShelf();
+        } else {
+          // Select next available shape
+          this.selectedShapeIdx = this.shelf.findIndex(s => s !== null);
+          renderBlockShelf();
+        }
+      },
+
+      checkClears() {
+        const rowsToClear = [];
+        const colsToClear = [];
+
+        for (let r = 0; r < this.gridSize; r++) {
+          if (this.grid[r].every(v => v === 1)) rowsToClear.push(r);
+        }
+        for (let c = 0; c < this.gridSize; c++) {
+          let colFull = true;
+          for (let r = 0; r < this.gridSize; r++) {
+            if (this.grid[r][c] !== 1) { colFull = false; break; }
+          }
+          if (colFull) colsToClear.push(c);
+        }
+
+        const totalClears = rowsToClear.length + colsToClear.length;
+        if (totalClears > 0) {
+          sfxClear();
+          for (const r of rowsToClear) {
+            for (let c = 0; c < this.gridSize; c++) this.grid[r][c] = 0;
+          }
+          for (const c of colsToClear) {
+            for (let r = 0; r < this.gridSize; r++) this.grid[r][c] = 0;
+          }
+          setScore(score + totalClears * 50);
+        }
+      },
+
+      update() {},
+
+      draw() {
+        ctx.fillStyle = "#07090e";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw 8x8 Grid
+        for (let r = 0; r < this.gridSize; r++) {
+          for (let c = 0; c < this.gridSize; c++) {
+            const x = this.offsetX + c * this.cellSize;
+            const y = this.offsetY + r * this.cellSize;
+
+            ctx.fillStyle = this.grid[r][c] ? "#1DB954" : "#141923";
+            ctx.strokeStyle = "#202838";
+            ctx.lineWidth = 1;
+            ctx.fillRect(x, y, this.cellSize - 2, this.cellSize - 2);
+            ctx.strokeRect(x, y, this.cellSize - 2, this.cellSize - 2);
+          }
+        }
+      }
+    };
+
+    function renderBlockControls() {
+      controlsZone.innerHTML = `<div id="block-shelf" class="block-shapes-shelf"></div>`;
+      renderBlockShelf();
+
+      canvas.onclick = (e) => {
+        if (activeGameKey !== "block") return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const clickX = (e.clientX - rect.left) * scaleX;
+        const clickY = (e.clientY - rect.top) * scaleY;
+
+        const c = Math.floor((clickX - blockGame.offsetX) / blockGame.cellSize);
+        const r = Math.floor((clickY - blockGame.offsetY) / blockGame.cellSize);
+        if (r >= 0 && r < blockGame.gridSize && c >= 0 && c < blockGame.gridSize) {
+          blockGame.placeShape(r, c);
+        }
+      };
+    }
+
+    function renderBlockShelf() {
+      const shelfEl = document.getElementById("block-shelf");
+      if (!shelfEl) return;
+      shelfEl.innerHTML = blockGame.shelf.map((shape, idx) => {
+        if (!shape) return `<div class="shape-card" style="opacity:0.2;">KOSONG</div>`;
+        return `
+          <div class="shape-card ${blockGame.selectedShapeIdx === idx ? 'selected' : ''}" onclick="selectBlockShape(${idx})">
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              ${shape.map(row => `
+                <div style="display:flex;gap:2px;">
+                  ${row.map(cell => `
+                    <div style="width:10px;height:10px;background:${cell ? '#1DB954' : 'transparent'};border-radius:2px;"></div>
+                  `).join('')}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectBlockShape(idx) {
+      if (blockGame.shelf[idx]) {
+        blockGame.selectedShapeIdx = idx;
+        renderBlockShelf();
+      }
+    }
+
+    // ─── 4. 2048 PUZZLE ENGINE ──────────────────────────────────────────────
+    const puzzle2048 = {
+      size: 4,
+      board: [],
+      cellSize: 68,
+      offsetX: 56,
+      offsetY: 20,
+
+      init() {
+        this.board = Array(this.size).fill(0).map(() => Array(this.size).fill(0));
+        this.addRandomTile();
+        this.addRandomTile();
+        setScore(0);
+        render2048Controls();
+      },
+
+      addRandomTile() {
+        const empty = [];
+        for (let r = 0; r < this.size; r++) {
+          for (let c = 0; c < this.size; c++) {
+            if (this.board[r][c] === 0) empty.push({ r, c });
+          }
+        }
+        if (empty.length > 0) {
+          const spot = empty[Math.floor(Math.random() * empty.length)];
+          this.board[spot.r][spot.c] = Math.random() > 0.1 ? 2 : 4;
+        }
+      },
+
+      slide(row) {
+        let arr = row.filter(v => v !== 0);
+        for (let i = 0; i < arr.length - 1; i++) {
+          if (arr[i] === arr[i + 1]) {
+            arr[i] *= 2;
+            setScore(score + arr[i]);
+            arr[i + 1] = 0;
+            sfxCoin();
+          }
+        }
+        arr = arr.filter(v => v !== 0);
+        while (arr.length < this.size) arr.push(0);
+        return arr;
+      },
+
+      move(dir) {
+        if (isGameOver) return;
+        let moved = false;
+        const prev = JSON.stringify(this.board);
+
+        if (dir === "left") {
+          for (let r = 0; r < this.size; r++) this.board[r] = this.slide(this.board[r]);
+        } else if (dir === "right") {
+          for (let r = 0; r < this.size; r++) this.board[r] = this.slide(this.board[r].reverse()).reverse();
+        } else if (dir === "up") {
+          for (let c = 0; c < this.size; c++) {
+            let col = [this.board[0][c], this.board[1][c], this.board[2][c], this.board[3][c]];
+            col = this.slide(col);
+            for (let r = 0; r < this.size; r++) this.board[r][c] = col[r];
+          }
+        } else if (dir === "down") {
+          for (let c = 0; c < this.size; c++) {
+            let col = [this.board[3][c], this.board[2][c], this.board[1][c], this.board[0][c]];
+            col = this.slide(col);
+            for (let r = 0; r < this.size; r++) this.board[3 - r][c] = col[r];
+          }
+        }
+
+        if (prev !== JSON.stringify(this.board)) {
+          this.addRandomTile();
+        }
+      },
+
+      update() {},
+
+      draw() {
+        ctx.fillStyle = "#07090e";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let r = 0; r < this.size; r++) {
+          for (let c = 0; c < this.size; c++) {
+            const x = this.offsetX + c * (this.cellSize + 6);
+            const y = this.offsetY + r * (this.cellSize + 6);
+            const val = this.board[r][c];
+
+            ctx.fillStyle = this.getTileColor(val);
+            ctx.fillRect(x, y, this.cellSize, this.cellSize);
+
+            if (val > 0) {
+              ctx.fillStyle = val > 4 ? "#ffffff" : "#0b0d11";
+              ctx.font = "bold 16px 'JetBrains Mono', monospace";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              ctx.fillText(val, x + this.cellSize / 2, y + this.cellSize / 2);
+            }
+          }
+        }
+      },
+
+      getTileColor(v) {
+        switch (v) {
+          case 2: return "#334155";
+          case 4: return "#475569";
+          case 8: return "#f97316";
+          case 16: return "#ea580c";
+          case 32: return "#ef4444";
+          case 64: return "#dc2626";
+          case 128: return "#eab308";
+          case 256: return "#f59e0b";
+          case 512: return "#10b981";
+          case 1024: return "#06b6d4";
+          case 2048: return "#1DB954";
+          default: return "#131722";
+        }
+      }
+    };
+
+    function render2048Controls() {
+      controlsZone.innerHTML = `
+        <div class="dpad-container">
+          <div></div>
+          <button class="dpad-btn" onclick="puzzle2048.move('up')">&uarr;</button>
+          <div></div>
+          <button class="dpad-btn" onclick="puzzle2048.move('left')">&larr;</button>
+          <button class="dpad-btn" onclick="puzzle2048.move('down')">&darr;</button>
+          <button class="dpad-btn" onclick="puzzle2048.move('right')">&rarr;</button>
+        </div>
+      `;
+    }
+
+    // ─── 5. FLAPPY MINJI ENGINE ─────────────────────────────────────────────
+    const flappyGame = {
+      bird: { x: 50, y: 150, vy: 0, r: 14 },
+      pipes: [],
+      spawnTimer: 0,
+      gravity: 0.45,
+      jumpForce: -7.5,
+
+      init() {
+        this.bird = { x: 50, y: 150, vy: 0, r: 14 };
+        this.pipes = [];
+        this.spawnTimer = 0;
+        setScore(0);
+        renderFlappyControls();
+      },
+
+      flap() {
+        if (isGameOver) return;
+        this.bird.vy = this.jumpForce;
+        sfxJump();
+      },
+
+      update() {
+        if (isGameOver) return;
+        this.bird.vy += this.gravity;
+        this.bird.y += this.bird.vy;
+
+        // Ground/ceiling collision
+        if (this.bird.y + this.bird.r >= canvas.height || this.bird.y - this.bird.r <= 0) {
+          triggerGameOver();
+          return;
+        }
+
+        // Spawn pipes
+        this.spawnTimer++;
+        if (this.spawnTimer > 90) {
+          this.spawnTimer = 0;
+          const gap = 85;
+          const topH = 40 + Math.random() * (canvas.height - gap - 80);
+          this.pipes.push({ x: canvas.width, top: topH, bottom: topH + gap, passed: false });
+        }
+
+        // Move pipes & collision
+        for (let i = this.pipes.length - 1; i >= 0; i--) {
+          const p = this.pipes[i];
+          p.x -= 3;
+
+          // Bird collision
+          if (this.bird.x + this.bird.r > p.x && this.bird.x - this.bird.r < p.x + 40) {
+            if (this.bird.y - this.bird.r < p.top || this.bird.y + this.bird.r > p.bottom) {
+              triggerGameOver();
+              return;
+            }
+          }
+
+          if (!p.passed && p.x + 40 < this.bird.x) {
+            p.passed = true;
+            sfxCoin();
+            setScore(score + 1);
+          }
+
+          if (p.x + 40 < 0) this.pipes.splice(i, 1);
+        }
+      },
+
+      draw() {
+        ctx.fillStyle = "#07090e";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw pipes
+        for (const p of this.pipes) {
+          ctx.fillStyle = "#1DB954";
+          ctx.fillRect(p.x, 0, 40, p.top);
+          ctx.fillRect(p.x, p.bottom, 40, canvas.height - p.bottom);
+        }
+
+        // Draw Minji Bird
+        if (minjiImg.complete && minjiImg.naturalWidth !== 0) {
+          ctx.drawImage(minjiImg, this.bird.x - this.bird.r, this.bird.y - this.bird.r, this.bird.r * 2, this.bird.r * 2);
+        } else {
+          ctx.fillStyle = "#38bdf8";
+          ctx.beginPath();
+          ctx.arc(this.bird.x, this.bird.y, this.bird.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    };
+
+    function renderFlappyControls() {
+      controlsZone.innerHTML = `
+        <button class="touch-btn jump" id="btn-flap" style="padding: 14px 40px;">TAP UNTUK TERBANG</button>
+      `;
+      const btnFlap = document.getElementById("btn-flap");
+      btnFlap.addEventListener("touchstart", (e) => { e.preventDefault(); flappyGame.flap(); });
+      btnFlap.addEventListener("mousedown", () => flappyGame.flap());
+    }
+
+    // ─── MASTER GAME LOOP & SWITCHER ─────────────────────────────────────────
+    const gameEngines = {
+      dino: { name: "DINO RUNNER", engine: dinoGame },
+      snake: { name: "SNAKE RETRO", engine: snakeGame },
+      block: { name: "BLOCK BLAST", engine: blockGame },
+      2048: { name: "2048 PUZZLE", engine: puzzle2048 },
+      flappy: { name: "FLAPPY MINJI", engine: flappyGame },
+    };
+
+    function switchGame(gameKey) {
+      if (!gameEngines[gameKey]) return;
+      activeGameKey = gameKey;
+      hudTitle.textContent = gameEngines[gameKey].name;
+
+      // Update Nav pills
+      document.querySelectorAll(".tab-pill").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.game === gameKey);
+      });
+
+      // Load HiScore
+      const savedHi = localStorage.getItem("minji_arcade_hiscore_" + gameKey);
+      hiScore = savedHi ? parseInt(savedHi, 10) : 0;
+      hiScoreDisplay.textContent = hiScore;
+
+      hideGameOver();
+      gameEngines[gameKey].engine.init();
+    }
+
+    function restartActiveGame() {
+      hideGameOver();
+      gameEngines[activeGameKey].engine.init();
+    }
+
+    // Keyboard bindings
+    window.addEventListener("keydown", (e) => {
+      if (activeGameKey === "dino") {
+        if (e.code === "Space" || e.code === "ArrowUp") dinoGame.jump();
+        if (e.code === "ArrowDown") dinoGame.duck(true);
+      } else if (activeGameKey === "snake") {
+        if (e.code === "ArrowUp" || e.code === "KeyW") snakeGame.setDirection(0, -1);
+        if (e.code === "ArrowDown" || e.code === "KeyS") snakeGame.setDirection(0, 1);
+        if (e.code === "ArrowLeft" || e.code === "KeyA") snakeGame.setDirection(-1, 0);
+        if (e.code === "ArrowRight" || e.code === "KeyD") snakeGame.setDirection(1, 0);
+      } else if (activeGameKey === "2048") {
+        if (e.code === "ArrowUp") puzzle2048.move("up");
+        if (e.code === "ArrowDown") puzzle2048.move("down");
+        if (e.code === "ArrowLeft") puzzle2048.move("left");
+        if (e.code === "ArrowRight") puzzle2048.move("right");
+      } else if (activeGameKey === "flappy") {
+        if (e.code === "Space") flappyGame.flap();
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      if (activeGameKey === "dino" && e.code === "ArrowDown") {
+        dinoGame.duck(false);
+      }
+    });
+
+    // Touch events on canvas
+    canvas.addEventListener("touchstart", (e) => {
+      if (activeGameKey === "flappy") {
+        e.preventDefault();
+        flappyGame.flap();
+      }
+    });
+
+    // Main animation loop
+    function gameLoop() {
+      const active = gameEngines[activeGameKey].engine;
+      active.update();
+      active.draw();
+      animLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    // Nav listeners
+    document.querySelectorAll(".tab-pill").forEach(pill => {
+      pill.addEventListener("click", () => {
+        switchGame(pill.dataset.game);
+      });
+    });
+
+    // URL parameter support (e.g. /arcade?game=snake)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialGame = urlParams.get("game") || "dino";
+    switchGame(initialGame);
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

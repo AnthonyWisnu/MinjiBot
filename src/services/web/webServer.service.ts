@@ -202,6 +202,22 @@ export class WebServerService {
       }
     });
 
+    // ─── API: Arcade Endpoints ──────────────────────────────────────────────
+
+    // 9. List Available Arcade Games
+    this.app.get("/api/arcade/games", (_req, res) => {
+      res.json({
+        success: true,
+        games: [
+          { key: "dino", name: "Dino Runner", description: "Chrome style runner dengan lompat & merunduk" },
+          { key: "snake", name: "Snake Retro", description: "Ular klasik neon dengan kontrol D-Pad" },
+          { key: "block", name: "Block Blast", description: "Teka-teki susun blok 8x8 dan kombo garis" },
+          { key: "2048", name: "2048 Puzzle", description: "Geser dan satukan angka hingga mencapai 2048" },
+          { key: "flappy", name: "Flappy Minji", description: "Terbangkan avatar Minji melewati pilar rintangan" },
+        ],
+      });
+    });
+
     // ─── Web Views / Pages ──────────────────────────────────────────────────
 
     // Spotify Search Catalog Page (Screenshot 1)
@@ -249,6 +265,16 @@ export class WebServerService {
       }
     });
 
+    // Retro Arcade Hub Page (Screenshot 4)
+    this.app.get("/arcade", (_req, res) => {
+      const filePath = path.join(staticDir, "arcade", "index.html");
+      if (existsSync(filePath)) {
+        res.sendFile(filePath);
+      } else {
+        res.status(404).send("Arcade hub page not found");
+      }
+    });
+
     // Root Deck Dashboard
     this.app.get("/", (_req, res) => {
       res.send(`
@@ -275,6 +301,7 @@ export class WebServerService {
             <div class="links">
               <a href="/player/search?q=kessoku+band">&rarr; SPOTIFY SEARCH CATALOG</a>
               <a href="/soundboard">&rarr; INTERACTIVE MEME SOUNDBOARD</a>
+              <a href="/arcade">&rarr; RETRO ARCADE HUB</a>
             </div>
           </div>
         </body>
