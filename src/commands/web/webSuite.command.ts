@@ -3,6 +3,7 @@ import { interactiveMessageService } from "../../services/whatsapp/interactiveMe
 import { youtubeSearchService } from "../../services/media/youtubeSearch.service";
 import { playerSessionService } from "../../services/web/playerSession.service";
 import { arcadeRewardService } from "../../services/game/arcadeReward.service";
+import { webCardGeneratorService } from "../../services/web/webCardGenerator.service";
 
 export const webSuiteCommands: CommandDefinition[] = [
   {
@@ -87,6 +88,19 @@ async function handleSpotify(context: CommandContext): Promise<void> {
 
     const playerUrl = `${baseUrl}/player/${session.sessionId}`;
 
+    let cardImage: Buffer | undefined;
+    try {
+      cardImage = await webCardGeneratorService.generateStreamDeckCard({
+        title: video.title,
+        channelTitle: video.channelTitle,
+        durationSeconds: video.durationSeconds,
+        thumbnail: video.thumbnail,
+        url: playerUrl,
+      });
+    } catch {
+      // ignore
+    }
+
     await interactiveMessageService.sendCtaUrlMessage(context.socket, context.chatJid, {
       header: "SPOTIFY STREAM DECK // MINJIBOT",
       body: [
@@ -98,6 +112,7 @@ async function handleSpotify(context: CommandContext): Promise<void> {
       ].join("\n"),
       buttonText: "Buka Web Player",
       url: playerUrl,
+      cardImage,
       quoted: context.message,
     });
   } catch (err: unknown) {
@@ -109,6 +124,13 @@ async function handleSpotify(context: CommandContext): Promise<void> {
 async function handleArcade(context: CommandContext): Promise<void> {
   const baseUrl = interactiveMessageService.getBaseUrl();
   const url = `${baseUrl}/arcade?chat=${encodeURIComponent(context.chatJid)}&user=${encodeURIComponent(context.senderUserJid)}`;
+
+  let cardImage: Buffer | undefined;
+  try {
+    cardImage = await webCardGeneratorService.generateArcadeCard();
+  } catch {
+    // ignore
+  }
 
   await interactiveMessageService.sendCtaUrlMessage(context.socket, context.chatJid, {
     header: "RETRO ARCADE HUB // MINJIBOT",
@@ -126,6 +148,7 @@ async function handleArcade(context: CommandContext): Promise<void> {
     ].join("\n"),
     buttonText: "Buka Arcade Zone",
     url,
+    cardImage,
     quoted: context.message,
   });
 }
@@ -133,6 +156,13 @@ async function handleArcade(context: CommandContext): Promise<void> {
 async function handleCatur(context: CommandContext): Promise<void> {
   const baseUrl = interactiveMessageService.getBaseUrl();
   const url = `${baseUrl}/catur?chat=${encodeURIComponent(context.chatJid)}&user=${encodeURIComponent(context.senderUserJid)}`;
+
+  let cardImage: Buffer | undefined;
+  try {
+    cardImage = await webCardGeneratorService.generateChessCard();
+  } catch {
+    // ignore
+  }
 
   await interactiveMessageService.sendCtaUrlMessage(context.socket, context.chatJid, {
     header: "DANS CATUR // STRATEGY ARENA",
@@ -147,6 +177,7 @@ async function handleCatur(context: CommandContext): Promise<void> {
     ].join("\n"),
     buttonText: "Buka Dans Catur",
     url,
+    cardImage,
     quoted: context.message,
   });
 }
@@ -154,6 +185,13 @@ async function handleCatur(context: CommandContext): Promise<void> {
 async function handleSoundboard(context: CommandContext): Promise<void> {
   const baseUrl = interactiveMessageService.getBaseUrl();
   const url = `${baseUrl}/soundboard?chat=${encodeURIComponent(context.chatJid)}`;
+
+  let cardImage: Buffer | undefined;
+  try {
+    cardImage = await webCardGeneratorService.generateSoundboardCard();
+  } catch {
+    // ignore
+  }
 
   await interactiveMessageService.sendCtaUrlMessage(context.socket, context.chatJid, {
     header: "MEME SOUNDBOARD // VN DISPATCHER",
@@ -165,6 +203,7 @@ async function handleSoundboard(context: CommandContext): Promise<void> {
     ].join("\n"),
     buttonText: "Buka Soundboard",
     url,
+    cardImage,
     quoted: context.message,
   });
 }

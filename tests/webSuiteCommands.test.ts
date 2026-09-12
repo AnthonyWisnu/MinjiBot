@@ -28,6 +28,15 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
         capturedMessages.push({ jid, content, options });
         return undefined as any;
       },
+      waUploadToServer: async () => ({
+        url: "https://mmg.whatsapp.net/m1",
+        directPath: "/v/t62.7118-24/m1",
+        handle: "test-handle",
+        fileEncSha256: Buffer.from("enc"),
+        fileSha256: Buffer.from("sha"),
+        fileLength: 1234,
+        mediaKey: Buffer.from("key"),
+      }),
     } as unknown as WASocket;
   });
 
