@@ -55,17 +55,17 @@ export class WebServerService {
       next();
     });
 
+    // Mount modular routes first (so custom dynamic routes take precedence over static folders)
+    this.app.use(playerRouter);
+    this.app.use(streamRouter);
+    this.app.use(arcadeRouter);
+
     // Static Assets serving
     const staticDir = this.resolveStaticDir();
     this.app.use(express.static(staticDir, { maxAge: "1d", dotfiles: "ignore" }));
   }
 
   private setupRoutes(): void {
-    // Mount modular routes first
-    this.app.use(playerRouter);
-    this.app.use(streamRouter);
-    this.app.use(arcadeRouter);
-
     const staticDir = this.resolveStaticDir();
 
     // Health Check Endpoint

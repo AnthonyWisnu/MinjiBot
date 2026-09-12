@@ -4,10 +4,13 @@ import { renderDinoGameHtml } from "../../games/dino/dinoGame";
 import { renderBlockBlastGameHtml } from "../../games/block-blast/blockBlastGame";
 import { renderChessGameHtml } from "../../games/chess/chessGame";
 
+import path from "node:path";
+import fs from "node:fs";
+
 export const arcadeRouter = Router();
 
-// GET /arcade - Arcade Hub (Game Launcher)
-arcadeRouter.get("/arcade", (_req: Request, res: Response) => {
+// GET /arcade & /arcade/ - Arcade Hub (Game Launcher)
+arcadeRouter.get(["/arcade", "/arcade/"], (_req: Request, res: Response) => {
   res.send(`<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -106,7 +109,7 @@ arcadeRouter.get("/arcade", (_req: Request, res: Response) => {
         <div class="arrow">&rarr;</div>
       </a>
 
-      <a href="/arcade/chess" class="game-item">
+        <a href="/arcade/chess" class="game-item">
         <div class="game-icon">&#9812;</div>
         <div class="game-meta">
           <div class="game-name">Royal Chess (PvP)</div>
@@ -114,10 +117,29 @@ arcadeRouter.get("/arcade", (_req: Request, res: Response) => {
         </div>
         <div class="arrow">&rarr;</div>
       </a>
+
+      <a href="/arcade/flappy" class="game-item">
+        <div class="game-icon">&#128038;</div>
+        <div class="game-meta">
+          <div class="game-name">Flappy Minji</div>
+          <div class="game-desc">Terbangkan burung lewati pipa dan menangkan token reward.</div>
+        </div>
+        <div class="arrow">&rarr;</div>
+      </a>
     </div>
   </div>
 </body>
 </html>`);
+});
+
+// GET /arcade/flappy - Flappy Bird Game
+arcadeRouter.get("/arcade/flappy", (_req: Request, res: Response) => {
+  const flappyPath = path.resolve(process.cwd(), "public/arcade/index.html");
+  if (fs.existsSync(flappyPath)) {
+    res.sendFile(flappyPath);
+  } else {
+    res.redirect("/arcade");
+  }
 });
 
 // GET /arcade/dino - Dino Runner Game
