@@ -231,14 +231,6 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
       assert.strictEqual(audioMsg.content?.ptt, false);
       assert.strictEqual(audioMsg.content?.audio, fakeBuffer);
 
-      const adReply = audioMsg.content?.contextInfo?.externalAdReply;
-      assert.ok(adReply);
-      assert.strictEqual(adReply.title, "Never Gonna Give You Up");
-      assert.ok(adReply.body?.includes("Rick Astley"));
-      assert.strictEqual(adReply.renderLargerThumbnail, true);
-      assert.strictEqual(adReply.showAdAttribution, true);
-      assert.ok(adReply.sourceUrl?.includes("/player/"));
-
       // Cleanup harus terpanggil
       assert.strictEqual(cleanedDir, "/tmp/fake-test-dir");
     } finally {

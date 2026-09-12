@@ -116,18 +116,6 @@ async function handleSpotify(context: CommandContext): Promise<void> {
             audio: audioResult.buffer,
             mimetype: "audio/mpeg",
             ptt: false,
-            fileName: `${video.title}.mp3`,
-            contextInfo: {
-              externalAdReply: {
-                title: video.title,
-                body: `${video.channelTitle} • Spotify Music`,
-                mediaType: 1,
-                thumbnailUrl: video.thumbnail || `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`,
-                sourceUrl: playerUrl,
-                renderLargerThumbnail: true,
-                showAdAttribution: true,
-              },
-            },
           },
           { quoted: context.message },
         );
