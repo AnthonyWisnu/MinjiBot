@@ -11,6 +11,7 @@ import { youtubeSearchService } from "../media/youtubeSearch.service";
 import { youtubeStreamService } from "../media/youtubeStream.service";
 import { lyricsService } from "../media/lyrics.service";
 import { soundboardService } from "../media/soundboard.service";
+import { chessDuelService } from "../game/chessDuel.service";
 
 export class WebServerService {
   private app: Express;
@@ -218,6 +219,70 @@ export class WebServerService {
       });
     });
 
+    // ─── API: Strategy & Chess Endpoints ────────────────────────────────────
+
+    // 10. Start New Chess Game
+    this.app.post("/api/chess/new", (req, res) => {
+      try {
+        const { mode, playerColor, difficulty } = req.body;
+        const state = chessDuelService.createRoom({ mode, playerColor, difficulty });
+        res.json({ success: true, state });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to create chess game";
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // 11. Get Chess Game State
+    this.app.get("/api/chess/state/:roomId", (req, res) => {
+      const { roomId } = req.params;
+      const state = chessDuelService.getRoomState(roomId);
+      if (!state) {
+        res.status(404).json({ error: "Chess room tidak ditemukan." });
+        return;
+      }
+      res.json({ success: true, state });
+    });
+
+    // 12. Get Legal Moves for Square
+    this.app.get("/api/chess/moves/:roomId", (req, res) => {
+      const { roomId } = req.params;
+      const sq = typeof req.query.sq === "string" ? req.query.sq : undefined;
+      const moves = chessDuelService.getLegalMoves(roomId, sq);
+      res.json({ success: true, moves });
+    });
+
+    // 13. Make Chess Move
+    this.app.post("/api/chess/move", (req, res) => {
+      try {
+        const { roomId, from, to, promotion } = req.body;
+        if (!roomId || !from || !to) {
+          res.status(400).json({ error: "roomId, from, dan to wajib diisi." });
+          return;
+        }
+        const result = chessDuelService.makeMove(roomId, from, to, promotion);
+        if (!result.success) {
+          res.status(400).json({ success: false, error: result.error, state: result.state });
+          return;
+        }
+        res.json(result);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Gagal memproses langkah catur";
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // 14. Resign Chess Game
+    this.app.post("/api/chess/resign", (req, res) => {
+      const { roomId, color } = req.body;
+      const state = chessDuelService.resign(roomId, color);
+      if (!state) {
+        res.status(404).json({ error: "Room tidak ditemukan" });
+        return;
+      }
+      res.json({ success: true, state });
+    });
+
     // ─── Web Views / Pages ──────────────────────────────────────────────────
 
     // Spotify Search Catalog Page (Screenshot 1)
@@ -275,6 +340,46 @@ export class WebServerService {
       }
     });
 
+    // Dans Catur Page (Screenshot 3)
+    this.app.get("/catur", (_req, res) => {
+      const filePath = path.join(staticDir, "catur", "index.html");
+      if (existsSync(filePath)) {
+        res.sendFile(filePath);
+      } else {
+        res.status(404).send("Catur page not found");
+      }
+    });
+
+    // Strategy Arena Hub Page
+    this.app.get("/duel", (_req, res) => {
+      const filePath = path.join(staticDir, "duel", "index.html");
+      if (existsSync(filePath)) {
+        res.sendFile(filePath);
+      } else {
+        res.status(404).send("Strategy arena page not found");
+      }
+    });
+
+    // Connect Four Duel Page
+    this.app.get("/duel/connect4", (_req, res) => {
+      const filePath = path.join(staticDir, "duel", "connect4.html");
+      if (existsSync(filePath)) {
+        res.sendFile(filePath);
+      } else {
+        res.status(404).send("Connect four page not found");
+      }
+    });
+
+    // Tic-Tac-Toe Deluxe Page
+    this.app.get("/duel/tictactoe", (_req, res) => {
+      const filePath = path.join(staticDir, "duel", "tictactoe.html");
+      if (existsSync(filePath)) {
+        res.sendFile(filePath);
+      } else {
+        res.status(404).send("Tic-tac-toe page not found");
+      }
+    });
+
     // Root Deck Dashboard
     this.app.get("/", (_req, res) => {
       res.send(`
@@ -302,6 +407,8 @@ export class WebServerService {
               <a href="/player/search?q=kessoku+band">&rarr; SPOTIFY SEARCH CATALOG</a>
               <a href="/soundboard">&rarr; INTERACTIVE MEME SOUNDBOARD</a>
               <a href="/arcade">&rarr; RETRO ARCADE HUB</a>
+              <a href="/catur">&rarr; DANS CATUR (FIDE CHESS)</a>
+              <a href="/duel">&rarr; STRATEGY ARENA (DUEL ZONE)</a>
             </div>
           </div>
         </body>

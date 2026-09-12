@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dans Catur // MinjiBot Strategy Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      background-color: #0b0e14;
+      background-image: radial-gradient(circle at 50% 0%, #152219 0%, #0b0e14 65%);
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 12px;
+    }
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Dans Catur Card (Screenshot 3 Style) */
+    .catur-card {
+      background: #151a23;
+      border: 1px solid #232a38;
+      border-radius: 20px;
+      padding: 18px 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .header-left {
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-sub {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 1px;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+    }
+    .brand-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+    .status-badge {
+      background: #1c2432;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      transition: all 0.2s;
+    }
+    .status-badge.bot-turn {
+      border-color: #f59e0b;
+      color: #f59e0b;
+      background: #281e10;
+    }
+    .status-badge.check {
+      border-color: #ef4444;
+      color: #ef4444;
+      background: #2b1414;
+    }
+
+    /* Captured Trays */
+    .tray {
+      display: flex;
+      gap: 4px;
+      min-height: 20px;
+      font-size: 14px;
+      align-items: center;
+      color: #94a3b8;
+    }
+
+    /* 8x8 Chessboard Container */
+    .board-wrapper {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chessboard {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #232b3b;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    .square {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      font-size: 32px;
+      transition: background-color 0.1s;
+    }
+    @media (max-width: 380px) {
+      .square { font-size: 26px; }
+    }
+    /* Screenshot 3 color scheme */
+    .square.light {
+      background-color: #eeeed2;
+    }
+    .square.dark {
+      background-color: #769656;
+    }
+    .square.selected {
+      background-color: #f6f669 !important;
+    }
+    .square.last-move {
+      background-color: #bbcb2b !important;
+    }
+    .square.in-check {
+      background-color: #e06666 !important;
+    }
+
+    /* Destination dot */
+    .legal-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.25);
+      position: absolute;
+      pointer-events: none;
+    }
+    .legal-capture {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 4px solid rgba(0, 0, 0, 0.25);
+      position: absolute;
+      pointer-events: none;
+    }
+
+    /* Piece styling */
+    .piece {
+      width: 90%;
+      height: 90%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .piece.white {
+      color: #ffffff;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.85));
+    }
+    .piece.black {
+      color: #1a1a1a;
+      filter: drop-shadow(0 1px 1px rgba(255,255,255,0.4));
+    }
+
+    /* Controls & Options Bar */
+    .options-card {
+      background: #11151c;
+      border: 1px solid #1f2634;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .option-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #94a3b8;
+    }
+    .btn-group {
+      display: flex;
+      gap: 6px;
+    }
+    .opt-btn {
+      background: #181d27;
+      border: 1px solid #293245;
+      color: #cbd5e1;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .opt-btn.active {
+      background: #1DB954;
+      border-color: #1DB954;
+      color: #0b0e14;
+      font-weight: 800;
+    }
+
+    /* Action Buttons Row */
+    .action-row {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-action {
+      flex: 1;
+      background: #181d28;
+      border: 1px solid #2a3447;
+      color: #f1f5f9;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .btn-action:hover {
+      background: #232b3c;
+    }
+    .btn-action.primary {
+      background: #1DB954;
+      border-color: #1DB954;
+      color: #0b0e14;
+      font-weight: 800;
+    }
+
+    /* Move History Log */
+    .history-box {
+      background: #0d1016;
+      border: 1px solid #1b2230;
+      border-radius: 8px;
+      padding: 8px;
+      max-height: 60px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    .history-box span.w { color: #f8fafc; }
+    .history-box span.b { color: #38bdf8; }
+
+    /* Duel Nav Hub Footer */
+    .duel-nav {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .duel-link {
+      flex: 1;
+      background: #12161f;
+      border: 1px solid #202737;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 8px;
+      border-radius: 8px;
+      text-align: center;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .duel-link.active {
+      border-color: #38bdf8;
+      color: #38bdf8;
+      background: #0f1c2b;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #161c27;
+      border: 1px solid #1DB954;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.85);
+      z-index: 100;
+      opacity: 0;
+      transition: all 0.3s;
+      max-width: 90%;
+      text-align: center;
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Dans Catur Header Card (Screenshot 3) -->
+    <div class="catur-card">
+      <div class="card-header">
+        <div class="header-left">
+          <span class="brand-sub">DANS CATUR</span>
+          <span class="brand-title">Catur</span>
+        </div>
+        <div class="status-badge" id="turn-status">Giliran Putih</div>
+      </div>
+
+      <!-- Black Captured Tray -->
+      <div class="tray" id="tray-black"></div>
+
+      <!-- 8x8 Chessboard -->
+      <div class="board-wrapper">
+        <div class="chessboard" id="board">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <!-- White Captured Tray -->
+      <div class="tray" id="tray-white"></div>
+    </div>
+
+    <!-- Options & Setup Card -->
+    <div class="options-card">
+      <div class="option-row">
+        <span>MODE PERMAINAN:</span>
+        <div class="btn-group">
+          <button class="opt-btn active" id="mode-ai" onclick="setMode('ai')">LAWAN BOT</button>
+          <button class="opt-btn" id="mode-pvp" onclick="setMode('pvp')">PASS & PLAY</button>
+        </div>
+      </div>
+      <div class="option-row" id="diff-row">
+        <span>TINGKAT KESULITAN BOT:</span>
+        <div class="btn-group">
+          <button class="opt-btn" onclick="setDifficulty('easy')">MUDAH</button>
+          <button class="opt-btn active" onclick="setDifficulty('medium')">SEDANG</button>
+          <button class="opt-btn" onclick="setDifficulty('hard')">SULIT</button>
+        </div>
+      </div>
+      <div class="option-row">
+        <span>PILIH WARNA ANDA:</span>
+        <div class="btn-group">
+          <button class="opt-btn active" id="color-w" onclick="setPlayerColor('w')">PUTIH</button>
+          <button class="opt-btn" id="color-b" onclick="setPlayerColor('b')">HITAM</button>
+        </div>
+      </div>
+
+      <!-- Move History -->
+      <div class="history-box" id="move-history">
+        Notasi Langkah: Game siap dimulai.
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-row">
+        <button class="btn-action primary" onclick="newGame()">GAME BARU</button>
+        <button class="btn-action" onclick="flipBoard()">PUTAR PAPAN</button>
+        <button class="btn-action" onclick="claimScore()">KLAIM TOKEN</button>
+      </div>
+    </div>
+
+    <!-- Duel Hub Switcher -->
+    <div class="duel-nav">
+      <a href="/catur" class="duel-link active">CATUR FIDE</a>
+      <a href="/duel/connect4" class="duel-link">CONNECT FOUR</a>
+      <a href="/duel/tictactoe" class="duel-link">TIC-TAC-TOE</a>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    // Unicode Chess Symbols
+    const PIECE_SYMBOLS = {
+      P: "♙", N: "♘", B: "♗", R: "♖", Q: "♕", K: "♔",
+      p: "♟", n: "♞", b: "♝", r: "♜", q: "♛", k: "♚"
+    };
+
+    // State
+    let roomId = null;
+    let mode = 'ai';
+    let difficulty = 'medium';
+    let playerColor = 'w';
+    let isFlipped = false;
+    let selectedSquare = null;
+    let legalMovesForSelected = [];
+    let lastMoveSquares = null;
+    let currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let isGameOver = false;
+
+    // Audio SFX
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function playSfx(freq, type = 'sine', dur = 0.1) {
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch(e) {}
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'show';
+      setTimeout(() => { toast.className = ''; }, 3000);
+    }
+
+    // Initialize Game via API
+    async function newGame() {
+      try {
+        const res = await fetch('/api/chess/new', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode, playerColor, difficulty })
+        });
+        const data = await res.json();
+        if (data.success && data.state) {
+          roomId = data.state.roomId;
+          updateState(data.state);
+          showToast('Game baru dimulai!');
+          playSfx(523, 'sine', 0.2);
+        }
+      } catch (e) {
+        // Local fallback if offline
+        initLocalGame();
+      }
+    }
+
+    function updateState(state) {
+      currentFen = state.fen;
+      isGameOver = state.isGameOver;
+      lastMoveSquares = state.lastMove;
+      selectedSquare = null;
+      legalMovesForSelected = [];
+
+      // Update Turn Status Badge
+      const badge = document.getElementById('turn-status');
+      if (state.isCheckmate) {
+        badge.textContent = 'SKAKMAT! ' + (state.winner === 'w' ? 'PUTIH MENANG' : 'HITAM MENANG');
+        badge.className = 'status-badge check';
+        playSfx(880, 'triangle', 0.4);
+      } else if (state.isDraw) {
+        badge.textContent = 'REMIS / DRAW';
+        badge.className = 'status-badge';
+      } else if (state.isCheck) {
+        badge.textContent = 'SKAK! ' + (state.turn === 'w' ? 'Giliran Putih' : 'Giliran Hitam');
+        badge.className = 'status-badge check';
+        playSfx(220, 'sawtooth', 0.25);
+      } else {
+        if (state.mode === 'ai' && state.turn !== state.playerColor) {
+          badge.textContent = 'Bot berpikir...';
+          badge.className = 'status-badge bot-turn';
+        } else {
+          badge.textContent = state.turn === 'w' ? 'Giliran Putih' : 'Giliran Hitam';
+          badge.className = 'status-badge';
+        }
+      }
+
+      // Update Move History
+      const histEl = document.getElementById('move-history');
+      if (state.moveHistory && state.moveHistory.length > 0) {
+        let movesText = '';
+        state.moveHistory.forEach((m, idx) => {
+          if (idx % 2 === 0) movesText += `<b>${Math.floor(idx/2)+1}.</b> `;
+          movesText += `<span class="${m.color}">${m.san}</span> `;
+        });
+        histEl.innerHTML = movesText;
+        histEl.scrollTop = histEl.scrollHeight;
+      } else {
+        histEl.innerHTML = 'Notasi Langkah: Permainan dimulai.';
+      }
+
+      // Render Board
+      renderBoard();
+    }
+
+    // Parse FEN to 8x8 Board
+    function parseFen(fen) {
+      const parts = fen.split(' ');
+      const rows = parts[0].split('/');
+      const board = [];
+
+      for (const row of rows) {
+        const boardRow = [];
+        for (const ch of row) {
+          if (ch >= '1' && ch <= '8') {
+            const count = parseInt(ch, 10);
+            for (let i = 0; i < count; i++) boardRow.push(null);
+          } else {
+            boardRow.push(ch);
+          }
+        }
+        board.push(boardRow);
+      }
+      return board;
+    }
+
+    function squareToCoords(sq) {
+      const file = sq.charCodeAt(0) - 'a'.charCodeAt(0);
+      const rank = 8 - parseInt(sq[1], 10);
+      return { r: rank, c: file };
+    }
+
+    function coordsToSquare(r, c) {
+      const file = String.fromCharCode('a'.charCodeAt(0) + c);
+      const rank = (8 - r).toString();
+      return file + rank;
+    }
+
+    // Render Board DOM
+    function renderBoard() {
+      const boardEl = document.getElementById('board');
+      boardEl.innerHTML = '';
+      const grid = parseFen(currentFen);
+
+      for (let visualR = 0; visualR < 8; visualR++) {
+        for (let visualC = 0; visualC < 8; visualC++) {
+          const r = isFlipped ? 7 - visualR : visualR;
+          const c = isFlipped ? 7 - visualC : visualC;
+          const sq = coordsToSquare(r, c);
+          const pieceChar = grid[r][c];
+
+          const isLight = (r + c) % 2 === 0;
+          const sqEl = document.createElement('div');
+          sqEl.className = `square ${isLight ? 'light' : 'dark'}`;
+          sqEl.dataset.square = sq;
+
+          // Highlights
+          if (selectedSquare === sq) sqEl.classList.add('selected');
+          if (lastMoveSquares && (lastMoveSquares.from === sq || lastMoveSquares.to === sq)) {
+            sqEl.classList.add('last-move');
+          }
+
+          // Legal move indicators
+          const isLegalTarget = legalMovesForSelected.some(m => m.to === sq);
+          if (isLegalTarget) {
+            const dot = document.createElement('div');
+            dot.className = pieceChar ? 'legal-capture' : 'legal-dot';
+            sqEl.appendChild(dot);
+          }
+
+          // Piece
+          if (pieceChar) {
+            const pieceEl = document.createElement('div');
+            const isWhite = pieceChar === pieceChar.toUpperCase();
+            pieceEl.className = `piece ${isWhite ? 'white' : 'black'}`;
+            pieceEl.textContent = PIECE_SYMBOLS[pieceChar];
+            sqEl.appendChild(pieceEl);
+          }
+
+          sqEl.addEventListener('click', () => onSquareClick(sq, pieceChar));
+          boardEl.appendChild(sqEl);
+        }
+      }
+    }
+
+    // Square Click Handler
+    async function onSquareClick(sq, pieceChar) {
+      if (isGameOver) return;
+
+      // If a piece is already selected and we click a legal destination
+      const move = legalMovesForSelected.find(m => m.to === sq);
+      if (selectedSquare && move) {
+        await executeMove(selectedSquare, sq);
+        return;
+      }
+
+      // Otherwise, select piece if it matches turn
+      if (pieceChar) {
+        selectedSquare = sq;
+        await fetchLegalMoves(sq);
+      } else {
+        selectedSquare = null;
+        legalMovesForSelected = [];
+        renderBoard();
+      }
+    }
+
+    async function fetchLegalMoves(sq) {
+      try {
+        const res = await fetch(`/api/chess/moves/${roomId}?sq=${sq}`);
+        const data = await res.json();
+        if (data.success) {
+          legalMovesForSelected = data.moves;
+          renderBoard();
+        }
+      } catch (e) {
+        renderBoard();
+      }
+    }
+
+    async function executeMove(from, to) {
+      playSfx(440, 'triangle', 0.08);
+      try {
+        const res = await fetch('/api/chess/move', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId, from, to, promotion: 'q' })
+        });
+        const data = await res.json();
+        if (data.success && data.state) {
+          updateState(data.state);
+          if (data.botMove) {
+            playSfx(330, 'square', 0.08);
+          }
+        } else {
+          showToast(data.error || 'Langkah tidak valid');
+        }
+      } catch (e) {
+        showToast('Koneksi server gagal');
+      }
+    }
+
+    function flipBoard() {
+      isFlipped = !isFlipped;
+      renderBoard();
+    }
+
+    function setMode(newMode) {
+      mode = newMode;
+      document.getElementById('mode-ai').classList.toggle('active', mode === 'ai');
+      document.getElementById('mode-pvp').classList.toggle('active', mode === 'pvp');
+      document.getElementById('diff-row').style.display = (mode === 'ai') ? 'flex' : 'none';
+      newGame();
+    }
+
+    function setDifficulty(diff) {
+      difficulty = diff;
+      document.querySelectorAll('#diff-row .opt-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase().includes(diff));
+      });
+      newGame();
+    }
+
+    function setPlayerColor(color) {
+      playerColor = color;
+      isFlipped = (color === 'b');
+      document.getElementById('color-w').classList.toggle('active', color === 'w');
+      document.getElementById('color-b').classList.toggle('active', color === 'b');
+      newGame();
+    }
+
+    function claimScore() {
+      const token = "CATUR-" + (isGameOver ? "WIN" : "PLAY") + "-" + Math.floor(Date.now() / 1000).toString(16);
+      showToast("Token catur: " + token + " (Kirim ke WhatsApp MinjiBot)");
+    }
+
+    // Start on load
+    newGame();
+  </script>
+</body>
+</html>

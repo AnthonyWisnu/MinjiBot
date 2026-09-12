@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tic-Tac-Toe Deluxe // MinjiBot Strategy Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      background-color: #0b0e14;
+      background-image: radial-gradient(circle at 50% 0%, #15221b 0%, #0b0e14 65%);
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 12px;
+    }
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      background: #141923;
+      border: 1px solid #222a3a;
+      border-radius: 20px;
+      padding: 18px 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-sub {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1DB954;
+      letter-spacing: 1px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .brand-title { font-size: 20px; font-weight: 800; }
+    .status-badge {
+      background: #18221c;
+      border: 1px solid #1DB954;
+      color: #1DB954;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 4px 10px;
+      border-radius: 9999px;
+    }
+
+    /* Score Tally */
+    .tally-row {
+      display: flex;
+      justify-content: space-around;
+      background: #0d1117;
+      border: 1px solid #1f2736;
+      border-radius: 12px;
+      padding: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      text-align: center;
+    }
+    .tally-item div:first-child { font-size: 10px; color: #64748b; font-weight: 700; }
+    .tally-item div:last-child { font-size: 16px; font-weight: 800; color: #f8fafc; }
+
+    /* 3x3 Board */
+    .board-box {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 8px;
+      background: #090c12;
+      border: 2px solid #1e2637;
+      border-radius: 16px;
+      padding: 10px;
+      position: relative;
+    }
+    .cell {
+      background: #121620;
+      border: 1px solid #202738;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cell:hover { background: #1a202d; }
+    .cell.x {
+      color: #00F0FF;
+      text-shadow: 0 0 16px rgba(0, 240, 255, 0.6);
+    }
+    .cell.o {
+      color: #1DB954;
+      text-shadow: 0 0 16px rgba(29, 185, 84, 0.6);
+    }
+    .cell.win {
+      background: #182822;
+      border-color: #1DB954;
+      animation: pulseCell 0.5s infinite alternate;
+    }
+    @keyframes pulseCell {
+      from { transform: scale(0.96); }
+      to { transform: scale(1.04); }
+    }
+
+    /* Options */
+    .options-card {
+      background: #11151c;
+      border: 1px solid #1f2634;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .option-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #94a3b8;
+    }
+    .btn-group { display: flex; gap: 6px; }
+    .opt-btn {
+      background: #181d27;
+      border: 1px solid #293245;
+      color: #cbd5e1;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .opt-btn.active {
+      background: #1DB954;
+      border-color: #1DB954;
+      color: #0b0e14;
+      font-weight: 800;
+    }
+    .btn-action {
+      flex: 1;
+      background: #181d28;
+      border: 1px solid #2a3447;
+      color: #f1f5f9;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn-action.primary {
+      background: #1DB954;
+      border-color: #1DB954;
+      color: #0b0e14;
+      font-weight: 800;
+    }
+
+    /* Nav */
+    .duel-nav { display: flex; gap: 8px; }
+    .duel-link {
+      flex: 1;
+      background: #12161f;
+      border: 1px solid #202737;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 8px;
+      border-radius: 8px;
+      text-align: center;
+      text-decoration: none;
+    }
+    .duel-link.active {
+      border-color: #1DB954;
+      color: #1DB954;
+      background: #0d1e15;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #161c27;
+      border: 1px solid #1DB954;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      z-index: 100;
+      opacity: 0;
+      transition: all 0.3s;
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="brand-sub">STRATEGY ARENA</div>
+          <div class="brand-title">Tic-Tac-Toe Deluxe</div>
+        </div>
+        <div class="status-badge" id="ttt-status">Giliran X (P1)</div>
+      </div>
+
+      <!-- Tally -->
+      <div class="tally-row">
+        <div class="tally-item">
+          <div>PEMAIN (X)</div>
+          <div id="score-p1">0</div>
+        </div>
+        <div class="tally-item">
+          <div>SERI</div>
+          <div id="score-draw">0</div>
+        </div>
+        <div class="tally-item">
+          <div id="p2-label">BOT (O)</div>
+          <div id="score-p2">0</div>
+        </div>
+      </div>
+
+      <!-- 3x3 Grid -->
+      <div class="board-box" id="ttt-board">
+        <!-- 9 cells injected via JS -->
+      </div>
+    </div>
+
+    <!-- Options -->
+    <div class="options-card">
+      <div class="option-row">
+        <span>MODE PERMAINAN:</span>
+        <div class="btn-group">
+          <button class="opt-btn active" id="btn-ttt-ai" onclick="setTttMode('ai')">LAWAN BOT</button>
+          <button class="opt-btn" id="btn-ttt-pvp" onclick="setTttMode('pvp')">PASS & PLAY</button>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-action primary" onclick="resetTtt()">GAME BARU</button>
+        <button class="btn-action" onclick="claimTttToken()">KLAIM TOKEN</button>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <div class="duel-nav">
+      <a href="/catur" class="duel-link">CATUR FIDE</a>
+      <a href="/duel/connect4" class="duel-link">CONNECT FOUR</a>
+      <a href="/duel/tictactoe" class="duel-link active">TIC-TAC-TOE</a>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    let board = Array(9).fill(null);
+    let currentPlayer = 'X';
+    let tttMode = 'ai';
+    let isGameOver = false;
+    let scores = { p1: 0, draw: 0, p2: 0 };
+
+    const WINNING_COMBOS = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // Cols
+      [0, 4, 8], [2, 4, 6]             // Diagonals
+    ];
+
+    // Audio SFX
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function playSfx(freq, dur = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.frequency.value = freq;
+        g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch(e) {}
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'show';
+      setTimeout(() => toast.className = '', 3000);
+    }
+
+    function resetTtt() {
+      board = Array(9).fill(null);
+      currentPlayer = 'X';
+      isGameOver = false;
+      updateStatus();
+      renderBoard();
+    }
+
+    function setTttMode(m) {
+      tttMode = m;
+      document.getElementById('btn-ttt-ai').classList.toggle('active', m === 'ai');
+      document.getElementById('btn-ttt-pvp').classList.toggle('active', m === 'pvp');
+      document.getElementById('p2-label').textContent = (m === 'ai') ? 'BOT (O)' : 'P2 (O)';
+      resetTtt();
+    }
+
+    function updateStatus(winner = null, combo = null) {
+      const el = document.getElementById('ttt-status');
+      if (winner) {
+        el.textContent = winner === 'X' ? 'X MENANG!' : (tttMode === 'ai' ? 'BOT MENANG!' : 'O MENANG!');
+        el.style.color = winner === 'X' ? '#00F0FF' : '#1DB954';
+        playSfx(880, 0.35);
+      } else if (isGameOver) {
+        el.textContent = 'PERMAINAN SERI!';
+        el.style.color = '#94a3b8';
+      } else {
+        el.textContent = currentPlayer === 'X' ? 'Giliran X' : (tttMode === 'ai' ? 'Bot berpikir...' : 'Giliran O');
+        el.style.color = currentPlayer === 'X' ? '#00F0FF' : '#1DB954';
+      }
+    }
+
+    function renderBoard(winningCombo = null) {
+      const boardEl = document.getElementById('ttt-board');
+      boardEl.innerHTML = '';
+
+      board.forEach((val, idx) => {
+        const cell = document.createElement('div');
+        cell.className = `cell ${val ? val.toLowerCase() : ''}`;
+        if (winningCombo && winningCombo.includes(idx)) {
+          cell.classList.add('win');
+        }
+        cell.textContent = val || '';
+        cell.onclick = () => makeMove(idx);
+        boardEl.appendChild(cell);
+      });
+    }
+
+    function makeMove(idx) {
+      if (board[idx] || isGameOver) return;
+      if (tttMode === 'ai' && currentPlayer === 'O') return;
+
+      board[idx] = currentPlayer;
+      playSfx(currentPlayer === 'X' ? 520 : 380, 0.08);
+
+      const winCombo = checkWin(currentPlayer);
+      if (winCombo) {
+        isGameOver = true;
+        if (currentPlayer === 'X') scores.p1++; else scores.p2++;
+        updateTally();
+        updateStatus(currentPlayer, winCombo);
+        renderBoard(winCombo);
+        return;
+      }
+
+      if (board.every(cell => cell !== null)) {
+        isGameOver = true;
+        scores.draw++;
+        updateTally();
+        updateStatus();
+        renderBoard();
+        return;
+      }
+
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      updateStatus();
+      renderBoard();
+
+      if (tttMode === 'ai' && currentPlayer === 'O' && !isGameOver) {
+        setTimeout(makeBotMove, 300);
+      }
+    }
+
+    function checkWin(p) {
+      for (const combo of WINNING_COMBOS) {
+        if (combo.every(idx => board[idx] === p)) return combo;
+      }
+      return null;
+    }
+
+    function updateTally() {
+      document.getElementById('score-p1').textContent = scores.p1;
+      document.getElementById('score-draw').textContent = scores.draw;
+      document.getElementById('score-p2').textContent = scores.p2;
+    }
+
+    // Unbeatable Minimax Bot
+    function makeBotMove() {
+      if (isGameOver) return;
+
+      let bestScore = -Infinity;
+      let bestMove = -1;
+
+      for (let i = 0; i < 9; i++) {
+        if (!board[i]) {
+          board[i] = 'O';
+          const score = minimax(board, 0, false);
+          board[i] = null;
+          if (score > bestScore) {
+            bestScore = score;
+            bestMove = i;
+          }
+        }
+      }
+
+      if (bestMove !== -1) {
+        board[bestMove] = 'O';
+        playSfx(380, 0.08);
+
+        const winCombo = checkWin('O');
+        if (winCombo) {
+          isGameOver = true;
+          scores.p2++;
+          updateTally();
+          updateStatus('O', winCombo);
+          renderBoard(winCombo);
+          return;
+        }
+
+        if (board.every(cell => cell !== null)) {
+          isGameOver = true;
+          scores.draw++;
+          updateTally();
+          updateStatus();
+          renderBoard();
+          return;
+        }
+
+        currentPlayer = 'X';
+        updateStatus();
+        renderBoard();
+      }
+    }
+
+    function minimax(currBoard, depth, isMaximizing) {
+      if (checkWin('O')) return 10 - depth;
+      if (checkWin('X')) return depth - 10;
+      if (currBoard.every(c => c !== null)) return 0;
+
+      if (isMaximizing) {
+        let maxEval = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (!currBoard[i]) {
+            currBoard[i] = 'O';
+            const evaluation = minimax(currBoard, depth + 1, false);
+            currBoard[i] = null;
+            maxEval = Math.max(maxEval, evaluation);
+          }
+        }
+        return maxEval;
+      } else {
+        let minEval = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (!currBoard[i]) {
+            currBoard[i] = 'X';
+            const evaluation = minimax(currBoard, depth + 1, true);
+            currBoard[i] = null;
+            minEval = Math.min(minEval, evaluation);
+          }
+        }
+        return minEval;
+      }
+    }
+
+    function claimTttToken() {
+      const token = "TTT-" + scores.p1 + "-" + scores.p2 + "-" + Math.floor(Date.now() / 1000).toString(16);
+      showToast("Token Tic-Tac-Toe: " + token + " (Kirim ke WhatsApp MinjiBot)");
+    }
+
+    resetTtt();
+  </script>
+</body>
+</html>

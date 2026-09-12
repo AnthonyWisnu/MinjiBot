@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Strategy Arena // MinjiBot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: #0b0e14;
+      background-image: radial-gradient(circle at 50% 0%, #15241f 0%, #0b0e14 65%);
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .header-card {
+      background: #141923;
+      border: 1px solid #222b3d;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+      text-align: center;
+    }
+    .brand-sub {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1DB954;
+      letter-spacing: 1px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .brand-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+    .game-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .game-card {
+      background: #121620;
+      border: 1px solid #1f2738;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-decoration: none;
+      color: #ffffff;
+      transition: all 0.2s;
+    }
+    .game-card:hover {
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+    .game-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .game-badge {
+      font-size: 9px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #00F0FF;
+      background: #0d1e2e;
+      border: 1px solid #0284c7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      align-self: flex-start;
+    }
+    .game-name {
+      font-size: 16px;
+      font-weight: 800;
+    }
+    .game-desc {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .arrow-icon {
+      font-size: 20px;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-card">
+      <div class="brand-sub">TACTICAL STRATEGY SUITE</div>
+      <div class="brand-title">Strategy Arena</div>
+      <p style="font-size: 12px; color: #94a3b8; margin-top: 6px;">
+        Pilih duel kecerdasan dan taktik melawan MinjiBot AI atau tantang teman dalam mode 2-Player Pass & Play.
+      </p>
+    </div>
+
+    <div class="game-list">
+      <a href="/catur" class="game-card">
+        <div class="game-info">
+          <span class="game-badge" style="color: #1DB954; border-color: #166534; background: #0c2014;">FIDE CHESS</span>
+          <span class="game-name">Dans Catur</span>
+          <span class="game-desc">Papan catur 8x8 aturan legal FIDE dengan Minimax AI</span>
+        </div>
+        <div class="arrow-icon">&rarr;</div>
+      </a>
+
+      <a href="/duel/connect4" class="game-card">
+        <div class="game-info">
+          <span class="game-badge">4 IN A ROW</span>
+          <span class="game-name">Connect Four</span>
+          <span class="game-desc">Jatuhkan koin dan susun 4 berturut-turut untuk menang</span>
+        </div>
+        <div class="arrow-icon">&rarr;</div>
+      </a>
+
+      <a href="/duel/tictactoe" class="game-card">
+        <div class="game-info">
+          <span class="game-badge" style="color: #fbbf24; border-color: #b45309; background: #241608;">DELUXE CLASSIC</span>
+          <span class="game-name">Tic-Tac-Toe Deluxe</span>
+          <span class="game-desc">Duel 3x3 neon dengan Minimax AI tak terkalahkan</span>
+        </div>
+        <div class="arrow-icon">&rarr;</div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>
