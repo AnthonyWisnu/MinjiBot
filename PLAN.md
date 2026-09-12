@@ -162,11 +162,11 @@ Pengerjaan dibagi ke dalam 8 sub-fase terstruktur:
 
 ## 4. Matriks Kriteria Penerimaan (Definition of Done)
 
-- [ ] Web server Express terintegrasi dan mati-hidup selaras dengan lifecycle bot tanpa proses menggantung.
-- [ ] Command `.ythtml` menyajikan tampilan pencarian dan pemutar video/audio bergaya Spotify persis Screenshot 1 & 2.
-- [ ] Command `.catur` menyajikan papan catur interaktif persis Screenshot 3 dengan aturan legal penuh.
-- [ ] Command `.arcade` menyajikan drawer tab Dino Runner, Snake, Block Blast, 2048, dan Flappy Minji persis Screenshot 4.
-- [ ] Tombol pada Meme Soundboard berhasil memicu bot mengirim voice note langsung ke chat WhatsApp.
-- [ ] Leaderboard web berhasil membaca data profil dan poin member asli dari PostgreSQL Prisma.
-- [ ] Pesan WhatsApp memiliki tombol interaktif dan fallback link yang bekerja 100% di semua versi WhatsApp.
-- [ ] Penggunaan RAM VPS tetap terkendali dan stabil di bawah 65% pemakaian memori.
+- [x] Web server Express terintegrasi dan mati-hidup selaras dengan lifecycle bot tanpa proses menggantung.
+- [x] Command `.ythtml` menyajikan tampilan pencarian dan pemutar video/audio bergaya Spotify persis Screenshot 1 & 2.
+- [x] Command `.catur` menyajikan papan catur interaktif persis Screenshot 3 dengan aturan legal penuh.
+- [x] Command `.arcade` menyajikan drawer tab Dino Runner, Snake, Block Blast, 2048, dan Flappy Minji persis Screenshot 4.
+- [x] Tombol pada Meme Soundboard berhasil memicu bot mengirim voice note langsung ke chat WhatsApp.
+- [x] Leaderboard web berhasil membaca data profil dan poin member asli dari PostgreSQL Prisma.
+- [x] Pesan WhatsApp memiliki tombol interaktif dan fallback link yang bekerja 100% di semua versi WhatsApp.
+- [x] Penggunaan RAM VPS tetap terkendali dan stabil di bawah 65% pemakaian memori.
