@@ -83,7 +83,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
   it("harus mendaftarkan semua 7 perintah web suite beserta aliasnya", () => {
     const commandNames = webSuiteCommands.map((c) => c.name);
     assert.deepStrictEqual(commandNames, [
-      "ythtml",
+      "spotify",
       "arcade",
       "catur",
       "soundboard",
@@ -92,6 +92,8 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
       "claimreward",
     ]);
 
+    assert.ok(getCommand("spotify"));
+    assert.ok(getCommand("ythtml"));
     assert.ok(getCommand("ytweb"));
     assert.ok(getCommand("playweb"));
     assert.ok(getCommand("ytplayer"));
@@ -109,9 +111,9 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
     assert.ok(getCommand("klaim"));
   });
 
-  it("handleYtHtml tanpa argumen: mengirim katalog pencarian gaya Spotify", async () => {
-    const cmd = getCommand("ythtml");
-    const ctx = createContext({ commandName: "ythtml", argsText: "" });
+  it("handleSpotify tanpa argumen: mengirim katalog pencarian gaya Spotify", async () => {
+    const cmd = getCommand("spotify");
+    const ctx = createContext({ commandName: "spotify", argsText: "" });
 
     await cmd.execute(ctx);
 
@@ -131,7 +133,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
     assert.ok(params.url.includes("/player/search"));
   });
 
-  it("handleYtHtml dengan query: mencari lagu dan membuat player session stream deck", async () => {
+  it("handleSpotify dengan query: mencari lagu dan membuat player session stream deck", async () => {
     // Mock searchVideos
     const originalSearch = youtubeSearchService.searchVideos;
     youtubeSearchService.searchVideos = async () => [
@@ -146,9 +148,9 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
     ];
 
     try {
-      const cmd = getCommand("ythtml");
+      const cmd = getCommand("spotify");
       const ctx = createContext({
-        commandName: "ythtml",
+        commandName: "spotify",
         argsText: "rick astley never gonna give you up",
       });
 

@@ -282,7 +282,7 @@ export class MenuService {
   private buildWebSuiteLines(): string[] {
     return [
       "*─── [ WEB APP & ARCADE ] ───*",
-      "• .ythtml [lagu] (Spotify Player)",
+      "• .spotify [lagu] (Spotify Player)",
       "• .arcade (Dino, Snake, Block, 2048, Flappy)",
       "• .catur (Dans Catur FIDE & Bot AI)",
       "• .soundboard (Meme SFX & Kirim VN)",

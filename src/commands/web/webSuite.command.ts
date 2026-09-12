@@ -6,9 +6,9 @@ import { arcadeRewardService } from "../../services/game/arcadeReward.service";
 
 export const webSuiteCommands: CommandDefinition[] = [
   {
-    name: "ythtml",
-    aliases: ["ytweb", "playweb", "ytplayer"],
-    execute: handleYtHtml,
+    name: "spotify",
+    aliases: ["ythtml", "ytweb", "playweb", "ytplayer"],
+    execute: handleSpotify,
   },
   {
     name: "arcade",
@@ -42,7 +42,7 @@ export const webSuiteCommands: CommandDefinition[] = [
   },
 ];
 
-async function handleYtHtml(context: CommandContext): Promise<void> {
+async function handleSpotify(context: CommandContext): Promise<void> {
   const query = context.argsText.trim();
   const baseUrl = interactiveMessageService.getBaseUrl();
 
@@ -54,7 +54,7 @@ async function handleYtHtml(context: CommandContext): Promise<void> {
       body: [
         "Akses antarmuka katalog musik Spotify Dark untuk mencari lagu dan streaming langsung di pemutar web.",
         "",
-        "Gunakan: .ythtml <judul lagu/link>",
+        "Gunakan: .spotify <judul lagu/link>",
       ].join("\n"),
       buttonText: "Buka Spotify Catalog",
       url,
