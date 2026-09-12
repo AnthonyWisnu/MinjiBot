@@ -8,6 +8,7 @@ import { interactiveMessageService } from "../src/services/whatsapp/interactiveM
 import { youtubeSearchService } from "../src/services/media/youtubeSearch.service";
 import { playerSessionService } from "../src/services/web/playerSession.service";
 import { arcadeRewardService } from "../src/services/game/arcadeReward.service";
+import { playAudioService } from "../src/services/media/playAudio.service";
 
 describe("WebSuiteCommands & InteractiveMessageService", () => {
   interface CapturedMessage {
@@ -182,6 +183,68 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
       assert.ok(params.url.includes("/player/"));
     } finally {
       youtubeSearchService.searchVideos = originalSearch;
+    }
+  });
+
+  it("handleSpotify: mengirim stream audio WhatsApp in-chat dengan externalAdReply saat audio tersedia", async () => {
+    const originalSearch = youtubeSearchService.searchVideos;
+    const originalPrepare = playAudioService.prepareMp3Audio;
+    const originalCleanup = playAudioService.cleanup;
+
+    youtubeSearchService.searchVideos = async () => [
+      {
+        videoId: "dQw4w9WgXcQ",
+        title: "Never Gonna Give You Up",
+        channelTitle: "Rick Astley",
+        durationSeconds: 213,
+        url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      },
+    ];
+
+    const fakeBuffer = Buffer.from("fake-audio-mp3-stream");
+    playAudioService.prepareMp3Audio = async () => ({
+      buffer: fakeBuffer,
+      mimetype: "audio/mpeg" as any,
+      tempDir: "/tmp/fake-test-dir",
+    });
+
+    let cleanedDir: string | undefined;
+    playAudioService.cleanup = async (dir: string) => {
+      cleanedDir = dir;
+    };
+
+    try {
+      const cmd = getCommand("spotify");
+      const ctx = createContext({
+        commandName: "spotify",
+        argsText: "rick astley",
+      });
+
+      await cmd.execute(ctx);
+
+      // Harusnya mengirim 2 pesan: 1 CTA card, 1 audio in-chat
+      assert.strictEqual(capturedMessages.length, 2);
+
+      const audioMsg = capturedMessages[1];
+      assert.strictEqual(audioMsg.content?.mimetype, "audio/mp4");
+      assert.strictEqual(audioMsg.content?.ptt, false);
+      assert.strictEqual(audioMsg.content?.audio, fakeBuffer);
+
+      const adReply = audioMsg.content?.contextInfo?.externalAdReply;
+      assert.ok(adReply);
+      assert.strictEqual(adReply.title, "Never Gonna Give You Up");
+      assert.ok(adReply.body?.includes("Rick Astley"));
+      assert.strictEqual(adReply.renderLargerThumbnail, true);
+      assert.strictEqual(adReply.showAdAttribution, true);
+      assert.ok(adReply.sourceUrl?.includes("/player/"));
+
+      // Cleanup harus terpanggil
+      assert.strictEqual(cleanedDir, "/tmp/fake-test-dir");
+    } finally {
+      youtubeSearchService.searchVideos = originalSearch;
+      playAudioService.prepareMp3Audio = originalPrepare;
+      playAudioService.cleanup = originalCleanup;
     }
   });
 

@@ -4,6 +4,8 @@ import { youtubeSearchService } from "../../services/media/youtubeSearch.service
 import { playerSessionService } from "../../services/web/playerSession.service";
 import { arcadeRewardService } from "../../services/game/arcadeReward.service";
 import { webCardGeneratorService } from "../../services/web/webCardGenerator.service";
+import { playAudioService } from "../../services/media/playAudio.service";
+import { logger } from "../../config/logger";
 
 export const webSuiteCommands: CommandDefinition[] = [
   {
@@ -115,6 +117,45 @@ async function handleSpotify(context: CommandContext): Promise<void> {
       cardImage,
       quoted: context.message,
     });
+
+    // Kirim stream audio langsung ke WhatsApp agar lagu bisa di-play langsung tanpa browser
+    if (video.durationSeconds > 0 && video.durationSeconds <= 15 * 60) {
+      let tempDir: string | undefined;
+      try {
+        const audioResult = await playAudioService.prepareMp3Audio(video.url);
+        tempDir = audioResult.tempDir;
+        await context.socket.sendMessage(
+          context.chatJid,
+          {
+            audio: audioResult.buffer,
+            mimetype: "audio/mp4",
+            ptt: false,
+            contextInfo: {
+              externalAdReply: {
+                title: video.title,
+                body: `Spotify // ${video.channelTitle}`,
+                mediaType: 1,
+                thumbnailUrl: video.thumbnail || `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`,
+                ...(cardImage ? { thumbnail: cardImage } : {}),
+                sourceUrl: playerUrl,
+                renderLargerThumbnail: true,
+                showAdAttribution: true,
+              },
+            },
+          },
+          { quoted: context.message },
+        );
+      } catch (audioErr: unknown) {
+        logger.warn(
+          { audioErr, title: video.title },
+          "Pengiriman audio in-chat WhatsApp gagal, pengguna tetap dapat membuka tautan web player",
+        );
+      } finally {
+        if (tempDir) {
+          await playAudioService.cleanup(tempDir);
+        }
+      }
+    }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Gagal memproses lagu";
     await context.reply(`Terjadi kesalahan: ${msg}`);
