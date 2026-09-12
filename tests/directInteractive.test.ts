@@ -61,4 +61,63 @@ describe("Direct InteractiveMessage Test", () => {
       "Tombol harus bertipe cta_url",
     );
   });
+
+  it("sendPocStage Tahap 1 menghasilkan quick_reply tanpa URL", async () => {
+    const { interactiveMessageService } = await import(
+      "../src/services/whatsapp/interactiveMessage.service"
+    );
+    let captured: any = null;
+    const mockSocket: any = {
+      user: { id: "bot@s.whatsapp.net" },
+      relayMessage: async (jid: string, message: any, options: any) => {
+        captured = { jid, message, options };
+        return "msg-1";
+      },
+    };
+
+    const res = await interactiveMessageService.sendPocStage(
+      mockSocket,
+      "628123456789@s.whatsapp.net",
+      1,
+    );
+
+    assert.ok(res.sentViaRelay);
+    assert.strictEqual(captured.message.interactiveMessage.nativeFlowMessage.buttons[0].name, "quick_reply");
+    assert.strictEqual(captured.options.additionalNodes.length, 2, "Harus memiliki biz dan bot nodes");
+    assert.strictEqual(captured.options.additionalNodes[1].attrs.biz_bot, "1");
+  });
+
+  it("sendPocStage Tahap 2, 3, 4 menghasilkan cta_url dengan parameter bertahap", async () => {
+    const { interactiveMessageService } = await import(
+      "../src/services/whatsapp/interactiveMessage.service"
+    );
+    let captured: any = null;
+    const mockSocket: any = {
+      user: { id: "bot@s.whatsapp.net" },
+      relayMessage: async (jid: string, message: any, options: any) => {
+        captured = { jid, message, options };
+        return "msg-x";
+      },
+    };
+
+    // Stage 2
+    await interactiveMessageService.sendPocStage(mockSocket, "12345@g.us", 2);
+    const params2 = JSON.parse(captured.message.interactiveMessage.nativeFlowMessage.buttons[0].buttonParamsJson);
+    assert.ok(params2.url);
+    assert.strictEqual(params2.merchant_url, undefined);
+    assert.strictEqual(params2.webview_presentation, undefined);
+    // Grup tidak memerlukan node bot
+    assert.strictEqual(captured.options.additionalNodes.length, 1);
+
+    // Stage 3
+    await interactiveMessageService.sendPocStage(mockSocket, "628123@s.whatsapp.net", 3);
+    const params3 = JSON.parse(captured.message.interactiveMessage.nativeFlowMessage.buttons[0].buttonParamsJson);
+    assert.ok(params3.merchant_url);
+    assert.strictEqual(params3.webview_presentation, undefined);
+
+    // Stage 4
+    await interactiveMessageService.sendPocStage(mockSocket, "628123@s.whatsapp.net", 4);
+    const params4 = JSON.parse(captured.message.interactiveMessage.nativeFlowMessage.buttons[0].buttonParamsJson);
+    assert.strictEqual(params4.webview_presentation, "full");
+  });
 });
