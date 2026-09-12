@@ -133,7 +133,7 @@ describe("WebView & Arcade Suite", () => {
       assert.ok(result.sessionId);
       assert.ok(result.playerUrl.includes(result.sessionId));
       assert.equal(relayCalled, true);
-      assert.ok(relayPayload?.viewOnceMessage?.message?.interactiveMessage);
+      assert.ok(relayPayload?.interactiveMessage || relayPayload?.viewOnceMessage?.message?.interactiveMessage);
     });
 
     it("mengirim pesan Arcade launcher via relayMessage", async () => {

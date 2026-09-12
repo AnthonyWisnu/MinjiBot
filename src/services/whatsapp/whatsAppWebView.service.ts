@@ -4,6 +4,7 @@ import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { playerSessionService } from "../web/playerSession.service";
 import { playAudioService } from "../media/playAudio.service";
+import { webCardGeneratorService } from "../web/webCardGenerator.service";
 import { interactiveMessageService } from "./interactiveMessage.service";
 
 export interface OpenPlayerOptions {
@@ -63,7 +64,21 @@ export class WhatsAppWebViewService {
     const seconds = video.durationSeconds % 60;
     const durationFormatted = `${minutes}m ${seconds < 10 ? "0" : ""}${seconds}s`;
 
-    // 2. Kirim interactive message dengan Webview CTA ke WhatsApp
+    // 2. Generate visual card image (Stream Deck style)
+    let cardImage: Buffer | undefined;
+    try {
+      cardImage = await webCardGeneratorService.generateStreamDeckCard({
+        title: video.title,
+        channelTitle: video.channelTitle,
+        durationSeconds: video.durationSeconds,
+        thumbnail: video.thumbnail,
+        url: playerUrl,
+      });
+    } catch (cardErr) {
+      logger.debug({ cardErr }, "Generate stream deck card gagal, lanjut tanpa cardImage");
+    }
+
+    // 3. Kirim interactive message dengan Webview CTA ke WhatsApp
     await interactiveMessageService.sendCtaUrlMessage(socket, chatJid, {
       header,
       body: [
@@ -71,14 +86,15 @@ export class WhatsAppWebViewService {
         `Channel: ${video.channelTitle}`,
         `Durasi: ${durationFormatted}`,
         "",
-        "Tekan tombol di bawah untuk membuka Web Player di dalam WhatsApp dengan seekbar, lirik lagu, dan visualizer.",
+        "Tekan tombol di bawah untuk membuka Web Player dengan seekbar, lirik lagu, dan visualizer.",
       ].join("\n"),
       buttonText: "Buka Web Player",
       url: playerUrl,
+      cardImage,
       quoted,
     });
 
-    // 3. Jika audio in-chat diaktifkan dan durasi wajar (<= 15 menit), kirim audio langsung
+    // 4. Jika audio in-chat diaktifkan dan durasi wajar (<= 15 menit), kirim audio langsung
     const shouldSendAudio = options.sendInChatAudio !== false;
     if (shouldSendAudio && video.durationSeconds > 0 && video.durationSeconds <= 15 * 60) {
       let tempDir: string | undefined;
@@ -145,11 +161,21 @@ export class WhatsAppWebViewService {
           "Pilih game melalui tombol di bawah.",
         ].join("\n");
 
+    let cardImage: Buffer | undefined;
+    try {
+      if (game === "chess") {
+        cardImage = await webCardGeneratorService.generateChessCard();
+      }
+    } catch {
+      // ignore
+    }
+
     await interactiveMessageService.sendCtaUrlMessage(socket, chatJid, {
       header,
       body,
       buttonText: game ? `Mainkan ${title}` : "Buka Arcade Zone",
       url: arcadeUrl,
+      cardImage,
       quoted,
     });
 

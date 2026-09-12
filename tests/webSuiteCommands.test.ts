@@ -139,7 +139,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
     const msg = capturedMessages[0];
     assert.strictEqual(msg.jid, "120363001@g.us");
 
-    const interactive = msg.content?.viewOnceMessage?.message?.interactiveMessage;
+    const interactive = msg.content?.interactiveMessage || msg.content?.viewOnceMessage?.message?.interactiveMessage;
     assert.ok(interactive);
     assert.strictEqual(interactive.header?.title, "SPOTIFY SEARCH CATALOG // MINJIBOT");
     assert.ok(interactive.body?.text.includes("/player/search"));
@@ -179,7 +179,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
 
       assert.strictEqual(capturedMessages.length, 1);
       const msg = capturedMessages[0];
-      const interactive = msg.content?.viewOnceMessage?.message?.interactiveMessage;
+      const interactive = msg.content?.interactiveMessage || msg.content?.viewOnceMessage?.message?.interactiveMessage;
       assert.ok(interactive);
       assert.strictEqual(interactive.header?.title, "SPOTIFY STREAM DECK // MINJIBOT");
       assert.ok(interactive.body?.text.includes("Never Gonna Give You Up"));
@@ -256,7 +256,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
 
     assert.strictEqual(capturedMessages.length, 1);
     const msg = capturedMessages[0];
-    const interactive = msg.content?.viewOnceMessage?.message?.interactiveMessage;
+    const interactive = msg.content?.interactiveMessage || msg.content?.viewOnceMessage?.message?.interactiveMessage;
     assert.strictEqual(interactive.header?.title, "RETRO ARCADE HUB // MINJIBOT");
     assert.ok(interactive.body?.text.includes("Dino Runner"));
     assert.ok(interactive.body?.text.includes("Snake Retro"));
@@ -276,7 +276,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
 
     assert.strictEqual(capturedMessages.length, 1);
     const msg = capturedMessages[0];
-    const interactive = msg.content?.viewOnceMessage?.message?.interactiveMessage;
+    const interactive = msg.content?.interactiveMessage || msg.content?.viewOnceMessage?.message?.interactiveMessage;
     assert.strictEqual(interactive.header?.title, "DANS CATUR // STRATEGY ARENA");
 
     const btn = interactive.nativeFlowMessage?.buttons?.[0];
@@ -293,7 +293,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
 
     assert.strictEqual(capturedMessages.length, 1);
     const msg = capturedMessages[0];
-    const interactive = msg.content?.viewOnceMessage?.message?.interactiveMessage;
+    const interactive = msg.content?.interactiveMessage || msg.content?.viewOnceMessage?.message?.interactiveMessage;
     assert.strictEqual(interactive.header?.title, "MEME SOUNDBOARD // VN DISPATCHER");
 
     const btn = interactive.nativeFlowMessage?.buttons?.[0];
@@ -310,7 +310,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
 
     assert.strictEqual(capturedMessages.length, 1);
     const msg = capturedMessages[0];
-    const interactive = msg.content?.viewOnceMessage?.message?.interactiveMessage;
+    const interactive = msg.content?.interactiveMessage || msg.content?.viewOnceMessage?.message?.interactiveMessage;
     assert.strictEqual(interactive.header?.title, "LUCKY SPIN WHEEL // COMMUNITY");
 
     const btn = interactive.nativeFlowMessage?.buttons?.[0];
@@ -327,7 +327,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
 
     assert.strictEqual(capturedMessages.length, 1);
     const msg = capturedMessages[0];
-    const interactive = msg.content?.viewOnceMessage?.message?.interactiveMessage;
+    const interactive = msg.content?.interactiveMessage || msg.content?.viewOnceMessage?.message?.interactiveMessage;
     assert.strictEqual(interactive.header?.title, "HALL OF FAME LEADERBOARD // MINJIBOT");
 
     const btn = interactive.nativeFlowMessage?.buttons?.[0];

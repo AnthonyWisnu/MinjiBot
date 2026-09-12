@@ -111,25 +111,35 @@ export class InteractiveMessageService {
         },
       });
 
-      const messageContent: proto.IMessage = {
-        viewOnceMessage: {
-          message: {
-            interactiveMessage: interactiveContent,
-          },
+      // Direct interactive message (tanpa viewOnceMessage) dengan messageContextInfo
+      const directMessageContent: proto.IMessage = {
+        messageContextInfo: {
+          deviceListMetadata: {},
+          deviceListMetadataVersion: 2,
         },
+        interactiveMessage: interactiveContent,
       };
 
       const msg = generateWAMessageFromContent(
         chatJid,
-        messageContent,
+        directMessageContent,
         {
           userJid: socket.user?.id ?? "",
           quoted: options.quoted,
         },
       );
 
+      const additionalNodes = getInteractiveAdditionalNodes(chatJid);
+
       if (typeof socket.relayMessage === "function" && msg.message && msg.key.id) {
-        await socket.relayMessage(chatJid, msg.message, { messageId: msg.key.id });
+        await socket.relayMessage(chatJid, msg.message, {
+          messageId: msg.key.id,
+          additionalNodes,
+        });
+        logger.info(
+          { chatJid, messageId: msg.key.id, url: options.url },
+          "Berhasil relay interactiveMessage via sendCtaUrlMessage",
+        );
         return;
       }
     } catch (relayErr: unknown) {
