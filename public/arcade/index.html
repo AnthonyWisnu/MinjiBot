@@ -494,14 +494,14 @@
     const dinoGame = {
       dino: { x: 40, y: 220, w: 26, h: 36, vy: 0, grounded: true, ducking: false },
       obstacles: [],
-      speed: 4.5,
+      speed: 2.8,
       spawnTimer: 0,
       groundY: 256,
 
       init() {
         this.dino = { x: 40, y: 220, w: 26, h: 36, vy: 0, grounded: true, ducking: false };
         this.obstacles = [];
-        this.speed = 4.5;
+        this.speed = 2.8;
         this.spawnTimer = 0;
         setScore(0);
         renderDinoControls();
@@ -509,7 +509,7 @@
 
       jump() {
         if (this.dino.grounded && !this.dino.ducking) {
-          this.dino.vy = -11.5;
+          this.dino.vy = -9.6;
           this.dino.grounded = false;
           sfxJump();
         }
@@ -532,7 +532,7 @@
         // Physics
         this.dino.y += this.dino.vy;
         if (!this.dino.grounded) {
-          this.dino.vy += 0.65; // gravity
+          this.dino.vy += 0.46; // balanced gravity
         }
 
         const baseline = this.groundY - this.dino.h;
@@ -542,15 +542,15 @@
           this.dino.grounded = true;
         }
 
-        // Spawn obstacles
+        // Spawn obstacles with fair reaction spacing
         this.spawnTimer++;
-        if (this.spawnTimer > Math.max(55, 110 - Math.floor(score / 50))) {
+        if (this.spawnTimer > Math.max(75, 135 - Math.floor(score / 50))) {
           this.spawnTimer = 0;
           const isDrone = Math.random() > 0.65 && score > 80;
           if (isDrone) {
             this.obstacles.push({ x: canvas.width + 20, y: this.groundY - 55, w: 24, h: 16, type: "drone" });
           } else {
-            const h = Math.random() > 0.5 ? 32 : 24;
+            const h = Math.random() > 0.5 ? 30 : 22;
             this.obstacles.push({ x: canvas.width + 20, y: this.groundY - h, w: 16, h: h, type: "cactus" });
           }
         }
@@ -576,7 +576,7 @@
             setScore(score + 10);
             if (score % 100 === 0) {
               sfxCoin();
-              this.speed += 0.25;
+              if (this.speed < 4.2) this.speed += 0.15;
             }
           }
         }
@@ -643,7 +643,7 @@
       nextDir: { x: 1, y: 0 },
       food: { x: 10, y: 10 },
       tickCount: 0,
-      speedTicks: 6,
+      speedTicks: 10,
 
       init() {
         this.tileCountX = Math.floor(canvas.width / this.gridSize);
@@ -677,7 +677,8 @@
       update() {
         if (isGameOver) return;
         this.tickCount++;
-        if (this.tickCount < this.speedTicks) return;
+        const currentSpeedTicks = Math.max(6, 10 - Math.floor(score / 80));
+        if (this.tickCount < currentSpeedTicks) return;
         this.tickCount = 0;
 
         this.dir = this.nextDir;
@@ -1058,8 +1059,8 @@
       bird: { x: 50, y: 150, vy: 0, r: 14 },
       pipes: [],
       spawnTimer: 0,
-      gravity: 0.45,
-      jumpForce: -7.5,
+      gravity: 0.28,
+      jumpForce: -5.2,
 
       init() {
         this.bird = { x: 50, y: 150, vy: 0, r: 14 };
@@ -1086,11 +1087,11 @@
           return;
         }
 
-        // Spawn pipes
+        // Spawn pipes with comfortable gap and spacing
         this.spawnTimer++;
-        if (this.spawnTimer > 90) {
+        if (this.spawnTimer > 120) {
           this.spawnTimer = 0;
-          const gap = 85;
+          const gap = 98;
           const topH = 40 + Math.random() * (canvas.height - gap - 80);
           this.pipes.push({ x: canvas.width, top: topH, bottom: topH + gap, passed: false });
         }
@@ -1098,7 +1099,7 @@
         // Move pipes & collision
         for (let i = this.pipes.length - 1; i >= 0; i--) {
           const p = this.pipes[i];
-          p.x -= 3;
+          p.x -= 2.0;
 
           // Bird collision
           if (this.bird.x + this.bird.r > p.x && this.bird.x - this.bird.r < p.x + 40) {
@@ -1217,10 +1218,25 @@
       }
     });
 
-    // Main animation loop
-    function gameLoop() {
+    // Main animation loop (Fixed 60FPS timestep accumulator for smooth normalized speed across 60Hz, 90Hz, 120Hz displays)
+    let lastTime = 0;
+    let accumulator = 0;
+    const FIXED_STEP = 1000 / 60; // 16.667ms
+
+    function gameLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      let delta = timestamp - lastTime;
+      if (delta > 100) delta = 100; // clamp when browser tab is backgrounded
+      lastTime = timestamp;
+
+      accumulator += delta;
       const active = gameEngines[activeGameKey].engine;
-      active.update();
+
+      while (accumulator >= FIXED_STEP) {
+        active.update();
+        accumulator -= FIXED_STEP;
+      }
+
       active.draw();
       animLoopId = requestAnimationFrame(gameLoop);
     }
