@@ -17,6 +17,7 @@ import { arcadeRewardService } from "../game/arcadeReward.service";
 import { playerRouter } from "../../web/routes/player.route";
 import { streamRouter } from "../../web/routes/stream.route";
 import { arcadeRouter } from "../../web/routes/arcade.route";
+import { webviewTestRouter } from "../../web/routes/webviewTest.route";
 
 export class WebServerService {
   private app: Express;
@@ -59,6 +60,7 @@ export class WebServerService {
     this.app.use(playerRouter);
     this.app.use(streamRouter);
     this.app.use(arcadeRouter);
+    this.app.use(webviewTestRouter);
 
     // Static Assets serving
     const staticDir = this.resolveStaticDir();

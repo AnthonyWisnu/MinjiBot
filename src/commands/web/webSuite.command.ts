@@ -4,6 +4,7 @@ import { whatsAppWebViewService } from "../../services/whatsapp/whatsAppWebView.
 import { youtubeSearchService } from "../../services/media/youtubeSearch.service";
 import { arcadeRewardService } from "../../services/game/arcadeReward.service";
 import { webCardGeneratorService } from "../../services/web/webCardGenerator.service";
+import { handleTestWebview } from "../test/testWebview.command";
 import { logger } from "../../config/logger";
 
 export const webSuiteCommands: CommandDefinition[] = [
@@ -41,6 +42,11 @@ export const webSuiteCommands: CommandDefinition[] = [
     name: "claimreward",
     aliases: ["claimtoken", "klaim"],
     execute: handleClaim,
+  },
+  {
+    name: "testwebview",
+    aliases: ["poc", "webtest", "cekwebview"],
+    execute: handleTestWebview,
   },
 ];
 

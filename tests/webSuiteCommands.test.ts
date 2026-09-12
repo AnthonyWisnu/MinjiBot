@@ -95,7 +95,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
     return cmd;
   }
 
-  it("harus mendaftarkan semua 7 perintah web suite beserta aliasnya", () => {
+  it("harus mendaftarkan semua perintah web suite beserta aliasnya", () => {
     const commandNames = webSuiteCommands.map((c) => c.name);
     assert.deepStrictEqual(commandNames, [
       "spotify",
@@ -105,6 +105,7 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
       "spin",
       "topweb",
       "claimreward",
+      "testwebview",
     ]);
 
     assert.ok(getCommand("spotify"));
@@ -113,6 +114,8 @@ describe("WebSuiteCommands & InteractiveMessageService", () => {
     assert.ok(getCommand("playweb"));
     assert.ok(getCommand("ytplayer"));
     assert.ok(getCommand("gamehub"));
+    assert.ok(getCommand("testwebview"));
+    assert.ok(getCommand("poc"));
     assert.ok(getCommand("minigames"));
     assert.ok(getCommand("chess"));
     assert.ok(getCommand("danscatur"));

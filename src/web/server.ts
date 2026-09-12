@@ -7,6 +7,7 @@ import { logger } from "../config/logger";
 import { playerRouter } from "./routes/player.route";
 import { streamRouter } from "./routes/stream.route";
 import { arcadeRouter } from "./routes/arcade.route";
+import { webviewTestRouter } from "./routes/webviewTest.route";
 import { playerSessionService } from "./services/player-session.service";
 
 export class WebServer {
@@ -63,6 +64,7 @@ export class WebServer {
     this.app.use(playerRouter);
     this.app.use(streamRouter);
     this.app.use(arcadeRouter);
+    this.app.use(webviewTestRouter);
   }
 
   start(port?: number): Promise<number> {
