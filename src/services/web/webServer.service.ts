@@ -10,6 +10,7 @@ import { playerSessionService } from "./playerSession.service";
 import { youtubeSearchService } from "../media/youtubeSearch.service";
 import { youtubeStreamService } from "../media/youtubeStream.service";
 import { lyricsService } from "../media/lyrics.service";
+import { soundboardService } from "../media/soundboard.service";
 
 export class WebServerService {
   private app: Express;
@@ -150,6 +151,57 @@ export class WebServerService {
       await youtubeStreamService.streamToResponse(session.videoUrl, req, res);
     });
 
+    // ─── API: Soundboard Endpoints ──────────────────────────────────────────
+
+    // 6. Get Soundboard Catalog
+    this.app.get("/api/soundboard/list", (_req, res) => {
+      const catalog = soundboardService.getCatalog();
+      res.json({ success: true, count: catalog.length, sounds: catalog });
+    });
+
+    // 7. Preview Sound Buffer (Direct stream to browser Web Audio)
+    this.app.get("/api/soundboard/preview/:id", async (req, res) => {
+      try {
+        const soundId = req.params.id;
+        const soundItem = soundboardService.getSoundItem(soundId);
+        if (!soundItem) {
+          res.status(404).json({ error: "Sound not found in catalog" });
+          return;
+        }
+
+        const { buffer, mimetype } = await soundboardService.getSoundBuffer(soundId);
+        res.setHeader("Content-Type", mimetype);
+        res.setHeader("Content-Length", buffer.length);
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.end(buffer);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to generate audio";
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // 8. Send Sound as WhatsApp Voice Note (PTT)
+    this.app.post("/api/soundboard/send-wa", async (req, res) => {
+      try {
+        const { soundId, chatJid } = req.body;
+        if (!soundId || !chatJid) {
+          res.status(400).json({ error: "soundId and chatJid are required" });
+          return;
+        }
+
+        if (!this.socket) {
+          res.status(503).json({ error: "Bot WhatsApp socket is not connected" });
+          return;
+        }
+
+        const success = await soundboardService.sendVoiceNote(chatJid, soundId, this.socket);
+        res.json({ success, message: "Voice Note berhasil dikirim ke obrolan WhatsApp." });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Gagal mengirim Voice Note";
+        res.status(500).json({ error: message });
+      }
+    });
+
     // ─── Web Views / Pages ──────────────────────────────────────────────────
 
     // Spotify Search Catalog Page (Screenshot 1)
@@ -187,6 +239,16 @@ export class WebServerService {
       }
     });
 
+    // Interactive Meme Soundboard Page
+    this.app.get("/soundboard", (_req, res) => {
+      const filePath = path.join(staticDir, "soundboard", "index.html");
+      if (existsSync(filePath)) {
+        res.sendFile(filePath);
+      } else {
+        res.status(404).send("Soundboard page not found");
+      }
+    });
+
     // Root Deck Dashboard
     this.app.get("/", (_req, res) => {
       res.send(`
@@ -212,6 +274,7 @@ export class WebServerService {
             <p>DAEMON: ONLINE // UPTIME: ${Math.floor(process.uptime())}s</p>
             <div class="links">
               <a href="/player/search?q=kessoku+band">&rarr; SPOTIFY SEARCH CATALOG</a>
+              <a href="/soundboard">&rarr; INTERACTIVE MEME SOUNDBOARD</a>
             </div>
           </div>
         </body>
