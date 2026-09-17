@@ -117,6 +117,22 @@ export class GroupMemberProfileRepository {
     return client.groupMemberProfile.update({ where: { id }, data });
   }
 
+  // Tambah limit ke semua member dalam satu grup secara atomik.
+  addLimitToAll(
+    groupJid: string,
+    amount: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<{ count: number }> {
+    const client = tx ?? this.client;
+    return client.groupMemberProfile.updateMany({
+      where: { groupJid },
+      data: {
+        limitBalance: { increment: amount },
+        totalLimitsEarned: { increment: amount },
+      },
+    });
+  }
+
   // Catat aktivitas pesan member (non-blocking)
   async recordActivity(groupJid: string, userJid: string): Promise<void> {
     await this.client.groupMemberProfile.upsert({
