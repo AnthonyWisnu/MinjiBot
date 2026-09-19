@@ -58,8 +58,6 @@ function runYtDlp(videoUrl: string, outputTemplate: string): Promise<void> {
     "--no-warnings",
     "--user-agent",
     DEFAULT_USER_AGENT,
-    "--extractor-args",
-    "youtube:player_client=android,web,tv,ios",
     "-o",
     outputTemplate,
   ];

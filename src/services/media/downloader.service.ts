@@ -474,8 +474,6 @@ export class DownloaderService {
         "4",
         "--add-header",
         `User-Agent:${DEFAULT_USER_AGENT}`,
-        "--extractor-args",
-        "youtube:player_client=android,web,tv,ios",
         "-o",
         rawOutputTemplate,
       ];
