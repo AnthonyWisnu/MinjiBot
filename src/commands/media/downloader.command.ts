@@ -6,6 +6,7 @@ import {
   type ExtractedAudio,
 } from "../../services/media/downloader.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import { parseHttpUrl } from "../../utils/urlValidator";
 import {
   resolveFeatureAccess,
   reserveFeatureLimit,
@@ -32,11 +33,14 @@ export const downloaderCommands: CommandDefinition[] = [
 // Handles: video tanpa watermark, single photo, & photo carousel (max 12 item) + BGM audio
 
 async function handleTikTokDownloader(context: CommandContext): Promise<void> {
-  const url = context.args[0];
-  if (!url?.toLowerCase().includes("tiktok.com")) {
+  const rawUrl = context.args[0];
+  const parsedUrl = parseHttpUrl(rawUrl);
+  const hostname = parsedUrl?.hostname.toLowerCase() ?? "";
+  if (!parsedUrl || (!hostname.includes("tiktok.com") && !hostname.endsWith("tiktok.com"))) {
     await context.reply("Format command salah.\nGunakan: .tt <link TikTok>");
     return;
   }
+  const url = parsedUrl.toString();
 
   const access = await resolveFeatureAccess(context, HeavyFeatureType.TIKTOK_DOWNLOAD);
   if (access === null) return;
@@ -129,11 +133,19 @@ async function sendAudioMessage(
 // Handles: reels, foto tunggal, story, carousel (max 10 item)
 
 async function handleInstagramDownloader(context: CommandContext): Promise<void> {
-  const url = context.args[0];
-  if (!url?.toLowerCase().includes("instagram.com")) {
+  const rawUrl = context.args[0];
+  const parsedUrl = parseHttpUrl(rawUrl);
+  const hostname = parsedUrl?.hostname.toLowerCase() ?? "";
+  if (
+    !parsedUrl ||
+    (!hostname.includes("instagram.com") &&
+      !hostname.endsWith("instagram.com") &&
+      !hostname.includes("instagr.am"))
+  ) {
     await context.reply("Format command salah.\nGunakan: .ig <link Instagram>");
     return;
   }
+  const url = parsedUrl.toString();
 
   const access = await resolveFeatureAccess(context, HeavyFeatureType.INSTAGRAM_REELS_DOWNLOAD);
   if (access === null) return;
@@ -182,14 +194,17 @@ async function handleInstagramDownloader(context: CommandContext): Promise<void>
 // Max 480p, max 12 menit, pakai sistem limit yang sama
 
 async function handleYoutubeVideoDownloader(context: CommandContext): Promise<void> {
-  const url = context.args[0];
+  const rawUrl = context.args[0];
+  const parsedUrl = parseHttpUrl(rawUrl);
+  const hostname = parsedUrl?.hostname.toLowerCase() ?? "";
   if (
-    !url ||
-    (!url.toLowerCase().includes("youtube.com") && !url.toLowerCase().includes("youtu.be"))
+    !parsedUrl ||
+    (!hostname.includes("youtube.com") && !hostname.includes("youtu.be"))
   ) {
     await context.reply("Format command salah.\nGunakan: .yt <link YouTube>");
     return;
   }
+  const url = parsedUrl.toString();
 
   const access = await resolveFeatureAccess(context, HeavyFeatureType.YOUTUBE_VIDEO_DOWNLOAD);
   if (access === null) return;

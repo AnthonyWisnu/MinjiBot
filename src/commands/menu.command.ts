@@ -55,7 +55,7 @@ async function handleFeatureMenu(context: CommandContext): Promise<void> {
 async function handleWhoami(context: CommandContext): Promise<void> {
   await context.reply(
     [
-      "[DEBUG AKUN]",
+      "[INFO AKUN]",
       "",
       `Chat JID: ${context.chatJid}`,
       `Sender JID: ${context.senderJid}`,

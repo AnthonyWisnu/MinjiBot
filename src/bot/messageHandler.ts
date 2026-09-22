@@ -3,6 +3,7 @@ import type { BaileysEventMap, WASocket } from "@whiskeysockets/baileys";
 import { commandRouter } from "../commands";
 import { logger } from "../config/logger";
 import { featureGuard } from "../guards/featureGuard";
+import { rateLimitGuard } from "../guards/rateLimitGuard";
 import { roleGuard } from "../guards/roleGuard";
 import { tenantGuard } from "../guards/tenantGuard";
 import { isGroupJid } from "../utils/jid";
@@ -36,10 +37,10 @@ async function handleIncomingMessage(
   reportIncomingMessage({
     isGroup,
     hasMedia: Boolean(
-      message.message?.imageMessage ||
-        message.message?.videoMessage ||
-        message.message?.documentMessage ||
-        message.message?.audioMessage ||
+      message.message?.imageMessage ??
+        message.message?.videoMessage ??
+        message.message?.documentMessage ??
+        message.message?.audioMessage ??
         message.message?.stickerMessage,
     ),
   });
@@ -72,6 +73,14 @@ async function handleIncomingMessage(
       senderAltJids: context.senderAltJids,
       isGroup: context.isGroup,
     });
+
+    const rateLimit = rateLimitGuard.check(context);
+    if (!rateLimit.allowed) {
+      if (rateLimit.warnUser && rateLimit.message) {
+        await context.reply(rateLimit.message);
+      }
+      return;
+    }
 
     const tenantAccess = await tenantGuard.checkGroupCommandAccess(context);
     if (!tenantAccess.allowed) {

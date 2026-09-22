@@ -41,6 +41,7 @@ const envSchema = z.object({
   FFMPEG_PATH: optionalPathSchema,
   AI_UPSCALE_BIN: optionalPathSchema,
   GALLERY_DL_BIN: z.string().default("gallery-dl"),
+  INTERNAL_ALERT_SECRET: z.string().default("minji-internal-alert-secret-key"),
 });
 
 export type Env = z.infer<typeof envSchema>;

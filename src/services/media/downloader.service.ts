@@ -390,40 +390,42 @@ export class DownloaderService {
    * Returns single item or multi items (carousel up to 10).
    */
   async downloadInstagram(url: string): Promise<DownloadResult> {
+    const parsedUrl = parseSupportedUrl(url, "instagram");
+    const targetUrl = parsedUrl.toString();
     const startedAt = Date.now();
     const tempDir = await createTempDir("ig-download");
 
     try {
       let items: DownloadedMediaItem[] = [];
-      const isReel = url.toLowerCase().includes("/reel/");
+      const isReel = targetUrl.toLowerCase().includes("/reel/");
 
       if (isReel) {
         // Reels diproses via yt-dlp terlebih dahulu
         try {
-          await this.runYtDlpInstagram(url, tempDir);
+          await this.runYtDlpInstagram(targetUrl, tempDir);
           items = await scanDownloadedMediaFiles(tempDir);
         } catch (ytErr) {
-          logger.warn({ ytErr, url }, "yt-dlp gagal download reel, mencoba fallback gallery-dl");
-          await this.runGalleryDl(url, tempDir);
+          logger.warn({ ytErr, url: targetUrl }, "yt-dlp gagal download reel, mencoba fallback gallery-dl");
+          await this.runGalleryDl(targetUrl, tempDir);
           items = await scanDownloadedMediaFiles(tempDir);
         }
       } else {
         // Foto tunggal, carousel slide, atau post foto/video:
         // Gunakan gallery-dl terlebih dahulu karena yt-dlp tidak men-download foto
         try {
-          await this.runGalleryDl(url, tempDir);
+          await this.runGalleryDl(targetUrl, tempDir);
           items = await scanDownloadedMediaFiles(tempDir);
         } catch (gdlErr) {
-          logger.warn({ gdlErr, url }, "gallery-dl gagal, mencoba fallback yt-dlp");
+          logger.warn({ gdlErr, url: targetUrl }, "gallery-dl gagal, mencoba fallback yt-dlp");
         }
 
         // Jika gallery-dl tidak menghasilkan media (misal video post), coba yt-dlp
         if (items.length === 0) {
           try {
-            await this.runYtDlpInstagram(url, tempDir);
+            await this.runYtDlpInstagram(targetUrl, tempDir);
             items = await scanDownloadedMediaFiles(tempDir);
           } catch (ytErr) {
-            logger.warn({ ytErr, url }, "yt-dlp fallback juga gagal");
+            logger.warn({ ytErr, url: targetUrl }, "yt-dlp fallback juga gagal");
           }
         }
       }
@@ -450,6 +452,8 @@ export class DownloaderService {
    * Download YouTube video — max 480p, max 12 minutes (720 seconds).
    */
   async downloadYoutube(url: string): Promise<DownloadedMediaItem> {
+    const parsedUrl = parseSupportedUrl(url, "youtube");
+    const targetUrl = parsedUrl.toString();
     const startedAt = Date.now();
     const tempDir = await createTempDir("yt-video");
     const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
@@ -483,7 +487,7 @@ export class DownloaderService {
         args.push("--cookies", cookiesPath);
       }
 
-      args.push(url);
+      args.push("--", targetUrl);
       await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
 
       const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
@@ -536,7 +540,7 @@ export class DownloaderService {
       args.push("--cookies", cookiesPath);
     }
 
-    args.push(url);
+    args.push("--", url);
     await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
   }
 
@@ -588,7 +592,7 @@ export class DownloaderService {
       args.push("--cookies", cookiesPath);
     }
 
-    args.push(url);
+    args.push("--", url);
     await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
   }
 
@@ -606,7 +610,7 @@ export class DownloaderService {
       args.push("--cookies", cookiesPath);
     }
 
-    args.push(url);
+    args.push("--", url);
     await runProcess(env.GALLERY_DL_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
   }
 
@@ -624,7 +628,7 @@ export class DownloaderService {
       args.push("--cookies", cookiesPath);
     }
 
-    args.push(url);
+    args.push("--", url);
     await runProcess(env.GALLERY_DL_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
   }
 
@@ -648,7 +652,7 @@ export class DownloaderService {
         args.push("--cookies", cookiesPath);
       }
 
-      args.push(url);
+      args.push("--", url);
       await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
 
       const buffer = await readFile(outputPath);
@@ -766,14 +770,32 @@ async function prepareMobileVideo(
 function parseSupportedUrl(url: string, kind: DownloaderKind): URL {
   let parsedUrl: URL;
   try {
-    parsedUrl = new URL(url);
+    parsedUrl = new URL(url.trim());
   } catch {
     throw new Error("Link tidak valid.");
+  }
+
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    throw new Error("Protokol link harus http atau https.");
   }
 
   const hostname = parsedUrl.hostname.toLowerCase();
   if (kind === "tiktok" && !hostname.includes("tiktok.com")) {
     throw new Error("Command .tt hanya menerima link TikTok.");
+  }
+  if (
+    kind === "instagram" &&
+    !hostname.includes("instagram.com") &&
+    !hostname.includes("instagr.am")
+  ) {
+    throw new Error("Command .ig hanya menerima link Instagram.");
+  }
+  if (
+    kind === "youtube" &&
+    !hostname.includes("youtube.com") &&
+    !hostname.includes("youtu.be")
+  ) {
+    throw new Error("Command .yt hanya menerima link YouTube.");
   }
 
   return parsedUrl;

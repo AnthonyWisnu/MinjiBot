@@ -66,7 +66,7 @@ function runYtDlp(videoUrl: string, outputTemplate: string): Promise<void> {
     args.push("--cookies", cookiesPath);
   }
 
-  args.push(videoUrl);
+  args.push("--", videoUrl);
 
   return runProcess(
     env.DOWNLOADER_BIN,
