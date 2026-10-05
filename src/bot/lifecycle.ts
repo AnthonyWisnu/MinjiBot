@@ -9,6 +9,7 @@ import { levelUpNotifierService } from "../services/member/levelUpNotifier.servi
 import { createBotSocket } from "./connection";
 import { registerEventSubscribers } from "./subscribers";
 import { alertServer } from "../services/alertServer";
+import { exportQrToWeb, cleanupQrFromWeb } from "../utils/qrExporter";
 
 export class BotLifecycle {
   private socket: WASocket | null = null;
@@ -65,11 +66,13 @@ export class BotLifecycle {
     if (update.qr) {
       logger.info("QR login WhatsApp tersedia. Scan QR yang tampil di terminal.");
       qrcode.generate(update.qr, { small: true });
+      void exportQrToWeb(update.qr);
     }
 
     if (update.connection === "open") {
       this.reconnectAttempt = 0;
       alertServer.setSocket(this.socket);
+      cleanupQrFromWeb();
       logger.info("Koneksi WhatsApp terbuka");
       return;
     }
