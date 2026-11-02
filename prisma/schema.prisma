@@ -99,6 +99,7 @@ model TenantGroup {
   auditLogs      TenantAuditLog[]
   memberProfiles GroupMemberProfile[]
   warnings       GroupMemberWarning[]
+  privateSessions TenantPrivateSession[]
 
   @@index([ownerJid])
   @@index([status])
@@ -168,7 +169,8 @@ model TenantPrivateSession {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@index([userJid])
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
   @@index([groupJid])
   @@index([expiresAt])
 }
@@ -250,6 +252,7 @@ model GroupMemberProfile {
   @@index([groupJid, experience])
   @@index([groupJid, pointsBalance])
   @@index([groupJid, messageCount])
+  @@index([groupJid, lastActiveAt])
   @@index([userJid])
 }
 

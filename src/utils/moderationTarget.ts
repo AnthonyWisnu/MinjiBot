@@ -34,13 +34,13 @@ export function normalizePhoneToJid(value: string): string {
   const digits = value.replace(/\D/g, "");
   const normalizedDigits = digits.startsWith("0") ? `62${digits.slice(1)}` : digits;
 
-  if (!isValidIndonesianPhoneNumber(normalizedDigits)) {
+  if (!isValidE164PhoneNumber(normalizedDigits)) {
     throw new Error("Nomor tidak valid.");
   }
 
   return normalizePhoneNumberToUserJid(normalizedDigits);
 }
 
-function isValidIndonesianPhoneNumber(value: string): boolean {
-  return value.startsWith("62") && value.length >= 10 && value.length <= 15;
+function isValidE164PhoneNumber(value: string): boolean {
+  return value.length >= 7 && value.length <= 15;
 }

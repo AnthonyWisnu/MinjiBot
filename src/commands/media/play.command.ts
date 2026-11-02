@@ -1,6 +1,7 @@
 import { HeavyFeatureType } from "@prisma/client";
 
 import { logger } from "../../config/logger";
+import { AppUserError } from "../../errors/appUserError";
 import { lastPlayedService } from "../../services/media/lastPlayed.service";
 import { playAudioService } from "../../services/media/playAudio.service";
 import {
@@ -8,12 +9,7 @@ import {
   type YoutubeSearchResult,
 } from "../../services/media/youtubeSearch.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
-import {
-  resolveFeatureAccess,
-  reserveFeatureLimit,
-  consumeFeatureLimit,
-  refundFeatureLimit,
-} from "./heavyFeatureHelper";
+import { executeWithHeavyFeatureLimit } from "./heavyFeatureHelper";
 
 const MAX_DURATION_SECONDS = 10 * 60;
 const MAX_SEARCH_RESULTS = 3;
@@ -33,64 +29,48 @@ async function handlePlay(context: CommandContext): Promise<void> {
     return;
   }
 
-  const access = await resolveFeatureAccess(context, HeavyFeatureType.PLAY_SONG);
-  if (access === null) return;
-
-  const reservation = access.skip ? null : access.reservation;
-  let tempDir: string | undefined;
-  let reserved = false;
-
   try {
-    await context.reply(`Mencari ${query}...`);
-    const videos = await youtubeSearchService.searchVideos(query, MAX_SEARCH_RESULTS);
-    const playableVideos = videos.filter(
-      (video) => video.durationSeconds > 0 && video.durationSeconds <= MAX_DURATION_SECONDS,
-    );
+    await executeWithHeavyFeatureLimit(context, HeavyFeatureType.PLAY_SONG, async () => {
+      await context.reply(`Mencari ${query}...`);
+      const videos = await youtubeSearchService.searchVideos(query, MAX_SEARCH_RESULTS);
+      const playableVideos = videos.filter(
+        (video) => video.durationSeconds > 0 && video.durationSeconds <= MAX_DURATION_SECONDS,
+      );
 
-    if (playableVideos.length === 0) {
-      await context.reply("Durasi lagu maksimal 10 menit.");
-      return;
-    }
+      if (playableVideos.length === 0) {
+        throw new AppUserError("Durasi lagu maksimal 10 menit.");
+      }
 
-    if (reservation !== null) {
-      const ok = await reserveFeatureLimit(context, reservation);
-      if (!ok) return;
-      reserved = true;
-    }
+      let tempDir: string | undefined;
+      try {
+        const result = await prepareFirstAvailableAudio(playableVideos);
+        tempDir = result.audio.tempDir;
 
-    const result = await prepareFirstAvailableAudio(playableVideos);
-    tempDir = result.audio.tempDir;
+        await context.socket.sendMessage(
+          context.chatJid,
+          {
+            audio: result.audio.buffer,
+            mimetype: result.audio.mimetype,
+            ptt: false,
+          },
+          { quoted: context.message },
+        );
 
-    await context.socket.sendMessage(
-      context.chatJid,
-      {
-        audio: result.audio.buffer,
-        mimetype: result.audio.mimetype,
-        ptt: false,
-      },
-      { quoted: context.message },
-    );
+        lastPlayedService.setLastPlayed({
+          chatJid: context.chatJid,
+          title: result.video.title,
+          artist: result.video.channelTitle,
+        });
 
-    lastPlayedService.setLastPlayed({
-      chatJid: context.chatJid,
-      title: result.video.title,
-      artist: result.video.channelTitle,
+        await context.reply(formatYoutubeResult(result.video));
+      } finally {
+        if (tempDir) {
+          await playAudioService.cleanup(tempDir);
+        }
+      }
     });
-
-    if (reserved && reservation !== null) {
-      await consumeFeatureLimit(reservation);
-    }
-
-    await context.reply(formatYoutubeResult(result.video));
   } catch (error: unknown) {
-    if (reserved && reservation !== null) {
-      await refundFeatureLimit(reservation);
-    }
     await context.reply(formatPlayError(error));
-  } finally {
-    if (tempDir) {
-      await playAudioService.cleanup(tempDir);
-    }
   }
 }
 

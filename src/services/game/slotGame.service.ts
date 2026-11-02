@@ -1,12 +1,19 @@
-import { prisma } from "../../repositories/prismaClient";
-import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
-import { SLOT_CONFIG } from "./gameReward.constants";
+import { MemberTransactionAsset, MemberTransactionType } from "@prisma/client";
+
 import { roleGuard } from "../../guards/roleGuard";
+import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
+import { prisma } from "../../repositories/prismaClient";
 import type { CommandContext } from "../../types/command";
+import { levelUpNotifierService } from "../member/levelUpNotifier.service";
+import { generateCorrelationId } from "../member/memberEconomy.service";
+import { resolveRank } from "../member/rank.service";
+import { SLOT_CONFIG } from "./gameReward.constants";
 
 export const SLOT_FRUIT_SYMBOLS = ["🍒", "🍇", "🍉", "🍊", "🍋"] as const;
 export const SLOT_SYMBOLS = [...SLOT_FRUIT_SYMBOLS, "7️⃣"] as const;
-export type SlotSymbol = typeof SLOT_SYMBOLS[number];
+export type SlotSymbol = (typeof SLOT_SYMBOLS)[number];
+
+export const MAX_SLOT_BET = 100_000;
 
 export interface SlotPlayResult {
   reels: [SlotSymbol, SlotSymbol, SlotSymbol];
@@ -36,21 +43,9 @@ export class SlotGameService {
     const minBet = SLOT_CONFIG.BET_POINTS;
 
     const isSuperOwner = context.role === "SUPER_OWNER" || roleGuard.isSuperOwner(userJid);
-    const isTenantOwner = context.role === "TENANT_OWNER";
-    const isOwner = isSuperOwner || isTenantOwner;
 
-    let profile = await this.profileRepo.findOrCreate(groupJid, userJid);
-
-    // Auto-topup 100 points for Tenant Owner if balance is less than minBet
-    if (isTenantOwner && profile.pointsBalance < minBet) {
-      profile = await this.prismaClient.groupMemberProfile.update({
-        where: { id: profile.id },
-        data: {
-          pointsBalance: { increment: 100 },
-          totalPointsEarned: { increment: 100 },
-        },
-      });
-    }
+    // Initial read
+    const profile = await this.profileRepo.findOrCreate(groupJid, userJid);
 
     // Determine bet amount & all-in flag
     let bet: number = minBet;
@@ -58,21 +53,24 @@ export class SlotGameService {
     const betArg = context.args[0]?.toLowerCase().trim();
 
     if (betArg === "all" || betArg === "allin") {
-      if (!isOwner && profile.pointsBalance < minBet) {
+      if (!isSuperOwner && profile.pointsBalance < minBet) {
         return [
           "Saldo kamu tidak mencukupi untuk all-in.",
           `Minimal taruhan: ${String(minBet)} Poin.`,
           `Saldo kamu saat ini: ${profile.pointsBalance.toLocaleString("id-ID")} Poin.`,
         ].join("\n");
       }
-      bet = isOwner && profile.pointsBalance < minBet ? minBet : profile.pointsBalance;
+      bet = isSuperOwner && profile.pointsBalance < minBet ? minBet : profile.pointsBalance;
       isAllIn = true;
     } else if (betArg && betArg.length > 0) {
       const parsedBet = Number(betArg);
       if (!Number.isInteger(parsedBet) || parsedBet < minBet) {
         return `Jumlah taruhan tidak valid. Minimal taruhan adalah ${String(minBet)} poin.`;
       }
-      if (!isOwner && profile.pointsBalance < parsedBet) {
+      if (parsedBet > MAX_SLOT_BET) {
+        return `Maksimal taruhan slot adalah ${MAX_SLOT_BET.toLocaleString("id-ID")} Poin.`;
+      }
+      if (!isSuperOwner && profile.pointsBalance < parsedBet) {
         return [
           "Poin kamu tidak cukup untuk taruhan ini.",
           `Taruhan diajukan: ${parsedBet.toLocaleString("id-ID")} Poin.`,
@@ -87,7 +85,7 @@ export class SlotGameService {
       }
     } else {
       // Default bet
-      if (!isOwner && profile.pointsBalance < minBet) {
+      if (!isSuperOwner && profile.pointsBalance < minBet) {
         return [
           "Poin kamu tidak cukup untuk memutar slot.",
           `Minimal taruhan: ${String(minBet)} Poin.`,
@@ -96,6 +94,10 @@ export class SlotGameService {
           "Kumpulkan poin dengan menjawab kuis (.kuis, .family100) atau ambil bonus harian (.claim).",
         ].join("\n");
       }
+    }
+
+    if (bet > MAX_SLOT_BET) {
+      return `Maksimal taruhan slot adalah ${MAX_SLOT_BET.toLocaleString("id-ID")} Poin.`;
     }
 
     // --- Educational Weighted RNG (The Reality Trap) ---
@@ -111,7 +113,7 @@ export class SlotGameService {
     } else if (profile.totalGamesPlayed <= 10) {
       winRate = 0.35;
     } else {
-      winRate = 0.20;
+      winRate = 0.2;
     }
 
     const roll = Math.random();
@@ -134,7 +136,8 @@ export class SlotGameService {
         rewardXp = SLOT_CONFIG.SUPER_JACKPOT_XP;
       } else if (winTier < 0.28) {
         // Jackpot: 3 identical fruit symbols
-        const fruit = SLOT_FRUIT_SYMBOLS[Math.floor(Math.random() * SLOT_FRUIT_SYMBOLS.length)] ?? "🍒";
+        const fruit =
+          SLOT_FRUIT_SYMBOLS[Math.floor(Math.random() * SLOT_FRUIT_SYMBOLS.length)] ?? "🍒";
         reels = [fruit, fruit, fruit];
         status = "jackpot";
         rewardPoints = Math.round(bet * 5);
@@ -163,29 +166,112 @@ export class SlotGameService {
     }
 
     // Net point change:
-    const netPoints = isSuperOwner && profile.pointsBalance < bet ? rewardPoints : rewardPoints - bet;
+    const netPoints =
+      isSuperOwner && profile.pointsBalance < bet ? rewardPoints : rewardPoints - bet;
 
-    const updated = await this.prismaClient.groupMemberProfile.update({
-      where: { id: profile.id },
-      data: {
-        pointsBalance: { increment: netPoints },
-        experience: { increment: rewardXp },
-        totalPointsEarned: rewardPoints > 0 ? { increment: rewardPoints } : undefined,
-        totalGamesPlayed: { increment: 1 },
-        totalGamesWon: won ? { increment: 1 } : undefined,
-      },
-    });
+    // Run transaction with conditional balance check and audit ledger
+    return this.prismaClient.$transaction(async (tx) => {
+      const isSuperOwnerSimulation = isSuperOwner && profile.pointsBalance < bet;
 
-    return this.formatResult({
-      reels,
-      status,
-      betPoints: bet,
-      rewardPoints,
-      rewardXp,
-      balancePoints: updated.pointsBalance,
-      won,
-      isSuperOwner,
-      isAllIn,
+      if (!isSuperOwnerSimulation) {
+        const updateResult = await tx.groupMemberProfile.updateMany({
+          where: {
+            id: profile.id,
+            pointsBalance: { gte: bet },
+          },
+          data: {
+            pointsBalance: { increment: netPoints },
+            experience: { increment: rewardXp },
+            totalPointsEarned: rewardPoints > 0 ? { increment: rewardPoints } : undefined,
+            totalGamesPlayed: { increment: 1 },
+            totalGamesWon: won ? { increment: 1 } : undefined,
+          },
+        });
+
+        if (updateResult.count === 0) {
+          return [
+            "Poin kamu tidak cukup untuk memutar slot.",
+            `Minimal taruhan: ${String(minBet)} Poin.`,
+            `Saldo kamu: ${profile.pointsBalance.toLocaleString("id-ID")} Poin.`,
+            "",
+            "Kumpulkan poin dengan menjawab kuis (.kuis, .family100) atau ambil bonus harian (.claim).",
+          ].join("\n");
+        }
+      } else {
+        await tx.groupMemberProfile.update({
+          where: { id: profile.id },
+          data: {
+            pointsBalance: { increment: rewardPoints },
+            experience: { increment: rewardXp },
+            totalPointsEarned: rewardPoints > 0 ? { increment: rewardPoints } : undefined,
+            totalGamesPlayed: { increment: 1 },
+            totalGamesWon: won ? { increment: 1 } : undefined,
+          },
+        });
+      }
+
+      const updated = await tx.groupMemberProfile.findUniqueOrThrow({
+        where: { id: profile.id },
+      });
+
+      const correlationId = generateCorrelationId();
+
+      // Ledger row for Points
+      await tx.groupMemberTransaction.create({
+        data: {
+          profileId: profile.id,
+          groupJid,
+          userJid,
+          asset: MemberTransactionAsset.POINT,
+          type: MemberTransactionType.GAME_REWARD,
+          amount: netPoints,
+          balanceBefore: profile.pointsBalance,
+          balanceAfter: updated.pointsBalance,
+          correlationId,
+        },
+      });
+
+      // Ledger row for XP
+      if (rewardXp > 0) {
+        await tx.groupMemberTransaction.create({
+          data: {
+            profileId: profile.id,
+            groupJid,
+            userJid,
+            asset: MemberTransactionAsset.EXPERIENCE,
+            type: MemberTransactionType.GAME_REWARD,
+            amount: rewardXp,
+            balanceBefore: profile.experience,
+            balanceAfter: updated.experience,
+            correlationId,
+          },
+        });
+      }
+
+      // Check level-up notification
+      const oldRank = resolveRank(profile.experience);
+      const newRank = resolveRank(updated.experience);
+      if (newRank !== oldRank && updated.experience > profile.experience) {
+        void levelUpNotifierService.notifyLevelUp({
+          groupJid,
+          userJid,
+          oldRank,
+          newRank,
+          newXp: updated.experience,
+        });
+      }
+
+      return this.formatResult({
+        reels,
+        status,
+        betPoints: bet,
+        rewardPoints,
+        rewardXp,
+        balancePoints: updated.pointsBalance,
+        won,
+        isSuperOwner,
+        isAllIn,
+      });
     });
   }
 

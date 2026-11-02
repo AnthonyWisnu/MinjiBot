@@ -1,6 +1,6 @@
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import type { CommandContext } from "../../types/command";
-import { normalizeUserJid } from "../../utils/jid";
+import { getIdentityCandidateJids, normalizeUserJid } from "../../utils/jid";
 
 /**
  * Result of resolving member access to a heavy feature.
@@ -51,10 +51,10 @@ export class HeavyFeatureAccessService {
       return { allowed: true, skipLimit: true };
     }
 
-    const senderNormalized = normalizeUserJid(context.senderUserJid);
+    const senderCandidates = getIdentityCandidateJids(context.senderUserJid, context.senderAltJids);
     const ownerNormalized = tenantGroup.ownerJid ? normalizeUserJid(tenantGroup.ownerJid) : null;
 
-    if (ownerNormalized && senderNormalized === ownerNormalized) {
+    if (ownerNormalized && senderCandidates.includes(ownerNormalized)) {
       return { allowed: true, skipLimit: true };
     }
 
@@ -72,17 +72,18 @@ export class HeavyFeatureAccessService {
     }
 
     if (context.role === "TENANT_OWNER") {
-      const activeTenantGroups = await this.tenantGroupRepository.listActiveByOwnerJid(
+      const senderCandidates = getIdentityCandidateJids(
         context.senderUserJid,
+        context.senderAltJids,
       );
-      if (activeTenantGroups.length > 0) {
-        return { allowed: true, skipLimit: true };
+      for (const jid of senderCandidates) {
+        const activeTenantGroups = await this.tenantGroupRepository.listActiveByOwnerJid(jid);
+        if (activeTenantGroups.length > 0) {
+          return { allowed: true, skipLimit: true };
+        }
       }
-      return {
-        allowed: false,
-        message:
-          "Kamu belum memiliki tenant aktif.\nHubungi Super Owner untuk aktivasi atau perpanjangan.",
-      };
+      // LOG-06: Jika pengirim bukan owner aktif di grup mana pun, jangan langsung menolak;
+      // lanjutkan fallback ke resolusi profil MEMBER di grup aktif tempat ia tergabung.
     }
 
     return {

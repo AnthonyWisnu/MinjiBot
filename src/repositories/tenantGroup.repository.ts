@@ -46,9 +46,28 @@ export class TenantGroupRepository {
     });
   }
 
-  async ownerExists(ownerJid: string): Promise<boolean> {
+  async ownerExists(ownerJid: string, now = new Date()): Promise<boolean> {
     const count = await this.client.tenantGroup.count({
-      where: { ownerJid },
+      where: {
+        ownerJid,
+        status: TenantStatus.ACTIVE,
+        isBlocked: false,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+    });
+
+    return count > 0;
+  }
+
+  async anyOwnerExists(ownerJids: string[], now = new Date()): Promise<boolean> {
+    if (ownerJids.length === 0) return false;
+    const count = await this.client.tenantGroup.count({
+      where: {
+        ownerJid: { in: ownerJids },
+        status: TenantStatus.ACTIVE,
+        isBlocked: false,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
     });
 
     return count > 0;
@@ -60,7 +79,7 @@ export class TenantGroupRepository {
         ownerJid,
         status: TenantStatus.ACTIVE,
         isBlocked: false,
-        expiresAt: { gt: now },
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
       },
       orderBy: { expiresAt: "asc" },
     });
@@ -149,12 +168,16 @@ export class TenantGroupRepository {
     });
   }
 
-  setBlocked(tenantCode: string, blocked: boolean): Promise<TenantGroup> {
+  setBlocked(
+    tenantCode: string,
+    blocked: boolean,
+    restoredStatus: TenantStatus = TenantStatus.ACTIVE,
+  ): Promise<TenantGroup> {
     return this.client.tenantGroup.update({
       where: { tenantCode },
       data: {
         isBlocked: blocked,
-        status: blocked ? TenantStatus.BLOCKED : TenantStatus.ACTIVE,
+        status: blocked ? TenantStatus.BLOCKED : restoredStatus,
       },
     });
   }

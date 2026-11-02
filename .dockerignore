@@ -1,0 +1,15 @@
+node_modules
+dist
+sessions
+sessions-test
+tmp
+tmp-test
+coverage
+*.log
+.git
+.github
+audit
+tests
+.env
+.env.*
+!.env.example

@@ -39,8 +39,15 @@ async function handleAntiRaid(context: CommandContext): Promise<void> {
       const threshold = Number(context.args[1]);
       const windowSec = Number(context.args[2]);
 
-      if (!context.args[1] || !context.args[2] || Number.isNaN(threshold) || Number.isNaN(windowSec)) {
-        await context.reply("Format salah.\nGunakan: .antiraid setting <threshold> <detik>\nContoh: .antiraid setting 5 10");
+      if (
+        !context.args[1] ||
+        !context.args[2] ||
+        Number.isNaN(threshold) ||
+        Number.isNaN(windowSec)
+      ) {
+        await context.reply(
+          "Format salah.\nGunakan: .antiraid setting <threshold> <detik>\nContoh: .antiraid setting 5 10",
+        );
         return;
       }
 

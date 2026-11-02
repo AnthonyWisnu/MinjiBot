@@ -58,8 +58,22 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<GameRewardResult> {
     const key = `game:kuis:${roundId}:${userJid}:correct`;
-    await this.creditSafe(groupJid, userJid, KUIS_REWARD.CORRECT_POINTS, key, correlationId, "kuis-correct-points");
-    await this.creditXpSafe(groupJid, userJid, KUIS_REWARD.CORRECT_XP, `${key}:xp`, correlationId, "kuis-correct-xp");
+    await this.creditSafe(
+      groupJid,
+      userJid,
+      KUIS_REWARD.CORRECT_POINTS,
+      key,
+      correlationId,
+      "kuis-correct-points",
+    );
+    await this.creditXpSafe(
+      groupJid,
+      userJid,
+      KUIS_REWARD.CORRECT_XP,
+      `${key}:xp`,
+      correlationId,
+      "kuis-correct-xp",
+    );
     await this.recordGameSafe(groupJid, userJid, true, `${key}:stat`, correlationId);
     return { points: KUIS_REWARD.CORRECT_POINTS, xp: KUIS_REWARD.CORRECT_XP };
   }
@@ -71,7 +85,14 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<boolean> {
     const key = `game:kuis:${roundId}:${userJid}:wrong-xp`;
-    return this.creditXpSafe(groupJid, userJid, KUIS_REWARD.WRONG_XP, key, correlationId, "kuis-wrong-xp");
+    return this.creditXpSafe(
+      groupJid,
+      userJid,
+      KUIS_REWARD.WRONG_XP,
+      key,
+      correlationId,
+      "kuis-wrong-xp",
+    );
   }
 
   // ---- Matematika (mtk) ----
@@ -83,8 +104,22 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<GameRewardResult> {
     const key = `game:mtk:${roundId}:${userJid}:correct`;
-    await this.creditSafe(groupJid, userJid, MTK_REWARD.CORRECT_POINTS, key, correlationId, "mtk-correct-points");
-    await this.creditXpSafe(groupJid, userJid, MTK_REWARD.CORRECT_XP, `${key}:xp`, correlationId, "mtk-correct-xp");
+    await this.creditSafe(
+      groupJid,
+      userJid,
+      MTK_REWARD.CORRECT_POINTS,
+      key,
+      correlationId,
+      "mtk-correct-points",
+    );
+    await this.creditXpSafe(
+      groupJid,
+      userJid,
+      MTK_REWARD.CORRECT_XP,
+      `${key}:xp`,
+      correlationId,
+      "mtk-correct-xp",
+    );
     await this.recordGameSafe(groupJid, userJid, true, `${key}:stat`, correlationId);
     return { points: MTK_REWARD.CORRECT_POINTS, xp: MTK_REWARD.CORRECT_XP };
   }
@@ -96,7 +131,14 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<boolean> {
     const key = `game:mtk:${roundId}:${userJid}:wrong-xp`;
-    return this.creditXpSafe(groupJid, userJid, MTK_REWARD.WRONG_XP, key, correlationId, "mtk-wrong-xp");
+    return this.creditXpSafe(
+      groupJid,
+      userJid,
+      MTK_REWARD.WRONG_XP,
+      key,
+      correlationId,
+      "mtk-wrong-xp",
+    );
   }
 
   // ---- Tebak Kata ----
@@ -108,8 +150,22 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<GameRewardResult> {
     const key = `game:tebakkata:${roundId}:${userJid}:correct`;
-    await this.creditSafe(groupJid, userJid, TEBAKKATA_REWARD.CORRECT_POINTS, key, correlationId, "tebakkata-correct-points");
-    await this.creditXpSafe(groupJid, userJid, TEBAKKATA_REWARD.CORRECT_XP, `${key}:xp`, correlationId, "tebakkata-correct-xp");
+    await this.creditSafe(
+      groupJid,
+      userJid,
+      TEBAKKATA_REWARD.CORRECT_POINTS,
+      key,
+      correlationId,
+      "tebakkata-correct-points",
+    );
+    await this.creditXpSafe(
+      groupJid,
+      userJid,
+      TEBAKKATA_REWARD.CORRECT_XP,
+      `${key}:xp`,
+      correlationId,
+      "tebakkata-correct-xp",
+    );
     await this.recordGameSafe(groupJid, userJid, true, `${key}:stat`, correlationId);
     return { points: TEBAKKATA_REWARD.CORRECT_POINTS, xp: TEBAKKATA_REWARD.CORRECT_XP };
   }
@@ -121,7 +177,14 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<boolean> {
     const key = `game:tebakkata:${roundId}:${userJid}:surrender-xp`;
-    return this.creditXpSafe(groupJid, userJid, TEBAKKATA_REWARD.SURRENDER_XP, key, correlationId, "tebakkata-surrender-xp");
+    return this.creditXpSafe(
+      groupJid,
+      userJid,
+      TEBAKKATA_REWARD.SURRENDER_XP,
+      key,
+      correlationId,
+      "tebakkata-surrender-xp",
+    );
   }
 
   // ---- Tebak Emoji ----
@@ -133,8 +196,22 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<GameRewardResult> {
     const key = `game:tebakemoji:${roundId}:${userJid}:correct`;
-    await this.creditSafe(groupJid, userJid, TEBAKEMOJI_REWARD.CORRECT_POINTS, key, correlationId, "tebakemoji-correct-points");
-    await this.creditXpSafe(groupJid, userJid, TEBAKEMOJI_REWARD.CORRECT_XP, `${key}:xp`, correlationId, "tebakemoji-correct-xp");
+    await this.creditSafe(
+      groupJid,
+      userJid,
+      TEBAKEMOJI_REWARD.CORRECT_POINTS,
+      key,
+      correlationId,
+      "tebakemoji-correct-points",
+    );
+    await this.creditXpSafe(
+      groupJid,
+      userJid,
+      TEBAKEMOJI_REWARD.CORRECT_XP,
+      `${key}:xp`,
+      correlationId,
+      "tebakemoji-correct-xp",
+    );
     await this.recordGameSafe(groupJid, userJid, true, `${key}:stat`, correlationId);
     return { points: TEBAKEMOJI_REWARD.CORRECT_POINTS, xp: TEBAKEMOJI_REWARD.CORRECT_XP };
   }
@@ -146,7 +223,14 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<boolean> {
     const key = `game:tebakemoji:${roundId}:${userJid}:surrender-xp`;
-    return this.creditXpSafe(groupJid, userJid, TEBAKEMOJI_REWARD.SURRENDER_XP, key, correlationId, "tebakemoji-surrender-xp");
+    return this.creditXpSafe(
+      groupJid,
+      userJid,
+      TEBAKEMOJI_REWARD.SURRENDER_XP,
+      key,
+      correlationId,
+      "tebakemoji-surrender-xp",
+    );
   }
 
   // ---- Tebak Angka ----
@@ -160,8 +244,22 @@ export class GameRewardService {
   ): Promise<GameRewardResult> {
     const { points, xp } = getTebakangkaReward(attempts);
     const key = `game:tebakangka:${roundId}:${userJid}:correct`;
-    await this.creditSafe(groupJid, userJid, points, key, correlationId, "tebakangka-correct-points");
-    await this.creditXpSafe(groupJid, userJid, xp, `${key}:xp`, correlationId, "tebakangka-correct-xp");
+    await this.creditSafe(
+      groupJid,
+      userJid,
+      points,
+      key,
+      correlationId,
+      "tebakangka-correct-points",
+    );
+    await this.creditXpSafe(
+      groupJid,
+      userJid,
+      xp,
+      `${key}:xp`,
+      correlationId,
+      "tebakangka-correct-xp",
+    );
     await this.recordGameSafe(groupJid, userJid, true, `${key}:stat`, correlationId);
     return { points, xp };
   }
@@ -173,7 +271,14 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<boolean> {
     const key = `game:tebakangka:${roundId}:${userJid}:fail-xp`;
-    const awarded = await this.creditXpSafe(groupJid, userJid, TEBAKANGKA_REWARD.FAIL_XP, key, correlationId, "tebakangka-fail-xp");
+    const awarded = await this.creditXpSafe(
+      groupJid,
+      userJid,
+      TEBAKANGKA_REWARD.FAIL_XP,
+      key,
+      correlationId,
+      "tebakangka-fail-xp",
+    );
     await this.recordGameSafe(groupJid, userJid, false, `${key}:stat`, correlationId);
     return awarded;
   }
@@ -202,10 +307,24 @@ export class GameRewardService {
 
     const key = `game:family100:${roundId}:${userJid}:answer:${normalizedAnswer}`;
     if (awardPoints > 0) {
-      await this.creditSafe(groupJid, userJid, awardPoints, key, correlationId, "family100-answer-points");
+      await this.creditSafe(
+        groupJid,
+        userJid,
+        awardPoints,
+        key,
+        correlationId,
+        "family100-answer-points",
+      );
     }
     if (awardXp > 0) {
-      await this.creditXpSafe(groupJid, userJid, awardXp, `${key}:xp`, correlationId, "family100-answer-xp");
+      await this.creditXpSafe(
+        groupJid,
+        userJid,
+        awardXp,
+        `${key}:xp`,
+        correlationId,
+        "family100-answer-xp",
+      );
     }
 
     return { points: awardPoints, xp: awardXp, capped: false };
@@ -232,10 +351,24 @@ export class GameRewardService {
     const key = `game:family100:${roundId}:${userJid}:final-bonus`;
 
     if (awardPoints > 0) {
-      await this.creditSafe(groupJid, userJid, awardPoints, key, correlationId, "family100-final-points");
+      await this.creditSafe(
+        groupJid,
+        userJid,
+        awardPoints,
+        key,
+        correlationId,
+        "family100-final-points",
+      );
     }
     if (awardXp > 0) {
-      await this.creditXpSafe(groupJid, userJid, awardXp, `${key}:xp`, correlationId, "family100-final-xp");
+      await this.creditXpSafe(
+        groupJid,
+        userJid,
+        awardXp,
+        `${key}:xp`,
+        correlationId,
+        "family100-final-xp",
+      );
     }
 
     return { points: awardPoints, xp: awardXp, capped: false };
@@ -260,8 +393,22 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<GameRewardResult> {
     const key = `game:tictactoe:${roundId}:${userJid}:win`;
-    await this.creditSafe(groupJid, userJid, TICTACTOE_REWARD.WIN_POINTS, key, correlationId, "tictactoe-win-points");
-    await this.creditXpSafe(groupJid, userJid, TICTACTOE_REWARD.WIN_XP, `${key}:xp`, correlationId, "tictactoe-win-xp");
+    await this.creditSafe(
+      groupJid,
+      userJid,
+      TICTACTOE_REWARD.WIN_POINTS,
+      key,
+      correlationId,
+      "tictactoe-win-points",
+    );
+    await this.creditXpSafe(
+      groupJid,
+      userJid,
+      TICTACTOE_REWARD.WIN_XP,
+      `${key}:xp`,
+      correlationId,
+      "tictactoe-win-xp",
+    );
     await this.recordGameSafe(groupJid, userJid, true, `${key}:stat`, correlationId);
     return { points: TICTACTOE_REWARD.WIN_POINTS, xp: TICTACTOE_REWARD.WIN_XP };
   }
@@ -273,8 +420,22 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<GameRewardResult> {
     const key = `game:tictactoe:${roundId}:${userJid}:loss`;
-    await this.creditSafe(groupJid, userJid, TICTACTOE_REWARD.LOSS_POINTS, key, correlationId, "tictactoe-loss-points");
-    await this.creditXpSafe(groupJid, userJid, TICTACTOE_REWARD.LOSS_XP, `${key}:xp`, correlationId, "tictactoe-loss-xp");
+    await this.creditSafe(
+      groupJid,
+      userJid,
+      TICTACTOE_REWARD.LOSS_POINTS,
+      key,
+      correlationId,
+      "tictactoe-loss-points",
+    );
+    await this.creditXpSafe(
+      groupJid,
+      userJid,
+      TICTACTOE_REWARD.LOSS_XP,
+      `${key}:xp`,
+      correlationId,
+      "tictactoe-loss-xp",
+    );
     await this.recordGameSafe(groupJid, userJid, false, `${key}:stat`, correlationId);
     return { points: TICTACTOE_REWARD.LOSS_POINTS, xp: TICTACTOE_REWARD.LOSS_XP };
   }
@@ -286,8 +447,22 @@ export class GameRewardService {
     correlationId: string,
   ): Promise<GameRewardResult> {
     const key = `game:tictactoe:${roundId}:${userJid}:draw`;
-    await this.creditSafe(groupJid, userJid, TICTACTOE_REWARD.DRAW_POINTS, key, correlationId, "tictactoe-draw-points");
-    await this.creditXpSafe(groupJid, userJid, TICTACTOE_REWARD.DRAW_XP, `${key}:xp`, correlationId, "tictactoe-draw-xp");
+    await this.creditSafe(
+      groupJid,
+      userJid,
+      TICTACTOE_REWARD.DRAW_POINTS,
+      key,
+      correlationId,
+      "tictactoe-draw-points",
+    );
+    await this.creditXpSafe(
+      groupJid,
+      userJid,
+      TICTACTOE_REWARD.DRAW_XP,
+      `${key}:xp`,
+      correlationId,
+      "tictactoe-draw-xp",
+    );
     await this.recordGameSafe(groupJid, userJid, false, `${key}:stat`, correlationId);
     return { points: TICTACTOE_REWARD.DRAW_POINTS, xp: TICTACTOE_REWARD.DRAW_XP };
   }

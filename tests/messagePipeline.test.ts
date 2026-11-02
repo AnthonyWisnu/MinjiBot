@@ -5,7 +5,9 @@ import { MessagePipeline } from "../src/bot/pipeline/messagePipeline";
 import { createDefaultMessagePipeline } from "../src/bot/pipeline";
 import type { IncomingPipelineContext, MessageInterceptor } from "../src/bot/pipeline/types";
 
-function createMockContext(overrides: Partial<IncomingPipelineContext> = {}): IncomingPipelineContext {
+function createMockContext(
+  overrides: Partial<IncomingPipelineContext> = {},
+): IncomingPipelineContext {
   return {
     socket: {} as unknown as IncomingPipelineContext["socket"],
     message: {
@@ -133,7 +135,7 @@ void test("createDefaultMessagePipeline: registers all standard interceptors in 
   const pipeline = createDefaultMessagePipeline();
   const interceptors = pipeline.getInterceptors();
 
-  assert.equal(interceptors.length, 7);
+  assert.equal(interceptors.length, 8);
 
   const priorities = interceptors.map((i) => i.priority);
   const sortedPriorities = [...priorities].sort((a, b) => a - b);
@@ -141,6 +143,7 @@ void test("createDefaultMessagePipeline: registers all standard interceptors in 
 
   const names = interceptors.map((i) => i.name);
   assert.deepEqual(names, [
+    "TenantContextInterceptor",
     "PendingTenantInterceptor",
     "AntiDeleteInterceptor",
     "ActivityTrackerInterceptor",

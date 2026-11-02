@@ -1,0 +1,77 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Verify Build, Lint, Types & Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: minjibot_user
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: minjibot_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg python3 python3-pip fonts-liberation fonts-noto-color-emoji
+
+      - name: Install NPM Dependencies
+        run: npm ci
+
+      - name: Verify Code Formatting
+        run: npm run format:check
+
+      - name: Verify ESLint Quality Gate
+        run: npm run lint
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+
+      - name: Run Prisma Migrations on Clean PostgreSQL
+        env:
+          DATABASE_URL: postgresql://minjibot_user:testpassword@localhost:5432/minjibot_test?schema=public
+        run: npx prisma migrate deploy
+
+      - name: Compile TypeScript
+        run: npm run build
+
+      - name: Run Automated Test Suite
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://minjibot_user:testpassword@localhost:5432/minjibot_test?schema=public
+          SUPER_OWNER_JIDS: 628111111111@s.whatsapp.net
+          COMMAND_PREFIX: "."
+          MAX_DOWNLOAD_FILE_MB: 100
+        run: npm test

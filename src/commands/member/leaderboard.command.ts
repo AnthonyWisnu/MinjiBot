@@ -2,11 +2,7 @@ import type { CommandContext, CommandDefinition } from "../../types/command";
 import { leaderboardService } from "../../services/member/leaderboard.service";
 import type { LeaderboardResult } from "../../services/member/leaderboard.service";
 
-function formatLeaderboard(
-  result: LeaderboardResult,
-  title: string,
-  unit: string,
-): string {
+function formatLeaderboard(result: LeaderboardResult, title: string, unit: string): string {
   const lines: string[] = [title, ""];
 
   if (result.entries.length === 0) {
@@ -15,9 +11,7 @@ function formatLeaderboard(
   }
 
   for (const entry of result.entries) {
-    lines.push(
-      `${String(entry.position)}. @${entry.displayName} [${entry.rank}]`,
-    );
+    lines.push(`${String(entry.position)}. @${entry.displayName} [${entry.rank}]`);
     lines.push(`   ${unit}: ${entry.value.toLocaleString("id-ID")}`);
   }
 
@@ -35,10 +29,7 @@ async function executeTopRank(context: CommandContext): Promise<void> {
     return;
   }
 
-  const result = await leaderboardService.getTopRank(
-    context.chatJid,
-    context.senderUserJid,
-  );
+  const result = await leaderboardService.getTopRank(context.chatJid, context.senderUserJid);
   await context.reply(formatLeaderboard(result, "TOP RANK (XP)", "XP"));
 }
 
@@ -48,17 +39,14 @@ async function executeTopPoint(context: CommandContext): Promise<void> {
     return;
   }
 
-  const result = await leaderboardService.getTopPoint(
-    context.chatJid,
-    context.senderUserJid,
-  );
+  const result = await leaderboardService.getTopPoint(context.chatJid, context.senderUserJid);
   await context.reply(formatLeaderboard(result, "TOP POIN", "Poin"));
 }
 
 export const leaderboardCommands: CommandDefinition[] = [
   {
     name: "toprank",
-    aliases: ["rank"],
+    aliases: ["topxp"],
     execute: executeTopRank,
   },
   {

@@ -1,7 +1,11 @@
 import type { HeavyFeatureType } from "@prisma/client";
 
+import { logger } from "../../config/logger";
 import { heavyFeatureAccessService } from "../../services/quota/heavyFeatureAccess.service";
-import { heavyFeatureLimitService, InsufficientLimitError } from "../../services/member/heavyFeatureLimit.service";
+import {
+  heavyFeatureLimitService,
+  InsufficientLimitError,
+} from "../../services/member/heavyFeatureLimit.service";
 import type { CommandContext } from "../../types/command";
 
 export interface LimitReservation {
@@ -81,24 +85,91 @@ export async function reserveFeatureLimit(
 }
 
 /**
- * Consume limit setelah proses sukses.
+ * Consume limit setelah proses sukses (dengan 2x retry & delay 300ms).
  * Error consume tidak dilempar ke user (sudah berhasil, jangan ganggu UX).
  */
 export async function consumeFeatureLimit(reservation: LimitReservation): Promise<void> {
-  try {
-    await heavyFeatureLimitService.consume(reservation);
-  } catch {
-    // Logged internally; tidak ganggu response user.
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      await heavyFeatureLimitService.consume(reservation);
+      return;
+    } catch (err: unknown) {
+      attempts++;
+      if (attempts >= 3) {
+        logger.error(
+          {
+            err,
+            correlationId: reservation.correlationId,
+            groupJid: reservation.groupJid,
+            userJid: reservation.userJid,
+          },
+          "Failed to settle heavy feature limit (consume)",
+        );
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
   }
 }
 
 /**
- * Refund limit setelah proses gagal.
+ * Refund limit setelah proses gagal (dengan 2x retry & delay 300ms).
  */
 export async function refundFeatureLimit(reservation: LimitReservation): Promise<void> {
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      await heavyFeatureLimitService.refund(reservation);
+      return;
+    } catch (err: unknown) {
+      attempts++;
+      if (attempts >= 3) {
+        logger.error(
+          {
+            err,
+            correlationId: reservation.correlationId,
+            groupJid: reservation.groupJid,
+            userJid: reservation.userJid,
+          },
+          "Failed to settle heavy feature limit (refund)",
+        );
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  }
+}
+
+/**
+ * Helper terpadu untuk mengeksekusi fitur berat secara aman:
+ * Resolve -> Reserve -> Run Task -> Consume -> (Refund bila task gagal).
+ */
+export async function executeWithHeavyFeatureLimit<T>(
+  context: CommandContext,
+  feature: HeavyFeatureType,
+  task: () => Promise<T>,
+): Promise<T | null> {
+  const access = await resolveFeatureAccess(context, feature);
+  if (!access) {
+    return null;
+  }
+
+  if (access.skip) {
+    return await task();
+  }
+
+  const reserved = await reserveFeatureLimit(context, access.reservation);
+  if (!reserved) {
+    return null;
+  }
+
   try {
-    await heavyFeatureLimitService.refund(reservation);
-  } catch {
-    // Logged internally.
+    const result = await task();
+    await consumeFeatureLimit(access.reservation);
+    return result;
+  } catch (err) {
+    await refundFeatureLimit(access.reservation);
+    throw err;
   }
 }

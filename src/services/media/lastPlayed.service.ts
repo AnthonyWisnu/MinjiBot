@@ -1,4 +1,6 @@
-const LAST_PLAYED_TTL_MS = 30 * 60 * 1000;
+import { LruCache } from "../../utils/lruCache";
+
+const LAST_PLAYED_TTL_MS = 30 * 60 * 1000; // 30 menit TTL
 
 export interface LastPlayedSong {
   chatJid: string;
@@ -8,7 +10,8 @@ export interface LastPlayedSong {
 }
 
 export class LastPlayedService {
-  private readonly songs = new Map<string, LastPlayedSong>();
+  // LruCache berkapasitas 500 entri untuk mencegah kebocoran memori (PERF-03)
+  private readonly songs = new LruCache<string, LastPlayedSong>(500, LAST_PLAYED_TTL_MS);
 
   setLastPlayed(input: { chatJid: string; title: string; artist?: string }): void {
     this.songs.set(input.chatJid, {

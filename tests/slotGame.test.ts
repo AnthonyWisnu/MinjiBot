@@ -40,12 +40,13 @@ void test("SlotGame: rejects private chat", async () => {
 
 void test("SlotGame: rejects if points balance is less than bet", async () => {
   const mockRepo = {
-    findOrCreate: () => Promise.resolve({
-      id: "profile-1",
-      groupJid: "120@g.us",
-      userJid: "628@s.whatsapp.net",
-      pointsBalance: 2,
-    } as never),
+    findOrCreate: () =>
+      Promise.resolve({
+        id: "profile-1",
+        groupJid: "120@g.us",
+        userJid: "628@s.whatsapp.net",
+        pointsBalance: 2,
+      } as never),
   };
 
   const service = new SlotGameService(mockRepo as never);
@@ -54,30 +55,40 @@ void test("SlotGame: rejects if points balance is less than bet", async () => {
   assert.match(result, /Minimal taruhan: 5 Poin/);
 });
 
-void test("SlotGame: allows Super Owner to play even with 0 points", async () => {
-  const mockRepo = {
-    findOrCreate: () => Promise.resolve({
-      id: "profile-owner",
-      groupJid: "120@g.us",
-      userJid: "62895366009208@s.whatsapp.net",
-      pointsBalance: 0,
-    } as never),
-  };
-
-  const mockPrisma = {
+function createMockPrisma(points = 0, xp = 0): any {
+  const mock: any = {
+    $transaction: (fn: (tx: any) => Promise<any>) => fn(mock),
     groupMemberProfile: {
-      update: () => Promise.resolve({
-        id: "profile-owner",
-        pointsBalance: 0,
-        experience: 0,
-      }),
+      updateMany: () => Promise.resolve({ count: 1 }),
+      update: () => Promise.resolve({ id: "profile-1", pointsBalance: points, experience: xp }),
+      findUniqueOrThrow: () =>
+        Promise.resolve({ id: "profile-1", pointsBalance: points, experience: xp }),
+    },
+    groupMemberTransaction: {
+      create: () => Promise.resolve({}),
+      createMany: () => Promise.resolve({ count: 1 }),
     },
   };
+  return mock;
+}
+
+void test("SlotGame: allows Super Owner to play even with 0 points", async () => {
+  const mockRepo = {
+    findOrCreate: () =>
+      Promise.resolve({
+        id: "profile-owner",
+        groupJid: "120@g.us",
+        userJid: "628000000101@s.whatsapp.net",
+        pointsBalance: 0,
+      } as never),
+  };
+
+  const mockPrisma = createMockPrisma(0, 0);
 
   const service = new SlotGameService(mockRepo as never, mockPrisma as never);
   const ctx = makeMockContext(0);
   ctx.role = "SUPER_OWNER";
-  ctx.senderUserJid = "62895366009208@s.whatsapp.net";
+  ctx.senderUserJid = "628000000101@s.whatsapp.net";
 
   const result = await service.play(ctx);
   assert.match(result, /MINJI SLOT/);
@@ -86,25 +97,17 @@ void test("SlotGame: allows Super Owner to play even with 0 points", async () =>
 
 void test("SlotGame: accepts custom bet amount", async () => {
   const mockRepo = {
-    findOrCreate: () => Promise.resolve({
-      id: "profile-1",
-      groupJid: "120@g.us",
-      userJid: "628@s.whatsapp.net",
-      pointsBalance: 100,
-      totalGamesPlayed: 0,
-    } as never),
+    findOrCreate: () =>
+      Promise.resolve({
+        id: "profile-1",
+        groupJid: "120@g.us",
+        userJid: "628@s.whatsapp.net",
+        pointsBalance: 100,
+        totalGamesPlayed: 0,
+      } as never),
   };
 
-  const mockPrisma = {
-    groupMemberProfile: {
-      update: ({ data }: { data: { pointsBalance: unknown; totalGamesPlayed: unknown } }) =>
-        Promise.resolve({
-          id: "profile-1",
-          pointsBalance: 80,
-          experience: 1,
-        }),
-    },
-  };
+  const mockPrisma = createMockPrisma(80, 1);
 
   const service = new SlotGameService(mockRepo as never, mockPrisma as never);
   const ctx = makeMockContext(100);
@@ -117,13 +120,14 @@ void test("SlotGame: accepts custom bet amount", async () => {
 
 void test("SlotGame: rejects custom bet exceeding balance", async () => {
   const mockRepo = {
-    findOrCreate: () => Promise.resolve({
-      id: "profile-1",
-      groupJid: "120@g.us",
-      userJid: "628@s.whatsapp.net",
-      pointsBalance: 30,
-      totalGamesPlayed: 0,
-    } as never),
+    findOrCreate: () =>
+      Promise.resolve({
+        id: "profile-1",
+        groupJid: "120@g.us",
+        userJid: "628@s.whatsapp.net",
+        pointsBalance: 30,
+        totalGamesPlayed: 0,
+      } as never),
   };
 
   const service = new SlotGameService(mockRepo as never);
@@ -137,25 +141,17 @@ void test("SlotGame: rejects custom bet exceeding balance", async () => {
 
 void test("SlotGame: accepts allin bet", async () => {
   const mockRepo = {
-    findOrCreate: () => Promise.resolve({
-      id: "profile-1",
-      groupJid: "120@g.us",
-      userJid: "628@s.whatsapp.net",
-      pointsBalance: 500,
-      totalGamesPlayed: 15,
-    } as never),
+    findOrCreate: () =>
+      Promise.resolve({
+        id: "profile-1",
+        groupJid: "120@g.us",
+        userJid: "628@s.whatsapp.net",
+        pointsBalance: 500,
+        totalGamesPlayed: 15,
+      } as never),
   };
 
-  const mockPrisma = {
-    groupMemberProfile: {
-      update: () =>
-        Promise.resolve({
-          id: "profile-1",
-          pointsBalance: 0,
-          experience: 1,
-        }),
-    },
-  };
+  const mockPrisma = createMockPrisma(0, 1);
 
   const service = new SlotGameService(mockRepo as never, mockPrisma as never);
   const ctx = makeMockContext(500);
@@ -166,4 +162,3 @@ void test("SlotGame: accepts allin bet", async () => {
   // Either wins all-in or hits educational rungkad total message
   assert.match(result, /(ALL-IN|MINJI SLOT)/);
 });
-

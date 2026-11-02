@@ -1,14 +1,16 @@
 import type { WAMessageKey } from "@whiskeysockets/baileys";
 
+import { AppUserError } from "../../errors/appUserError";
 import {
   moderationGuard,
   type ModerationContextState,
   type ModerationGuard,
 } from "../../guards/moderationGuard";
 import type { CommandContext } from "../../types/command";
-import type { Role } from "../../types/role";
-import { getIdentityCandidateJids, normalizeJid, normalizeUserJid } from "../../utils/jid";
+import { getBotCanonicalJids, getIdentityCandidateJids, normalizeUserJid } from "../../utils/jid";
 import { extractTargetJidFromMessage, normalizePhoneToJid } from "../../utils/moderationTarget";
+import { identityResolverService } from "../identity/identityResolver.service";
+import { antiDeleteService } from "./antiDelete.service";
 
 export class ManualModerationService {
   constructor(private readonly guard: ModerationGuard = moderationGuard) {}
@@ -80,22 +82,40 @@ export class ManualModerationService {
 
   async deleteQuotedMessage(context: CommandContext): Promise<string> {
     this.assertGroup(context);
-    this.assertCanModerate(context.role);
 
-    if (!context.quoted?.id) {
-      throw new Error("[ERROR] Reply pesan yang ingin dihapus dengan command .del.");
+    const isWaAdmin = await identityResolverService.isGroupAdmin(
+      context.socket,
+      context.chatJid,
+      context.senderJid,
+      context.senderAltJids,
+    );
+    const canDelete =
+      isWaAdmin ||
+      context.role === "SUPER_OWNER" ||
+      context.role === "TENANT_OWNER" ||
+      context.role === "TENANT_ADMIN";
+
+    if (!canDelete) {
+      throw new AppUserError("Kamu tidak punya izin untuk menghapus pesan anggota lain.");
     }
 
-    const moderationContext = await this.resolveModerationContext(context, context.senderUserJid);
-    const guardResult = this.guard.canAddUser(moderationContext);
-    this.assertGuardAllowed(guardResult.message);
+    if (!context.quoted?.id) {
+      throw new AppUserError("Reply pesan yang ingin dihapus dengan command .del.");
+    }
+
+    const botJids = getBotCanonicalJids(context.socket);
+    const isFromMe = context.quoted.participantJid
+      ? botJids.has(normalizeUserJid(context.quoted.participantJid))
+      : false;
 
     const deleteKey: WAMessageKey = {
       remoteJid: context.chatJid,
       id: context.quoted.id,
       participant: context.quoted.participantJid,
-      fromMe: false,
+      fromMe: isFromMe,
     };
+
+    antiDeleteService.suppressModerationDelete(context.chatJid, context.quoted.id);
 
     await context.socket.sendMessage(context.chatJid, {
       delete: deleteKey,
@@ -127,7 +147,7 @@ export class ManualModerationService {
         context.senderJid,
         ...context.senderAltJids,
       ]),
-      targetJids: [targetJid],
+      targetJids: getIdentityCandidateJids(targetJid),
       tenantGroup: context.tenantGroup,
     });
   }
@@ -137,11 +157,13 @@ export class ManualModerationService {
     targetJid: string,
   ): Promise<string> {
     const metadata = await context.socket.groupMetadata(context.chatJid);
-    const normalizedTarget = normalizeJid(targetJid);
+    const normalizedTarget = normalizeUserJid(targetJid);
     const participant = metadata.participants.find((item) => {
-      const candidates = [item.id, item.jid, item.lid]
-        .filter((value): value is string => Boolean(value))
-        .map((value) => normalizeJid(value));
+      const candidates = getIdentityCandidateJids(item.id, [
+        item.id,
+        (item as { jid?: string }).jid,
+        (item as { lid?: string }).lid,
+      ]);
 
       return candidates.includes(normalizedTarget);
     });
@@ -157,14 +179,6 @@ export class ManualModerationService {
     if (!context.isGroup) {
       throw new Error("[ERROR] Command ini hanya dapat digunakan di grup.");
     }
-  }
-
-  private assertCanModerate(role: Role): void {
-    if (role === "SUPER_OWNER" || role === "TENANT_OWNER" || role === "TENANT_ADMIN") {
-      return;
-    }
-
-    throw new Error("[ERROR] Kamu tidak punya izin untuk menjalankan aksi ini.");
   }
 
   private assertGuardAllowed(message: string | undefined): void {

@@ -5,14 +5,15 @@ coverage/
 .env
 .env.*
 !.env.example
-ig_cookies.txt
 www.youtube.com_cookies.txt
 *cookies*.txt
 cookies/
 /cookies/
 sessions/
+sessions-test/
 auth/
 tmp/
+tmp-test/
 temp/
 /media/
 /downloads/

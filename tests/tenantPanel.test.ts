@@ -2,13 +2,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { TenantPanelService } from "../src/services/tenant/tenantPanel.service";
-import type { TenantAdmin, TenantFeatureSetting, TenantGroup, TenantGroupSetting } from "@prisma/client";
+import type {
+  TenantAdmin,
+  TenantFeatureSetting,
+  TenantGroup,
+  TenantGroupSetting,
+} from "@prisma/client";
 import type { CommandContext } from "../src/types/command";
 
-function createMockPanelService(options?: {
-  isRegisteredTenant?: boolean;
-  botIsAdmin?: boolean;
-}) {
+function createMockPanelService(options?: { isRegisteredTenant?: boolean; botIsAdmin?: boolean }) {
   const isRegistered = options?.isRegisteredTenant ?? true;
 
   const tenantGroup: TenantGroup = {
@@ -160,7 +162,8 @@ void test("TenantPanelService: blocks regular member from accessing panel", asyn
       await service.renderPanel(context);
     },
     {
-      message: "[ERROR] Panel ini hanya dapat diakses oleh Tenant Owner, Tenant Admin, atau Super Owner.",
+      message:
+        "[ERROR] Panel ini hanya dapat diakses oleh Tenant Owner, Tenant Admin, atau Super Owner.",
     },
   );
 });

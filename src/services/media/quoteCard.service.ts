@@ -1,7 +1,8 @@
 import sharp from "sharp";
-import fs from "node:fs";
-import path from "node:path";
 
+import { MAX_SAFE_IMAGE_PIXELS } from "../../utils/imageSafety";
+import { clampAndWrapText, clampText, codePointLength, escapeXml } from "../../utils/xml";
+import { avatarService } from "./avatar.service";
 import { stickerService } from "./sticker.service";
 
 export interface QuoteCardInput {
@@ -25,6 +26,8 @@ const QUOTE_HEIGHT = 440;
 const TWEET_WIDTH = 800;
 const TWEET_HEIGHT = 440;
 
+const MAX_SOCIAL_CARD_TEXT_LENGTH = 500;
+
 export class QuoteCardService {
   /**
    * Me-render aesthetic editorial quote card (Dark Glassmorphism).
@@ -32,12 +35,14 @@ export class QuoteCardService {
   async generateQuoteCard(input: QuoteCardInput): Promise<Buffer> {
     const { text, authorName, authorSub, avatarBuffer } = input;
 
-    const safeAuthor = escapeXml(authorName.length > 25 ? `${authorName.slice(0, 23)}...` : authorName);
-    const safeSub = escapeXml(authorSub ?? "MinjiBot Official Quote");
+    const displayAuthor = clampText(authorName, 25, "...");
+    const safeAuthor = escapeXml(displayAuthor);
+    const safeSub = escapeXml(clampText(authorSub ?? "MinjiBot Official Quote", 48, "..."));
 
-    // Wrap text into clean lines
-    const maxChars = text.length > 150 ? 44 : 36;
-    const lines = wrapText(text, maxChars, 6);
+    const clampedPreviewLength = Math.min(codePointLength(text), MAX_SOCIAL_CARD_TEXT_LENGTH);
+    const maxChars = clampedPreviewLength > 150 ? 44 : 36;
+    const rawLines = clampAndWrapText(text, MAX_SOCIAL_CARD_TEXT_LENGTH, maxChars, 6, true);
+    const lines = rawLines.length > 0 ? rawLines : [clampText(text, maxChars)];
     const fontSize = lines.length > 4 ? 22 : 26;
     const lineHeight = fontSize + 10;
 
@@ -107,7 +112,7 @@ export class QuoteCardService {
     );
 
     // Composite circular avatar at (left: 70, top: 140)
-    return sharp(svgBackground)
+    return sharp(svgBackground, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
       .composite([
         {
           input: circularAvatar,
@@ -120,15 +125,10 @@ export class QuoteCardService {
   }
 
   /**
-   * Konversi quote PNG menjadi WhatsApp WebP sticker resmi dengan metadata.
+   * Konversi quote PNG menjadi WhatsApp WebP sticker resmi dengan metadata (single-pass encode).
    */
   async generateQuoteSticker(quoteCardBuffer: Buffer): Promise<Buffer> {
-    const webpRaw = await sharp(quoteCardBuffer)
-      .resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .webp({ quality: 90 })
-      .toBuffer();
-
-    return stickerService.createSticker(webpRaw, "image");
+    return stickerService.createSticker(quoteCardBuffer, "image");
   }
 
   /**
@@ -137,18 +137,23 @@ export class QuoteCardService {
   async generateTweetCard(input: TweetCardInput): Promise<Buffer> {
     const { text, authorName, authorHandle, avatarBuffer, dateStr } = input;
 
-    const safeName = escapeXml(authorName.length > 22 ? `${authorName.slice(0, 20)}...` : authorName);
+    const displayName = clampText(authorName, 22, "...");
+    const safeName = escapeXml(displayName);
+    const badgeOffsetX = 140 + Math.min(codePointLength(displayName) * 11, 240);
+
     const cleanHandle = authorHandle.replace(/^@/, "");
-    const safeHandle = escapeXml(cleanHandle.length > 20 ? `${cleanHandle.slice(0, 18)}...` : cleanHandle);
+    const safeHandle = escapeXml(clampText(cleanHandle, 20, "..."));
 
     // Realistic tweet date
     const dateFormatted = dateStr ?? formatTweetDate(new Date());
 
-    // Deterministic random engagement numbers from text hash
-    const metrics = computeTweetMetrics(text);
+    // Deterministic random engagement numbers from clamped text hash
+    const clampedForMetrics = clampText(text, MAX_SOCIAL_CARD_TEXT_LENGTH, "");
+    const metrics = computeTweetMetrics(clampedForMetrics);
 
     // Wrap tweet text
-    const lines = wrapText(text, 48, 5);
+    const rawLines = clampAndWrapText(text, MAX_SOCIAL_CARD_TEXT_LENGTH, 48, 5, true);
+    const lines = rawLines.length > 0 ? rawLines : [clampText(text, 48)];
     const textSpans = lines
       .map((line, idx) => {
         const y = 145 + idx * 30;
@@ -170,7 +175,7 @@ export class QuoteCardService {
         </text>
 
         <!-- Verified Badge SVG -->
-        <g transform="translate(${String(140 + Math.min(safeName.length * 11, 240))}, 48)">
+        <g transform="translate(${String(badgeOffsetX)}, 48)">
           <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
           <path d="M6 10 L8.5 12.5 L14 7" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
         </g>
@@ -198,20 +203,20 @@ export class QuoteCardService {
 
         <!-- Metrics Row -->
         <!-- Retweets -->
-        <text x="45" y="375" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#E7E9EA">${metrics.retweets} <tspan font-weight="400" fill="#71767B">Reposts</tspan></text>
+        <text x="45" y="375" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#E7E9EA">${escapeXml(metrics.retweets)} <tspan font-weight="400" fill="#71767B">Reposts</tspan></text>
         <!-- Quotes -->
-        <text x="180" y="375" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#E7E9EA">${metrics.quotes} <tspan font-weight="400" fill="#71767B">Quotes</tspan></text>
+        <text x="180" y="375" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#E7E9EA">${escapeXml(metrics.quotes)} <tspan font-weight="400" fill="#71767B">Quotes</tspan></text>
         <!-- Likes -->
-        <text x="310" y="375" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#E7E9EA">${metrics.likes} <tspan font-weight="400" fill="#71767B">Likes</tspan></text>
+        <text x="310" y="375" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#E7E9EA">${escapeXml(metrics.likes)} <tspan font-weight="400" fill="#71767B">Likes</tspan></text>
         <!-- Bookmarks -->
-        <text x="440" y="375" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#E7E9EA">${metrics.bookmarks} <tspan font-weight="400" fill="#71767B">Bookmarks</tspan></text>
+        <text x="440" y="375" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#E7E9EA">${escapeXml(metrics.bookmarks)} <tspan font-weight="400" fill="#71767B">Bookmarks</tspan></text>
 
         <!-- Bottom Accent -->
-        <text x="755" y="415" text-anchor="end" font-family="'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600" fill="#334155">𝕏 OFFICIAL MOCKUP</text>
+        <text x="755" y="415" text-anchor="end" font-family="'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600" fill="#475569">GENERATED BY MINJIBOT • PARODY</text>
       </svg>`,
     );
 
-    return sharp(svgTemplate)
+    return sharp(svgTemplate, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
       .composite([
         {
           input: circularAvatar,
@@ -225,7 +230,7 @@ export class QuoteCardService {
 
   private async prepareCircularAvatar(avatarBuffer?: Buffer | null, size = 120): Promise<Buffer> {
     let sourceBuffer = avatarBuffer;
-    sourceBuffer ??= this.getFallbackAvatar();
+    sourceBuffer ??= avatarService.getFallbackAvatar();
 
     const circleMaskSvg = Buffer.from(
       `<svg width="${String(size)}" height="${String(size)}"><circle cx="${String(size / 2)}" cy="${String(
@@ -234,13 +239,11 @@ export class QuoteCardService {
     );
 
     try {
-      if (sourceBuffer) {
-        return await sharp(sourceBuffer)
-          .resize(size, size, { fit: "cover" })
-          .composite([{ input: circleMaskSvg, blend: "dest-in" }])
-          .png()
-          .toBuffer();
-      }
+      return await sharp(sourceBuffer, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
+        .resize(size, size, { fit: "cover" })
+        .composite([{ input: circleMaskSvg, blend: "dest-in" }])
+        .png()
+        .toBuffer();
     } catch {
       // ignore and fallback
     }
@@ -253,78 +256,8 @@ export class QuoteCardService {
       </svg>`,
     );
 
-    return sharp(fallbackSvg).png().toBuffer();
+    return sharp(fallbackSvg, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS }).png().toBuffer();
   }
-
-  private getFallbackAvatar(): Buffer | null {
-    const possiblePaths = [
-      path.resolve(process.cwd(), "assets/minji.png"),
-      path.resolve(process.cwd(), "src/Minji.png"),
-      path.resolve(__dirname, "../../assets/minji.png"),
-      path.resolve(__dirname, "../../../assets/minji.png"),
-      path.resolve(__dirname, "../../Minji.png"),
-    ];
-
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) {
-        try {
-          return fs.readFileSync(p);
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    return null;
-  }
-}
-
-function escapeXml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-function wrapText(text: string, maxCharsPerLine: number, maxLines = 6): string[] {
-  const paragraphs = text.trim().split(/\r?\n/);
-  const resultLines: string[] = [];
-
-  for (const para of paragraphs) {
-    const words = para.trim().split(/\s+/).filter((w) => w.length > 0);
-    if (words.length === 0) continue;
-
-    let currentLine = "";
-    for (const word of words) {
-      if ((currentLine + " " + word).trim().length <= maxCharsPerLine) {
-        currentLine = (currentLine + " " + word).trim();
-      } else {
-        if (currentLine.length > 0) {
-          resultLines.push(currentLine);
-        }
-        currentLine = word;
-        if (resultLines.length >= maxLines - 1) {
-          break;
-        }
-      }
-    }
-
-    if (currentLine.length > 0 && resultLines.length < maxLines) {
-      resultLines.push(currentLine);
-    }
-
-    if (resultLines.length >= maxLines) {
-      break;
-    }
-  }
-
-  if (resultLines.length === 0) {
-    resultLines.push(text.slice(0, maxCharsPerLine));
-  }
-
-  return resultLines;
 }
 
 function formatTweetDate(date: Date): string {

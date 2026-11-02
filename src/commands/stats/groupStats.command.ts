@@ -1,5 +1,6 @@
-import type { CommandContext, CommandDefinition } from "../../types/command";
 import { groupStatsService } from "../../services/stats/groupStats.service";
+import type { CommandContext, CommandDefinition } from "../../types/command";
+import { formatUserSafeError } from "../../utils/userSafeError";
 
 export const groupStatsCommands: CommandDefinition[] = [
   {
@@ -29,8 +30,7 @@ async function handleStats(context: CommandContext): Promise<void> {
     const result = await groupStatsService.getStats(context);
     await context.reply(result.text, { mentions: result.mentions });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Gagal mengambil statistik grup.";
-    await context.reply(message);
+    await context.reply(formatUserSafeError(error, "Gagal mengambil statistik grup."));
   }
 }
 
@@ -44,8 +44,7 @@ async function handleTopActive(context: CommandContext): Promise<void> {
     const result = await groupStatsService.getTopActive(context);
     await context.reply(result.text, { mentions: result.mentions });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Gagal mengambil peringkat aktivitas grup.";
-    await context.reply(message);
+    await context.reply(formatUserSafeError(error, "Gagal mengambil peringkat aktivitas grup."));
   }
 }
 
@@ -59,7 +58,9 @@ async function handleSilent(context: CommandContext): Promise<void> {
   if (context.args[0]) {
     const parsed = parseInt(context.args[0], 10);
     if (Number.isNaN(parsed) || parsed < 1 || parsed > 365) {
-      await context.reply("Jumlah hari tidak valid. Masukkan angka antara 1 sampai 365.\nContoh: .silent 7");
+      await context.reply(
+        "Jumlah hari tidak valid. Masukkan angka antara 1 sampai 365.\nContoh: .silent 7",
+      );
       return;
     }
     days = parsed;
@@ -69,7 +70,6 @@ async function handleSilent(context: CommandContext): Promise<void> {
     const result = await groupStatsService.getSilentMembers(context, days);
     await context.reply(result.text, { mentions: result.mentions });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Gagal memindai member pasif.";
-    await context.reply(message);
+    await context.reply(formatUserSafeError(error, "Gagal memindai member pasif."));
   }
 }

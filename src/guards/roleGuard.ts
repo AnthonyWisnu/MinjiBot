@@ -52,7 +52,18 @@ export class RoleGuard {
   }
 
   isSuperOwner(userJid: string): boolean {
-    return this.superOwnerJids.has(normalizeUserJid(userJid));
+    const normalized = normalizeUserJid(userJid);
+    if (this.superOwnerJids.has(normalized)) {
+      return true;
+    }
+    const envJids = process.env.SUPER_OWNER_JIDS;
+    if (envJids) {
+      const parsed = envJids.split(",").map((j) => normalizeUserJid(j.trim()));
+      if (parsed.includes(normalized)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   hasRole(role: Role, allowedRoles: readonly Role[]): boolean {
@@ -72,21 +83,61 @@ export class RoleGuard {
       return "TENANT_OWNER";
     }
 
-    for (const senderJid of senderJids) {
-      const isTenantAdmin = await this.tenantAdminRepository.exists(groupJid, senderJid);
-      if (isTenantAdmin) {
-        return "TENANT_ADMIN";
+    let isTenantAdmin = false;
+    const adminRepo = this.tenantAdminRepository as unknown as {
+      existsAny?: (groupJid: string, userJids: string[]) => Promise<boolean>;
+      exists?: (groupJid: string, userJid: string) => Promise<boolean>;
+      isGroupAdmin?: (groupJid: string, userJid: string) => Promise<boolean>;
+    };
+
+    if (typeof adminRepo.existsAny === "function") {
+      isTenantAdmin = await adminRepo.existsAny(groupJid, senderJids);
+    } else if (typeof adminRepo.exists === "function") {
+      for (const senderJid of senderJids) {
+        if (await adminRepo.exists(groupJid, senderJid)) {
+          isTenantAdmin = true;
+          break;
+        }
       }
+    } else if (typeof adminRepo.isGroupAdmin === "function") {
+      for (const senderJid of senderJids) {
+        if (await adminRepo.isGroupAdmin(groupJid, senderJid)) {
+          isTenantAdmin = true;
+          break;
+        }
+      }
+    }
+
+    if (isTenantAdmin) {
+      return "TENANT_ADMIN";
     }
 
     return "MEMBER";
   }
 
   private async resolvePrivateRole(senderJids: string[]): Promise<Role> {
-    for (const senderJid of senderJids) {
-      const isTenantOwner = await this.tenantGroupRepository.ownerExists(senderJid);
+    const groupRepo = this.tenantGroupRepository as unknown as {
+      anyOwnerExists?: (ownerJids: string[]) => Promise<boolean>;
+      ownerExists?: (ownerJid: string) => Promise<boolean>;
+      isOwnerOfAnyGroup?: (ownerJid: string) => Promise<boolean>;
+    };
+
+    if (typeof groupRepo.anyOwnerExists === "function") {
+      const isTenantOwner = await groupRepo.anyOwnerExists(senderJids);
       if (isTenantOwner) {
         return "TENANT_OWNER";
+      }
+    } else if (typeof groupRepo.ownerExists === "function") {
+      for (const senderJid of senderJids) {
+        if (await groupRepo.ownerExists(senderJid)) {
+          return "TENANT_OWNER";
+        }
+      }
+    } else if (typeof groupRepo.isOwnerOfAnyGroup === "function") {
+      for (const senderJid of senderJids) {
+        if (await groupRepo.isOwnerOfAnyGroup(senderJid)) {
+          return "TENANT_OWNER";
+        }
       }
     }
 

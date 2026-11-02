@@ -1,14 +1,13 @@
-import {
-  TenantAuditAction,
-  TenantStatus,
-  type TenantGroup,
-} from "@prisma/client";
+import { TenantAuditAction, TenantStatus, type TenantGroup } from "@prisma/client";
 
+import { AppUserError } from "../../errors/appUserError";
 import { prisma } from "../../repositories/prismaClient";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSetting.repository";
+import { tenantGuard } from "../../guards/tenantGuard";
+import { tenantFeatureService } from "./tenantFeature.service";
 import { addDuration, parseDateOnly } from "../../utils/time";
 
 export interface ActivateTenantInput {
@@ -29,9 +28,7 @@ export interface TenantInfoResult {
 export type TenantListFilter = "visible" | "all" | "removed";
 
 export class SuperOwnerTenantService {
-  constructor(
-    private readonly tenantGroupRepository = new TenantGroupRepository(),
-  ) {}
+  constructor(private readonly tenantGroupRepository = new TenantGroupRepository()) {}
 
   listPendingGroups(): Promise<TenantGroup[]> {
     return this.tenantGroupRepository.listPending();
@@ -58,7 +55,7 @@ export class SuperOwnerTenantService {
     const pendingTenant = await this.resolvePendingTenant(input.selector);
     const expiresAt = addDuration(new Date(), input.durationText);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const tenantGroupRepository = new TenantGroupRepository(tx);
       const tenantFeatureRepository = new TenantFeatureRepository(tx);
       const tenantGroupSettingRepository = new TenantGroupSettingRepository(tx);
@@ -92,6 +89,11 @@ export class SuperOwnerTenantService {
 
       return { tenantGroup: activatedTenant };
     });
+
+    tenantGuard.invalidateCache(result.tenantGroup.groupJid);
+    tenantFeatureService.invalidateCache(result.tenantGroup.groupJid);
+
+    return result;
   }
 
   async extendTenant(
@@ -100,6 +102,12 @@ export class SuperOwnerTenantService {
     actorJid: string,
   ): Promise<TenantGroup> {
     const tenantGroup = await this.findTenantByCodeOrThrow(tenantCode);
+    if (tenantGroup.status === TenantStatus.PENDING || !tenantGroup.ownerJid) {
+      throw new AppUserError(
+        "Tenant belum diaktifkan. Gunakan .tenant activate <kode> <@owner> <durasi> terlebih dahulu.",
+      );
+    }
+
     const now = new Date();
     const baseDate =
       tenantGroup.expiresAt && tenantGroup.expiresAt.getTime() > now.getTime()
@@ -121,6 +129,12 @@ export class SuperOwnerTenantService {
     actorJid: string,
   ): Promise<TenantGroup> {
     const tenantGroup = await this.findTenantByCodeOrThrow(tenantCode);
+    if (tenantGroup.status === TenantStatus.PENDING || !tenantGroup.ownerJid) {
+      throw new AppUserError(
+        "Tenant belum diaktifkan. Gunakan .tenant activate <kode> <@owner> <durasi> terlebih dahulu.",
+      );
+    }
+
     const expiresAt = parseDateOnly(dateText);
 
     return this.updateTenantExpiry(
@@ -142,7 +156,7 @@ export class SuperOwnerTenantService {
   async removeTenant(tenantCode: string, actorJid: string): Promise<TenantGroup> {
     const tenantGroup = await this.findTenantByCodeOrThrow(tenantCode);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const tenantGroupRepository = new TenantGroupRepository(tx);
       const tenantAuditRepository = new TenantAuditRepository(tx);
       const removedTenant = await tenantGroupRepository.remove(tenantGroup.tenantCode);
@@ -158,6 +172,11 @@ export class SuperOwnerTenantService {
 
       return removedTenant;
     });
+
+    tenantGuard.invalidateCache(result.groupJid);
+    tenantFeatureService.invalidateCache(result.groupJid);
+
+    return result;
   }
 
   private async resolvePendingTenant(selector: string): Promise<TenantGroup> {
@@ -197,7 +216,7 @@ export class SuperOwnerTenantService {
     actorJid: string,
     action: TenantAuditAction,
   ): Promise<TenantGroup> {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const tenantGroupRepository = new TenantGroupRepository(tx);
       const tenantAuditRepository = new TenantAuditRepository(tx);
       const nextStatus = tenantGroup.isBlocked ? TenantStatus.BLOCKED : TenantStatus.ACTIVE;
@@ -219,6 +238,11 @@ export class SuperOwnerTenantService {
 
       return updatedTenant;
     });
+
+    tenantGuard.invalidateCache(result.groupJid);
+    tenantFeatureService.invalidateCache(result.groupJid);
+
+    return result;
   }
 
   private async setTenantBlocked(
@@ -228,10 +252,23 @@ export class SuperOwnerTenantService {
   ): Promise<TenantGroup> {
     const tenantGroup = await this.findTenantByCodeOrThrow(tenantCode);
 
-    return prisma.$transaction(async (tx) => {
+    let restoredStatus: TenantStatus = TenantStatus.ACTIVE;
+    if (!blocked) {
+      if (!tenantGroup.ownerJid) {
+        restoredStatus = TenantStatus.PENDING;
+      } else if (tenantGroup.expiresAt && tenantGroup.expiresAt.getTime() <= Date.now()) {
+        restoredStatus = TenantStatus.EXPIRED;
+      }
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
       const tenantGroupRepository = new TenantGroupRepository(tx);
       const tenantAuditRepository = new TenantAuditRepository(tx);
-      const updatedTenant = await tenantGroupRepository.setBlocked(tenantGroup.tenantCode, blocked);
+      const updatedTenant = await tenantGroupRepository.setBlocked(
+        tenantGroup.tenantCode,
+        blocked,
+        restoredStatus,
+      );
 
       await tenantAuditRepository.create({
         groupJid: updatedTenant.groupJid,
@@ -244,6 +281,11 @@ export class SuperOwnerTenantService {
 
       return updatedTenant;
     });
+
+    tenantGuard.invalidateCache(result.groupJid);
+    tenantFeatureService.invalidateCache(result.groupJid);
+
+    return result;
   }
 }
 

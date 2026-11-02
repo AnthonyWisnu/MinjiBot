@@ -40,58 +40,58 @@ export function parseDurationMs(durationText: string): number {
 
 export function parseReminderTime(baseDate: Date, timeText: string): Date {
   const trimmedTimeText = timeText.trim();
-  const clockTime = parseClockTime(baseDate, trimmedTimeText);
-  if (clockTime) {
-    return clockTime;
+  let targetDate: Date | null = parseClockTime(baseDate, trimmedTimeText);
+  targetDate ??= parseDateTime(trimmedTimeText);
+
+  if (!targetDate) {
+    const match = REMINDER_DURATION_PATTERN.exec(trimmedTimeText);
+    if (!match) {
+      throw new Error(
+        "Format waktu tidak valid. Gunakan contoh 21:00, 10m, 2h, 1d, atau YYYY-MM-DD HH:mm.",
+      );
+    }
+
+    const value = Number(match[1]);
+    const unit = match[2]?.toLowerCase();
+    if (!Number.isInteger(value) || value <= 0 || !unit) {
+      throw new Error("Waktu reminder harus berupa angka positif.");
+    }
+
+    if (
+      unit === "s" ||
+      unit === "sec" ||
+      unit === "second" ||
+      unit === "seconds" ||
+      unit === "detik"
+    ) {
+      targetDate = new Date(baseDate.getTime() + value * SECOND_MS);
+    } else if (
+      unit === "m" ||
+      unit === "min" ||
+      unit === "minute" ||
+      unit === "minutes" ||
+      unit === "menit"
+    ) {
+      targetDate = new Date(baseDate.getTime() + value * MINUTE_MS);
+    } else if (unit === "h" || unit === "hour" || unit === "hours" || unit === "jam") {
+      targetDate = new Date(baseDate.getTime() + value * HOUR_MS);
+    } else if (unit === "w" || unit === "week" || unit === "weeks" || unit === "minggu") {
+      targetDate = new Date(baseDate.getTime() + value * 7 * DAY_MS);
+    } else {
+      targetDate = new Date(baseDate.getTime() + value * DAY_MS);
+    }
   }
 
-  const dateTime = parseDateTime(trimmedTimeText);
-  if (dateTime) {
-    return dateTime;
+  if (Number.isNaN(targetDate.getTime())) {
+    throw new Error("Waktu reminder tidak valid.");
   }
 
-  const match = REMINDER_DURATION_PATTERN.exec(trimmedTimeText);
-  if (!match) {
-    throw new Error(
-      "Format waktu tidak valid. Gunakan contoh 21:00, 10m, 2h, 1d, atau YYYY-MM-DD HH:mm.",
-    );
+  const maxFutureMs = 365 * DAY_MS;
+  if (targetDate.getTime() - baseDate.getTime() > maxFutureMs) {
+    throw new Error("Waktu reminder maksimal 365 hari ke depan.");
   }
 
-  const value = Number(match[1]);
-  const unit = match[2]?.toLowerCase();
-  if (!Number.isInteger(value) || value <= 0 || !unit) {
-    throw new Error("Waktu reminder harus berupa angka positif.");
-  }
-
-  if (
-    unit === "s" ||
-    unit === "sec" ||
-    unit === "second" ||
-    unit === "seconds" ||
-    unit === "detik"
-  ) {
-    return new Date(baseDate.getTime() + value * SECOND_MS);
-  }
-
-  if (
-    unit === "m" ||
-    unit === "min" ||
-    unit === "minute" ||
-    unit === "minutes" ||
-    unit === "menit"
-  ) {
-    return new Date(baseDate.getTime() + value * MINUTE_MS);
-  }
-
-  if (unit === "h" || unit === "hour" || unit === "hours" || unit === "jam") {
-    return new Date(baseDate.getTime() + value * HOUR_MS);
-  }
-
-  if (unit === "w" || unit === "week" || unit === "weeks" || unit === "minggu") {
-    return new Date(baseDate.getTime() + value * 7 * DAY_MS);
-  }
-
-  return new Date(baseDate.getTime() + value * DAY_MS);
+  return targetDate;
 }
 
 function parseClockTime(baseDate: Date, clockText: string): Date | null {
@@ -127,13 +127,10 @@ export function parseDateOnly(dateText: string): Date {
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
-  const date = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+  const date = createWibDate(year, month, day, 23, 59, 59, 999);
+  const wibParts = getWibDateParts(date);
 
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day
-  ) {
+  if (wibParts.year !== year || wibParts.month !== month || wibParts.day !== day) {
     throw new Error("Tanggal tidak valid.");
   }
 
@@ -193,6 +190,8 @@ function createWibDate(
   day: number,
   hour: number,
   minute: number,
+  second = 0,
+  ms = 0,
 ): Date {
-  return new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0) - WIB_OFFSET_MS);
+  return new Date(Date.UTC(year, month - 1, day, hour, minute, second, ms) - WIB_OFFSET_MS);
 }

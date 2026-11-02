@@ -1,3 +1,5 @@
+process.env.SUPER_OWNER_JIDS = "628000000101@s.whatsapp.net";
+
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { TenantFeatureSetting, TenantGroup } from "@prisma/client";
@@ -165,6 +167,8 @@ void test("AntiDelete: caches incoming message and restores it upon revoke", asy
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: true,
+    goodbyeEnabled: true,
+    antiRaidEnabled: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -205,6 +209,7 @@ void test("AntiDelete: caches incoming message and restores it upon revoke", asy
 
   assert.equal(sentMessages.length, 1);
   const sent = sentMessages[0];
+  assert.ok(sent);
   assert.equal(sent.jid, "120363001@g.us");
   assert.ok(sent.content.text.includes("DETEKSI PESAN DITARIK"));
   assert.ok(sent.content.text.includes("62812345678"));
@@ -247,7 +252,9 @@ void test("AntiDelete: ignores revoke when antiDeleteEnabled is false", async ()
     antiSpamEnabled: true,
     reminderEnabled: true,
     tagAllEnabled: true,
-    antiDeleteEnabled: false, // OFF!
+    antiDeleteEnabled: false,
+    goodbyeEnabled: true,
+    antiRaidEnabled: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -278,7 +285,6 @@ void test("AntiDelete: ignores revoke when antiDeleteEnabled is false", async ()
 
   assert.equal(sentMessages.length, 0);
 });
-
 
 void test("messageRevoke.subscriber: handles WAMessageStubType.REVOKE when message is null", async () => {
   const { handleMessagesUpdate } = await import("../src/bot/subscribers/messageRevoke.subscriber");
@@ -315,7 +321,8 @@ void test("messageRevoke.subscriber: handles WAMessageStubType.REVOKE when messa
 });
 
 void test("AntiDeleteInterceptor: triggers handleMessageRevoke on REVOKE protocol message in upsert", async () => {
-  const { AntiDeleteInterceptor } = await import("../src/bot/pipeline/interceptors/antiDelete.interceptor");
+  const { AntiDeleteInterceptor } =
+    await import("../src/bot/pipeline/interceptors/antiDelete.interceptor");
   const { antiDeleteService } = await import("../src/services/moderation/antiDelete.service");
 
   let revokedKey: any = null;
@@ -387,6 +394,8 @@ void test("AntiDelete: ignores revoke when sender is Super Owner or Tenant Owner
     reminderEnabled: true,
     tagAllEnabled: true,
     antiDeleteEnabled: true,
+    goodbyeEnabled: true,
+    antiRaidEnabled: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -418,7 +427,7 @@ void test("AntiDelete: ignores revoke when sender is Super Owner or Tenant Owner
     key: {
       remoteJid: "120363001@g.us",
       id: "SUPER_OWNER_MSG",
-      participant: "62895366009208@s.whatsapp.net", // Matches super owner
+      participant: "628000000101@s.whatsapp.net", // Matches super owner
       fromMe: false,
     },
     message: { conversation: "pesan rahasia super owner" },
@@ -437,7 +446,7 @@ void test("AntiDelete: ignores revoke when sender is Super Owner or Tenant Owner
       remoteJid: "120363001@g.us",
       id: "SUPER_OWNER_LID_MSG",
       participant: "205703230791875@lid", // LID format
-      participantPn: "62895366009208@s.whatsapp.net", // Matches super owner
+      participantPn: "628000000101@s.whatsapp.net", // Matches super owner
       fromMe: false,
     } as any,
     message: { conversation: "Tess dari web" },
@@ -462,7 +471,7 @@ void test("AntiDelete: ignores revoke when sender is Super Owner or Tenant Owner
       id: "120363001@g.us",
       participants: [
         {
-          id: "62895366009208@s.whatsapp.net",
+          id: "628000000101@s.whatsapp.net",
           lid: "999888777@lid",
         },
       ],
@@ -485,7 +494,11 @@ void test("AntiDelete: ignores revoke when sender is Super Owner or Tenant Owner
     participant: "999888777@lid",
   });
 
-  assert.equal(sentMessages.length, 0, "Super owner message resolved via groupMetadata must not be reposted");
+  assert.equal(
+    sentMessages.length,
+    0,
+    "Super owner message resolved via groupMetadata must not be reposted",
+  );
 
   // 5. Normal member deletes message -> MUST BE REPOSTED
   await service.cacheMessage({

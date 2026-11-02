@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 process.env.NODE_ENV = "test";
 process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/minjibot_test";
 process.env.COMMAND_PREFIX = ".";
-process.env.SUPER_OWNER_JIDS = "62895366009208@s.whatsapp.net";
+process.env.SUPER_OWNER_JIDS = "628000000101@s.whatsapp.net";
 process.env.SESSION_DIR = "./sessions-test";
 process.env.TEMP_DIR = "./tmp-test";
 process.env.LOG_LEVEL = "silent";
@@ -26,7 +26,7 @@ void test("RoleGuard resolves Super Owner from phone alias when sender is LID", 
   const role = await guard.resolveRole({
     chatJid: "95747856982103@lid",
     senderJid: "95747856982103@lid",
-    senderAltJids: ["95747856982103@lid", "62895366009208@s.whatsapp.net"],
+    senderAltJids: ["95747856982103@lid", "628000000101@s.whatsapp.net"],
     isGroup: false,
   });
 

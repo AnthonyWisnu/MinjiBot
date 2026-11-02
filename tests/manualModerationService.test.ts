@@ -9,7 +9,7 @@ import type { CommandContext } from "../src/types/command";
 process.env.NODE_ENV = "test";
 process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/minjibot_test";
 process.env.COMMAND_PREFIX = ".";
-process.env.SUPER_OWNER_JIDS = "62895366009208@s.whatsapp.net";
+process.env.SUPER_OWNER_JIDS = "628000000101@s.whatsapp.net";
 process.env.SESSION_DIR = "./sessions-test";
 process.env.TEMP_DIR = "./tmp-test";
 process.env.LOG_LEVEL = "silent";
@@ -27,13 +27,13 @@ process.env.REMINDER_POLL_MS = "30000";
 void test("ManualModerationService kick rejects super owner target", async () => {
   const { service, socket } = await createManualModerationService({
     senderJid: "6281@s.whatsapp.net",
-    targetJid: "62895366009208@s.whatsapp.net",
+    targetJid: "628000000101@s.whatsapp.net",
     senderIsAdmin: true,
     targetIsAdmin: false,
   });
 
   await assert.rejects(
-    () => service.kick(createMentionContext(socket, "kick", "62895366009208@s.whatsapp.net")),
+    () => service.kick(createMentionContext(socket, "kick", "628000000101@s.whatsapp.net")),
     /Target adalah user yang dilindungi/,
   );
   assert.equal(socket.actions.length, 0);
@@ -43,7 +43,7 @@ void test("ManualModerationService kick rejects super owner target resolved from
   const { service, socket } = await createManualModerationService({
     senderJid: "6281@s.whatsapp.net",
     targetJid: "111111@lid",
-    targetPhoneJid: "62895366009208@s.whatsapp.net",
+    targetPhoneJid: "628000000101@s.whatsapp.net",
     targetLid: "111111@lid",
     senderIsAdmin: true,
     targetIsAdmin: false,
@@ -74,7 +74,7 @@ void test("ManualModerationService kick rejects tenant owner target from regular
 
 void test("ManualModerationService kick rejects tenant owner target from super owner", async () => {
   const { service, socket } = await createManualModerationService({
-    senderJid: "62895366009208@s.whatsapp.net",
+    senderJid: "628000000101@s.whatsapp.net",
     targetJid: "6282@s.whatsapp.net",
     senderIsAdmin: true,
     targetIsAdmin: false,
@@ -137,7 +137,7 @@ void test("ManualModerationService kick removes regular user when allowed", asyn
 
 void test("ManualModerationService kick removes regular user when sender is super owner", async () => {
   const { service, socket } = await createManualModerationService({
-    senderJid: "62895366009208@s.whatsapp.net",
+    senderJid: "628000000101@s.whatsapp.net",
     targetJid: "6283@s.whatsapp.net",
     senderIsAdmin: true,
     targetIsAdmin: false,
@@ -167,7 +167,7 @@ void test("ManualModerationService kick removes regular user when sender is tena
 
 void test("ManualModerationService kick removes regular admin when sender is super owner", async () => {
   const { service, socket } = await createManualModerationService({
-    senderJid: "62895366009208@s.whatsapp.net",
+    senderJid: "628000000101@s.whatsapp.net",
     targetJid: "6283@s.whatsapp.net",
     senderIsAdmin: true,
     targetIsAdmin: true,
@@ -272,19 +272,19 @@ void test("ManualModerationService promote succeeds for tenant owner when target
 void test("ManualModerationService promote succeeds for super owner when target is not admin", async () => {
   const { service, socket } = await createManualModerationService({
     senderJid: "6281@s.whatsapp.net",
-    targetJid: "62895366009208@s.whatsapp.net",
+    targetJid: "628000000101@s.whatsapp.net",
     senderIsAdmin: true,
     targetIsAdmin: false,
     tenantOwnerJid: "6282@s.whatsapp.net",
   });
 
   const result = await service.promote(
-    createMentionContext(socket, "promote", "62895366009208@s.whatsapp.net"),
+    createMentionContext(socket, "promote", "628000000101@s.whatsapp.net"),
   );
 
   assert.equal(result, "[ADMIN] User berhasil dipromosikan menjadi admin.");
   assert.deepEqual(socket.actions, [
-    { action: "promote", participant: "62895366009208@s.whatsapp.net" },
+    { action: "promote", participant: "628000000101@s.whatsapp.net" },
   ]);
 });
 
@@ -321,13 +321,13 @@ void test("ManualModerationService promote rejects when bot is not admin", async
 void test("ManualModerationService demote rejects super owner target", async () => {
   const { service, socket } = await createManualModerationService({
     senderJid: "6281@s.whatsapp.net",
-    targetJid: "62895366009208@s.whatsapp.net",
+    targetJid: "628000000101@s.whatsapp.net",
     senderIsAdmin: true,
     targetIsAdmin: true,
   });
 
   await assert.rejects(
-    () => service.demote(createMentionContext(socket, "demote", "62895366009208@s.whatsapp.net")),
+    () => service.demote(createMentionContext(socket, "demote", "628000000101@s.whatsapp.net")),
     /Target adalah user yang dilindungi/,
   );
 });
@@ -349,7 +349,7 @@ void test("ManualModerationService demote rejects tenant owner from regular admi
 
 void test("ManualModerationService demote rejects tenant owner from super owner", async () => {
   const { service, socket } = await createManualModerationService({
-    senderJid: "62895366009208@s.whatsapp.net",
+    senderJid: "628000000101@s.whatsapp.net",
     targetJid: "6282@s.whatsapp.net",
     senderIsAdmin: true,
     targetIsAdmin: true,

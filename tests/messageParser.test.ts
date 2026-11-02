@@ -23,13 +23,13 @@ void test("parseCommandMessage parses command name and args from group text", ()
 void test("parseCommandMessage includes phone alias when WhatsApp sends LID sender", () => {
   const socket = createSocket();
   const message = createTextMessage(".whoami", "95747856982103@lid", null);
-  message.key.senderPn = "62895366009208@s.whatsapp.net";
+  message.key.senderPn = "628000000101@s.whatsapp.net";
 
   const context = parseCommandMessage(socket, message);
 
   assert.ok(context);
   assert.equal(context.senderJid, "95747856982103@lid");
-  assert.deepEqual(context.senderAltJids, ["95747856982103@lid", "62895366009208@s.whatsapp.net"]);
+  assert.deepEqual(context.senderAltJids, ["95747856982103@lid", "628000000101@s.whatsapp.net"]);
 });
 
 void test("parseCommandMessage ignores non-command text", () => {

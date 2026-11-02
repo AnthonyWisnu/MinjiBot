@@ -40,7 +40,9 @@ export class LeaderboardService {
     const entries = top.map((p, i) => this.toEntry(i + 1, p, p.experience));
 
     const isCallerSuperOwner = roleGuard.isSuperOwner(callerJid);
-    const callerInTop = top.some((p) => normalizeUserJid(p.userJid) === normalizeUserJid(callerJid));
+    const callerInTop = top.some(
+      (p) => normalizeUserJid(p.userJid) === normalizeUserJid(callerJid),
+    );
     let callerPosition: number | null = null;
 
     if (!callerInTop && !isCallerSuperOwner) {
@@ -57,7 +59,9 @@ export class LeaderboardService {
     const entries = top.map((p, i) => this.toEntry(i + 1, p, p.pointsBalance));
 
     const isCallerSuperOwner = roleGuard.isSuperOwner(callerJid);
-    const callerInTop = top.some((p) => normalizeUserJid(p.userJid) === normalizeUserJid(callerJid));
+    const callerInTop = top.some(
+      (p) => normalizeUserJid(p.userJid) === normalizeUserJid(callerJid),
+    );
     let callerPosition: number | null = null;
 
     if (!callerInTop && !isCallerSuperOwner) {

@@ -11,10 +11,25 @@
 - **Teknologi Utama**: Node.js (v20+), TypeScript (Strict Mode), Baileys (`@whiskeysockets/baileys`), Prisma ORM, PostgreSQL, PM2, Sharp, FFmpeg, yt-dlp.
 - **Konsep Bisnis**: **Multi-Tenant Group Rental** (Sewa Bot per Grup WhatsApp).
   - Satu grup WhatsApp diisolasi sebagai **1 Tenant Group**.
-  - Bot tidak menggunakan sistem pengguna premium global (*zero global premium users*). Seluruh hak akses fitur publik melekat pada status masa aktif sewa grup dan profil ekonomi member di dalam grup tersebut.
+  - Bot tidak menggunakan sistem pengguna premium global (_zero global premium users_). Seluruh hak akses fitur publik melekat pada status masa aktif sewa grup dan profil ekonomi member di dalam grup tersebut.
   - Setiap grup memiliki konfigurasi independen (fitur, antilink, antispam, welcome message, reminder, dll).
 
 ---
+
+## Audit Remediation Workflow
+
+Before implementing any task related to audit remediation:
+
+1. Read `audit/README.md`.
+2. Read `audit/REMEDIATION_PLAN.md`.
+3. Read the relevant phase document in `audit/phases/`.
+4. Review all referenced findings and verify them against the current source code.
+5. Follow the defined implementation order, dependencies, and acceptance criteria.
+6. Do not introduce changes outside the approved scope without discussing them first.
+7. Update task status and verification results after implementation.
+
+Do not assume that an audit finding is automatically correct.
+Verify its evidence before making changes.
 
 ## 2. Hirarki Hak Akses & Peran (Role Hierarchy)
 
@@ -27,7 +42,7 @@ Sistem otentikasi dan otorisasi menggunakan `roleGuard` yang menyelesaikan peran
 2. **TENANT_OWNER**:
    - Penyewa resmi bot untuk satu atau beberapa grup tenant (`ownerJid` pada `TenantGroup`).
    - Berhak mengubah pengaturan grup miliknya (fitur, antilink, antispam, welcome, reminder) dan menunjuk Tenant Admin.
-   - Untuk fitur konsumsi berat (media downloader, AI photo, dll), Tenant Owner tetap tunduk pada profil member biasa dengan saldo limit normal.
+   - Untuk fitur konsumsi berat (media downloader, HD photo, dll), Tenant Owner mendapatkan fasilitas bebas limit (`skipLimit: true`) di grup aktif miliknya, namun tetap menggunakan saldo poin normal untuk game (.slot).
 3. **TENANT_ADMIN**:
    - Anggota grup yang ditunjuk oleh Tenant Owner untuk membantu mengelola grup tenant tertentu.
 4. **MEMBER**:
@@ -44,7 +59,7 @@ Status tenant pada tabel `TenantGroup` memiliki enum `TenantStatus`:
              │
              ▼
         ┌─────────┐
-        │ PENDING │ ── (Super Owner aktifkan: .tenant activate) ──┐
+        │ PENDING │ ── (Super Owner aktifkan: .activatetenant) ──┐
         └─────────┘                                               │
              │                                                    ▼
              │ (Abaikan/hapus)                               ┌────────┐
@@ -52,14 +67,14 @@ Status tenant pada tabel `TenantGroup` memiliki enum `TenantStatus`:
         ┌─────────┐                                          └────────┘    │
         │ REMOVED │                                               │        │ (Super Owner
         └─────────┘                                (Masa aktif    │        │  perpanjang:
-             ▲                                      berakhir)     ▼        │  .tenant extend)
+             ▲                                      berakhir)     ▼        │  .extendtenant)
              │                                               ┌─────────┐   │
              │                                               │ EXPIRED │ ──┘
              │                                               └─────────┐
              │ (Super Owner hapus)                                │
              └────────────────────────────────────────────────────┤
                                                                   │ (Super Owner blokir:
-                                                                  │  .tenant block)
+                                                                  │  .blocktenant)
                                                                   ▼
                                                              ┌─────────┐
                                                              │ BLOCKED │
@@ -79,38 +94,43 @@ Status tenant pada tabel `TenantGroup` memiliki enum `TenantStatus`:
 Setiap anggota memiliki profil ekonomi yang **terisolasi per-grup** (`GroupMemberProfile`). Seorang pengguna yang bergabung di dua grup berbeda akan memiliki dua profil saldo yang terpisah total. Identitas profil menggunakan composite key: `(groupJid, userJid)`.
 
 ### 4.1. Komponen Saldo (Balances)
+
 - **Points (`pointsBalance`)**: Mata uang virtual untuk membeli limit (`.belilimit`), bermain slot taruhan (`.slot`), atau dihadiahkan ke sesama member (`.giftpoint`).
 - **Limit (`limitBalance` & `reservedLimit`)**: Bahan bakar untuk mengeksekusi fitur berat (Heavy Features).
   - Pola Transaksi: **Reserve** ➔ **Execute** ➔ **Consume** (jika sukses) / **Refund** (jika gagal).
   - Fitur berat tidak boleh mengonsumsi limit jika eksekusi gagal di tengah jalan.
 - **Experience (`experience`)**: Poin progres permanen (tidak bisa dibelanjakan/ditransfer) yang diperoleh dari game, klaim harian, dan aktivitas grup.
 - **Tier Rank (Otomatis dari XP)**:
-  - **Bronze**: 0 – 999 XP
-  - **Silver**: 1.000 – 4.999 XP
-  - **Gold**: 5.000 – 14.999 XP
-  - **Platinum**: 15.000 – 39.999 XP
-  - **Diamond**: 40.000 – 99.999 XP
-  - **Master**: 100.000 – 249.999 XP
-  - **Grandmaster**: 250.000+ XP
+  - **Warrior**: 0 – 999 XP
+  - **Elite**: 1.000 – 4.999 XP
+  - **Master**: 5.000 – 14.999 XP
+  - **Grandmaster**: 15.000 – 39.999 XP
+  - **Epic**: 40.000 – 99.999 XP
+  - **Legend**: 100.000 – 249.999 XP
+  - **Mythic**: 250.000+ XP
 
 ### 4.2. Fitur Klaim Harian & Pembelian
+
 - **Daily Claim (`.daily` / `.claim`)**:
-  - Memberikan 100 – 300 Poin acak + 50 XP.
+  - Memberikan 10 – 30 Poin acak + 50 XP.
   - Peluang 10% mendapatkan bonus 1 Limit tambahan.
   - Reset setiap pukul **00:00 WIB** (`Asia/Jakarta`).
   - Sistem streak berturut-turut tercatat di database.
 - **Beli Limit (`.belilimit <jumlah>`)**:
-  - Harga tetap: **1.000 Poin per 1 Limit**.
+  - Harga tetap: **100 Poin per 1 Limit**.
   - Transaksi atomic: Poin didebet dan Limit dikreditkan dalam 1 transaksi Prisma.
 - **Kirim Hadiah (`.giftpoint`, `.giftlimit`)**:
   - Hanya dapat dikirimkan ke sesama anggota di dalam grup yang sama.
   - Tidak bisa transfer ke bot atau ke diri sendiri.
 
 ### 4.3. Buku Besar Transaksi (Audit Ledger)
-Setiap perubahan saldo wajib mencatat baris baru pada tabel `MemberTransactionLedger` dengan:
+
+Setiap perubahan saldo wajib mencatat baris baru pada tabel `GroupMemberTransaction` dengan:
+
 - `asset`: `POINT` | `LIMIT` | `EXPERIENCE`
 - `type`: `DAILY_REWARD`, `GAME_REWARD`, `LIMIT_PURCHASE_*`, `GIFT_*`, `FEATURE_*`, dll.
-- `amountDelta`: nominal perubahan (+/-).
+- `amount`: nominal perubahan (+/-).
+- `balanceBefore` & `balanceAfter`: snapshot saldo sebelum & sesudah mutasi.
 - `correlationId`: UUID pelacak untuk mengaitkan operasi reserve ➔ consume/refund.
 
 ---
@@ -118,13 +138,15 @@ Setiap perubahan saldo wajib mencatat baris baru pada tabel `MemberTransactionLe
 ## 5. Fitur Berat (Heavy Features) & Konsumsi Limit
 
 Fitur berat mengonsumsi Limit Member dengan pola isolasi akses:
+
 - **TikTok Media Downloader (`.tt <link>`)**: Mengonsumsi **1 Limit**. Mendukung download video tanpa watermark, serta foto slide carousel (hingga 12 foto) beserta audio/musik pengiring (BGM) via direct API dan fallback gallery-dl / yt-dlp.
 - **Instagram Downloader (`.ig <link>`)**: Mengonsumsi **1 Limit**. Mendukung single reel/post, carousel foto/video (multi-item), dan story.
 - **YouTube Video Downloader (`.yt <link>`)**: Mengonsumsi **1 Limit**. Menggunakan **Adaptive Smart Resolution**: Prioritas 1 **720p 60fps** dan Prioritas 2 **720p 30fps** (jika estimasi ukuran <= 100MB), dengan fallback dinamis ke **480p** untuk video berdurasi hingga 12 menit. Seluruh video dijamin menggunakan codec **AVC1/H.264 + AAC** mobile-safe agar langsung bisa diputar lancar di WhatsApp tanpa lag.
-- **HD AI Photo (`.hd`)**: Mengonsumsi **2 Limit**. Meningkatkan ketajaman foto menggunakan model AI / GFPGAN.
+- **HD Photo Enhancer (`.hd`)**: Mengonsumsi **1 Limit**. Meningkatkan ketajaman foto menggunakan pipeline Sharp Super-Clarity lokal (mks2021 + CLAHE + LAB Sharpening) tanpa dependensi model eksternal.
 - **Play Song & Lyrics (`.play <judul>`, `.lirik <judul>`)**: Mengonsumsi **1 Limit**. Streaming audio MP3 dan pencarian lirik musik.
 
 ### 5.1. Studio Kreatif & Media Ringan
+
 - **Sticker Branding & Watermark Engine**: Seluruh stiker yang dihasilkan bot (`.s`, `.smeme`, `.brat`) disuntik metadata EXIF resmi WhatsApp menggunakan `node-webpmux` dengan identitas:
   - Pack Name: `MinjiBot Official Pack`
   - Author / Publisher: `MinjiBot`
@@ -141,29 +163,32 @@ Fitur berat mengonsumsi Limit Member dengan pola isolasi akses:
   - **GoodBye (`.goodbye [on|off]`, `.setgoodbye <pesan>`)**: Saat ada member keluar atau dikeluarkan dari grup (`goodbyeEnabled === true`), bot mengirimkan notifikasi perpisahan formal dan elegan ke grup dengan mention member tersebut tanpa mencoba menarik foto (mencegah error privasi WA). Otomatis diabaikan jika yang keluar adalah bot itu sendiri.
 
 ### 5.2. Alat Moderasi & Pengawasan Tenant (The Admin Powerhouse)
+
 Fitur kontrol grup eksklusif untuk penyewa bot (`TENANT_OWNER` & `TENANT_ADMIN`) dan `SUPER_OWNER`:
+
 - **HideTag (`.hidetag <pesan>`)**:
-  - Mengirim pesan pengumuman berformat bersih (`📢 *[ PENGUMUMAN ]*`) dengan me-mention seluruh anggota grup secara tersembunyi (*invisible mentions* di background pesan) tanpa mengotori layar chat dengan ratusan nomor HP.
+  - Mengirim pesan pengumuman berformat bersih (`📢 *[ PENGUMUMAN ]*`) dengan me-mention seluruh anggota grup secara tersembunyi (_invisible mentions_ di background pesan) tanpa mengotori layar chat dengan ratusan nomor HP.
   - Mengikuti sistem cooldown tag-all yang dikonfigurasi per grup (`tagAllCooldownSec`).
 - **Anti-Delete (`.antidelete [on|off]`)**:
-  - Mendeteksi pesan yang ditarik/dihapus (*revoke*) oleh pengirim di dalam grup.
+  - Mendeteksi pesan yang ditarik/dihapus (_revoke_) oleh pengirim di dalam grup.
   - Memanfaatkan in-memory LRU Cache berkecepatan tinggi (kapasitas 500 pesan, batas ukuran media 2MB, TTL 2 jam) untuk menjaga konsumsi RAM VPS tetap minimal dan aman.
   - Saat pesan ditarik, bot secara otomatis mengirimkan ulang isi pesan asli (teks, gambar, atau stiker) dengan mencantumkan identitas pengirim (`@user`) dan waktu pengiriman (WIB).
 - **Sistem Warning Terpadu (`.warn`, `.unwarn`, `.warns`, `.resetwarn`, `.setwarn`)**:
   - Penegakan disiplin berjenjang terhadap member pelanggar aturan. Memberikan akumulasi poin peringatan hingga batas ambang (`warnThreshold`, default: 3).
-  - Saat batas tercapai, bot secara otomatis mengeluarkan member dari grup (*Auto-Kick*) jika bot berstatus admin, dan mereset riwayat pelanggarannya secara atomik.
+  - Saat batas tercapai, bot secara otomatis mengeluarkan member dari grup (_Auto-Kick_) jika bot berstatus admin, dan mereset riwayat pelanggarannya secara atomik.
   - Akun terproteksi (`Bot`, `Tenant Owner`, dan `Super Owner`) kebal terhadap peringatan.
 - **Anti-Raid & Bot Surge Protection (`.antiraid`, `.grup <buka|tutup>`)**:
-  - Deteksi serbuan bot penyerang menggunakan *zero-lag in-memory sliding window* (default: $\ge 4$ member baru bergabung dalam interval $\le 10$ detik).
-  - Memicu protokol mitigasi darurat: otomatis mengunci grup ke mode pengumuman (*Announcement*), mencabut tautan undangan grup (*Revoke Invite Link*), dan menyiarkan peringatan darurat ke chat dengan me-mention seluruh admin grup.
-  - Dilengkapi *lockdown cooldown* 60 detik untuk mencegah badai siaran darurat berulang.
+  - Deteksi serbuan bot penyerang menggunakan _zero-lag in-memory sliding window_ (default: $\ge 4$ member baru bergabung dalam interval $\le 10$ detik).
+  - Memicu protokol mitigasi darurat: otomatis mengunci grup ke mode pengumuman (_Announcement_), mencabut tautan undangan grup (_Revoke Invite Link_), dan menyiarkan peringatan darurat ke chat dengan me-mention seluruh admin grup.
+  - Dilengkapi _lockdown cooldown_ 60 detik untuk mencegah badai siaran darurat berulang.
 - **SaaS Tenant Dashboard (`.panel` / `.tenantstatus`)**:
   - Dashboard eksekutif bergaya SaaS premium untuk `TENANT_OWNER`, `TENANT_ADMIN`, dan `SUPER_OWNER`.
   - Menyajikan informasi lengkap: identitas grup, kode tenant, sisa masa aktif sewa (hari & jam WIB), status izin admin bot di grup, susunan tim pengelola, matriks switch ON/OFF seluruh modul (moderasi, notifikasi, utilitas), dan panduan kontrol cepat admin.
 
 ### 5.3. Fitur Engagement & Status Sosial (Social Currency Engine)
+
 - **Profile 2.0 Visual Card (`.profile`)**:
-  - Mengonversi tampilan profil teks polos menjadi kartu grafis *glassmorphism* modern (800×450 px) dalam format PNG siap share via Sharp lokal tanpa browser headless.
+  - Mengonversi tampilan profil teks polos menjadi kartu grafis _glassmorphism_ modern (800×450 px) dalam format PNG siap share via Sharp lokal tanpa browser headless.
   - Menampilkan avatar bundar pengguna, nama panggilan, nomor HP tersamarkan, badge Tier Rank dengan aksen warna dinamis, progress bar XP ke tier berikutnya, serta 4 widget statistik (Poin, Limit, Streak Harian, Leaderboard Rank #X).
 - **Group Activity Analytics & Sider Hunter (`.stats`, `.topaktif` / `.topchat`, `.silent [hari]`)**:
   - Mencatat aktivitas chat anggota secara non-blocking di database via `ActivityTrackerInterceptor`.
@@ -172,7 +197,7 @@ Fitur kontrol grup eksklusif untuk penyewa bot (`TENANT_OWNER` & `TENANT_ADMIN`)
   - `.silent [hari]`: Alat seleksi sider/koleksi nomor pasif untuk mendeteksi anggota yang tidak pernah mengirim pesan selama X hari terakhir (default: 7 hari).
 - **Viral Studio: Aesthetic Quote & Meme Tweet (`.quote`, `.tweet`)**:
   - Alternatif legal, aman, dan viral tanpa risiko rekayasa fitnah fake-chat.
-  - `.quote` [reply pesan]: Merender kartu kutipan editorial *dark glassmorphism* beresolusi tinggi dengan tipografi rapi, foto profil, dan watermark MinjiBot. Opsi flag `-s` untuk langsung dikirim sebagai stiker WhatsApp.
+  - `.quote` [reply pesan]: Merender kartu kutipan editorial _dark glassmorphism_ beresolusi tinggi dengan tipografi rapi, foto profil, dan watermark MinjiBot. Opsi flag `-s` untuk langsung dikirim sebagai stiker WhatsApp.
   - `.tweet <teks>` / `.tweet @user <teks>`: Merender mockup postingan X (Twitter) Dark Mode lengkap dengan foto profil, centang verifikasi biru, username @minjibot, dan statistik likes/retweets deterministik.
 - **Automatic Level-Up & Rank Tier Announcement**:
   - Setiap kali member memperoleh XP (dari game kuis/tictactoe/daily) dan melompat ke tier rank yang lebih tinggi (Bronze ➔ Silver ➔ Gold ➔ Platinum ➔ Diamond ➔ Master ➔ Grandmaster), bot secara otomatis mengirim ucapan selamat selebrasi berformat elegan ke chat grup.
@@ -184,14 +209,15 @@ Fitur kontrol grup eksklusif untuk penyewa bot (`TENANT_OWNER` & `TENANT_ADMIN`)
 Semua mini game dirancang interaktif, ramah pengguna di WhatsApp, dan memberikan reward Poin & XP.
 
 ### 6.1. Mesin Slot Edukasi Anti-Judi (`.slot`)
+
 - **Tiga Opsi Taruhan**:
   - `.slot` ➔ Taruhan default (5 Poin).
   - `.slot <jumlah>` ➔ Taruhan kustom sesuai saldo pengguna.
   - `.slot allin` ➔ Mempertaruhkan seluruh saldo poin yang dimiliki.
 - **Simbol Murni Buah + Angka 7**: `🍒`, `🍇`, `🍉`, `🍊`, `🍋`, `7️⃣`.
 - **Weighted RNG Dinamis (The Reality Trap)**:
-  - Spin 1 – 3: Win Rate ~65% (sensasi *Beginner's Luck*).
-  - Spin 4 – 10: Win Rate ~35% (*House Edge* mulai memangkas saldo).
+  - Spin 1 – 3: Win Rate ~65% (sensasi _Beginner's Luck_).
+  - Spin 4 – 10: Win Rate ~35% (_House Edge_ mulai memangkas saldo).
   - Spin 11+: Win Rate ~20% (kemungkinan kalah tinggi).
   - Mode **ALL-IN**: Win Rate drop ke **~6%**. Jika kalah, bot menampilkan edukasi tegas mengenai bahaya kecanduan judi online.
 - **Payout**:
@@ -200,6 +226,7 @@ Semua mini game dirancang interaktif, ramah pengguna di WhatsApp, dan memberikan
   - Match 2 Buah: 1.5x taruhan (+5 XP).
 
 ### 6.2. Family 100 Interaktif
+
 - Format papan survey dengan slot tertutup:
   ```text
   1. ...............
@@ -210,12 +237,14 @@ Semua mini game dirancang interaktif, ramah pengguna di WhatsApp, dan memberikan
 - **Dukungan Swipe / Reply**: Pengguna tidak perlu mengetik `.family100 <jawaban>`, cukup reply pesan pertanyaan dari bot dengan jawabannya langsung.
 
 ### 6.3. TicTacToe PvP (Player vs Player)
+
 - Mulai tantangan: `.tictactoe @lawan`.
 - **Terima Tantangan via Reply**: Pemain yang ditantang cukup **swipe/reply** pesan tantangan bot (bisa balas apa saja: "gas", "ok", dll).
 - **Melangkah via Reply 1–9**: Pemain yang gilirannya tiba cukup **swipe/reply** pesan papan bot dengan angka `1` s/d `9`.
 - Dilengkapi timeout 5 menit dan hadiah Poin/XP untuk pemenang, yang kalah, atau hasil seri.
 
 ### 6.4. Kuis & Asah Otak Lainnya
+
 - `.mtk`, `.tebakkata`, `.tebakemoji`, `.tebakangka`: Semua mendukung mekanisme **Swipe / Reply** langsung tanpa prefix.
 
 ---
@@ -223,15 +252,16 @@ Semua mini game dirancang interaktif, ramah pengguna di WhatsApp, dan memberikan
 ## 7. Penanganan Koneksi & Ketahanan Baileys (Lifecycle & Anti-Crash)
 
 1. **Auto-Reconnect pada Status 500 / Network Glitch**:
-   - Pada `src/bot/lifecycle.ts`, jika terjadi error `statusCode === 500` (misal *stream error*, *badSession ACK glitch*, atau *packet loss* sesaat dari server WhatsApp), bot **tidak menganggap sesi hangus**. Bot menjadwalkan reconnect otomatis secara berkala (exponential backoff) agar bot tidak mati permanen.
+   - Pada `src/bot/lifecycle.ts`, jika terjadi error `statusCode === 500` (misal _stream error_, _badSession ACK glitch_, atau _packet loss_ sesaat dari server WhatsApp), bot **tidak menganggap sesi hangus**. Bot menjadwalkan reconnect otomatis secara berkala (exponential backoff) agar bot tidak mati permanen.
 2. **Normalisasi JID WhatsApp**:
    - Mendukung resolusi Phone JID (`...s.whatsapp.net`) dan LID (`...lid`). Fungsi `getMessageSenderJid` dan `getPreferredUserJid` memastikan identitas pengirim selalu dinormalisasi secara konsisten.
 3. **Pemberhentian Elegan (Graceful Shutdown)**:
    - Menangani `SIGINT` dan `SIGTERM` dengan menutup koneksi Baileys dan koneksi pool Prisma secara bersih.
 
 ### 7.1. Message Interceptor Pipeline & Event Subscribers
+
 1. **Modular Interceptor Pipeline (`src/bot/pipeline/`)**:
-   - Alur pesan masuk diproses secara berurutan menggunakan pola *Chain of Responsibility* terurut (`MessagePipeline`):
+   - Alur pesan masuk diproses secara berurutan menggunakan pola _Chain of Responsibility_ terurut (`MessagePipeline`):
      - Priority `10`: `PendingTenantInterceptor` (Registrasi tenant pending, cache metadata 6 jam).
      - Priority `20`: `AntiDeleteInterceptor` (Penyimpanan cache pesan in-memory & background async media caching).
      - Priority `35`: `ActivityTrackerInterceptor` (Pencatatan statistik chat grup non-blocking).
@@ -265,5 +295,5 @@ Saat Anda (AI Agent) diminta memperbarui kode MinjiBot, patuhi aturan mutlak ber
    - Jalankan unit tests dengan `npm run test`. Seluruh test suite (314+ tests) **wajib lulus 100%**.
 5. **Deployment & CI/CD**:
    - Seluruh perubahan yang di-push ke branch `main` di GitHub akan otomatis di-deploy ke VPS oleh GitHub Actions (`.github/workflows/deploy.yml`).
-   - **DILARANG KERAS** menjalankan script deploy manual via SSH paralel tepat setelah `git push origin main`, karena akan memicu benturan proses (*race condition* / konflik kunci pada `.git/index.lock` dan `node_modules`). Cukup biarkan GitHub Actions mengeksekusi deployment secara otomatis dan pantau statusnya via API/web.
-   - Script deployment di GitHub Actions dilindungi oleh antrean `concurrency` dan Linux `flock` (`/tmp/minjibot_deploy.lock`) serta pembersihan otomatis *stale git lock*.
+   - **DILARANG KERAS** menjalankan script deploy manual via SSH paralel tepat setelah `git push origin main`, karena akan memicu benturan proses (_race condition_ / konflik kunci pada `.git/index.lock` dan `node_modules`). Cukup biarkan GitHub Actions mengeksekusi deployment secara otomatis dan pantau statusnya via API/web.
+   - Script deployment di GitHub Actions dilindungi oleh antrean `concurrency` dan Linux `flock` (`/tmp/minjibot_deploy.lock`) serta pembersihan otomatis _stale git lock_.

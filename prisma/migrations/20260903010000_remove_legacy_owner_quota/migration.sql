@@ -8,17 +8,17 @@ DROP TABLE IF EXISTS "TenantQuotaTransaction";
 DROP TABLE IF EXISTS "TenantOwnerQuota";
 
 -- Drop legacy enums (PostgreSQL requires no active columns referencing them)
-DO \$\$ BEGIN
+DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'TenantQuotaTransactionType') THEN
     DROP TYPE "TenantQuotaTransactionType";
   END IF;
-END \$\$;
+END $$;
 
-DO \$\$ BEGIN
+DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'TenantQuotaSource') THEN
     DROP TYPE "TenantQuotaSource";
   END IF;
-END \$\$;
+END $$;
 
 -- Remove quota audit actions from TenantAuditAction enum
 -- PostgreSQL does not support DROP VALUE from enum; we recreate the enum.

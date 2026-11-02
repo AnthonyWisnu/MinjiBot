@@ -196,12 +196,29 @@ export class ModerationGuard {
   }
 
   private async isTenantAdmin(groupJid: string, userJids: string[]): Promise<boolean> {
-    for (const userJid of userJids) {
-      if (await this.tenantAdminRepository.exists(groupJid, userJid)) {
-        return true;
+    const repo = this.tenantAdminRepository as unknown as {
+      existsAny?: (groupJid: string, userJids: string[]) => Promise<boolean>;
+      exists?: (groupJid: string, userJid: string) => Promise<boolean>;
+      isGroupAdmin?: (groupJid: string, userJid: string) => Promise<boolean>;
+    };
+
+    if (typeof repo.existsAny === "function") {
+      return repo.existsAny(groupJid, userJids);
+    }
+    if (typeof repo.exists === "function") {
+      for (const jid of userJids) {
+        if (await repo.exists(groupJid, jid)) {
+          return true;
+        }
       }
     }
-
+    if (typeof repo.isGroupAdmin === "function") {
+      for (const jid of userJids) {
+        if (await repo.isGroupAdmin(groupJid, jid)) {
+          return true;
+        }
+      }
+    }
     return false;
   }
 

@@ -22,7 +22,10 @@ export class MemberProfileViewService {
   constructor(
     private readonly profileRepo: ProfileStore = new GroupMemberProfileRepository(),
     // economyService used via findOrCreateProfile to keep consistent write path.
-    private readonly economyService: Pick<MemberEconomyService, "findOrCreateProfile"> = new MemberEconomyService(),
+    private readonly economyService: Pick<
+      MemberEconomyService,
+      "findOrCreateProfile"
+    > = new MemberEconomyService(),
   ) {}
 
   /** Caller profile — creates if not exists. */

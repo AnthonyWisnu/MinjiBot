@@ -1,14 +1,24 @@
 import { existsSync } from "node:fs";
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { spawn } from "node:child_process";
 
 import ffmpegStatic from "ffmpeg-static";
 import sharp from "sharp";
 
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
+import { AppUserError } from "../../errors/appUserError";
+import { mediaQueueService } from "../../utils/boundedQueue";
+import { fetchBufferWithLimit } from "../../utils/httpStream";
+import { MAX_SAFE_IMAGE_PIXELS } from "../../utils/imageSafety";
+import { runExternalProcess } from "../../utils/processRunner";
 import { createTempDir, removeTempDir } from "../../utils/tempFile";
+import {
+  ALLOWED_DOWNLOADER_DOMAINS,
+  assertSafeExternalUrl,
+  parseAllowedDownloaderUrl,
+  safeFetchExternal,
+} from "../../utils/urlValidator";
 import { videoNormalizeService } from "./videoNormalize.service";
 
 const BYTES_PER_MB = 1024 * 1024;
@@ -86,7 +96,8 @@ interface TikWmResponse {
 
 async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> {
   const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`;
-  const response = await fetch(apiUrl, {
+  const response = await safeFetchExternal(apiUrl, {
+    allowedDomains: ["tikwm.com"],
     headers: {
       "User-Agent": DEFAULT_USER_AGENT,
     },
@@ -107,22 +118,21 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
   const musicUrl = json.data.music ?? json.data.music_info?.play;
   if (musicUrl) {
     try {
-      const musicRes = await fetch(musicUrl, {
+      const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
+      const { buffer: musicBuf } = await fetchBufferWithLimit(musicUrl, {
+        maxBytes,
+        timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
+        allowedDomains: ["tikwm.com"],
         headers: {
           "User-Agent": DEFAULT_USER_AGENT,
           Referer: "https://www.tikwm.com/",
         },
-        signal: AbortSignal.timeout(env.DOWNLOADER_TIMEOUT_MS),
       });
-      if (musicRes.ok) {
-        const musicBuf = Buffer.from(await musicRes.arrayBuffer());
-        const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
-        if (musicBuf.byteLength > 0 && musicBuf.byteLength <= maxBytes) {
-          audio = {
-            buffer: musicBuf,
-            mimetype: "audio/mpeg",
-          };
-        }
+      if (musicBuf.byteLength > 0) {
+        audio = {
+          buffer: musicBuf,
+          mimetype: "audio/mpeg",
+        };
       }
     } catch (err) {
       logger.warn({ err }, "Gagal mengunduh audio TikWM langsung");
@@ -137,23 +147,32 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
     const imageResults = await Promise.all(
       targetUrls.map(async (imgUrl, i): Promise<DownloadedMediaItem | null> => {
         try {
-          const imgRes = await fetch(imgUrl, {
+          const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
+          const { buffer: fetchedBuf } = await fetchBufferWithLimit(imgUrl, {
+            maxBytes,
+            timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
+            allowedDomains: ["tikwm.com"],
             headers: {
               "User-Agent": DEFAULT_USER_AGENT,
               Referer: "https://www.tikwm.com/",
             },
-            signal: AbortSignal.timeout(env.DOWNLOADER_TIMEOUT_MS),
           });
-          if (!imgRes.ok) return null;
+          if (fetchedBuf.byteLength <= 0) return null;
 
-          let imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+          let imgBuffer = fetchedBuf;
           let mime = "image/jpeg";
           let ext = ".jpg";
 
           try {
-            const meta = await sharp(imgBuffer).metadata();
+            const meta = await sharp(imgBuffer, {
+              limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
+            }).metadata();
             if (meta.format === "webp" || meta.format === "png") {
-              imgBuffer = Buffer.from(await sharp(imgBuffer).jpeg({ quality: 95 }).toBuffer());
+              imgBuffer = Buffer.from(
+                await sharp(imgBuffer, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
+                  .jpeg({ quality: 95 })
+                  .toBuffer(),
+              );
               mime = "image/jpeg";
               ext = ".jpg";
             }
@@ -176,7 +195,7 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
 
     const items = imageResults.filter((item): item is DownloadedMediaItem => item !== null);
     if (items.length === 0) {
-      throw new Error("Gagal mengambil foto slide TikTok.");
+      throw new AppUserError("Gagal mengambil foto slide TikTok.");
     }
 
     return {
@@ -193,25 +212,16 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
     throw new Error("Link video TikTok tidak ditemukan dalam respon API.");
   }
 
-  const videoRes = await fetch(videoUrl, {
+  const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
+  const { buffer } = await fetchBufferWithLimit(videoUrl, {
+    maxBytes,
+    timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
+    allowedDomains: ["tikwm.com"],
     headers: {
       "User-Agent": DEFAULT_USER_AGENT,
       Referer: "https://www.tikwm.com/",
     },
-    signal: AbortSignal.timeout(env.DOWNLOADER_TIMEOUT_MS),
   });
-
-  if (!videoRes.ok) {
-    throw new Error(`Gagal mengunduh stream video TikTok (${String(videoRes.status)})`);
-  }
-
-  const arrayBuffer = await videoRes.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
-  if (buffer.byteLength > maxBytes) {
-    throw new Error(`Ukuran video maksimal ${String(env.MAX_DOWNLOAD_FILE_MB)} MB.`);
-  }
 
   return {
     type: "video",
@@ -230,144 +240,149 @@ export class DownloaderService {
    * Also extracts/provides background audio (BGM) if available.
    */
   async downloadTikTok(url: string): Promise<TikTokDownloadResult> {
-    const parsedUrl = parseSupportedUrl(url, "tiktok");
-    const startedAt = Date.now();
+    return mediaQueueService.heavySubprocessQueue.run(async () => {
+      const preParsed = parseSupportedUrl(url, "tiktok");
+      const parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
+        allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.tiktok,
+      });
+      const startedAt = Date.now();
 
-    // 1. Direct TikWM API (Fast & watermark-free)
-    try {
-      const directResult = await downloadTikTokDirect(parsedUrl.toString());
-      if (directResult.type === "video" && !directResult.audio) {
+      // 1. Direct TikWM API (Fast & watermark-free)
+      try {
+        const directResult = await downloadTikTokDirect(parsedUrl.toString());
+        if (directResult.type === "video" && !directResult.audio) {
+          try {
+            directResult.audio = await this.extractAudioFromVideo(directResult.video.buffer);
+          } catch (err) {
+            logger.warn({ err }, "Extract audio dari video TikWM gagal");
+          }
+        }
+
+        logger.info(
+          {
+            elapsedMs: Date.now() - startedAt,
+            type: directResult.type,
+            itemCount: directResult.type === "images" ? directResult.items.length : 1,
+            hasAudio: !!directResult.audio,
+            mode: "tikwm-direct",
+          },
+          "TikTok download selesai",
+        );
+
+        return directResult;
+      } catch (error: unknown) {
+        logger.warn({ error }, "TikTok direct API gagal, mencoba fallback gallery-dl / yt-dlp");
+      }
+
+      // 2. Fallback using gallery-dl (supports photos & videos) and yt-dlp
+      const tempDir = await createTempDir("tt-download");
+      try {
+        let items: DownloadedMediaItem[] = [];
+
         try {
-          directResult.audio = await this.extractAudioFromVideo(directResult.video.buffer);
-        } catch (err) {
-          logger.warn({ err }, "Extract audio dari video TikWM gagal");
+          await this.runGalleryDlTikTok(parsedUrl.toString(), tempDir);
+          items = await scanDownloadedMediaFiles(tempDir);
+        } catch (gdlErr) {
+          logger.warn({ gdlErr }, "gallery-dl TikTok gagal, mencoba yt-dlp");
         }
-      }
 
-      logger.info(
-        {
-          elapsedMs: Date.now() - startedAt,
-          type: directResult.type,
-          itemCount: directResult.type === "images" ? directResult.items.length : 1,
-          hasAudio: !!directResult.audio,
-          mode: "tikwm-direct",
-        },
-        "TikTok download selesai",
-      );
+        if (items.length > 0) {
+          const imageItems = items.filter((it) => it.mediaType === "image");
+          if (imageItems.length > 0) {
+            const targetItems = imageItems.slice(0, 12);
+            let audio: ExtractedAudio | undefined;
+            try {
+              audio = await this.downloadTikTokAudioFallback(parsedUrl.toString());
+            } catch (err) {
+              logger.warn({ err }, "Fallback audio extraction untuk slide TikTok gagal");
+            }
 
-      return directResult;
-    } catch (error: unknown) {
-      logger.warn({ error }, "TikTok direct API gagal, mencoba fallback gallery-dl / yt-dlp");
-    }
+            logger.info(
+              {
+                elapsedMs: Date.now() - startedAt,
+                type: "images",
+                itemCount: targetItems.length,
+                hasAudio: !!audio,
+                mode: "gallery-dl",
+              },
+              "TikTok slide download selesai",
+            );
 
-    // 2. Fallback using gallery-dl (supports photos & videos) and yt-dlp
-    const tempDir = await createTempDir("tt-download");
-    try {
-      let items: DownloadedMediaItem[] = [];
-
-      try {
-        await this.runGalleryDlTikTok(parsedUrl.toString(), tempDir);
-        items = await scanDownloadedMediaFiles(tempDir);
-      } catch (gdlErr) {
-        logger.warn({ gdlErr }, "gallery-dl TikTok gagal, mencoba yt-dlp");
-      }
-
-      if (items.length > 0) {
-        const imageItems = items.filter((it) => it.mediaType === "image");
-        if (imageItems.length > 0) {
-          const targetItems = imageItems.slice(0, 12);
-          let audio: ExtractedAudio | undefined;
-          try {
-            audio = await this.downloadTikTokAudioFallback(parsedUrl.toString());
-          } catch (err) {
-            logger.warn({ err }, "Fallback audio extraction untuk slide TikTok gagal");
-          }
-
-          logger.info(
-            {
-              elapsedMs: Date.now() - startedAt,
+            return {
               type: "images",
-              itemCount: targetItems.length,
-              hasAudio: !!audio,
-              mode: "gallery-dl",
-            },
-            "TikTok slide download selesai",
-          );
-
-          return {
-            type: "images",
-            items: targetItems,
-            totalCount: imageItems.length,
-            audio,
-          };
-        }
-
-        const videoItem = items.find((it) => it.mediaType === "video") ?? items[0];
-        if (videoItem) {
-          let audio: ExtractedAudio | undefined;
-          try {
-            audio = await this.extractAudioFromVideo(videoItem.buffer);
-          } catch (err) {
-            logger.warn({ err }, "Extract audio fallback video gagal");
+              items: targetItems,
+              totalCount: imageItems.length,
+              audio,
+            };
           }
 
-          return {
-            type: "video",
-            video: {
-              buffer: videoItem.buffer,
-              fileName: "minjibot-tiktok.mp4",
-              mimetype: "video/mp4",
-            },
-            audio,
-          };
+          const videoItem = items.find((it) => it.mediaType === "video") ?? items[0];
+          if (videoItem) {
+            let audio: ExtractedAudio | undefined;
+            try {
+              audio = await this.extractAudioFromVideo(videoItem.buffer);
+            } catch (err) {
+              logger.warn({ err }, "Extract audio fallback video gagal");
+            }
+
+            return {
+              type: "video",
+              video: {
+                buffer: videoItem.buffer,
+                fileName: "minjibot-tiktok.mp4",
+                mimetype: "video/mp4",
+              },
+              audio,
+            };
+          }
         }
-      }
 
-      // 3. Fallback terakhir: yt-dlp video download
-      const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
-      const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
-      const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
+        // 3. Fallback terakhir: yt-dlp video download
+        const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
+        const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
+        const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
 
-      await this.runTikTokArgs(parsedUrl.toString(), rawOutputTemplate);
-      const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
-      const outputPath = await prepareMobileVideo(
-        rawVideoPath,
-        remuxedOutputPath,
-        normalizedOutputPath,
-      );
-      await assertFileSizeAllowed(outputPath);
-      const buffer = await readFile(outputPath);
+        await this.runTikTokArgs(parsedUrl.toString(), rawOutputTemplate);
+        const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
+        const outputPath = await prepareMobileVideo(
+          rawVideoPath,
+          remuxedOutputPath,
+          normalizedOutputPath,
+        );
+        await assertFileSizeAllowed(outputPath);
+        const buffer = await readFile(outputPath);
 
-      let audio: ExtractedAudio | undefined;
-      try {
-        audio = await this.extractAudioFromVideo(buffer);
-      } catch (err) {
-        logger.warn({ err }, "Extract audio fallback yt-dlp gagal");
-      }
+        let audio: ExtractedAudio | undefined;
+        try {
+          audio = await this.extractAudioFromVideo(buffer);
+        } catch (err) {
+          logger.warn({ err }, "Extract audio fallback yt-dlp gagal");
+        }
 
-      logger.info(
-        {
-          elapsedMs: Date.now() - startedAt,
+        logger.info(
+          {
+            elapsedMs: Date.now() - startedAt,
+            type: "video",
+            sizeBytes: buffer.byteLength,
+            hasAudio: !!audio,
+            mode: "yt-dlp",
+          },
+          "TikTok download selesai",
+        );
+
+        return {
           type: "video",
-          sizeBytes: buffer.byteLength,
-          hasAudio: !!audio,
-          mode: "yt-dlp",
-        },
-        "TikTok download selesai",
-      );
-
-      return {
-        type: "video",
-        video: {
-          buffer,
-          fileName: "minjibot-tiktok.mp4",
-          mimetype: "video/mp4",
-        },
-        audio,
-      };
-    } finally {
-      await removeTempDir(tempDir);
-    }
+          video: {
+            buffer,
+            fileName: "minjibot-tiktok.mp4",
+            mimetype: "video/mp4",
+          },
+          audio,
+        };
+      } finally {
+        await removeTempDir(tempDir);
+      }
+    });
   }
 
   /**
@@ -379,7 +394,9 @@ export class DownloaderService {
       if (result.type === "video") {
         return result.video;
       }
-      throw new Error("Link TikTok merupakan slide foto. Gunakan command .tt untuk mengunduh foto slide.");
+      throw new AppUserError(
+        "Link TikTok merupakan slide foto. Gunakan command .tt untuk mengunduh foto slide.",
+      );
     }
 
     throw new Error(`downloadVideo tidak mendukung kind: ${kind}`);
@@ -390,135 +407,152 @@ export class DownloaderService {
    * Returns single item or multi items (carousel up to 10).
    */
   async downloadInstagram(url: string): Promise<DownloadResult> {
-    const parsedUrl = parseSupportedUrl(url, "instagram");
-    const targetUrl = parsedUrl.toString();
-    const startedAt = Date.now();
-    const tempDir = await createTempDir("ig-download");
+    return mediaQueueService.heavySubprocessQueue.run(async () => {
+      const preParsed = parseSupportedUrl(url, "instagram");
+      const parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
+        allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.instagram,
+      });
+      const targetUrl = parsedUrl.toString();
+      const startedAt = Date.now();
+      const tempDir = await createTempDir("ig-download");
 
-    try {
-      let items: DownloadedMediaItem[] = [];
-      const isReel = targetUrl.toLowerCase().includes("/reel/");
+      try {
+        let items: DownloadedMediaItem[] = [];
+        const isReel = parsedUrl.pathname.toLowerCase().includes("/reel/");
 
-      if (isReel) {
-        // Reels diproses via yt-dlp terlebih dahulu
-        try {
-          await this.runYtDlpInstagram(targetUrl, tempDir);
-          items = await scanDownloadedMediaFiles(tempDir);
-        } catch (ytErr) {
-          logger.warn({ ytErr, url: targetUrl }, "yt-dlp gagal download reel, mencoba fallback gallery-dl");
-          await this.runGalleryDl(targetUrl, tempDir);
-          items = await scanDownloadedMediaFiles(tempDir);
-        }
-      } else {
-        // Foto tunggal, carousel slide, atau post foto/video:
-        // Gunakan gallery-dl terlebih dahulu karena yt-dlp tidak men-download foto
-        try {
-          await this.runGalleryDl(targetUrl, tempDir);
-          items = await scanDownloadedMediaFiles(tempDir);
-        } catch (gdlErr) {
-          logger.warn({ gdlErr, url: targetUrl }, "gallery-dl gagal, mencoba fallback yt-dlp");
-        }
-
-        // Jika gallery-dl tidak menghasilkan media (misal video post), coba yt-dlp
-        if (items.length === 0) {
+        if (isReel) {
+          // Reels diproses via yt-dlp terlebih dahulu
           try {
             await this.runYtDlpInstagram(targetUrl, tempDir);
             items = await scanDownloadedMediaFiles(tempDir);
           } catch (ytErr) {
-            logger.warn({ ytErr, url: targetUrl }, "yt-dlp fallback juga gagal");
+            logger.warn(
+              { ytErr, url: targetUrl },
+              "yt-dlp gagal download reel, mencoba fallback gallery-dl",
+            );
+            await this.runGalleryDl(targetUrl, tempDir);
+            items = await scanDownloadedMediaFiles(tempDir);
+          }
+        } else {
+          // Foto tunggal, carousel slide, atau post foto/video:
+          // Gunakan gallery-dl terlebih dahulu karena yt-dlp tidak men-download foto
+          try {
+            await this.runGalleryDl(targetUrl, tempDir);
+            items = await scanDownloadedMediaFiles(tempDir);
+          } catch (gdlErr) {
+            logger.warn({ gdlErr, url: targetUrl }, "gallery-dl gagal, mencoba fallback yt-dlp");
+          }
+
+          // Jika gallery-dl tidak menghasilkan media (misal video post), coba yt-dlp
+          if (items.length === 0) {
+            try {
+              await this.runYtDlpInstagram(targetUrl, tempDir);
+              items = await scanDownloadedMediaFiles(tempDir);
+            } catch (ytErr) {
+              logger.warn({ ytErr, url: targetUrl }, "yt-dlp fallback juga gagal");
+            }
           }
         }
+
+        if (items.length === 0) {
+          throw new AppUserError("Tidak ada media yang berhasil diunduh.");
+        }
+
+        logger.info(
+          { elapsedMs: Date.now() - startedAt, itemCount: items.length },
+          "Instagram download selesai",
+        );
+
+        return items.length === 1
+          ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            { type: "single", item: items[0]! }
+          : { type: "multi", items, totalCount: items.length };
+      } finally {
+        await removeTempDir(tempDir);
       }
-
-      if (items.length === 0) {
-        throw new Error("Tidak ada media yang berhasil diunduh.");
-      }
-
-      logger.info(
-        { elapsedMs: Date.now() - startedAt, itemCount: items.length },
-        "Instagram download selesai",
-      );
-
-      return items.length === 1
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        ? { type: "single", item: items[0]! }
-        : { type: "multi", items, totalCount: items.length };
-    } finally {
-      await removeTempDir(tempDir);
-    }
+    });
   }
 
   /**
-   * Download YouTube video — max 480p, max 12 minutes (720 seconds).
+   * Download YouTube video — max 720p, max 12 minutes (720 seconds).
    */
   async downloadYoutube(url: string): Promise<DownloadedMediaItem> {
-    const parsedUrl = parseSupportedUrl(url, "youtube");
-    const targetUrl = parsedUrl.toString();
-    const startedAt = Date.now();
-    const tempDir = await createTempDir("yt-video");
-    const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
-    const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
-    const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
+    return mediaQueueService.heavySubprocessQueue.run(async () => {
+      const preParsed = parseSupportedUrl(url, "youtube");
+      const parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
+        allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.youtube,
+      });
+      const targetUrl = parsedUrl.toString();
+      const startedAt = Date.now();
+      const tempDir = await createTempDir("yt-video");
+      const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
+      const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
+      const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
 
-    try {
-      const args = [
-        "--no-warnings",
-        "--no-playlist",
-        "--max-filesize",
-        `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
-        "--match-filter",
-        "duration <= 720",
-        "-f",
-        YT_VIDEO_FORMAT_SMART,
-        "--merge-output-format",
-        "mp4",
-        "--remux-video",
-        "mp4",
-        "--concurrent-fragments",
-        "4",
-        "--add-header",
-        `User-Agent:${DEFAULT_USER_AGENT}`,
-        "-o",
-        rawOutputTemplate,
-      ];
+      try {
+        const args = [
+          "--no-warnings",
+          "--no-playlist",
+          "--ies",
+          "youtube",
+          "--max-filesize",
+          `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
+          "--match-filter",
+          "duration <= 720",
+          "-f",
+          YT_VIDEO_FORMAT_SMART,
+          "--merge-output-format",
+          "mp4",
+          "--remux-video",
+          "mp4",
+          "--concurrent-fragments",
+          "4",
+          "--add-header",
+          `User-Agent:${DEFAULT_USER_AGENT}`,
+          "-o",
+          rawOutputTemplate,
+        ];
 
-      const cookiesPath = env.YOUTUBE_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
-      if (cookiesPath && existsSync(cookiesPath)) {
-        args.push("--cookies", cookiesPath);
+        const cookiesPath = env.YOUTUBE_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
+        if (cookiesPath && existsSync(cookiesPath)) {
+          args.push("--cookies", cookiesPath);
+        }
+
+        args.push("--", targetUrl);
+        await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+
+        const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
+        const outputPath = await prepareMobileVideo(
+          rawVideoPath,
+          remuxedOutputPath,
+          normalizedOutputPath,
+        );
+        await assertFileSizeAllowed(outputPath);
+        const buffer = await readFile(outputPath);
+
+        logger.info(
+          { elapsedMs: Date.now() - startedAt, sizeBytes: buffer.byteLength },
+          "YouTube video download selesai",
+        );
+
+        return {
+          buffer,
+          fileName: "minjibot-yt.mp4",
+          mimetype: "video/mp4",
+          mediaType: "video",
+        };
+      } finally {
+        await removeTempDir(tempDir);
       }
-
-      args.push("--", targetUrl);
-      await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
-
-      const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
-      const outputPath = await prepareMobileVideo(
-        rawVideoPath,
-        remuxedOutputPath,
-        normalizedOutputPath,
-      );
-      await assertFileSizeAllowed(outputPath);
-      const buffer = await readFile(outputPath);
-
-      logger.info(
-        { elapsedMs: Date.now() - startedAt, sizeBytes: buffer.byteLength },
-        "YouTube video download selesai",
-      );
-
-      return {
-        buffer,
-        fileName: "minjibot-yt.mp4",
-        mimetype: "video/mp4",
-        mediaType: "video",
-      };
-    } finally {
-      await removeTempDir(tempDir);
-    }
+    });
   }
 
   private async runTikTokArgs(url: string, outputTemplate: string): Promise<void> {
     const args = [
       "--no-playlist",
       "--no-warnings",
+      "--ies",
+      "tiktok",
       "--max-filesize",
       `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
       "-f",
@@ -569,6 +603,9 @@ export class DownloaderService {
   private async runYtDlpInstagram(url: string, tempDir: string): Promise<void> {
     const args = [
       "--no-warnings",
+      "--no-playlist",
+      "--ies",
+      "instagram",
       "--max-filesize",
       `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
       "--playlist-items",
@@ -597,13 +634,7 @@ export class DownloaderService {
   }
 
   private async runGalleryDl(url: string, tempDir: string): Promise<void> {
-    const args: string[] = [
-      "--range",
-      "1-10",
-      "--no-mtime",
-      "-D",
-      tempDir,
-    ];
+    const args: string[] = ["--range", "1-10", "--no-mtime", "-D", tempDir];
 
     const cookiesPath = env.INSTAGRAM_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
     if (cookiesPath && existsSync(cookiesPath)) {
@@ -615,13 +646,7 @@ export class DownloaderService {
   }
 
   private async runGalleryDlTikTok(url: string, tempDir: string): Promise<void> {
-    const args: string[] = [
-      "--range",
-      "1-12",
-      "--no-mtime",
-      "-D",
-      tempDir,
-    ];
+    const args: string[] = ["--range", "1-12", "--no-mtime", "-D", tempDir];
 
     const cookiesPath = env.TIKTOK_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
     if (cookiesPath && existsSync(cookiesPath)) {
@@ -640,6 +665,8 @@ export class DownloaderService {
       const args = [
         "--no-warnings",
         "--no-playlist",
+        "--ies",
+        "tiktok",
         "-x",
         "--audio-format",
         "mp3",
@@ -671,6 +698,7 @@ async function scanDownloadedMediaFiles(tempDir: string): Promise<DownloadedMedi
   const items: DownloadedMediaItem[] = [];
 
   for (const filePath of filePaths) {
+    await assertFileSizeAllowed(filePath);
     const ext = path.extname(filePath).toLowerCase();
 
     if (VIDEO_EXTS.has(ext)) {
@@ -679,6 +707,7 @@ async function scanDownloadedMediaFiles(tempDir: string): Promise<DownloadedMedi
       const remuxedPath = path.join(parentDir, `${baseName}.remuxed.mp4`);
       const normalizedPath = path.join(parentDir, `${baseName}.normalized.mp4`);
       const finalPath = await prepareMobileVideo(filePath, remuxedPath, normalizedPath);
+      await assertFileSizeAllowed(finalPath);
       items.push({
         buffer: await readFile(finalPath),
         mediaType: "video",
@@ -691,7 +720,11 @@ async function scanDownloadedMediaFiles(tempDir: string): Promise<DownloadedMedi
       let outExt = ".jpg";
 
       if (ext === ".webp") {
-        imgBuffer = Buffer.from(await sharp(imgBuffer).jpeg({ quality: 95 }).toBuffer());
+        imgBuffer = Buffer.from(
+          await sharp(imgBuffer, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
+            .jpeg({ quality: 95 })
+            .toBuffer(),
+        );
       } else if (ext === ".png") {
         mime = "image/png";
         outExt = ".png";
@@ -754,7 +787,10 @@ async function prepareMobileVideo(
   normalizedOutputPath: string,
 ): Promise<string> {
   if (path.extname(rawVideoPath).toLowerCase() === ".mp4") {
-    return rawVideoPath;
+    const isH264 = await videoNormalizeService.isH264Video(rawVideoPath);
+    if (isH264) {
+      return rawVideoPath;
+    }
   }
 
   try {
@@ -768,34 +804,15 @@ async function prepareMobileVideo(
 }
 
 function parseSupportedUrl(url: string, kind: DownloaderKind): URL {
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url.trim());
-  } catch {
-    throw new Error("Link tidak valid.");
-  }
-
-  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-    throw new Error("Protokol link harus http atau https.");
-  }
-
-  const hostname = parsedUrl.hostname.toLowerCase();
-  if (kind === "tiktok" && !hostname.includes("tiktok.com")) {
-    throw new Error("Command .tt hanya menerima link TikTok.");
-  }
-  if (
-    kind === "instagram" &&
-    !hostname.includes("instagram.com") &&
-    !hostname.includes("instagr.am")
-  ) {
-    throw new Error("Command .ig hanya menerima link Instagram.");
-  }
-  if (
-    kind === "youtube" &&
-    !hostname.includes("youtube.com") &&
-    !hostname.includes("youtu.be")
-  ) {
-    throw new Error("Command .yt hanya menerima link YouTube.");
+  const parsedUrl = parseAllowedDownloaderUrl(url, kind);
+  if (!parsedUrl) {
+    if (kind === "tiktok") {
+      throw new AppUserError("Command .tt hanya menerima link resmi TikTok.");
+    }
+    if (kind === "instagram") {
+      throw new AppUserError("Command .ig hanya menerima link resmi Instagram.");
+    }
+    throw new AppUserError("Command .yt hanya menerima link resmi YouTube.");
   }
 
   return parsedUrl;
@@ -806,50 +823,33 @@ async function assertFileSizeAllowed(filePath: string): Promise<void> {
   const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
 
   if (fileStat.size > maxBytes) {
-    throw new Error(`Ukuran file maksimal ${String(env.MAX_DOWNLOAD_FILE_MB)} MB.`);
+    throw new AppUserError(`Ukuran file maksimal ${String(env.MAX_DOWNLOAD_FILE_MB)} MB.`);
   }
 }
 
-function runProcess(command: string, args: string[], timeoutMs: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      windowsHide: true,
+async function runProcess(command: string, args: string[], timeoutMs: number): Promise<void> {
+  try {
+    await runExternalProcess(command, args, {
+      timeoutMs,
+      extraPathDirs: ["/usr/local/bin", "/usr/bin"],
     });
-    let stderr = "";
-    const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new Error("Downloader melewati batas waktu."));
-    }, timeoutMs);
-
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf8");
-    });
-
-    child.on("error", (error) => {
-      clearTimeout(timeout);
-      reject(new Error(`Downloader tidak tersedia atau gagal dijalankan: ${error.message}`));
-    });
-
-    child.on("close", (code) => {
-      clearTimeout(timeout);
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(new Error(`Downloader gagal: ${stderr.slice(-500)}`));
-    });
-  });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes("melewati batas waktu")) {
+      throw new AppUserError("Downloader melewati batas waktu.");
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Downloader gagal: ${msg}`);
+  }
 }
 
-function runFfmpegAudio(
+async function runFfmpegAudio(
   inputPath: string,
   outputPath: string,
   ffmpegPath: string,
   timeoutMs: number,
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(
+  try {
+    await runExternalProcess(
       ffmpegPath,
       [
         "-y",
@@ -865,32 +865,15 @@ function runFfmpegAudio(
         "192k",
         outputPath,
       ],
-      { windowsHide: true },
+      { timeoutMs },
     );
-    let stderr = "";
-    const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new Error("Extract audio melewati batas waktu."));
-    }, timeoutMs);
-
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf8");
-    });
-
-    child.on("error", (error) => {
-      clearTimeout(timeout);
-      reject(new Error(`ffmpeg tidak tersedia: ${error.message}`));
-    });
-
-    child.on("close", (code) => {
-      clearTimeout(timeout);
-      if (code === 0) {
-        resolve();
-        return;
-      }
-      reject(new Error(`Extract audio gagal: ${stderr.slice(-300)}`));
-    });
-  });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes("melewati batas waktu")) {
+      throw new Error("Extract audio melewati batas waktu.");
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Extract audio gagal: ${msg}`);
+  }
 }
 
 export const downloaderService = new DownloaderService();

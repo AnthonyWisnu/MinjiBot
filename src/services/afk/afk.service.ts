@@ -271,12 +271,16 @@ function unwrapMessageContent(
     return null;
   }
 
+  if (
+    content.viewOnceMessage ||
+    content.viewOnceMessageV2 ||
+    (content as { viewOnceMessageV2Extension?: unknown }).viewOnceMessageV2Extension
+  ) {
+    return null;
+  }
+
   return (
-    content.ephemeralMessage?.message ??
-    content.viewOnceMessage?.message ??
-    content.viewOnceMessageV2?.message ??
-    content.documentWithCaptionMessage?.message ??
-    content
+    content.ephemeralMessage?.message ?? content.documentWithCaptionMessage?.message ?? content
   );
 }
 

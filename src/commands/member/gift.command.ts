@@ -1,3 +1,6 @@
+import { identityResolverService } from "../../services/identity/identityResolver.service";
+import { giftService } from "../../services/member/gift.service";
+import type { GiftResult } from "../../services/member/gift.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import {
   DuplicateOperationError,
@@ -5,9 +8,7 @@ import {
   InsufficientPointsError,
   InvalidAmountError,
 } from "../../types/memberEconomy";
-import { giftService } from "../../services/member/gift.service";
-import type { GiftResult } from "../../services/member/gift.service";
-import { normalizeUserJid } from "../../utils/jid";
+import { getBotCanonicalJids, getIdentityCandidateJids, normalizeUserJid } from "../../utils/jid";
 
 function formatGiftResult(result: GiftResult, recipientJid: string, asset: string): string {
   return [
@@ -19,17 +20,14 @@ function formatGiftResult(result: GiftResult, recipientJid: string, asset: strin
   ].join("\n");
 }
 
-async function executeGift(
-  context: CommandContext,
-  assetType: "point" | "limit",
-): Promise<void> {
+async function executeGift(context: CommandContext, assetType: "point" | "limit"): Promise<void> {
   if (!context.isGroup || !context.tenantGroup) {
     await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
     return;
   }
 
-  const recipientJid = context.mentionedJids[0];
-  if (!recipientJid) {
+  const rawRecipient = context.mentionedJids[0];
+  if (!rawRecipient) {
     await context.reply(
       assetType === "point"
         ? "Gunakan: .giftpoint @user <jumlah>"
@@ -46,17 +44,50 @@ async function executeGift(
 
   const amount = parseInt(rawAmount, 10);
 
-  // Fetch current group participants from Baileys.
-  let participantJids: string[] = [];
-  try {
-    const metadata = await context.socket.groupMetadata(context.chatJid);
-    participantJids = metadata.participants.map((p) => p.id);
-  } catch {
-    await context.reply("Gagal mengambil data peserta grup. Silakan coba lagi.");
+  const recipientJid = await identityResolverService.resolveCanonicalUserJid(
+    context.socket,
+    context.chatJid,
+    rawRecipient,
+  );
+
+  const senderCandidates = getIdentityCandidateJids(context.senderUserJid, context.senderAltJids);
+  if (
+    senderCandidates.includes(recipientJid) ||
+    senderCandidates.includes(normalizeUserJid(rawRecipient))
+  ) {
+    await context.reply("Tidak bisa mengirim ke diri sendiri.");
     return;
   }
 
-  const botJid = context.socket.user?.id ?? "";
+  const botJids = getBotCanonicalJids(context.socket);
+  if (botJids.has(recipientJid) || botJids.has(normalizeUserJid(rawRecipient))) {
+    await context.reply("Tidak bisa mengirim ke bot.");
+    return;
+  }
+
+  const isMember = await identityResolverService.isGroupMember(
+    context.socket,
+    context.chatJid,
+    rawRecipient,
+  );
+  if (!isMember) {
+    await context.reply("Penerima bukan peserta grup ini.");
+    return;
+  }
+
+  // Fetch current group participants from Baileys.
+  let participantJids: string[] = [];
+  try {
+    const metadata = await identityResolverService.getGroupMetadata(
+      context.socket,
+      context.chatJid,
+    );
+    if (metadata?.participants) {
+      participantJids = metadata.participants.map((p) => p.id);
+    }
+  } catch {
+    // fallback if metadata fetch fails
+  }
 
   try {
     const result =
@@ -64,20 +95,22 @@ async function executeGift(
         ? await giftService.giftPoints({
             groupJid: context.chatJid,
             senderJid: context.senderUserJid,
+            senderAltJids: context.senderAltJids,
             recipientJid,
             amount,
             idempotencyKey: context.message.key.id ?? undefined,
             participantJids,
-            botJid,
+            botJids,
           })
         : await giftService.giftLimit({
             groupJid: context.chatJid,
             senderJid: context.senderUserJid,
+            senderAltJids: context.senderAltJids,
             recipientJid,
             amount,
             idempotencyKey: context.message.key.id ?? undefined,
             participantJids,
-            botJid,
+            botJids,
           });
 
     const assetLabel = assetType === "point" ? "Poin" : "Limit";

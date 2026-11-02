@@ -1,6 +1,7 @@
 import type { WAMessage, WAMessageContent } from "@whiskeysockets/baileys";
 
 import type { CommandContext } from "../types/command";
+import { getBotCanonicalJids, normalizeUserJid } from "./jid";
 
 export interface ImageMediaTarget {
   message: WAMessage;
@@ -38,12 +39,18 @@ export function resolveImageMediaTarget(context: CommandContext): ImageMediaTarg
     return null;
   }
 
+  const botJids = getBotCanonicalJids(context.socket);
+  const quotedParticipant = context.quoted.participantJid
+    ? normalizeUserJid(context.quoted.participantJid)
+    : null;
+  const isFromMe = quotedParticipant !== null && botJids.has(quotedParticipant);
+
   return {
     message: {
       key: {
         remoteJid: context.chatJid,
         id: context.quoted.id,
-        fromMe: false,
+        fromMe: isFromMe,
         participant: context.quoted.participantJid,
       },
       message: context.quoted.message,
@@ -74,13 +81,19 @@ export function resolveMediaTarget(
     return null;
   }
 
+  const botJids = getBotCanonicalJids(context.socket);
+  const quotedParticipant = context.quoted.participantJid
+    ? normalizeUserJid(context.quoted.participantJid)
+    : null;
+  const isFromMe = quotedParticipant !== null && botJids.has(quotedParticipant);
+
   return {
     ...quotedMedia,
     message: {
       key: {
         remoteJid: context.chatJid,
         id: context.quoted.id,
-        fromMe: false,
+        fromMe: isFromMe,
         participant: context.quoted.participantJid,
       },
       message: context.quoted.message,
@@ -142,10 +155,17 @@ function unwrapMessageContent(
     return null;
   }
 
+  // Wajib tolak pesan privasi View-Once secara total (LOG-05)
+  if (
+    content.viewOnceMessage ||
+    content.viewOnceMessageV2 ||
+    (content as { viewOnceMessageV2Extension?: unknown }).viewOnceMessageV2Extension
+  ) {
+    return null;
+  }
+
   return (
     unwrapMessageContent(content.ephemeralMessage?.message) ??
-    unwrapMessageContent(content.viewOnceMessage?.message) ??
-    unwrapMessageContent(content.viewOnceMessageV2?.message) ??
     unwrapMessageContent(content.documentWithCaptionMessage?.message) ??
     content
   );

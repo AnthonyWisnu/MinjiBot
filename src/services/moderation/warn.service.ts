@@ -1,9 +1,6 @@
 import type { GroupMetadata } from "@whiskeysockets/baileys";
 
-import {
-  moderationGuard,
-  type ModerationGuard,
-} from "../../guards/moderationGuard";
+import { moderationGuard, type ModerationGuard } from "../../guards/moderationGuard";
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSetting.repository";
 import { WarnRepository } from "../../repositories/warn.repository";
@@ -19,6 +16,8 @@ export interface WarnResult {
 }
 
 export class WarnService {
+  private readonly inFlightWarnKeys = new Set<string>();
+
   constructor(
     private readonly warnRepo: WarnRepository = new WarnRepository(),
     private readonly groupSettingRepo: TenantGroupSettingRepository = new TenantGroupSettingRepository(),
@@ -42,7 +41,9 @@ export class WarnService {
     this.assertCanModerate(moderationContext.sender);
 
     if (this.guard.isProtectedUser(moderationContext.target)) {
-      throw new Error("[ERROR] Tidak dapat memberikan peringatan kepada bot, owner, atau super owner.");
+      throw new Error(
+        "[ERROR] Tidak dapat memberikan peringatan kepada bot, owner, atau super owner.",
+      );
     }
 
     if (
@@ -53,27 +54,59 @@ export class WarnService {
       throw new Error("[ERROR] Hanya Owner yang dapat memberikan peringatan kepada sesama admin.");
     }
 
-    // Record warning
-    await this.warnRepo.create({
-      groupJid: context.chatJid,
-      userJid: targetJid,
-      issuerJid: context.senderUserJid,
-      reason,
-    });
+    const lockKey = `${context.chatJid}:${targetJid}`;
+    if (this.inFlightWarnKeys.has(lockKey)) {
+      throw new Error("[ERROR] Peringatan untuk member ini sedang diproses.");
+    }
+    this.inFlightWarnKeys.add(lockKey);
 
-    const activeCount = await this.warnRepo.countActiveWarnings(context.chatJid, targetJid);
-    const settings = await this.groupSettingRepo.ensureForGroup(context.chatJid);
-    const threshold = settings.warnThreshold;
-    const targetMention = `@${targetJid.split("@")[0] ?? ""}`;
+    try {
+      // Record warning
+      await this.warnRepo.create({
+        groupJid: context.chatJid,
+        userJid: targetJid,
+        issuerJid: context.senderUserJid,
+        reason,
+      });
 
-    // Check if threshold reached
-    if (activeCount >= threshold) {
-      if (settings.warnAction === "KICK") {
-        if (moderationContext.botIsAdmin) {
-          try {
-            await context.socket.groupParticipantsUpdate(context.chatJid, [targetJid], "remove");
-            await this.warnRepo.resetWarnings(context.chatJid, targetJid);
+      const activeCount = await this.warnRepo.countActiveWarnings(context.chatJid, targetJid);
+      const settings = await this.groupSettingRepo.ensureForGroup(context.chatJid);
+      const threshold = settings.warnThreshold;
+      const targetMention = `@${targetJid.split("@")[0] ?? ""}`;
 
+      // Check if threshold reached
+      if (activeCount >= threshold) {
+        if (settings.warnAction === "KICK") {
+          if (moderationContext.botIsAdmin) {
+            try {
+              await context.socket.groupParticipantsUpdate(context.chatJid, [targetJid], "remove");
+              await this.warnRepo.resetWarnings(context.chatJid, targetJid);
+
+              return {
+                message: [
+                  "🚨 *[ PERINGATAN MAKSIMAL ]* 🚨",
+                  "",
+                  `Member ${targetMention} telah mencapai batas *${String(activeCount)} / ${String(threshold)}* peringatan!`,
+                  `• Alasan terakhir: ${reason}`,
+                  "",
+                  "🚪 *Member telah otomatis dikeluarkan dari grup.* Riwayat peringatan telah direset.",
+                ].join("\n"),
+                mentions: [targetJid],
+              };
+            } catch {
+              return {
+                message: [
+                  "🚨 *[ PERINGATAN MAKSIMAL ]* 🚨",
+                  "",
+                  `Member ${targetMention} telah mencapai batas *${String(activeCount)} / ${String(threshold)}* peringatan!`,
+                  `• Alasan terakhir: ${reason}`,
+                  "",
+                  "⚠️ Gagal mengeluarkan member secara otomatis. Mohon admin mengeluarkan secara manual.",
+                ].join("\n"),
+                mentions: [targetJid],
+              };
+            }
+          } else {
             return {
               message: [
                 "🚨 *[ PERINGATAN MAKSIMAL ]* 🚨",
@@ -81,51 +114,29 @@ export class WarnService {
                 `Member ${targetMention} telah mencapai batas *${String(activeCount)} / ${String(threshold)}* peringatan!`,
                 `• Alasan terakhir: ${reason}`,
                 "",
-                "🚪 *Member telah otomatis dikeluarkan dari grup.* Riwayat peringatan telah direset.",
-              ].join("\n"),
-              mentions: [targetJid],
-            };
-          } catch {
-            return {
-              message: [
-                "🚨 *[ PERINGATAN MAKSIMAL ]* 🚨",
-                "",
-                `Member ${targetMention} telah mencapai batas *${String(activeCount)} / ${String(threshold)}* peringatan!`,
-                `• Alasan terakhir: ${reason}`,
-                "",
-                "⚠️ Gagal mengeluarkan member secara otomatis. Mohon admin mengeluarkan secara manual.",
+                "⚠️ *Bot bukan admin grup*, sehingga tidak dapat mengeluarkan member secara otomatis. Silakan admin grup menindaklanjuti.",
               ].join("\n"),
               mentions: [targetJid],
             };
           }
-        } else {
-          return {
-            message: [
-              "🚨 *[ PERINGATAN MAKSIMAL ]* 🚨",
-              "",
-              `Member ${targetMention} telah mencapai batas *${String(activeCount)} / ${String(threshold)}* peringatan!`,
-              `• Alasan terakhir: ${reason}`,
-              "",
-              "⚠️ *Bot bukan admin grup*, sehingga tidak dapat mengeluarkan member secara otomatis. Silakan admin grup menindaklanjuti.",
-            ].join("\n"),
-            mentions: [targetJid],
-          };
         }
       }
-    }
 
-    return {
-      message: [
-        "⚠️ *[ PERINGATAN PELANGGARAN ]* ⚠️",
-        "",
-        `Member: ${targetMention}`,
-        `Alasan: ${reason}`,
-        `Status: *${String(activeCount)} / ${String(threshold)}* peringatan`,
-        "",
-        `_Hati-hati! Mencapai ${String(threshold)} peringatan akan otomatis dikeluarkan dari grup._`,
-      ].join("\n"),
-      mentions: [targetJid],
-    };
+      return {
+        message: [
+          "⚠️ *[ PERINGATAN PELANGGARAN ]* ⚠️",
+          "",
+          `Member: ${targetMention}`,
+          `Alasan: ${reason}`,
+          `Status: *${String(activeCount)} / ${String(threshold)}* peringatan`,
+          "",
+          `_Hati-hati! Mencapai ${String(threshold)} peringatan akan otomatis dikeluarkan dari grup._`,
+        ].join("\n"),
+        mentions: [targetJid],
+      };
+    } finally {
+      this.inFlightWarnKeys.delete(lockKey);
+    }
   }
 
   async unwarn(context: CommandContext): Promise<WarnResult> {
@@ -252,7 +263,9 @@ export class WarnService {
     const threshold = Number(rawNum);
 
     if (!rawNum || Number.isNaN(threshold) || threshold < 1 || threshold > 10) {
-      throw new Error("[ERROR] Batas peringatan harus berupa angka antara 1 sampai 10. Contoh: .setwarn 3");
+      throw new Error(
+        "[ERROR] Batas peringatan harus berupa angka antara 1 sampai 10. Contoh: .setwarn 3",
+      );
     }
 
     const tenantGroup = (await this.tenantGroupRepo.findByGroupJid(context.chatJid)) ?? undefined;
@@ -269,9 +282,12 @@ export class WarnService {
       !moderationContext.sender.isTenantOwner &&
       !moderationContext.sender.isTenantAdmin
     ) {
-      throw new Error("[ERROR] Hanya Tenant Owner atau Tenant Admin yang dapat mengubah batas peringatan.");
+      throw new Error(
+        "[ERROR] Hanya Tenant Owner atau Tenant Admin yang dapat mengubah batas peringatan.",
+      );
     }
 
+    await this.groupSettingRepo.ensureForGroup(context.chatJid);
     await this.groupSettingRepo.update(context.chatJid, {
       warnThreshold: threshold,
     });
@@ -285,8 +301,18 @@ export class WarnService {
     }
   }
 
-  private assertCanModerate(sender: { isSuperOwner: boolean; isTenantOwner: boolean; isTenantAdmin: boolean; isGroupAdmin: boolean }): void {
-    if (!sender.isSuperOwner && !sender.isTenantOwner && !sender.isTenantAdmin && !sender.isGroupAdmin) {
+  private assertCanModerate(sender: {
+    isSuperOwner: boolean;
+    isTenantOwner: boolean;
+    isTenantAdmin: boolean;
+    isGroupAdmin: boolean;
+  }): void {
+    if (
+      !sender.isSuperOwner &&
+      !sender.isTenantOwner &&
+      !sender.isTenantAdmin &&
+      !sender.isGroupAdmin
+    ) {
       throw new Error("[ERROR] Kamu tidak memiliki izin untuk menggunakan command moderasi ini.");
     }
   }
@@ -303,14 +329,23 @@ export class WarnService {
     return targetJid;
   }
 
-  private async resolveTargetAndReason(context: CommandContext): Promise<{ targetJid: string; reason: string }> {
-    const targetFromMentionOrPhone = extractTargetJidFromMessage(context, { allowPhoneArgument: true });
+  private async resolveTargetAndReason(
+    context: CommandContext,
+  ): Promise<{ targetJid: string; reason: string }> {
+    const targetFromMentionOrPhone = extractTargetJidFromMessage(context, {
+      allowPhoneArgument: true,
+    });
     const isQuoted = Boolean(context.quoted?.participantJid);
 
     let targetJid: string | null = null;
     let reason = "Melanggar peraturan grup";
 
-    if (isQuoted && context.quoted?.participantJid && (!context.mentionedJids.length && !context.args[0]?.match(/^\+?\d{8,15}$/))) {
+    if (
+      isQuoted &&
+      context.quoted?.participantJid &&
+      !context.mentionedJids.length &&
+      !context.args[0]?.match(/^\+?\d{8,15}$/)
+    ) {
       targetJid = normalizeUserJid(context.quoted.participantJid);
       const text = context.args.join(" ").trim();
       if (text.length > 0) {
@@ -325,7 +360,9 @@ export class WarnService {
     }
 
     if (!targetJid) {
-      throw new Error("[ERROR] Tag (@user) atau reply pesan target untuk diberi peringatan.\nContoh: .warn @user spam stiker");
+      throw new Error(
+        "[ERROR] Tag (@user) atau reply pesan target untuk diberi peringatan.\nContoh: .warn @user spam stiker",
+      );
     }
 
     const metadata = await context.socket.groupMetadata(context.chatJid);

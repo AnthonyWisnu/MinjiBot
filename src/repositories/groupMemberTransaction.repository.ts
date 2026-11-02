@@ -24,6 +24,17 @@ export class GroupMemberTransactionRepository {
     });
   }
 
+  // Ambil transaksi berdasarkan correlationId (untuk validasi siklus reserve/consume/refund).
+  findByCorrelationId(
+    correlationId: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<GroupMemberTransaction[]> {
+    const client = tx ?? this.client;
+    return client.groupMemberTransaction.findMany({
+      where: { correlationId },
+    });
+  }
+
   // Ambil riwayat transaksi terbaru untuk satu profil member.
   listByProfile(profileId: string, limit = 20): Promise<GroupMemberTransaction[]> {
     return this.client.groupMemberTransaction.findMany({

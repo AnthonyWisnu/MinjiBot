@@ -1,4 +1,5 @@
 import { MessagePipeline } from "./messagePipeline";
+import { TenantContextInterceptor } from "./interceptors/tenantContext.interceptor";
 import { PendingTenantInterceptor } from "./interceptors/pendingTenant.interceptor";
 import { AntiDeleteInterceptor } from "./interceptors/antiDelete.interceptor";
 import { ActivityTrackerInterceptor } from "./interceptors/activityTracker.interceptor";
@@ -9,6 +10,7 @@ import { InteractiveReplyInterceptor } from "./interceptors/interactiveReply.int
 
 export * from "./types";
 export * from "./messagePipeline";
+export * from "./interceptors/tenantContext.interceptor";
 export * from "./interceptors/pendingTenant.interceptor";
 export * from "./interceptors/antiDelete.interceptor";
 export * from "./interceptors/activityTracker.interceptor";
@@ -19,6 +21,7 @@ export * from "./interceptors/interactiveReply.interceptor";
 
 export function createDefaultMessagePipeline(): MessagePipeline {
   return new MessagePipeline([
+    new TenantContextInterceptor(),
     new PendingTenantInterceptor(),
     new AntiDeleteInterceptor(),
     new ActivityTrackerInterceptor(),

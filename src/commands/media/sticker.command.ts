@@ -3,8 +3,9 @@ import { downloadMediaMessage } from "@whiskeysockets/baileys";
 import { logger } from "../../config/logger";
 import { stickerService } from "../../services/media/sticker.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import { isMediaCommandAllowed } from "../../utils/dmAccess";
 import { resolveMediaTarget, type MediaTarget } from "../../utils/mediaTarget";
-import { isUserSafeErrorMessage } from "../../utils/userSafeError";
+import { formatUserSafeError } from "../../utils/userSafeError";
 
 const BYTES_PER_MB = 1024 * 1024;
 const MAX_STICKER_INPUT_MB = 15;
@@ -37,9 +38,9 @@ export const stickerCommands: CommandDefinition[] = [
 
 async function handleSticker(context: CommandContext): Promise<void> {
   try {
-    if (!isMediaCommandAllowed(context)) {
+    if (!(await isMediaCommandAllowed(context))) {
       await context.reply(
-        "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+        "Fitur ini hanya tersedia di grup tenant aktif atau private chat pengguna tenant aktif.",
       );
       return;
     }
@@ -74,9 +75,9 @@ async function handleSticker(context: CommandContext): Promise<void> {
 
 async function handleStickerToImage(context: CommandContext): Promise<void> {
   try {
-    if (!isMediaCommandAllowed(context)) {
+    if (!(await isMediaCommandAllowed(context))) {
       await context.reply(
-        "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+        "Fitur ini hanya tersedia di grup tenant aktif atau private chat pengguna tenant aktif.",
       );
       return;
     }
@@ -120,9 +121,9 @@ async function handleStickerToImage(context: CommandContext): Promise<void> {
 
 async function handleStickerToVideo(context: CommandContext): Promise<void> {
   try {
-    if (!isMediaCommandAllowed(context)) {
+    if (!(await isMediaCommandAllowed(context))) {
       await context.reply(
-        "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+        "Fitur ini hanya tersedia di grup tenant aktif atau private chat pengguna tenant aktif.",
       );
       return;
     }
@@ -151,7 +152,9 @@ async function handleStickerToVideo(context: CommandContext): Promise<void> {
       return;
     }
 
-    await context.reply("Stiker ini bukan stiker bergerak/animasi. Gunakan .toimg untuk stiker biasa.");
+    await context.reply(
+      "Stiker ini bukan stiker bergerak/animasi. Gunakan .toimg untuk stiker biasa.",
+    );
   } catch (error: unknown) {
     await context.reply(formatStickerError(error));
   }
@@ -159,9 +162,9 @@ async function handleStickerToVideo(context: CommandContext): Promise<void> {
 
 async function handleBratSticker(context: CommandContext): Promise<void> {
   try {
-    if (!isMediaCommandAllowed(context)) {
+    if (!(await isMediaCommandAllowed(context))) {
       await context.reply(
-        "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+        "Fitur ini hanya tersedia di grup tenant aktif atau private chat pengguna tenant aktif.",
       );
       return;
     }
@@ -188,9 +191,9 @@ async function handleBratSticker(context: CommandContext): Promise<void> {
 
 async function handleStickerMeme(context: CommandContext): Promise<void> {
   try {
-    if (!isMediaCommandAllowed(context)) {
+    if (!(await isMediaCommandAllowed(context))) {
       await context.reply(
-        "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+        "Fitur ini hanya tersedia di grup tenant aktif atau private chat pengguna tenant aktif.",
       );
       return;
     }
@@ -224,10 +227,6 @@ async function handleStickerMeme(context: CommandContext): Promise<void> {
   } catch (error: unknown) {
     await context.reply(formatStickerError(error));
   }
-}
-
-function isMediaCommandAllowed(context: CommandContext): boolean {
-  return context.isGroup || context.role === "TENANT_OWNER" || context.role === "SUPER_OWNER";
 }
 
 function assertMediaAllowed(target: MediaTarget): void {
@@ -285,18 +284,5 @@ function parseMemeText(text: string): { topText: string; bottomText: string } {
 }
 
 function formatStickerError(error: unknown): string {
-  if (error instanceof Error) {
-    const message = error.message.toLowerCase();
-    if (
-      message.includes("ukuran media maksimal") ||
-      message.includes("teks meme") ||
-      message.includes("media tidak dapat")
-    ) {
-      return isUserSafeErrorMessage(error.message)
-        ? error.message
-        : "Konversi media gagal diproses.";
-    }
-  }
-
-  return "Konversi media gagal diproses.";
+  return formatUserSafeError(error, "Konversi media gagal diproses.");
 }

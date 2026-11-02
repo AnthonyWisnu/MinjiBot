@@ -1,6 +1,9 @@
+import { avatarService } from "../../services/media/avatar.service";
 import { quoteCardService } from "../../services/media/quoteCard.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import { isMediaCommandAllowed } from "../../utils/dmAccess";
 import { normalizeUserJid } from "../../utils/jid";
+import { formatUserSafeError } from "../../utils/userSafeError";
 
 export const quoteCardCommands: CommandDefinition[] = [
   {
@@ -16,6 +19,13 @@ export const quoteCardCommands: CommandDefinition[] = [
 ];
 
 async function handleQuote(context: CommandContext): Promise<void> {
+  if (!(await isMediaCommandAllowed(context))) {
+    await context.reply(
+      "Fitur ini hanya tersedia di grup tenant aktif atau private chat pengguna tenant aktif.",
+    );
+    return;
+  }
+
   const isSticker = context.args.some(
     (arg) => arg.toLowerCase() === "-s" || arg.toLowerCase() === "sticker",
   );
@@ -47,7 +57,11 @@ async function handleQuote(context: CommandContext): Promise<void> {
   const authorName = `@${authorPhone}`;
 
   // Fetch avatar buffer
-  const avatarBuffer = await fetchUserAvatar(context, cleanAuthorJid);
+  const avatarBuffer = await avatarService.fetchUserAvatar(
+    context.socket,
+    cleanAuthorJid,
+    context.senderAltJids,
+  );
 
   try {
     const cardBuffer = await quoteCardService.generateQuoteCard({
@@ -76,28 +90,46 @@ async function handleQuote(context: CommandContext): Promise<void> {
       );
     }
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Gagal membuat kartu quote.";
-    await context.reply(message);
+    await context.reply(formatUserSafeError(error, "Gagal membuat kartu quote."));
   }
 }
 
 async function handleTweet(context: CommandContext): Promise<void> {
+  if (!(await isMediaCommandAllowed(context))) {
+    await context.reply(
+      "Fitur ini hanya tersedia di grup tenant aktif atau private chat pengguna tenant aktif.",
+    );
+    return;
+  }
+
+  // UXL-03: Tolak impersonasi via mention demi mencegah fitnah/hoax
+  if (context.mentionedJids.length > 0) {
+    await context.reply(
+      "Demi mencegah fitnah dan impersonasi (anti-hoax), dilarang membuat tweet palsu atas nama orang lain via mention. Gunakan .tweet <teks> untuk akun sendiri, atau reply pesan orang lain dengan .tweet tanpa teks tambahan.",
+    );
+    return;
+  }
+
   let targetJid = context.senderUserJid;
   let text = "";
 
-  if (context.mentionedJids.length > 0 && context.mentionedJids[0]) {
-    targetJid = normalizeUserJid(context.mentionedJids[0]);
-    // Filter out mention token from argsText
-    text = context.argsText.replace(/@\d+/g, "").trim();
-  } else if (context.quoted?.text && context.quoted.text.trim().length > 0) {
+  if (context.quoted?.text && context.quoted.text.trim().length > 0) {
+    if (context.argsText.trim().length > 0) {
+      await context.reply(
+        "Saat me-reply pesan orang lain, dilarang mengubah isi teks pesan tersebut demi mencegah fitnah/hoax. Cukup ketik .tweet tanpa teks tambahan.",
+      );
+      return;
+    }
     targetJid = normalizeUserJid(context.quoted.participantJid ?? context.chatJid);
-    text = context.argsText.trim().length > 0 ? context.argsText.trim() : context.quoted.text.trim();
+    text = context.quoted.text.trim();
   } else {
     text = context.argsText.trim();
   }
 
   if (text.length === 0) {
-    await context.reply("Format command salah.\nGunakan: .tweet <teks>\nAtau: .tweet @user <teks>");
+    await context.reply(
+      "Format command salah.\nGunakan: .tweet <teks>\nAtau reply pesan dengan: .tweet",
+    );
     return;
   }
 
@@ -106,7 +138,7 @@ async function handleTweet(context: CommandContext): Promise<void> {
   const authorName = phone;
   const authorHandle = phone;
 
-  const avatarBuffer = await fetchUserAvatar(context, cleanTargetJid);
+  const avatarBuffer = await avatarService.fetchUserAvatar(context.socket, cleanTargetJid);
 
   try {
     const tweetBuffer = await quoteCardService.generateTweetCard({
@@ -126,25 +158,6 @@ async function handleTweet(context: CommandContext): Promise<void> {
       { quoted: context.message },
     );
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Gagal membuat tweet mockup.";
-    await context.reply(message);
+    await context.reply(formatUserSafeError(error, "Gagal membuat tweet mockup."));
   }
-}
-
-async function fetchUserAvatar(context: CommandContext, userJid: string): Promise<Buffer | null> {
-  const socket = context.socket;
-
-  try {
-    const url = await socket.profilePictureUrl(userJid, "image");
-    if (url) {
-      const res = await fetch(url);
-      if (res.ok) {
-        return Buffer.from(await res.arrayBuffer());
-      }
-    }
-  } catch {
-    // ignore
-  }
-
-  return null;
 }

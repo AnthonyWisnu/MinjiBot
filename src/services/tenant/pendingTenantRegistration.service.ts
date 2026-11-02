@@ -6,7 +6,9 @@ import { prisma } from "../../repositories/prismaClient";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import { isGroupJid, normalizeJid } from "../../utils/jid";
+import { LruCache } from "../../utils/lruCache";
 import { tenantCodeService } from "./tenantCode.service";
+import { tenantRuntimeCacheService } from "./tenantRuntimeCache.service";
 
 export interface PendingTenantRegistrationInput {
   socket: WASocket;
@@ -16,7 +18,13 @@ export interface PendingTenantRegistrationInput {
 
 export class PendingTenantRegistrationService {
   private static readonly METADATA_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 jam
-  private readonly lastMetadataCheck = new Map<string, number>();
+  // Cache pengecekan metadata grup dengan LRU berbatas ukuran
+  private readonly lastMetadataCheck = new LruCache<string, number>(
+    1000,
+    PendingTenantRegistrationService.METADATA_CHECK_INTERVAL_MS,
+  );
+  // Negative cache untuk kegagalan groupMetadata (10 menit) agar tidak memukul Baileys terus-menerus
+  private readonly negativeMetadataCache = new LruCache<string, boolean>(1000, 10 * 60 * 1000);
 
   constructor(private readonly tenantGroupRepository = new TenantGroupRepository()) {}
 
@@ -46,7 +54,7 @@ export class PendingTenantRegistrationService {
       const tenantCode = await tenantCodeService.generateUniqueCode();
 
       try {
-        return await prisma.$transaction(async (tx) => {
+        const created = await prisma.$transaction(async (tx) => {
           const tenantGroupRepository = new TenantGroupRepository(tx);
           const tenantAuditRepository = new TenantAuditRepository(tx);
 
@@ -68,9 +76,13 @@ export class PendingTenantRegistrationService {
 
           return tenantGroup;
         });
+
+        tenantRuntimeCacheService.invalidate(groupJid);
+        return created;
       } catch (error: unknown) {
         const existingTenant = await this.tenantGroupRepository.findByGroupJid(groupJid);
         if (existingTenant) {
+          tenantRuntimeCacheService.invalidate(groupJid);
           return existingTenant;
         }
 
@@ -89,22 +101,30 @@ export class PendingTenantRegistrationService {
   }
 
   private async updateGroupNameIfNeeded(socket: WASocket, tenantGroup: TenantGroup): Promise<void> {
-    // Jika nama grup sudah tersimpan, batasi pengecekan ke server WhatsApp maksimal sekali per 6 jam
-    if (tenantGroup.name) {
-      const lastCheck = this.lastMetadataCheck.get(tenantGroup.groupJid) ?? 0;
-      if (Date.now() - lastCheck < PendingTenantRegistrationService.METADATA_CHECK_INTERVAL_MS) {
-        return;
-      }
+    // Hindari request jaringan berulang jika sudah dalam cooldown atau negative cache
+    if (this.negativeMetadataCache.has(tenantGroup.groupJid)) {
+      return;
+    }
+
+    if (this.lastMetadataCheck.has(tenantGroup.groupJid)) {
+      return;
     }
 
     this.lastMetadataCheck.set(tenantGroup.groupJid, Date.now());
     const groupName = await this.loadGroupName(socket, tenantGroup.groupJid);
 
-    if (!groupName || groupName === tenantGroup.name) {
+    if (!groupName) {
+      // Simpan negative cache agar tidak mencoba lagi dalam 10 menit
+      this.negativeMetadataCache.set(tenantGroup.groupJid, true);
+      return;
+    }
+
+    if (groupName === tenantGroup.name) {
       return;
     }
 
     await this.tenantGroupRepository.updateName(tenantGroup.groupJid, groupName);
+    tenantRuntimeCacheService.invalidate(tenantGroup.groupJid);
   }
 
   private async loadGroupName(socket: WASocket, groupJid: string): Promise<string | undefined> {

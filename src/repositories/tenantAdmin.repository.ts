@@ -33,6 +33,18 @@ export class TenantAdminRepository {
     return count > 0;
   }
 
+  async existsAny(groupJid: string, userJids: string[]): Promise<boolean> {
+    if (userJids.length === 0) return false;
+    const count = await this.client.tenantAdmin.count({
+      where: {
+        groupJid,
+        userJid: { in: userJids },
+      },
+    });
+
+    return count > 0;
+  }
+
   add(groupJid: string, userJid: string, createdBy?: string): Promise<TenantAdmin> {
     return this.client.tenantAdmin.upsert({
       where: {

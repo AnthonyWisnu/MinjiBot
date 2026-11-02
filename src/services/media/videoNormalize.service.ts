@@ -1,9 +1,39 @@
 import ffmpegStatic from "ffmpeg-static";
-import { spawn } from "node:child_process";
 
 import { env } from "../../config/env";
+import { runExternalProcess } from "../../utils/processRunner";
 
 export class VideoNormalizeService {
+  /**
+   * Memeriksa apakah video berformat H.264 (avc1) yang aman untuk diputar
+   * langsung pada perangkat WhatsApp (iOS & Android) tanpa transcode lambat.
+   */
+  async isH264Video(inputPath: string): Promise<boolean> {
+    const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
+    try {
+      const result = await runExternalProcess(ffmpegPath, ["-hide_banner", "-i", inputPath], {
+        timeoutMs: 8000,
+        throwOnNonZeroExit: false,
+      });
+
+      const stderr = result.stderr.toLowerCase();
+      // Pastikan ada video stream dan menggunakan codec h264 / avc1
+      const hasH264 = stderr.includes("video: h264") || stderr.includes("video: avc1");
+      const hasIncompatibleCodec =
+        stderr.includes("video: hevc") ||
+        stderr.includes("video: hvc1") ||
+        stderr.includes("video: vp9") ||
+        stderr.includes("video: vp09") ||
+        stderr.includes("video: av01") ||
+        stderr.includes("video: av1");
+
+      return hasH264 && !hasIncompatibleCodec;
+    } catch {
+      // Jika probe gagal, anggap butuh remux/normalisasi
+      return false;
+    }
+  }
+
   async remuxForWhatsApp(inputPath: string, outputPath: string): Promise<void> {
     const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
     const args = [
@@ -21,12 +51,9 @@ export class VideoNormalizeService {
       outputPath,
     ];
 
-    await runProcess(
-      ffmpegPath,
-      args,
-      env.DOWNLOADER_TIMEOUT_MS,
-      "Remux video melewati batas waktu.",
-    );
+    await runExternalProcess(ffmpegPath, args, {
+      timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
+    });
   }
 
   async normalizeForWhatsApp(inputPath: string, outputPath: string): Promise<void> {
@@ -60,50 +87,10 @@ export class VideoNormalizeService {
       outputPath,
     ];
 
-    await runProcess(
-      ffmpegPath,
-      args,
-      env.DOWNLOADER_TIMEOUT_MS,
-      "Normalisasi video melewati batas waktu.",
-    );
+    await runExternalProcess(ffmpegPath, args, {
+      timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
+    });
   }
-}
-
-function runProcess(
-  command: string,
-  args: string[],
-  timeoutMs: number,
-  timeoutMessage: string,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      windowsHide: true,
-    });
-    let stderr = "";
-    const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new Error(timeoutMessage));
-    }, timeoutMs);
-
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf8");
-    });
-
-    child.on("error", (error) => {
-      clearTimeout(timeout);
-      reject(error);
-    });
-
-    child.on("close", (code) => {
-      clearTimeout(timeout);
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(new Error(`Normalisasi video gagal: ${stderr.slice(-500)}`));
-    });
-  });
 }
 
 export const videoNormalizeService = new VideoNormalizeService();

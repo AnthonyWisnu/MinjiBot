@@ -10,7 +10,7 @@ import type { Role } from "../src/types/role";
 process.env.NODE_ENV = "test";
 process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/minjibot_test";
 process.env.COMMAND_PREFIX = ".";
-process.env.SUPER_OWNER_JIDS = "62895366009208@s.whatsapp.net";
+process.env.SUPER_OWNER_JIDS = "628000000101@s.whatsapp.net";
 process.env.SESSION_DIR = "./sessions-test";
 process.env.TEMP_DIR = "./tmp-test";
 process.env.LOG_LEVEL = "silent";
@@ -31,7 +31,7 @@ void test("TenantOwnerTransferService allows super owner to transfer owner by me
   const result = await service.transferOwner(
     createContext(socket, tenantGroup, {
       role: "SUPER_OWNER",
-      senderJid: "62895366009208@s.whatsapp.net",
+      senderJid: "628000000101@s.whatsapp.net",
       mentionedJids: ["6285@s.whatsapp.net"],
     }),
   );
@@ -114,7 +114,7 @@ void test("TenantOwnerTransferService rejects empty target", async () => {
       service.transferOwner(
         createContext(socket, tenantGroup, {
           role: "SUPER_OWNER",
-          senderJid: "62895366009208@s.whatsapp.net",
+          senderJid: "628000000101@s.whatsapp.net",
         }),
       ),
     /Target owner baru tidak valid/,
@@ -129,7 +129,7 @@ void test("TenantOwnerTransferService rejects target outside group", async () =>
       service.transferOwner(
         createContext(socket, tenantGroup, {
           role: "SUPER_OWNER",
-          senderJid: "62895366009208@s.whatsapp.net",
+          senderJid: "628000000101@s.whatsapp.net",
           mentionedJids: ["6289@s.whatsapp.net"],
         }),
       ),
@@ -145,7 +145,7 @@ void test("TenantOwnerTransferService rejects bot target", async () => {
       service.transferOwner(
         createContext(socket, tenantGroup, {
           role: "SUPER_OWNER",
-          senderJid: "62895366009208@s.whatsapp.net",
+          senderJid: "628000000101@s.whatsapp.net",
           mentionedJids: ["999@s.whatsapp.net"],
         }),
       ),
@@ -161,7 +161,7 @@ void test("TenantOwnerTransferService rejects current owner target", async () =>
       service.transferOwner(
         createContext(socket, tenantGroup, {
           role: "SUPER_OWNER",
-          senderJid: "62895366009208@s.whatsapp.net",
+          senderJid: "628000000101@s.whatsapp.net",
           mentionedJids: ["6282@s.whatsapp.net"],
         }),
       ),
@@ -175,7 +175,7 @@ void test("TenantOwnerTransferService stores canonical phone JID for LID target"
   const result = await service.transferOwner(
     createContext(socket, tenantGroup, {
       role: "SUPER_OWNER",
-      senderJid: "62895366009208@s.whatsapp.net",
+      senderJid: "628000000101@s.whatsapp.net",
       mentionedJids: ["555555@lid"],
     }),
   );
@@ -190,7 +190,7 @@ void test("TenantOwnerTransferService updates guard ownership protection after t
   await service.transferOwner(
     createContext(socket, tenantGroup, {
       role: "SUPER_OWNER",
-      senderJid: "62895366009208@s.whatsapp.net",
+      senderJid: "628000000101@s.whatsapp.net",
       mentionedJids: ["6285@s.whatsapp.net"],
     }),
   );
@@ -202,14 +202,14 @@ void test("TenantOwnerTransferService updates guard ownership protection after t
   const oldOwnerContext = await guard.resolveContext({
     socket,
     groupJid: "120@g.us",
-    senderJids: ["62895366009208@s.whatsapp.net"],
+    senderJids: ["628000000101@s.whatsapp.net"],
     targetJids: ["6282@s.whatsapp.net"],
     tenantGroup,
   });
   const newOwnerContext = await guard.resolveContext({
     socket,
     groupJid: "120@g.us",
-    senderJids: ["62895366009208@s.whatsapp.net"],
+    senderJids: ["628000000101@s.whatsapp.net"],
     targetJids: ["6285@s.whatsapp.net"],
     tenantGroup,
   });
@@ -250,6 +250,9 @@ async function createTransferService(): Promise<{
 
         return Promise.resolve(input);
       },
+    } as never,
+    {
+      clearByUserJid: () => Promise.resolve({ count: 0 }),
     } as never,
   );
 

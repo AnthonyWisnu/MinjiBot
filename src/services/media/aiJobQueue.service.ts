@@ -1,38 +1,18 @@
+import { BoundedQueue, mediaQueueService } from "../../utils/boundedQueue";
+
+export { BoundedQueue, mediaQueueService };
+
 export class AiJobQueueService {
-  private activeJobs = 0;
-  private readonly queue: (() => void)[] = [];
+  private readonly queue: BoundedQueue;
 
-  constructor(private readonly maxConcurrentJobs: number) {}
-
-  async run<T>(job: () => Promise<T>): Promise<T> {
-    await this.waitForSlot();
-
-    try {
-      return await job();
-    } finally {
-      this.activeJobs -= 1;
-      this.releaseNext();
-    }
-  }
-
-  private waitForSlot(): Promise<void> {
-    if (this.activeJobs < this.maxConcurrentJobs) {
-      this.activeJobs += 1;
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-      this.queue.push(() => {
-        this.activeJobs += 1;
-        resolve();
-      });
+  constructor(maxConcurrentJobs: number) {
+    this.queue = new BoundedQueue({
+      concurrency: maxConcurrentJobs,
+      maxQueue: 20,
     });
   }
 
-  private releaseNext(): void {
-    const next = this.queue.shift();
-    if (next) {
-      next();
-    }
+  async run<T>(job: () => Promise<T>): Promise<T> {
+    return this.queue.run(job);
   }
 }

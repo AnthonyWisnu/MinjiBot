@@ -6,7 +6,10 @@ export class AntiLinkInterceptor implements MessageInterceptor {
   readonly priority = 50;
 
   async intercept(context: IncomingPipelineContext): Promise<InterceptorOutput> {
-    await antiLinkService.handleIncomingMessage(context.socket, context.message);
+    const handled = await antiLinkService.handleIncomingMessage(context.socket, context.message);
+    if (handled) {
+      return { halt: true };
+    }
     return null;
   }
 }

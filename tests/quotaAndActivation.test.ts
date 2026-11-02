@@ -1,10 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-  TenantStatus,
-  type TenantGroup,
-} from "@prisma/client";
+import { TenantStatus, type TenantGroup } from "@prisma/client";
 
 import { SuperOwnerTenantService } from "../src/services/tenant/superOwnerTenant.service";
 

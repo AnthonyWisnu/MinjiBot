@@ -11,17 +11,24 @@ const COMMAND_FEATURE_MAP = new Map<string, TenantFeatureKey>([
   ["tt", "downloader"],
   ["ig", "downloader"],
   ["igstory", "downloader"],
+  ["yt", "downloader"],
+  ["play", "downloader"],
+  ["lirik", "downloader"],
   ["hd", "hd"],
   ["remind", "reminder"],
   ["remindall", "reminder"],
   ["listreminder", "reminder"],
   ["delreminder", "reminder"],
   ["tagall", "tagall"],
+  ["hidetag", "tagall"],
   ["kuis", "game"],
   ["family100", "game"],
   ["tebakkata", "game"],
   ["tebakemoji", "game"],
   ["tebakangka", "game"],
+  ["mtk", "game"],
+  ["math", "game"],
+  ["slot", "game"],
   ["tictactoe", "game"],
   ["nyerah", "game"],
 ]);
@@ -43,9 +50,10 @@ export class FeatureGuard {
       return { allowed: true };
     }
 
-    const sender = typeof context.senderUserJid === "string" && context.senderUserJid.length > 0
-      ? context.senderUserJid
-      : context.senderJid;
+    const sender =
+      typeof context.senderUserJid === "string" && context.senderUserJid.length > 0
+        ? context.senderUserJid
+        : context.senderJid;
     if (sender && roleGuard.isSuperOwner(sender)) {
       return { allowed: true };
     }

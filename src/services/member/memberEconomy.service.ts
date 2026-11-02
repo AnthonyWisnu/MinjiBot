@@ -4,9 +4,11 @@ import {
   MemberTransactionAsset,
   MemberTransactionType,
   type GroupMemberProfile,
+  type GroupMemberTransaction,
   type HeavyFeatureType,
 } from "@prisma/client";
 
+import { logger } from "../../config/logger";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../../repositories/groupMemberTransaction.repository";
 import { prisma } from "../../repositories/prismaClient";
@@ -46,9 +48,7 @@ interface PrismaTx {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
     }): Promise<{ count: number }>;
-    findUniqueOrThrow(args: {
-      where: Record<string, unknown>;
-    }): Promise<GroupMemberProfile>;
+    findUniqueOrThrow(args: { where: Record<string, unknown> }): Promise<GroupMemberProfile>;
     update(args: {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
@@ -58,20 +58,13 @@ interface PrismaTx {
 
 // Profile store interface for dependency injection and testing.
 interface ProfileStore {
-  findOrCreate(
-    groupJid: string,
-    userJid: string,
-    tx?: unknown,
-  ): Promise<GroupMemberProfile>;
+  findOrCreate(groupJid: string, userJid: string, tx?: unknown): Promise<GroupMemberProfile>;
   findByGroupAndUser(
     groupJid: string,
     userJid: string,
     tx?: unknown,
   ): Promise<GroupMemberProfile | null>;
-  findActiveByUser(
-    userJid: string,
-    now?: Date,
-  ): Promise<GroupMemberProfile[]>;
+  findActiveByUser(userJid: string, now?: Date): Promise<GroupMemberProfile[]>;
 }
 
 // Transaction ledger store interface.
@@ -96,17 +89,27 @@ interface TxStore {
     tx?: unknown,
   ): Promise<unknown>;
   findByIdempotencyKey(key: string): Promise<object | null>;
+  findByCorrelationId?(
+    correlationId: string,
+    tx?: unknown,
+  ): Promise<{ type: MemberTransactionType }[]>;
 }
 
+export const MAX_SAFE_ECONOMY_INT = 1_000_000_000;
+
 function validatePositiveAmount(amount: number): void {
-  if (!Number.isInteger(amount) || amount <= 0) {
-    throw new InvalidAmountError();
+  if (!Number.isSafeInteger(amount) || amount <= 0 || amount > MAX_SAFE_ECONOMY_INT) {
+    throw new InvalidAmountError(
+      `Jumlah harus berupa bilangan bulat positif (maksimal ${MAX_SAFE_ECONOMY_INT.toLocaleString("id-ID")})`,
+    );
   }
 }
 
 function validateNonNegativeAmount(amount: number): void {
-  if (!Number.isInteger(amount) || amount < 0) {
-    throw new InvalidAmountError("Jumlah harus berupa bilangan bulat non-negatif");
+  if (!Number.isSafeInteger(amount) || amount < 0 || amount > MAX_SAFE_ECONOMY_INT) {
+    throw new InvalidAmountError(
+      `Jumlah harus berupa bilangan bulat non-negatif (maksimal ${MAX_SAFE_ECONOMY_INT.toLocaleString("id-ID")})`,
+    );
   }
 }
 
@@ -120,22 +123,18 @@ export class MemberEconomyService {
     private readonly profileRepo: ProfileStore = new GroupMemberProfileRepository(),
     private readonly txRepo: TxStore = new GroupMemberTransactionRepository(),
     private readonly db: TransactionalDb = prisma,
-    private readonly levelUpNotifier: { notifyLevelUp(event: LevelUpNotification): Promise<void> } = levelUpNotifierService,
+    private readonly levelUpNotifier: {
+      notifyLevelUp(event: LevelUpNotification): Promise<void>;
+    } = levelUpNotifierService,
   ) {}
 
   // ---- Profile ----
 
-  async findOrCreateProfile(
-    groupJid: string,
-    userJid: string,
-  ): Promise<GroupMemberProfile> {
+  async findOrCreateProfile(groupJid: string, userJid: string): Promise<GroupMemberProfile> {
     return this.profileRepo.findOrCreate(groupJid, userJid);
   }
 
-  async findProfile(
-    groupJid: string,
-    userJid: string,
-  ): Promise<GroupMemberProfile> {
+  async findProfile(groupJid: string, userJid: string): Promise<GroupMemberProfile> {
     const profile = await this.profileRepo.findByGroupAndUser(groupJid, userJid);
     if (!profile) {
       throw new MemberProfileNotFoundError(groupJid, userJid);
@@ -166,6 +165,12 @@ export class MemberEconomyService {
 
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
+
+      if (profile.pointsBalance + input.amount > MAX_SAFE_ECONOMY_INT) {
+        throw new InvalidAmountError(
+          `Saldo poin melebihi batas maksimum (${MAX_SAFE_ECONOMY_INT.toLocaleString("id-ID")})`,
+        );
+      }
 
       const updated = await tx.groupMemberProfile.update({
         where: { id: profile.id },
@@ -295,6 +300,12 @@ export class MemberEconomyService {
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
 
+      if (profile.limitBalance + input.amount > MAX_SAFE_ECONOMY_INT) {
+        throw new InvalidAmountError(
+          `Saldo limit melebihi batas maksimum (${MAX_SAFE_ECONOMY_INT.toLocaleString("id-ID")})`,
+        );
+      }
+
       const updated = await tx.groupMemberProfile.update({
         where: { id: profile.id },
         data: {
@@ -378,6 +389,53 @@ export class MemberEconomyService {
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
 
+      if (input.correlationId) {
+        let existingTxs: { type: MemberTransactionType }[] = [];
+        if (typeof this.txRepo.findByCorrelationId === "function") {
+          existingTxs = await this.txRepo.findByCorrelationId(input.correlationId, tx);
+        } else if (
+          typeof (
+            tx as unknown as {
+              groupMemberTransaction?: {
+                findMany: (args: unknown) => Promise<{ type: MemberTransactionType }[]>;
+              };
+            }
+          ).groupMemberTransaction?.findMany === "function"
+        ) {
+          existingTxs = await (
+            tx as unknown as {
+              groupMemberTransaction: {
+                findMany: (args: unknown) => Promise<{ type: MemberTransactionType }[]>;
+              };
+            }
+          ).groupMemberTransaction.findMany({
+            where: { correlationId: input.correlationId },
+          });
+        }
+
+        if (existingTxs.length > 0) {
+          const hasReserve = existingTxs.some(
+            (t) => t.type === MemberTransactionType.FEATURE_RESERVE,
+          );
+          const hasConsume = existingTxs.some(
+            (t) => t.type === MemberTransactionType.FEATURE_CONSUME,
+          );
+          const hasRefund = existingTxs.some(
+            (t) => t.type === MemberTransactionType.FEATURE_REFUND,
+          );
+
+          if (!hasReserve) {
+            throw new Error("Transaksi reservasi tidak ditemukan.");
+          }
+          if (hasConsume) {
+            return profile;
+          }
+          if (hasRefund) {
+            throw new Error("Limit sudah di-refund, tidak dapat dikonsumsi.");
+          }
+        }
+      }
+
       const result = await tx.groupMemberProfile.updateMany({
         where: { id: profile.id, reservedLimit: { gte: input.amount } },
         data: { reservedLimit: { decrement: input.amount } },
@@ -418,6 +476,53 @@ export class MemberEconomyService {
 
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
+
+      if (input.correlationId) {
+        let existingTxs: { type: MemberTransactionType }[] = [];
+        if (typeof this.txRepo.findByCorrelationId === "function") {
+          existingTxs = await this.txRepo.findByCorrelationId(input.correlationId, tx);
+        } else if (
+          typeof (
+            tx as unknown as {
+              groupMemberTransaction?: {
+                findMany: (args: unknown) => Promise<{ type: MemberTransactionType }[]>;
+              };
+            }
+          ).groupMemberTransaction?.findMany === "function"
+        ) {
+          existingTxs = await (
+            tx as unknown as {
+              groupMemberTransaction: {
+                findMany: (args: unknown) => Promise<{ type: MemberTransactionType }[]>;
+              };
+            }
+          ).groupMemberTransaction.findMany({
+            where: { correlationId: input.correlationId },
+          });
+        }
+
+        if (existingTxs.length > 0) {
+          const hasReserve = existingTxs.some(
+            (t) => t.type === MemberTransactionType.FEATURE_RESERVE,
+          );
+          const hasConsume = existingTxs.some(
+            (t) => t.type === MemberTransactionType.FEATURE_CONSUME,
+          );
+          const hasRefund = existingTxs.some(
+            (t) => t.type === MemberTransactionType.FEATURE_REFUND,
+          );
+
+          if (!hasReserve) {
+            throw new Error("Transaksi reservasi tidak ditemukan.");
+          }
+          if (hasRefund) {
+            return profile;
+          }
+          if (hasConsume) {
+            return profile;
+          }
+        }
+      }
 
       const result = await tx.groupMemberProfile.updateMany({
         where: { id: profile.id, reservedLimit: { gte: input.amount } },
@@ -462,6 +567,12 @@ export class MemberEconomyService {
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
 
+      if (profile.limitBalance + input.amount > MAX_SAFE_ECONOMY_INT) {
+        throw new InvalidAmountError(
+          `Saldo limit melebihi batas maksimum (${MAX_SAFE_ECONOMY_INT.toLocaleString("id-ID")})`,
+        );
+      }
+
       const updated = await tx.groupMemberProfile.update({
         where: { id: profile.id },
         data: { limitBalance: input.amount },
@@ -505,6 +616,12 @@ export class MemberEconomyService {
     const updated = await this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
       oldExperience = profile.experience;
+
+      if (profile.experience + input.amount > MAX_SAFE_ECONOMY_INT) {
+        throw new InvalidAmountError(
+          `Saldo XP melebihi batas maksimum (${MAX_SAFE_ECONOMY_INT.toLocaleString("id-ID")})`,
+        );
+      }
 
       const updatedProfile = await tx.groupMemberProfile.update({
         where: { id: profile.id },
@@ -639,4 +756,119 @@ export class MemberEconomyService {
       return updated;
     });
   }
+
+  /**
+   * Rekonsiliasi orphan limit reservation (reservasi menggantung > olderThanMinutes).
+   * Mengembalikan saldo limit ke balance normal secara idempoten jika proses terputus / crash.
+   */
+  async reconcileOrphanedReservations(olderThanMinutes = 15): Promise<number> {
+    const cutoff = new Date(Date.now() - olderThanMinutes * 60 * 1000);
+
+    const prismaClient = this.db as unknown as {
+      groupMemberTransaction?: {
+        findMany: (args: Record<string, unknown>) => Promise<GroupMemberTransaction[]>;
+      };
+    };
+    if (!prismaClient.groupMemberTransaction) {
+      return 0;
+    }
+
+    const reserveTxs = await prismaClient.groupMemberTransaction.findMany({
+      where: {
+        asset: MemberTransactionAsset.LIMIT,
+        type: MemberTransactionType.FEATURE_RESERVE,
+        correlationId: { not: null },
+        createdAt: { lt: cutoff },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (reserveTxs.length === 0) {
+      return 0;
+    }
+
+    const correlationIds = Array.from(
+      new Set(reserveTxs.map((t) => t.correlationId).filter((id): id is string => Boolean(id))),
+    );
+
+    const settledTxs = await prismaClient.groupMemberTransaction.findMany({
+      where: {
+        correlationId: { in: correlationIds },
+        type: {
+          in: [MemberTransactionType.FEATURE_CONSUME, MemberTransactionType.FEATURE_REFUND],
+        },
+      },
+      select: { correlationId: true },
+    });
+
+    const settledSet = new Set(
+      settledTxs.map((t) => t.correlationId).filter((id): id is string => Boolean(id)),
+    );
+    const orphanTxs = reserveTxs.filter((t) =>
+      Boolean(t.correlationId && !settledSet.has(t.correlationId)),
+    );
+
+    let recoveredCount = 0;
+    for (const orphan of orphanTxs) {
+      if (!orphan.correlationId) continue;
+      const correlationId = orphan.correlationId;
+
+      try {
+        await this.db.$transaction(async (tx) => {
+          const rawTx = tx as unknown as typeof prisma;
+          const existingRefund = await rawTx.groupMemberTransaction.findUnique({
+            where: { idempotencyKey: `orphan-refund:${correlationId}` },
+          });
+          if (existingRefund) {
+            return;
+          }
+
+          const profile = await rawTx.groupMemberProfile.findUnique({
+            where: { id: orphan.profileId },
+          });
+          if (!profile) {
+            return;
+          }
+
+          const decrementAmount = Math.min(profile.reservedLimit, orphan.amount);
+          const updated = await rawTx.groupMemberProfile.update({
+            where: { id: profile.id },
+            data: {
+              reservedLimit: { decrement: decrementAmount },
+              limitBalance: { increment: orphan.amount },
+            },
+          });
+
+          await this.txRepo.create(
+            {
+              profileId: profile.id,
+              groupJid: orphan.groupJid,
+              userJid: orphan.userJid,
+              asset: MemberTransactionAsset.LIMIT,
+              type: MemberTransactionType.FEATURE_REFUND,
+              amount: orphan.amount,
+              balanceBefore: profile.reservedLimit,
+              balanceAfter: updated.reservedLimit,
+              feature: orphan.feature ?? undefined,
+              correlationId,
+              idempotencyKey: `orphan-refund:${correlationId}`,
+              note: `Orphan reservation recovery (${String(olderThanMinutes)}m timeout)`,
+            },
+            tx,
+          );
+
+          recoveredCount++;
+        });
+      } catch (err: unknown) {
+        logger.error(
+          { err, correlationId: orphan.correlationId, profileId: orphan.profileId },
+          "Failed to reconcile orphaned limit reservation",
+        );
+      }
+    }
+
+    return recoveredCount;
+  }
 }
+
+export const memberEconomyService = new MemberEconomyService();

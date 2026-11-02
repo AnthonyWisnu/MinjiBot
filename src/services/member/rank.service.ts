@@ -10,13 +10,13 @@ export type MemberRank =
 
 // Ordered from highest to lowest for threshold scan
 const RANK_THRESHOLDS: [MemberRank, number][] = [
-  ["Mythic",      250_000],
-  ["Legend",      100_000],
-  ["Epic",         40_000],
-  ["Grandmaster",  15_000],
-  ["Master",        5_000],
-  ["Elite",         1_000],
-  ["Warrior",           0],
+  ["Mythic", 250_000],
+  ["Legend", 100_000],
+  ["Epic", 40_000],
+  ["Grandmaster", 15_000],
+  ["Master", 5_000],
+  ["Elite", 1_000],
+  ["Warrior", 0],
 ];
 
 // Pure function - no database access.
@@ -31,7 +31,7 @@ export function resolveRank(experience: number): MemberRank {
 }
 
 // Returns the minimum XP needed for the next rank tier.
-// Returns null if the member is already at Grandmaster.
+// Returns null if the member is already at Mythic.
 export function nextRankThreshold(experience: number): number | null {
   for (let i = RANK_THRESHOLDS.length - 1; i >= 0; i--) {
     const entry = RANK_THRESHOLDS[i];
@@ -45,12 +45,13 @@ export function nextRankThreshold(experience: number): number | null {
 }
 
 // Returns XP progress within the current rank tier (0 to tierRange).
-export function rankProgress(
-  experience: number,
-): { current: number; threshold: number; next: number | null } {
+export function rankProgress(experience: number): {
+  current: number;
+  threshold: number;
+  next: number | null;
+} {
   const rank = resolveRank(experience);
-  const currentThreshold =
-    RANK_THRESHOLDS.find(([r]) => r === rank)?.[1] ?? 0;
+  const currentThreshold = RANK_THRESHOLDS.find(([r]) => r === rank)?.[1] ?? 0;
   const next = nextRankThreshold(experience);
 
   return {

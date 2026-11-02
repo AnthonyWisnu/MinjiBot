@@ -22,6 +22,7 @@ import type { Role } from "../../types/role";
 import { getIdentityCandidateJids, getMessageSenderJid } from "../../utils/jid";
 import { extractTextFromMessageContent } from "../../utils/messageText";
 import { tenantFeatureService } from "../tenant/tenantFeature.service";
+import { antiDeleteService } from "./antiDelete.service";
 
 const WHATSAPP_INVITE_PATTERN =
   /(?:https?:\/\/)?(?:chat\.whatsapp\.com|whatsapp\.com\/channel)\/[A-Za-z0-9_-]+/i;
@@ -45,7 +46,7 @@ export class AntiLinkService {
   ): Promise<AntiLinkConfigResult> {
     const tenantGroup = await this.resolveManagedTenant(context);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const tenantFeatureRepository = new TenantFeatureRepository(tx);
       const tenantAuditRepository = new TenantAuditRepository(tx);
 
@@ -69,48 +70,66 @@ export class AntiLinkService {
         featureSetting,
       };
     });
+
+    tenantFeatureService.invalidateCache(tenantGroup.groupJid);
+    return result;
   }
 
-  async handleIncomingMessage(socket: WASocket, message: WAMessage): Promise<void> {
+  async handleIncomingMessage(socket: WASocket, message: WAMessage): Promise<boolean> {
     const groupJid = message.key.remoteJid;
     if (!groupJid || message.key.fromMe || !groupJid.endsWith("@g.us")) {
-      return;
+      return false;
     }
 
     const text = extractTextFromMessageContent(message.message);
     if (!WHATSAPP_INVITE_PATTERN.test(text)) {
-      return;
+      return false;
     }
 
     const tenantGroup = await this.tenantGroupRepository.findByGroupJid(groupJid);
     if (!this.isTenantActive(tenantGroup)) {
-      return;
+      return false;
     }
 
     const featureSetting = await this.tenantFeatureRepository.findByGroupJid(groupJid);
     if (!featureSetting?.antiLinkEnabled) {
-      return;
+      return false;
     }
 
     const senderJid = getMessageSenderJid(groupJid, message.key.participant);
     const senderJids = this.getMessageSenderCandidateJids(message, senderJid);
 
+    const moderationContext = await this.resolveAntiLinkModerationContext(
+      socket,
+      groupJid,
+      senderJids,
+      tenantGroup,
+    );
+    if (!moderationContext) {
+      return false;
+    }
+
+    // Check immunity BEFORE deleting message!
+    const isImmune =
+      moderationContext.sender.isBot ||
+      moderationContext.sender.isSuperOwner ||
+      moderationContext.sender.isTenantOwner ||
+      moderationContext.sender.isTenantAdmin ||
+      moderationContext.sender.isGroupAdmin;
+
+    if (isImmune) {
+      return false;
+    }
+
+    // Violation confirmed: Delete message
     await this.deleteMessageIfPossible(socket, message);
 
     const groupSetting = await this.tenantGroupSettingRepository.ensureForGroup(groupJid);
     if (groupSetting.antiLinkAutoKick) {
-      const moderationContext = await this.resolveAntiLinkModerationContext(
-        socket,
-        groupJid,
-        senderJids,
-        tenantGroup,
-      );
-      if (!moderationContext) {
-        return;
-      }
-
       const autoKickResult = this.guard.canAutoKickUser(moderationContext);
-      if (!autoKickResult.allowed) {
+      if (autoKickResult.allowed) {
+        await this.kickIfPossible(socket, groupJid, senderJid);
+      } else {
         await this.sendWarning(
           socket,
           groupJid,
@@ -118,11 +137,10 @@ export class AntiLinkService {
           "[WARNING] Link terdeteksi, tetapi user dilindungi dari kick.",
           [senderJid],
         );
-        return;
       }
-
-      await this.kickIfPossible(socket, groupJid, senderJid);
     }
+
+    return true;
   }
 
   parseAntiLinkToggle(value: string): boolean {
@@ -203,6 +221,8 @@ export class AntiLinkService {
     if (!remoteJid || !messageId) {
       return;
     }
+
+    antiDeleteService.suppressModerationDelete(remoteJid, messageId);
 
     try {
       await socket.sendMessage(remoteJid, {

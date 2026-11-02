@@ -33,7 +33,8 @@ export function getUniqueNormalizedJids(values: (string | null | undefined)[]): 
     .filter(
       (value) => !isGroupJid(normalizeJid(value)) && !isStatusBroadcastJid(normalizeJid(value)),
     )
-    .map((value) => normalizeUserJid(value));
+    .map((value) => normalizeUserJid(value))
+    .filter((value) => Boolean(value && value.trim().length > 0));
 
   return [...new Set(normalizedJids)];
 }
@@ -82,11 +83,62 @@ export function normalizePhoneNumberToUserJid(value: string): string {
 }
 
 export function normalizeUserJid(value: string): string {
+  if (!value || typeof value !== "string" || !value.trim()) {
+    return "";
+  }
+
   const normalized = normalizeJid(value);
+
+  if (
+    isGroupJid(normalized) ||
+    normalized.endsWith("@broadcast") ||
+    normalized.endsWith("@newsletter") ||
+    normalized === "status@broadcast"
+  ) {
+    return "";
+  }
 
   if (isUserJid(normalized)) {
     return normalized;
   }
 
+  const digits = normalized.replace(/\D/g, "");
+  if (!digits) {
+    return "";
+  }
+
   return normalizePhoneNumberToUserJid(normalized);
+}
+
+export function getBotCanonicalJids(socket: {
+  user?: { id?: string; lid?: string } | null;
+}): Set<string> {
+  const result = new Set<string>();
+  if (!socket.user) {
+    return result;
+  }
+
+  if (socket.user.id) {
+    const rawId = normalizeJid(socket.user.id);
+    if (rawId) {
+      result.add(rawId);
+      const userJid = normalizeUserJid(rawId);
+      if (userJid) {
+        result.add(userJid);
+      }
+    }
+  }
+
+  if (socket.user.lid) {
+    const rawLid = normalizeJid(socket.user.lid);
+    if (rawLid) {
+      result.add(rawLid);
+      const userLid = normalizeUserJid(rawLid);
+      if (userLid) {
+        result.add(userLid);
+      }
+    }
+  }
+
+  return result;
 }

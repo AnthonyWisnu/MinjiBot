@@ -1,4 +1,5 @@
 import { logger } from "../config/logger";
+import { formatUserSafeError } from "../utils/userSafeError";
 import type { CommandContext, CommandDefinition } from "../types/command";
 import { afkCommands } from "./afk/afk.command";
 import { gameCommands } from "./game/game.command";
@@ -8,6 +9,7 @@ import { leaderboardCommands } from "./member/leaderboard.command";
 import { limitPurchaseCommand } from "./member/limitPurchase.command";
 import { memberAdminCommands } from "./member/memberAdmin.command";
 import { profileCommands } from "./member/profile.command";
+import { privacyCommands } from "./member/privacy.command";
 import { downloaderCommands } from "./media/downloader.command";
 import { hdCommands } from "./media/hd.command";
 import { lyricsCommands } from "./media/lyrics.command";
@@ -42,8 +44,12 @@ export class CommandRouter {
     }
   }
 
+  has(commandName: string): boolean {
+    return this.commands.has(commandName.toLowerCase());
+  }
+
   async handle(context: CommandContext): Promise<void> {
-    const command = this.commands.get(context.commandName);
+    const command = this.commands.get(context.commandName.toLowerCase());
 
     if (!command) {
       logger.debug(
@@ -58,7 +64,21 @@ export class CommandRouter {
       return;
     }
 
-    await command.execute(context);
+    try {
+      await command.execute(context);
+    } catch (error: unknown) {
+      logger.error(
+        {
+          error,
+          commandName: context.commandName,
+          chatJid: context.chatJid,
+          senderJid: context.senderJid,
+        },
+        "Command gagal diproses",
+      );
+
+      await context.reply(formatUserSafeError(error, "Terjadi kendala saat memproses perintah."));
+    }
   }
 
   private register(definition: CommandDefinition): void {
@@ -107,6 +127,7 @@ export const commandRouter = new CommandRouter([
   ...giftCommands,
   ...memberAdminCommands,
   ...profileCommands,
+  ...privacyCommands,
   ...leaderboardCommands,
   ...groupStatsCommands,
 ]);

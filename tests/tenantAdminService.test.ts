@@ -10,7 +10,7 @@ import type { Role } from "../src/types/role";
 process.env.NODE_ENV = "test";
 process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/minjibot_test";
 process.env.COMMAND_PREFIX = ".";
-process.env.SUPER_OWNER_JIDS = "62895366009208@s.whatsapp.net";
+process.env.SUPER_OWNER_JIDS = "628000000101@s.whatsapp.net";
 process.env.SESSION_DIR = "./sessions-test";
 process.env.TEMP_DIR = "./tmp-test";
 process.env.LOG_LEVEL = "silent";
@@ -84,7 +84,7 @@ void test("TenantAdminService addTenantAdmin allows super owner", async () => {
   const result = await service.addTenantAdmin(
     createContext(socket, tenantGroup, {
       role: "SUPER_OWNER",
-      senderJid: "62895366009208@s.whatsapp.net",
+      senderJid: "628000000101@s.whatsapp.net",
       args: ["6281234567890"],
     }),
   );
@@ -117,7 +117,7 @@ void test("TenantAdminService addTenantAdmin rejects tenant owner target", async
       service.addTenantAdmin(
         createContext(socket, tenantGroup, {
           role: "SUPER_OWNER",
-          senderJid: "62895366009208@s.whatsapp.net",
+          senderJid: "628000000101@s.whatsapp.net",
           args: ["6282000000000"],
         }),
       ),
@@ -134,7 +134,7 @@ void test("TenantAdminService addTenantAdmin rejects super owner target", async 
         createContext(socket, tenantGroup, {
           role: "TENANT_OWNER",
           senderJid: "6282000000000@s.whatsapp.net",
-          args: ["62895366009208"],
+          args: ["628000000101"],
         }),
       ),
     /Super owner tidak dapat dijadikan tenant admin/,

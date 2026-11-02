@@ -36,8 +36,22 @@ void test("MemberProfileViewService.getOwnProfile: creates/reads own profile and
   const profile = makeProfile({ experience: 1500 }); // Elite = 1000+
 
   const service = new MemberProfileViewService(
-    { findOrCreate: (...a) => { void a; return Promise.resolve(profile); }, findByGroupAndUser: (...a) => { void a; return Promise.resolve(profile); } },
-    { findOrCreateProfile: (...a) => { void a; return Promise.resolve(profile); } },
+    {
+      findOrCreate: (...a) => {
+        void a;
+        return Promise.resolve(profile);
+      },
+      findByGroupAndUser: (...a) => {
+        void a;
+        return Promise.resolve(profile);
+      },
+    },
+    {
+      findOrCreateProfile: (...a) => {
+        void a;
+        return Promise.resolve(profile);
+      },
+    },
   );
 
   const view = await service.getOwnProfile("g@g.us", "u@s.whatsapp.net");
@@ -47,8 +61,22 @@ void test("MemberProfileViewService.getOwnProfile: creates/reads own profile and
 
 void test("MemberProfileViewService.getTargetProfile: returns null if no profile", async () => {
   const service = new MemberProfileViewService(
-    { findOrCreate: (...a) => { void a; return Promise.resolve(makeProfile()); }, findByGroupAndUser: (...a) => { void a; return Promise.resolve(null); } },
-    { findOrCreateProfile: (...a) => { void a; return Promise.resolve(makeProfile()); } },
+    {
+      findOrCreate: (...a) => {
+        void a;
+        return Promise.resolve(makeProfile());
+      },
+      findByGroupAndUser: (...a) => {
+        void a;
+        return Promise.resolve(null);
+      },
+    },
+    {
+      findOrCreateProfile: (...a) => {
+        void a;
+        return Promise.resolve(makeProfile());
+      },
+    },
   );
 
   const view = await service.getTargetProfile("g@g.us", "unknown@s.whatsapp.net");
@@ -59,10 +87,22 @@ void test("MemberProfileViewService.getTargetProfile: does not create profile fo
   let createdCalled = false;
   const service = new MemberProfileViewService(
     {
-      findOrCreate: (...a) => { void a; createdCalled = true; return Promise.resolve(makeProfile()); },
-      findByGroupAndUser: (...a) => { void a; return Promise.resolve(null); },
+      findOrCreate: (...a) => {
+        void a;
+        createdCalled = true;
+        return Promise.resolve(makeProfile());
+      },
+      findByGroupAndUser: (...a) => {
+        void a;
+        return Promise.resolve(null);
+      },
     },
-    { findOrCreateProfile: (...a) => { void a; return Promise.resolve(makeProfile()); } },
+    {
+      findOrCreateProfile: (...a) => {
+        void a;
+        return Promise.resolve(makeProfile());
+      },
+    },
   );
 
   await service.getTargetProfile("g@g.us", "u@s.whatsapp.net");
@@ -75,14 +115,22 @@ void test("MemberProfileViewService: same user in different groups is independen
 
   const service = new MemberProfileViewService(
     {
-      findOrCreate: (...a) => { void a; return Promise.resolve(profileGroupA); },
+      findOrCreate: (...a) => {
+        void a;
+        return Promise.resolve(profileGroupA);
+      },
       findByGroupAndUser: (groupJid: string, ...rest: unknown[]) => {
         void rest;
         if (groupJid === "ga@g.us") return Promise.resolve(profileGroupA);
         return Promise.resolve(profileGroupB);
       },
     },
-    { findOrCreateProfile: (...a) => { void a; return Promise.resolve(profileGroupA); } },
+    {
+      findOrCreateProfile: (...a) => {
+        void a;
+        return Promise.resolve(profileGroupA);
+      },
+    },
   );
 
   const viewA = await service.getTargetProfile("ga@g.us", "u@s.whatsapp.net");
@@ -106,8 +154,22 @@ void test("MemberProfileViewService: rank thresholds displayed correctly", async
   for (const { xp, expected } of thresholds) {
     const profile = makeProfile({ experience: xp });
     const service = new MemberProfileViewService(
-      { findOrCreate: (...a) => { void a; return Promise.resolve(profile); }, findByGroupAndUser: (...a) => { void a; return Promise.resolve(profile); } },
-      { findOrCreateProfile: (...a) => { void a; return Promise.resolve(profile); } },
+      {
+        findOrCreate: (...a) => {
+          void a;
+          return Promise.resolve(profile);
+        },
+        findByGroupAndUser: (...a) => {
+          void a;
+          return Promise.resolve(profile);
+        },
+      },
+      {
+        findOrCreateProfile: (...a) => {
+          void a;
+          return Promise.resolve(profile);
+        },
+      },
     );
     const view = await service.getOwnProfile("g@g.us", "u@s.whatsapp.net");
     assert.equal(view.rank, expected, `XP ${String(xp)} should be ${expected}`);
@@ -118,8 +180,22 @@ void test("MemberProfileViewService: spending points does not reduce rank", asyn
   // Rank is XP-based, not points-based. Even if pointsBalance drops, rank stays.
   const highXpProfile = makeProfile({ experience: 100000, pointsBalance: 0 });
   const service = new MemberProfileViewService(
-    { findOrCreate: (...a) => { void a; return Promise.resolve(highXpProfile); }, findByGroupAndUser: (...a) => { void a; return Promise.resolve(highXpProfile); } },
-    { findOrCreateProfile: (...a) => { void a; return Promise.resolve(highXpProfile); } },
+    {
+      findOrCreate: (...a) => {
+        void a;
+        return Promise.resolve(highXpProfile);
+      },
+      findByGroupAndUser: (...a) => {
+        void a;
+        return Promise.resolve(highXpProfile);
+      },
+    },
+    {
+      findOrCreateProfile: (...a) => {
+        void a;
+        return Promise.resolve(highXpProfile);
+      },
+    },
   );
   const view = await service.getOwnProfile("g@g.us", "u@s.whatsapp.net");
   assert.equal(view.rank, "Legend");
@@ -134,10 +210,22 @@ function makeLeaderboardService(opts: {
   positionByPoints: number;
 }) {
   const repo = {
-    listTopByExperience: (...a: unknown[]) => { void a; return Promise.resolve(opts.topByXp); },
-    listTopByPoints: (...a: unknown[]) => { void a; return Promise.resolve(opts.topByPoints); },
-    getPositionByExperience: (...a: unknown[]) => { void a; return Promise.resolve(opts.positionByXp); },
-    getPositionByPoints: (...a: unknown[]) => { void a; return Promise.resolve(opts.positionByPoints); },
+    listTopByExperience: (...a: unknown[]) => {
+      void a;
+      return Promise.resolve(opts.topByXp);
+    },
+    listTopByPoints: (...a: unknown[]) => {
+      void a;
+      return Promise.resolve(opts.topByPoints);
+    },
+    getPositionByExperience: (...a: unknown[]) => {
+      void a;
+      return Promise.resolve(opts.positionByXp);
+    },
+    getPositionByPoints: (...a: unknown[]) => {
+      void a;
+      return Promise.resolve(opts.positionByPoints);
+    },
   };
   return new LeaderboardService(repo);
 }
@@ -149,7 +237,12 @@ void test("LeaderboardService.getTopRank: sorts top by XP and returns entries", 
     makeProfile({ userJid: "c@s.whatsapp.net", experience: 1000 }),
   ];
 
-  const service = makeLeaderboardService({ topByXp: top, topByPoints: [], positionByXp: 0, positionByPoints: 0 });
+  const service = makeLeaderboardService({
+    topByXp: top,
+    topByPoints: [],
+    positionByXp: 0,
+    positionByPoints: 0,
+  });
   const result = await service.getTopRank("g@g.us", "caller@s.whatsapp.net");
 
   assert.equal(result.entries.length, 3);
@@ -163,7 +256,12 @@ void test("LeaderboardService.getTopPoint: sorts top by points and returns entri
     makeProfile({ userJid: "b@s.whatsapp.net", pointsBalance: 500 }),
   ];
 
-  const service = makeLeaderboardService({ topByXp: [], topByPoints: top, positionByXp: 0, positionByPoints: 0 });
+  const service = makeLeaderboardService({
+    topByXp: [],
+    topByPoints: top,
+    positionByXp: 0,
+    positionByPoints: 0,
+  });
   const result = await service.getTopPoint("g@g.us", "caller@s.whatsapp.net");
 
   assert.equal(result.entries.length, 2);
@@ -173,7 +271,12 @@ void test("LeaderboardService.getTopPoint: sorts top by points and returns entri
 void test("LeaderboardService.getTopRank: shows caller position if outside top 10", async () => {
   // caller not in top list
   const top = [makeProfile({ userJid: "other@s.whatsapp.net", experience: 9000 })];
-  const service = makeLeaderboardService({ topByXp: top, topByPoints: [], positionByXp: 25, positionByPoints: 0 });
+  const service = makeLeaderboardService({
+    topByXp: top,
+    topByPoints: [],
+    positionByXp: 25,
+    positionByPoints: 0,
+  });
   const result = await service.getTopRank("g@g.us", "caller@s.whatsapp.net");
   assert.equal(result.callerPosition, 25);
 });
@@ -181,7 +284,12 @@ void test("LeaderboardService.getTopRank: shows caller position if outside top 1
 void test("LeaderboardService.getTopRank: callerPosition is null when caller has no profile", async () => {
   const top = [makeProfile({ userJid: "other@s.whatsapp.net", experience: 9000 })];
   // getPositionByExperience returns 0 when no profile
-  const service = makeLeaderboardService({ topByXp: top, topByPoints: [], positionByXp: 0, positionByPoints: 0 });
+  const service = makeLeaderboardService({
+    topByXp: top,
+    topByPoints: [],
+    positionByXp: 0,
+    positionByPoints: 0,
+  });
   const result = await service.getTopRank("g@g.us", "caller@s.whatsapp.net");
   assert.equal(result.callerPosition, null);
 });
@@ -189,14 +297,24 @@ void test("LeaderboardService.getTopRank: callerPosition is null when caller has
 void test("LeaderboardService.getTopRank: callerPosition is null when caller IS in top list", async () => {
   const callerJid = "caller@s.whatsapp.net";
   const top = [makeProfile({ userJid: callerJid, experience: 9000 })];
-  const service = makeLeaderboardService({ topByXp: top, topByPoints: [], positionByXp: 1, positionByPoints: 0 });
+  const service = makeLeaderboardService({
+    topByXp: top,
+    topByPoints: [],
+    positionByXp: 1,
+    positionByPoints: 0,
+  });
   const result = await service.getTopRank("g@g.us", callerJid);
   // Caller is in top, so callerPosition should NOT be shown separately
   assert.equal(result.callerPosition, null);
 });
 
 void test("LeaderboardService: empty group returns empty entries", async () => {
-  const service = makeLeaderboardService({ topByXp: [], topByPoints: [], positionByXp: 0, positionByPoints: 0 });
+  const service = makeLeaderboardService({
+    topByXp: [],
+    topByPoints: [],
+    positionByXp: 0,
+    positionByPoints: 0,
+  });
   const result = await service.getTopRank("g@g.us", "caller@s.whatsapp.net");
   assert.equal(result.entries.length, 0);
   assert.equal(result.callerPosition, null);
@@ -204,7 +322,12 @@ void test("LeaderboardService: empty group returns empty entries", async () => {
 
 void test("LeaderboardService: display name falls back to phone number from JID", async () => {
   const top = [makeProfile({ userJid: "628123456789@s.whatsapp.net", experience: 1000 })];
-  const service = makeLeaderboardService({ topByXp: top, topByPoints: [], positionByXp: 0, positionByPoints: 0 });
+  const service = makeLeaderboardService({
+    topByXp: top,
+    topByPoints: [],
+    positionByXp: 0,
+    positionByPoints: 0,
+  });
   const result = await service.getTopRank("g@g.us", "caller@s.whatsapp.net");
   assert.equal(result.entries[0]?.displayName, "628123456789");
 });
@@ -214,6 +337,14 @@ void test("profileCommands: shows tagged member profile when mentionedJids provi
   const profile = makeProfile({ userJid: "628222@s.whatsapp.net" });
   const mockService = {
     getOwnProfile: (...args: unknown[]) => {
+      void args;
+      return Promise.resolve({
+        profile,
+        rank: "Bronze",
+        createdAtWib: "2026-09-03",
+      });
+    },
+    getTargetProfile: (...args: unknown[]) => {
       void args;
       return Promise.resolve({
         profile,
@@ -249,6 +380,14 @@ void test("profileCommands: shows quoted member profile when quoted message prov
   const profile = makeProfile({ userJid: "628333@s.whatsapp.net" });
   const mockService = {
     getOwnProfile: (...args: unknown[]) => {
+      void args;
+      return Promise.resolve({
+        profile,
+        rank: "Silver",
+        createdAtWib: "2026-09-03",
+      });
+    },
+    getTargetProfile: (...args: unknown[]) => {
       void args;
       return Promise.resolve({
         profile,

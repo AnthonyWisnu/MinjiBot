@@ -98,12 +98,12 @@ void test("WelcomeService burst protection: sends single batch message if >3 par
   assert.equal(mentions.length, 5);
 });
 
-void test("GameService: sweepExpiredSessions cleans up abandoned sessions", () => {
+void test("GameService: sweepExpiredSessions cleans up abandoned sessions", async () => {
   const service = new GameService(makeNoopRewardService());
 
   // Manually start a quiz session
   const groupJid = "abandoned@g.us";
-  void service.startOrAnswerQuiz(
+  await service.startOrAnswerQuiz(
     {
       chatJid: groupJid,
       senderUserJid: "6281@s.whatsapp.net",

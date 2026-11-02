@@ -8,7 +8,7 @@ import type { CommandContext } from "../src/types/command";
 process.env.NODE_ENV = "test";
 process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/minjibot_test";
 process.env.COMMAND_PREFIX = ".";
-process.env.SUPER_OWNER_JIDS = "62895366009208@s.whatsapp.net";
+process.env.SUPER_OWNER_JIDS = "628000000101@s.whatsapp.net";
 process.env.SESSION_DIR = "./sessions-test";
 process.env.TEMP_DIR = "./tmp-test";
 process.env.LOG_LEVEL = "silent";
@@ -30,7 +30,7 @@ void test("Lyrics command returns error without query and last played", async ()
   const command = createLyricsCommands({
     lyricsService: createFakeLyricsService(),
     lastPlayedService: new LastPlayedService(),
-  })[0];
+  })[0]!;
 
   await command.execute(createLyricsContext({ replies }));
 
@@ -45,7 +45,7 @@ void test("Lyrics command calls lyrics service with query", async () => {
   const command = createLyricsCommands({
     lyricsService: createFakeLyricsService({ queries }),
     lastPlayedService: new LastPlayedService(),
-  })[0];
+  })[0]!;
 
   await command.execute(
     createLyricsContext({
@@ -84,7 +84,7 @@ void test("Lyrics command sends long lyrics as document", async () => {
   const command = createLyricsCommands({
     lyricsService: createFakeLyricsService({ plainLyrics: "a".repeat(3600) }),
     lastPlayedService: new LastPlayedService(),
-  })[0];
+  })[0]!;
 
   await command.execute(
     createLyricsContext({
@@ -115,7 +115,7 @@ void test("Lyrics command uses last played when query is empty", async () => {
   const command = createLyricsCommands({
     lyricsService: createFakeLyricsService({ queries }),
     lastPlayedService: lastPlayed,
-  })[0];
+  })[0]!;
 
   await command.execute(createLyricsContext({ replies }));
 
@@ -148,7 +148,7 @@ void test("Lyrics command handles network error safely", async () => {
         ),
     } as never,
     lastPlayedService: new LastPlayedService(),
-  })[0];
+  })[0]!;
 
   await command.execute(
     createLyricsContext({
@@ -192,11 +192,11 @@ function createFakeLyricsService(
 }
 
 function createFetch(payload: unknown): typeof fetch {
-  return (() =>
+  return ((_input: unknown, _init?: unknown) =>
     Promise.resolve({
       ok: true,
       json: () => Promise.resolve(payload),
-    })) as typeof fetch;
+    })) as unknown as typeof fetch;
 }
 
 function createLyricsContext(options: {
@@ -251,4 +251,3 @@ function createLyricsContext(options: {
     },
   };
 }
-

@@ -45,9 +45,7 @@ export class TenantPanelService {
     let botAdminStatus = "Chat Pribadi";
     if (context.isGroup && context.chatJid === tenantGroup.groupJid) {
       const isBotAdmin = await this.checkBotIsAdmin(context.socket, context.chatJid);
-      botAdminStatus = isBotAdmin
-        ? "✅ Admin Grup (Aktif)"
-        : "⚠️ Bukan Admin";
+      botAdminStatus = isBotAdmin ? "✅ Admin Grup (Aktif)" : "⚠️ Bukan Admin";
     }
 
     // 4. Expiry / Active Days
@@ -82,7 +80,7 @@ export class TenantPanelService {
       "🎮 *UTILITAS & FITUR*",
       `• *Game & Kuis*: ${this.fmtBool(feature.gameEnabled)}`,
       `• *Downloader*: ${this.fmtBool(feature.downloaderEnabled)}`,
-      `• *AI Photo*: ${this.fmtBool(feature.hdEnabled)}`,
+      `• *HD Photo*: ${this.fmtBool(feature.hdEnabled)}`,
       `• *Pengingat*: ${this.fmtBool(feature.reminderEnabled)}`,
       `• *Tag All*: ${this.fmtBool(feature.tagAllEnabled)}`,
       "",
@@ -121,7 +119,9 @@ export class TenantPanelService {
       return owned[0];
     }
 
-    throw new Error("[ERROR] Tidak ada tenant yang aktif dipilih. Gunakan .mytenant lalu .usetenant <kode>.");
+    throw new Error(
+      "[ERROR] Tidak ada tenant yang aktif dipilih. Gunakan .mytenant lalu .usetenant <kode>.",
+    );
   }
 
   private assertCanAccessPanel(context: CommandContext): void {
@@ -130,7 +130,9 @@ export class TenantPanelService {
       context.role !== "TENANT_OWNER" &&
       context.role !== "TENANT_ADMIN"
     ) {
-      throw new Error("[ERROR] Panel ini hanya dapat diakses oleh Tenant Owner, Tenant Admin, atau Super Owner.");
+      throw new Error(
+        "[ERROR] Panel ini hanya dapat diakses oleh Tenant Owner, Tenant Admin, atau Super Owner.",
+      );
     }
   }
 

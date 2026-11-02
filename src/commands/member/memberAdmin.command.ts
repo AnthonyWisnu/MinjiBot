@@ -1,16 +1,11 @@
-import { TenantStatus } from "@prisma/client";
+import { TenantStatus, type TenantGroup } from "@prisma/client";
 
 import { roleGuard } from "../../guards/roleGuard";
-import { TenantAdminRepository } from "../../repositories/tenantAdmin.repository";
-import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { InvalidAmountError } from "../../types/memberEconomy";
 import { memberAdminService } from "../../services/member/memberAdmin.service";
 import type { AdminResult } from "../../services/member/memberAdmin.service";
 import { getIdentityCandidateJids, normalizeUserJid } from "../../utils/jid";
-
-const tenantGroupRepository = new TenantGroupRepository();
-const tenantAdminRepository = new TenantAdminRepository();
 
 function formatAdminResult(result: AdminResult): string {
   return [
@@ -150,8 +145,11 @@ async function handleMemberInfo(context: CommandContext): Promise<void> {
 }
 
 export interface HandleAddLimitAllDeps {
-  tenantGroupRepo?: TenantGroupRepository;
-  tenantAdminRepo?: TenantAdminRepository;
+  tenantGroupRepo?: {
+    findByTenantCode: (code: string) => Promise<TenantGroup | null>;
+    findByGroupJid: (jid: string) => Promise<TenantGroup | null>;
+  };
+  tenantAdminRepo?: unknown;
   adminService?: typeof memberAdminService;
 }
 
@@ -159,9 +157,16 @@ export async function handleAddLimitAll(
   context: CommandContext,
   deps: HandleAddLimitAllDeps = {},
 ): Promise<void> {
-  const tenantGroupRepo = deps.tenantGroupRepo ?? tenantGroupRepository;
-  const tenantAdminRepo = deps.tenantAdminRepo ?? tenantAdminRepository;
   const adminService = deps.adminService ?? memberAdminService;
+
+  const senderJids = getIdentityCandidateJids(context.senderUserJid, context.senderAltJids);
+  const isSuperOwner =
+    context.role === "SUPER_OWNER" || senderJids.some((jid) => roleGuard.isSuperOwner(jid));
+
+  if (!isSuperOwner) {
+    await context.reply("Perintah ini hanya bisa digunakan oleh Super Owner.");
+    return;
+  }
 
   let tenantCode: string | null = null;
   let amountStr: string | null = null;
@@ -200,15 +205,21 @@ export async function handleAddLimitAll(
     return;
   }
 
-  let targetTenant = null;
+  let targetTenant: TenantGroup | null = null;
   if (tenantCode) {
-    targetTenant = await tenantGroupRepo.findByTenantCode(tenantCode);
+    targetTenant = deps.tenantGroupRepo
+      ? await deps.tenantGroupRepo.findByTenantCode(tenantCode)
+      : await adminService.resolveTargetTenant(tenantCode);
     if (!targetTenant) {
       await context.reply(`Tenant dengan kode "${tenantCode}" tidak ditemukan.`);
       return;
     }
   } else {
-    targetTenant = context.tenantGroup ?? (await tenantGroupRepo.findByGroupJid(context.chatJid));
+    targetTenant =
+      context.tenantGroup ??
+      (deps.tenantGroupRepo
+        ? await deps.tenantGroupRepo.findByGroupJid(context.chatJid)
+        : await adminService.resolveTargetTenant(context.chatJid));
     if (!targetTenant) {
       await context.reply("Grup ini belum terdaftar sebagai tenant.");
       return;
@@ -217,32 +228,6 @@ export async function handleAddLimitAll(
 
   if (targetTenant.status === TenantStatus.REMOVED) {
     await context.reply("Grup ini sudah dihapus dari sistem tenant.");
-    return;
-  }
-
-  const senderJids = getIdentityCandidateJids(context.senderUserJid, context.senderAltJids);
-  const isSuperOwner =
-    context.role === "SUPER_OWNER" || senderJids.some((jid) => roleGuard.isSuperOwner(jid));
-
-  let isTenantOwner = false;
-  if (targetTenant.ownerJid) {
-    const normalizedOwner = normalizeUserJid(targetTenant.ownerJid);
-    isTenantOwner = senderJids.some((jid) => normalizeUserJid(jid) === normalizedOwner);
-  }
-
-  let isTenantAdmin = false;
-  if (!isSuperOwner && !isTenantOwner) {
-    for (const jid of senderJids) {
-      const exists = await tenantAdminRepo.exists(targetTenant.groupJid, jid);
-      if (exists) {
-        isTenantAdmin = true;
-        break;
-      }
-    }
-  }
-
-  if (!isSuperOwner && !isTenantOwner && !isTenantAdmin) {
-    await context.reply("Kamu tidak memiliki izin untuk menambah limit di grup ini.");
     return;
   }
 
@@ -293,23 +278,19 @@ export const memberAdminCommands: CommandDefinition[] = [
   },
   {
     name: "addlimit",
-    execute: (ctx) =>
-      handleAdd(ctx, "addlimit", (g, t, a) => memberAdminService.addLimit(g, t, a)),
+    execute: (ctx) => handleAdd(ctx, "addlimit", (g, t, a) => memberAdminService.addLimit(g, t, a)),
   },
   {
     name: "setlimit",
-    execute: (ctx) =>
-      handleSet(ctx, "setlimit", (g, t, a) => memberAdminService.setLimit(g, t, a)),
+    execute: (ctx) => handleSet(ctx, "setlimit", (g, t, a) => memberAdminService.setLimit(g, t, a)),
   },
   {
     name: "addxp",
-    execute: (ctx) =>
-      handleAdd(ctx, "addxp", (g, t, a) => memberAdminService.addXp(g, t, a)),
+    execute: (ctx) => handleAdd(ctx, "addxp", (g, t, a) => memberAdminService.addXp(g, t, a)),
   },
   {
     name: "setxp",
-    execute: (ctx) =>
-      handleSet(ctx, "setxp", (g, t, a) => memberAdminService.setXp(g, t, a)),
+    execute: (ctx) => handleSet(ctx, "setxp", (g, t, a) => memberAdminService.setXp(g, t, a)),
   },
   {
     name: "memberinfo",

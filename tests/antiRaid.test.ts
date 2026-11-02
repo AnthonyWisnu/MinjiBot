@@ -102,6 +102,7 @@ function makeMockSocket() {
   const sentMessages: { jid: string; content: Record<string, unknown> }[] = [];
 
   const socket = {
+    user: { id: "628111@s.whatsapp.net" },
     groupSettingUpdate: (_jid: string, setting: string) => {
       operations.push(`setting:${setting}`);
       return Promise.resolve();

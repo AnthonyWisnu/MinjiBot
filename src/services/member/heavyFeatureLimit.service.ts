@@ -13,16 +13,35 @@ export interface HeavyFeatureReservation {
 
 // Minimal interfaces for DI and testing.
 interface LimitEconomyService {
-  findBestLimitProfileForPrivateChat(userJid: string, minLimit: number): Promise<GroupMemberProfile | null>;
-  reserveLimit(input: { groupJid: string; userJid: string; amount: number; feature: HeavyFeatureType; correlationId: string }): Promise<GroupMemberProfile>;
-  consumeLimit(input: { groupJid: string; userJid: string; amount: number; feature: HeavyFeatureType; correlationId: string }): Promise<GroupMemberProfile>;
-  refundLimit(input: { groupJid: string; userJid: string; amount: number; feature: HeavyFeatureType; correlationId: string }): Promise<GroupMemberProfile>;
+  findBestLimitProfileForPrivateChat(
+    userJid: string,
+    minLimit: number,
+  ): Promise<GroupMemberProfile | null>;
+  reserveLimit(input: {
+    groupJid: string;
+    userJid: string;
+    amount: number;
+    feature: HeavyFeatureType;
+    correlationId: string;
+  }): Promise<GroupMemberProfile>;
+  consumeLimit(input: {
+    groupJid: string;
+    userJid: string;
+    amount: number;
+    feature: HeavyFeatureType;
+    correlationId: string;
+  }): Promise<GroupMemberProfile>;
+  refundLimit(input: {
+    groupJid: string;
+    userJid: string;
+    amount: number;
+    feature: HeavyFeatureType;
+    correlationId: string;
+  }): Promise<GroupMemberProfile>;
 }
 
 export class HeavyFeatureLimitService {
-  constructor(
-    private readonly economyService: LimitEconomyService = new MemberEconomyService(),
-  ) {}
+  constructor(private readonly economyService: LimitEconomyService = new MemberEconomyService()) {}
 
   /**
    * Generates a stable correlation ID for a feature execution cycle.

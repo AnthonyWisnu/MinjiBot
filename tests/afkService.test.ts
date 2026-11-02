@@ -7,7 +7,7 @@ import type { WAMessage, WASocket } from "@whiskeysockets/baileys";
 process.env.NODE_ENV = "test";
 process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/minjibot_test";
 process.env.COMMAND_PREFIX = ".";
-process.env.SUPER_OWNER_JIDS = "62895366009208@s.whatsapp.net";
+process.env.SUPER_OWNER_JIDS = "628000000101@s.whatsapp.net";
 process.env.SESSION_DIR = "./sessions-test";
 process.env.TEMP_DIR = "./tmp-test";
 process.env.LOG_LEVEL = "silent";
@@ -60,18 +60,9 @@ void test("AfkService clears AFK status when user sends regular message", async 
   );
 
   assert.equal(store.items.size, 0);
-  assert.match(
-    socket.sentMessages[0]?.content.text,
-    /STATUS UPDATE/,
-  );
-  assert.match(
-    socket.sentMessages[0]?.content.text,
-    /Waktu Rehat : 12 menit/,
-  );
-  assert.match(
-    socket.sentMessages[0]?.content.text,
-    /Tidak ada panggilan masuk/,
-  );
+  assert.match(socket.sentMessages[0]?.content.text ?? "", /STATUS UPDATE/);
+  assert.match(socket.sentMessages[0]?.content.text ?? "", /Waktu Rehat : 12 menit/);
+  assert.match(socket.sentMessages[0]?.content.text ?? "", /Tidak ada panggilan masuk/);
 });
 
 void test("AfkService tracks callers and mentions them when AFK user returns", async () => {
@@ -90,8 +81,8 @@ void test("AfkService tracks callers and mentions them when AFK user returns", a
   );
 
   assert.equal(socket.sentMessages.length, 1);
-  assert.match(socket.sentMessages[0]?.content.text, /PEMBERITAHUAN AFK/);
-  assert.match(socket.sentMessages[0]?.content.text, /makan siang/i);
+  assert.match(socket.sentMessages[0]?.content.text ?? "", /PEMBERITAHUAN AFK/);
+  assert.match(socket.sentMessages[0]?.content.text ?? "", /makan siang/i);
 
   // User 6282 returns
   now = new Date("2026-06-27T01:20:00.000Z");
@@ -102,8 +93,8 @@ void test("AfkService tracks callers and mentions them when AFK user returns", a
 
   assert.equal(socket.sentMessages.length, 2);
   const returnMsg = socket.sentMessages[1];
-  assert.match(returnMsg?.content.text, /STATUS UPDATE/);
-  assert.match(returnMsg?.content.text, /Dicari oleh @6281 \(1 orang\)/);
+  assert.match(returnMsg?.content.text ?? "", /STATUS UPDATE/);
+  assert.match(returnMsg?.content.text ?? "", /Dicari oleh @6281 \(1 orang\)/);
   // Mentions must include both returning user and the caller
   assert.ok(returnMsg?.content.mentions?.includes("6282@s.whatsapp.net"));
   assert.ok(returnMsg?.content.mentions?.includes("6281@s.whatsapp.net"));
@@ -123,7 +114,7 @@ void test("AfkService replies when AFK user is mentioned", async () => {
   );
 
   assert.equal(socket.sentMessages.length, 1);
-  assert.match(socket.sentMessages[0]?.content.text, /sedang AFK/);
+  assert.match(socket.sentMessages[0]?.content.text ?? "", /sedang AFK/);
 });
 
 void test("AfkService cooldown prevents repeated AFK replies", async () => {
@@ -198,18 +189,18 @@ function createAfkStatus(
 }
 
 function createSocket(): WASocket & {
-  sentMessages: { jid: string; content: { text?: string } }[];
+  sentMessages: { jid: string; content: { text?: string; mentions?: string[] } }[];
 } {
-  const sentMessages: { jid: string; content: { text?: string } }[] = [];
+  const sentMessages: { jid: string; content: { text?: string; mentions?: string[] } }[] = [];
 
   return {
     sentMessages,
-    sendMessage: (jid: string, content: { text?: string }) => {
+    sendMessage: (jid: string, content: { text?: string; mentions?: string[] }) => {
       sentMessages.push({ jid, content });
       return Promise.resolve(undefined);
     },
   } as unknown as WASocket & {
-    sentMessages: { jid: string; content: { text?: string } }[];
+    sentMessages: { jid: string; content: { text?: string; mentions?: string[] } }[];
   };
 }
 

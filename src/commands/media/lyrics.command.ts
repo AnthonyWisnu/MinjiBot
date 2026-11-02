@@ -1,5 +1,3 @@
-import { readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { HeavyFeatureType } from "@prisma/client";
 
 import {
@@ -9,7 +7,6 @@ import {
 } from "../../services/media/lyrics.service";
 import { lastPlayedService, type LastPlayedService } from "../../services/media/lastPlayed.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
-import { createTempDir, removeTempDir } from "../../utils/tempFile";
 import { formatUserSafeError } from "../../utils/userSafeError";
 import {
   resolveFeatureAccess,
@@ -134,24 +131,16 @@ async function sendLyricsDocument(
   text: string,
   query: string,
 ): Promise<void> {
-  const tempDir = await createTempDir("lyrics");
   const fileName = createLyricsFileName(`${lyrics.title} ${lyrics.artistName}`.trim() || query);
-  const filePath = path.join(tempDir, fileName);
-
-  try {
-    await writeFile(filePath, text, "utf8");
-    await context.socket.sendMessage(
-      context.chatJid,
-      {
-        document: await readFile(filePath),
-        mimetype: LYRICS_TEXT_MIMETYPE,
-        fileName,
-      },
-      { quoted: context.message },
-    );
-  } finally {
-    await removeTempDir(tempDir);
-  }
+  await context.socket.sendMessage(
+    context.chatJid,
+    {
+      document: Buffer.from(text, "utf8"),
+      mimetype: LYRICS_TEXT_MIMETYPE,
+      fileName,
+    },
+    { quoted: context.message },
+  );
 }
 
 function createLyricsFileName(value: string): string {

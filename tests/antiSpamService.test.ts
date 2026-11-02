@@ -7,7 +7,7 @@ import type { WAMessage, WASocket } from "@whiskeysockets/baileys";
 process.env.NODE_ENV = "test";
 process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/minjibot_test";
 process.env.COMMAND_PREFIX = ".";
-process.env.SUPER_OWNER_JIDS = "62895366009208@s.whatsapp.net";
+process.env.SUPER_OWNER_JIDS = "628000000101@s.whatsapp.net";
 process.env.SESSION_DIR = "./sessions-test";
 process.env.TEMP_DIR = "./tmp-test";
 process.env.LOG_LEVEL = "silent";
@@ -41,10 +41,10 @@ void test("AntiSpamService strict mode does not kick super owner", async () => {
     botIsAdmin: true,
   });
 
-  await sendRepeatedSpam(service, socket, "62895366009208@s.whatsapp.net");
+  await sendRepeatedSpam(service, socket, "628000000101@s.whatsapp.net");
 
   assert.equal(socket.kickedUsers.length, 0);
-  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /dilindungi dari kick/);
+  assert.equal(socket.sentMessages.length, 0);
 });
 
 void test("AntiSpamService strict mode does not kick super owner resolved from LID participant", async () => {
@@ -54,7 +54,7 @@ void test("AntiSpamService strict mode does not kick super owner resolved from L
     extraParticipants: [
       {
         id: "111111@lid",
-        jid: "62895366009208@s.whatsapp.net",
+        jid: "628000000101@s.whatsapp.net",
         lid: "111111@lid",
         admin: null,
       },
@@ -64,7 +64,7 @@ void test("AntiSpamService strict mode does not kick super owner resolved from L
   await sendRepeatedSpam(service, socket, "111111@lid");
 
   assert.equal(socket.kickedUsers.length, 0);
-  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /dilindungi dari kick/);
+  assert.equal(socket.sentMessages.length, 0);
 });
 
 void test("AntiSpamService strict mode does not kick tenant owner", async () => {
@@ -77,7 +77,7 @@ void test("AntiSpamService strict mode does not kick tenant owner", async () => 
   await sendRepeatedSpam(service, socket, "6281@s.whatsapp.net");
 
   assert.equal(socket.kickedUsers.length, 0);
-  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /dilindungi dari kick/);
+  assert.equal(socket.sentMessages.length, 0);
 });
 
 void test("AntiSpamService strict mode does not kick tenant owner resolved from LID participant", async () => {
@@ -98,7 +98,7 @@ void test("AntiSpamService strict mode does not kick tenant owner resolved from 
   await sendRepeatedSpam(service, socket, "222222@lid");
 
   assert.equal(socket.kickedUsers.length, 0);
-  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /dilindungi dari kick/);
+  assert.equal(socket.sentMessages.length, 0);
 });
 
 void test("AntiSpamService strict mode does not kick group admin", async () => {

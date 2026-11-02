@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { GroupMemberProfile } from "@prisma/client";
 
+import { buildMemberProfile } from "./helpers/factories";
 import { GroupStatsService } from "../src/services/stats/groupStats.service";
 import { ActivityTrackerInterceptor } from "../src/bot/pipeline/interceptors/activityTracker.interceptor";
 import type { GroupMemberProfileRepository } from "../src/repositories/groupMemberProfile.repository";
@@ -39,8 +40,12 @@ class MockProfileRepository {
   }
 }
 
-function createFakeProfile(userJid: string, messageCount: number, lastActiveAt?: Date): GroupMemberProfile {
-  return {
+function createFakeProfile(
+  userJid: string,
+  messageCount: number,
+  lastActiveAt?: Date,
+): GroupMemberProfile {
+  return buildMemberProfile({
     id: `profile-${userJid}`,
     groupJid: "12345-67890@g.us",
     userJid,
@@ -49,13 +54,9 @@ function createFakeProfile(userJid: string, messageCount: number, lastActiveAt?:
     reservedLimit: 0,
     totalLimitsEarned: 10,
     experience: 50,
-    dailyStreak: 1,
-    lastDailyClaimAt: null,
     messageCount,
     lastActiveAt: lastActiveAt ?? new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+  });
 }
 
 function createFakeContext(overrides: Partial<CommandContext> = {}): CommandContext {
@@ -168,9 +169,7 @@ void test("GroupStatsService: getSilentMembers finds inactive members and exclud
   repo.mockActiveJids = ["user1@s.whatsapp.net"];
   // user2 is in DB but inactive (last active 10 days ago)
   const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
-  repo.mockInactiveProfiles = [
-    createFakeProfile("user2@s.whatsapp.net", 5, tenDaysAgo),
-  ];
+  repo.mockInactiveProfiles = [createFakeProfile("user2@s.whatsapp.net", 5, tenDaysAgo)];
   // user3 has never chatted (no profile in DB)
   // bot is bot@s.whatsapp.net (must be excluded)
 

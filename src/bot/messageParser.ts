@@ -85,7 +85,10 @@ export function parseCommandMessage(socket: WASocket, message: WAMessage): Comma
   };
 }
 
-export function parseRawMessageContext(socket: WASocket, message: WAMessage): CommandContext | null {
+export function parseRawMessageContext(
+  socket: WASocket,
+  message: WAMessage,
+): CommandContext | null {
   if (message.key.fromMe) {
     return null;
   }
@@ -173,16 +176,6 @@ function unwrapMessageContent(
     return unwrapMessageContent(ephemeralMessage);
   }
 
-  const viewOnceMessage = content.viewOnceMessage?.message;
-  if (viewOnceMessage) {
-    return unwrapMessageContent(viewOnceMessage);
-  }
-
-  const viewOnceMessageV2 = content.viewOnceMessageV2?.message;
-  if (viewOnceMessageV2) {
-    return unwrapMessageContent(viewOnceMessageV2);
-  }
-
   const documentWithCaptionMessage = content.documentWithCaptionMessage?.message;
   if (documentWithCaptionMessage) {
     return unwrapMessageContent(documentWithCaptionMessage);
@@ -197,11 +190,20 @@ function extractMessageText(content: WAMessageContent): string {
 
 function extractQuotedMessage(content: WAMessageContent): QuotedMessageContext | undefined {
   const contextInfo = getContextInfo(content);
-  if (!contextInfo) {
+  if (!contextInfo?.quotedMessage) {
     return undefined;
   }
 
-  const quotedContent = unwrapMessageContent(contextInfo.quotedMessage);
+  const rawQuoted = contextInfo.quotedMessage;
+  if (
+    rawQuoted.viewOnceMessage ||
+    rawQuoted.viewOnceMessageV2 ||
+    (rawQuoted as { viewOnceMessageV2Extension?: unknown }).viewOnceMessageV2Extension
+  ) {
+    return undefined;
+  }
+
+  const quotedContent = unwrapMessageContent(rawQuoted);
 
   return {
     id: contextInfo.stanzaId ?? undefined,

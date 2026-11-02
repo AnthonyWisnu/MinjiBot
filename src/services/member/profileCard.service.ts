@@ -1,7 +1,8 @@
 import sharp from "sharp";
-import fs from "node:fs";
-import path from "node:path";
 
+import { MAX_SAFE_IMAGE_PIXELS } from "../../utils/imageSafety";
+import { clampText, escapeXml } from "../../utils/xml";
+import { avatarService } from "../media/avatar.service";
 import type { ProfileView } from "./memberProfileView.service";
 import { rankProgress } from "./rank.service";
 
@@ -34,10 +35,11 @@ export class ProfileCardService {
     const { profile, rank } = view;
 
     const rankColor = RANK_COLORS[rank] ?? "#38BDF8";
-    const maskedPhone = maskPhoneNumber(phone);
-    const safeName = escapeXml(label.length > 20 ? `${label.slice(0, 18)}...` : label);
-    const safeRole = escapeXml(role.toUpperCase());
-    const safeRank = escapeXml(rank.toUpperCase());
+    const safeMaskedPhone = escapeXml(clampText(maskPhoneNumber(phone), 32, "..."));
+    const safeName = escapeXml(clampText(label, 20, "..."));
+    const safeRole = escapeXml(clampText(role.toUpperCase(), 24, "..."));
+    const safeRank = escapeXml(clampText(rank.toUpperCase(), 24, "..."));
+    const safeCreatedAtWib = escapeXml(clampText(view.createdAtWib, 40, "..."));
 
     // XP calculation
     let xpText = "";
@@ -50,7 +52,8 @@ export class ProfileCardService {
       const progress = rankProgress(profile.experience);
       if (progress.next !== null) {
         const span = progress.next - progress.threshold;
-        progressPct = span > 0 ? Math.min(100, Math.max(5, Math.round((progress.current / span) * 100))) : 100;
+        progressPct =
+          span > 0 ? Math.min(100, Math.max(5, Math.round((progress.current / span) * 100))) : 100;
         xpText = `${profile.experience.toLocaleString("id-ID")} / ${progress.next.toLocaleString("id-ID")} XP`;
       } else {
         progressPct = 100;
@@ -58,17 +61,24 @@ export class ProfileCardService {
       }
     }
 
+    const safeXpText = escapeXml(xpText);
     const progressBarWidth = Math.round((progressPct / 100) * 480);
 
     // Stats
-    const pointsStr = (isSuperOwner ? 999999 : profile.pointsBalance).toLocaleString("id-ID");
-    const limitStr = isSuperOwner ? "UNLIMITED" : String(profile.limitBalance);
-    const streakStr = `${String(isSuperOwner ? 999 : profile.currentStreak)} Hari`;
+    const pointsStr = escapeXml(
+      (isSuperOwner ? 999999 : profile.pointsBalance).toLocaleString("id-ID"),
+    );
+    const limitStr = escapeXml(isSuperOwner ? "UNLIMITED" : String(profile.limitBalance));
+    const streakStr = escapeXml(`${String(isSuperOwner ? 999 : profile.currentStreak)} Hari`);
     const winRate =
       profile.totalGamesPlayed > 0
         ? `${String(Math.round((profile.totalGamesWon / profile.totalGamesPlayed) * 100))}%`
         : "0%";
-    const winRateStr = isSuperOwner ? "100% (999/999)" : `${winRate} (${String(profile.totalGamesWon)}/${String(profile.totalGamesPlayed)})`;
+    const winRateStr = escapeXml(
+      isSuperOwner
+        ? "100% (999/999)"
+        : `${winRate} (${String(profile.totalGamesWon)}/${String(profile.totalGamesPlayed)})`,
+    );
 
     // 1. Prepare circular avatar
     const circularAvatar = await this.prepareCircularAvatar(input.avatarBuffer);
@@ -122,7 +132,7 @@ export class ProfileCardService {
     ${safeName}
   </text>
   <text x="250" y="110" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#94A3B8">
-    ${maskedPhone}
+    ${safeMaskedPhone}
   </text>
 
   <!-- Role Badge -->
@@ -136,7 +146,7 @@ export class ProfileCardService {
     PROGRES TIER
   </text>
   <text x="730" y="182" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="${rankColor}" text-anchor="end">
-    ${xpText}
+    ${safeXpText}
   </text>
 
   <!-- Progress Bar Track & Fill -->
@@ -185,16 +195,20 @@ export class ProfileCardService {
     MINJIBOT ECOSYSTEM • VERIFIED MEMBER CARD
   </text>
   <text x="730" y="420" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#64748B" text-anchor="end">
-    Bergabung: ${view.createdAtWib}
+    Bergabung: ${safeCreatedAtWib}
   </text>
 </svg>
 `;
 
     // 3. Render base card
-    const cardBaseBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
+    const cardBaseBuffer = await sharp(Buffer.from(svg), {
+      limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
+    })
+      .png()
+      .toBuffer();
 
     // 4. Composite avatar onto base card at (x=55, y=85)
-    return sharp(cardBaseBuffer)
+    return sharp(cardBaseBuffer, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
       .composite([
         {
           input: circularAvatar,
@@ -208,7 +222,7 @@ export class ProfileCardService {
 
   private async prepareCircularAvatar(avatarBuffer?: Buffer | null): Promise<Buffer> {
     let sourceBuffer = avatarBuffer;
-    sourceBuffer ??= this.getFallbackAvatar();
+    sourceBuffer ??= avatarService.getFallbackAvatar();
 
     const AVATAR_SIZE = 150;
     const circleMaskSvg = Buffer.from(
@@ -218,13 +232,11 @@ export class ProfileCardService {
     );
 
     try {
-      if (sourceBuffer) {
-        return await sharp(sourceBuffer)
-          .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: "cover" })
-          .composite([{ input: circleMaskSvg, blend: "dest-in" }])
-          .png()
-          .toBuffer();
-      }
+      return await sharp(sourceBuffer, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
+        .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: "cover" })
+        .composite([{ input: circleMaskSvg, blend: "dest-in" }])
+        .png()
+        .toBuffer();
     } catch {
       // ignore and fallback
     }
@@ -238,39 +250,8 @@ export class ProfileCardService {
       </svg>`,
     );
 
-    return sharp(fallbackSvg).png().toBuffer();
+    return sharp(fallbackSvg, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS }).png().toBuffer();
   }
-
-  private getFallbackAvatar(): Buffer | null {
-    const possiblePaths = [
-      path.resolve(process.cwd(), "assets/minji.png"),
-      path.resolve(process.cwd(), "src/Minji.png"),
-      path.resolve(__dirname, "../../assets/minji.png"),
-      path.resolve(__dirname, "../../../assets/minji.png"),
-      path.resolve(__dirname, "../../Minji.png"),
-    ];
-
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) {
-        try {
-          return fs.readFileSync(p);
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    return null;
-  }
-}
-
-function escapeXml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
 }
 
 function maskPhoneNumber(phone: string): string {

@@ -3,10 +3,18 @@ import assert from "node:assert/strict";
 
 import type { GroupMemberProfile } from "@prisma/client";
 
+import { buildMemberProfile } from "./helpers/factories";
 import { DailyClaimService } from "../src/services/member/dailyClaim.service";
-import { LimitPurchaseService, LIMIT_PRICE_POINTS } from "../src/services/member/limitPurchase.service";
+import {
+  LimitPurchaseService,
+  LIMIT_PRICE_POINTS,
+} from "../src/services/member/limitPurchase.service";
 import { toWibDateKey, toYesterdayWibDateKey, isConsecutiveWibDay } from "../src/utils/wibDate";
-import { DuplicateOperationError, InsufficientPointsError, InvalidAmountError } from "../src/types/memberEconomy";
+import {
+  DuplicateOperationError,
+  InsufficientPointsError,
+  InvalidAmountError,
+} from "../src/types/memberEconomy";
 
 // ---- WIB date helper tests ----
 
@@ -88,7 +96,11 @@ void test("DailyClaimService.claimDaily non-bonus branch adds 0 limit", async ()
 });
 
 void test("DailyClaimService.claimDaily first claim sets streak to 1", async () => {
-  const service = makeDailyService({ randomPoints: 100, randomBonus: false, lastDailyClaimAt: null });
+  const service = makeDailyService({
+    randomPoints: 100,
+    randomBonus: false,
+    lastDailyClaimAt: null,
+  });
   const result = await service.claimDaily("g@g.us", "u@s.net", new Date("2026-09-03T10:00:00Z"));
   assert.equal(result.currentStreak, 1);
 });
@@ -137,7 +149,11 @@ void test("DailyClaimService.claimDaily throws DuplicateOperationError if alread
 
 void test("LimitPurchaseService.buyLimit: 1 limit costs 1000 points", async () => {
   const calls: unknown[] = [];
-  const service = makePurchaseService({ pointsBalance: 5000, updateManyCount: 1, updateManyCalls: calls });
+  const service = makePurchaseService({
+    pointsBalance: 5000,
+    updateManyCount: 1,
+    updateManyCalls: calls,
+  });
   await service.buyLimit("g@g.us", "u@s.net", 1);
   const arg = calls[0] as { where: { pointsBalance: { gte: number } } };
   assert.equal(arg.where.pointsBalance.gte, LIMIT_PRICE_POINTS);
@@ -145,7 +161,11 @@ void test("LimitPurchaseService.buyLimit: 1 limit costs 1000 points", async () =
 
 void test("LimitPurchaseService.buyLimit: 3 limits costs 3000 points", async () => {
   const calls: unknown[] = [];
-  const service = makePurchaseService({ pointsBalance: 5000, updateManyCount: 1, updateManyCalls: calls });
+  const service = makePurchaseService({
+    pointsBalance: 5000,
+    updateManyCount: 1,
+    updateManyCalls: calls,
+  });
   await service.buyLimit("g@g.us", "u@s.net", 3);
   const arg = calls[0] as { where: { pointsBalance: { gte: number } } };
   assert.equal(arg.where.pointsBalance.gte, 3 * LIMIT_PRICE_POINTS);
@@ -153,26 +173,17 @@ void test("LimitPurchaseService.buyLimit: 3 limits costs 3000 points", async () 
 
 void test("LimitPurchaseService.buyLimit throws InsufficientPointsError when not enough points", async () => {
   const service = makePurchaseService({ pointsBalance: 500, updateManyCount: 0 });
-  await assert.rejects(
-    () => service.buyLimit("g@g.us", "u@s.net", 1),
-    InsufficientPointsError,
-  );
+  await assert.rejects(() => service.buyLimit("g@g.us", "u@s.net", 1), InsufficientPointsError);
 });
 
 void test("LimitPurchaseService.buyLimit throws InvalidAmountError for amount 0", async () => {
   const service = makePurchaseService({ pointsBalance: 5000, updateManyCount: 1 });
-  await assert.rejects(
-    () => service.buyLimit("g@g.us", "u@s.net", 0),
-    InvalidAmountError,
-  );
+  await assert.rejects(() => service.buyLimit("g@g.us", "u@s.net", 0), InvalidAmountError);
 });
 
 void test("LimitPurchaseService.buyLimit throws InvalidAmountError for negative amount", async () => {
   const service = makePurchaseService({ pointsBalance: 5000, updateManyCount: 1 });
-  await assert.rejects(
-    () => service.buyLimit("g@g.us", "u@s.net", -1),
-    InvalidAmountError,
-  );
+  await assert.rejects(() => service.buyLimit("g@g.us", "u@s.net", -1), InvalidAmountError);
 });
 
 void test("LimitPurchaseService.buyLimit returns correct result fields", async () => {
@@ -185,7 +196,7 @@ void test("LimitPurchaseService.buyLimit returns correct result fields", async (
 // ---- Helpers ----
 
 function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberProfile {
-  return {
+  return buildMemberProfile({
     id: "profile-1",
     groupJid: "g@g.us",
     userJid: "u@s.net",
@@ -203,7 +214,7 @@ function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberPr
     createdAt: new Date("2026-09-01T00:00:00Z"),
     updatedAt: new Date("2026-09-01T00:00:00Z"),
     ...overrides,
-  };
+  });
 }
 
 function makeDailyService(opts: {
@@ -228,7 +239,9 @@ function makeDailyService(opts: {
     },
     creditPoints: (...args: unknown[]): Promise<GroupMemberProfile> => {
       void args;
-      return Promise.resolve(makeProfile({ pointsBalance: profile.pointsBalance + opts.randomPoints }));
+      return Promise.resolve(
+        makeProfile({ pointsBalance: profile.pointsBalance + opts.randomPoints }),
+      );
     },
     creditXp: (...args: unknown[]): Promise<GroupMemberProfile> => {
       void args;
@@ -252,15 +265,29 @@ function makeDailyService(opts: {
   };
 
   const random = {
-    intBetween: (min: number, max: number) => { void [min, max]; return opts.randomPoints; },
-    chance: (p: number) => { void p; return opts.randomBonus; },
+    intBetween: (min: number, max: number) => {
+      void [min, max];
+      return opts.randomPoints;
+    },
+    chance: (p: number) => {
+      void p;
+      return opts.randomBonus;
+    },
   };
 
-  return new DailyClaimService(
-    economyService,
-    profileRepo,
-    random,
-  );
+  const mockDb = {
+    $transaction: <T>(fn: (tx: any) => Promise<T>) =>
+      fn({
+        groupMemberProfile: {
+          updateMany: () => Promise.resolve({ count: 1 }),
+        },
+        groupMemberTransaction: {
+          createMany: () => Promise.resolve({ count: 2 }),
+        },
+      }),
+  };
+
+  return new DailyClaimService(economyService, profileRepo, random, mockDb);
 }
 
 function makePurchaseService(opts: {
@@ -309,10 +336,5 @@ function makePurchaseService(opts: {
     $transaction: <T>(fn: (tx: typeof mockTx) => Promise<T>) => fn(mockTx),
   };
 
-  return new LimitPurchaseService(
-    profileRepo,
-    txRepo,
-    db,
-  );
+  return new LimitPurchaseService(profileRepo, txRepo, db);
 }
-

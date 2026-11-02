@@ -4,12 +4,9 @@ import assert from "node:assert/strict";
 import type { GroupMemberProfile } from "@prisma/client";
 import { MemberTransactionAsset, MemberTransactionType } from "@prisma/client";
 
+import { buildMemberProfile } from "./helpers/factories";
 import { MemberEconomyService } from "../src/services/member/memberEconomy.service";
-import {
-  resolveRank,
-  nextRankThreshold,
-  rankProgress,
-} from "../src/services/member/rank.service";
+import { resolveRank, nextRankThreshold, rankProgress } from "../src/services/member/rank.service";
 import {
   DuplicateOperationError,
   InvalidAmountError,
@@ -89,7 +86,13 @@ void test("MemberEconomyService.creditPoints throws InvalidAmountError for amoun
   const service = makeService({ profileResult: makeProfile() });
 
   await assert.rejects(
-    () => service.creditPoints({ groupJid: "g@g.us", userJid: "u@s.net", amount: 0, type: "GAME_REWARD" }),
+    () =>
+      service.creditPoints({
+        groupJid: "g@g.us",
+        userJid: "u@s.net",
+        amount: 0,
+        type: "GAME_REWARD",
+      }),
     InvalidAmountError,
   );
 });
@@ -98,7 +101,13 @@ void test("MemberEconomyService.creditPoints throws InvalidAmountError for negat
   const service = makeService({ profileResult: makeProfile() });
 
   await assert.rejects(
-    () => service.creditPoints({ groupJid: "g@g.us", userJid: "u@s.net", amount: -100, type: "GAME_REWARD" }),
+    () =>
+      service.creditPoints({
+        groupJid: "g@g.us",
+        userJid: "u@s.net",
+        amount: -100,
+        type: "GAME_REWARD",
+      }),
     InvalidAmountError,
   );
 });
@@ -107,7 +116,8 @@ void test("MemberEconomyService.debitPoints throws InvalidAmountError for amount
   const service = makeService({ profileResult: makeProfile() });
 
   await assert.rejects(
-    () => service.debitPoints({ groupJid: "g@g.us", userJid: "u@s.net", amount: 0, type: "GIFT_SENT" }),
+    () =>
+      service.debitPoints({ groupJid: "g@g.us", userJid: "u@s.net", amount: 0, type: "GIFT_SENT" }),
     InvalidAmountError,
   );
 });
@@ -148,7 +158,12 @@ void test("MemberEconomyService.creditPoints creates exactly one ledger entry wi
   const updated = makeProfile({ pointsBalance: 100 });
   const service = makeService({ profileResult: profile, updateResult: updated, createCalls });
 
-  await service.creditPoints({ groupJid: "g@g.us", userJid: "u@s.net", amount: 100, type: "DAILY_REWARD" });
+  await service.creditPoints({
+    groupJid: "g@g.us",
+    userJid: "u@s.net",
+    amount: 100,
+    type: "DAILY_REWARD",
+  });
 
   assert.equal(createCalls.length, 1);
   const ledger = createCalls[0] as {
@@ -178,7 +193,12 @@ void test("MemberEconomyService.debitPoints uses updateMany with pointsBalance p
     updateManyCalls,
   });
 
-  await service.debitPoints({ groupJid: "g@g.us", userJid: "u@s.net", amount: 200, type: "GIFT_SENT" });
+  await service.debitPoints({
+    groupJid: "g@g.us",
+    userJid: "u@s.net",
+    amount: 200,
+    type: "GIFT_SENT",
+  });
 
   assert.equal(updateManyCalls.length, 1);
   const arg = updateManyCalls[0] as {
@@ -194,7 +214,13 @@ void test("MemberEconomyService.debitPoints throws InsufficientPointsError when 
   const service = makeService({ profileResult: profile, updateManyCount: 0 });
 
   await assert.rejects(
-    () => service.debitPoints({ groupJid: "g@g.us", userJid: "u@s.net", amount: 200, type: "GIFT_SENT" }),
+    () =>
+      service.debitPoints({
+        groupJid: "g@g.us",
+        userJid: "u@s.net",
+        amount: 200,
+        type: "GIFT_SENT",
+      }),
     InsufficientPointsError,
   );
 });
@@ -205,7 +231,12 @@ void test("MemberEconomyService.debitPoints creates no ledger entry when insuffi
   const service = makeService({ profileResult: profile, updateManyCount: 0, createCalls });
 
   try {
-    await service.debitPoints({ groupJid: "g@g.us", userJid: "u@s.net", amount: 200, type: "GIFT_SENT" });
+    await service.debitPoints({
+      groupJid: "g@g.us",
+      userJid: "u@s.net",
+      amount: 200,
+      type: "GIFT_SENT",
+    });
   } catch {
     // expected
   }
@@ -219,13 +250,14 @@ void test("MemberEconomyService.creditPoints throws DuplicateOperationError for 
   const service = makeService({ profileResult: makeProfile(), idempotencyResult: existingTx });
 
   await assert.rejects(
-    () => service.creditPoints({
-      groupJid: "g@g.us",
-      userJid: "u@s.net",
-      amount: 100,
-      type: "DAILY_REWARD",
-      idempotencyKey: "daily:g@g.us:u@s.net:2026-09-03",
-    }),
+    () =>
+      service.creditPoints({
+        groupJid: "g@g.us",
+        userJid: "u@s.net",
+        amount: 100,
+        type: "DAILY_REWARD",
+        idempotencyKey: "daily:g@g.us:u@s.net:2026-09-03",
+      }),
     DuplicateOperationError,
   );
 });
@@ -236,7 +268,12 @@ void test("MemberEconomyService.reserveLimit uses updateMany with limitBalance p
   const updateManyCalls: unknown[] = [];
   const profile = makeProfile({ limitBalance: 5, reservedLimit: 0 });
   const updated = makeProfile({ limitBalance: 4, reservedLimit: 1 });
-  const service = makeService({ profileResult: profile, updateManyCount: 1, updateResult: updated, updateManyCalls });
+  const service = makeService({
+    profileResult: profile,
+    updateManyCount: 1,
+    updateResult: updated,
+    updateManyCalls,
+  });
 
   await service.reserveLimit({
     groupJid: "g@g.us",
@@ -257,7 +294,14 @@ void test("MemberEconomyService.reserveLimit throws InsufficientLimitError when 
   const service = makeService({ profileResult: profile, updateManyCount: 0 });
 
   await assert.rejects(
-    () => service.reserveLimit({ groupJid: "g@g.us", userJid: "u@s.net", amount: 1, feature: "TIKTOK_DOWNLOAD", correlationId: "c" }),
+    () =>
+      service.reserveLimit({
+        groupJid: "g@g.us",
+        userJid: "u@s.net",
+        amount: 1,
+        feature: "TIKTOK_DOWNLOAD",
+        correlationId: "c",
+      }),
     InsufficientLimitError,
   );
 });
@@ -269,7 +313,14 @@ void test("MemberEconomyService.consumeLimit throws InsufficientReservedLimitErr
   const service = makeService({ profileResult: profile, updateManyCount: 0 });
 
   await assert.rejects(
-    () => service.consumeLimit({ groupJid: "g@g.us", userJid: "u@s.net", amount: 1, feature: "TIKTOK_DOWNLOAD", correlationId: "c" }),
+    () =>
+      service.consumeLimit({
+        groupJid: "g@g.us",
+        userJid: "u@s.net",
+        amount: 1,
+        feature: "TIKTOK_DOWNLOAD",
+        correlationId: "c",
+      }),
     InsufficientReservedLimitError,
   );
 });
@@ -281,7 +332,14 @@ void test("MemberEconomyService.refundLimit throws InsufficientReservedLimitErro
   const service = makeService({ profileResult: profile, updateManyCount: 0 });
 
   await assert.rejects(
-    () => service.refundLimit({ groupJid: "g@g.us", userJid: "u@s.net", amount: 1, feature: "TIKTOK_DOWNLOAD", correlationId: "c" }),
+    () =>
+      service.refundLimit({
+        groupJid: "g@g.us",
+        userJid: "u@s.net",
+        amount: 1,
+        feature: "TIKTOK_DOWNLOAD",
+        correlationId: "c",
+      }),
     InsufficientReservedLimitError,
   );
 });
@@ -294,7 +352,12 @@ void test("MemberEconomyService.creditXp calls tx.update with experience increme
   const updated = makeProfile({ experience: 50 });
   const service = makeService({ profileResult: profile, updateResult: updated, updateCalls });
 
-  await service.creditXp({ groupJid: "g@g.us", userJid: "u@s.net", amount: 50, type: "DAILY_REWARD" });
+  await service.creditXp({
+    groupJid: "g@g.us",
+    userJid: "u@s.net",
+    amount: 50,
+    type: "DAILY_REWARD",
+  });
 
   const arg = updateCalls[0] as { data: { experience: { increment: number } } };
   assert.equal(arg.data.experience.increment, 50);
@@ -310,7 +373,9 @@ void test("MemberEconomyService.recordGameResult increments totalGamesPlayed and
 
   await service.recordGameResult({ groupJid: "g@g.us", userJid: "u@s.net", won: true });
 
-  const arg = updateCalls[0] as { data: { totalGamesPlayed: { increment: number }; totalGamesWon: { increment: number } } };
+  const arg = updateCalls[0] as {
+    data: { totalGamesPlayed: { increment: number }; totalGamesWon: { increment: number } };
+  };
   assert.equal(arg.data.totalGamesPlayed.increment, 1);
   assert.equal(arg.data.totalGamesWon.increment, 1);
 });
@@ -330,7 +395,7 @@ void test("MemberEconomyService.recordGameResult does not increment totalGamesWo
 // ---- Helpers ----
 
 function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberProfile {
-  return {
+  return buildMemberProfile({
     id: "profile-1",
     groupJid: "g@g.us",
     userJid: "u@s.net",
@@ -348,7 +413,7 @@ function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberPr
     createdAt: new Date("2026-09-01T00:00:00Z"),
     updatedAt: new Date("2026-09-01T00:00:00Z"),
     ...overrides,
-  };
+  });
 }
 
 function makeService(opts: {
@@ -365,9 +430,7 @@ function makeService(opts: {
   const updated = opts.updateResult ?? defaultProfile;
 
   const profileRepo = {
-    findOrCreate: (
-      ...args: [string, string, unknown?]
-    ): Promise<GroupMemberProfile> => {
+    findOrCreate: (...args: [string, string, unknown?]): Promise<GroupMemberProfile> => {
       void args;
       return Promise.resolve(profile);
     },

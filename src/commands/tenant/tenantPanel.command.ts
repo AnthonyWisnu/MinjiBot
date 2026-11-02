@@ -4,7 +4,7 @@ import type { CommandContext, CommandDefinition } from "../../types/command";
 export const tenantPanelCommands: CommandDefinition[] = [
   {
     name: "panel",
-    aliases: ["tenantstatus", "infosewa"],
+    aliases: ["tenantstatus", "infosewa", "status"],
     execute: handlePanel,
   },
 ];

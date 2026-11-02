@@ -24,6 +24,7 @@ export const superOwnerTenantCommands: CommandDefinition[] = [
   },
   {
     name: "tenantinfo",
+    aliases: ["tenantdetail"],
     execute: handleTenantInfo,
   },
   {

@@ -64,8 +64,9 @@ export const SLOT_CONFIG = {
 } as const;
 
 export function getTebakangkaReward(attempts: number): { points: number; xp: number } {
-  if (attempts <= 3) return { points: TEBAKANGKA_REWARD.BAND_1_3.POINTS, xp: TEBAKANGKA_REWARD.BAND_1_3.XP };
-  if (attempts <= 7) return { points: TEBAKANGKA_REWARD.BAND_4_7.POINTS, xp: TEBAKANGKA_REWARD.BAND_4_7.XP };
+  if (attempts <= 3)
+    return { points: TEBAKANGKA_REWARD.BAND_1_3.POINTS, xp: TEBAKANGKA_REWARD.BAND_1_3.XP };
+  if (attempts <= 7)
+    return { points: TEBAKANGKA_REWARD.BAND_4_7.POINTS, xp: TEBAKANGKA_REWARD.BAND_4_7.XP };
   return { points: TEBAKANGKA_REWARD.BAND_8_PLUS.POINTS, xp: TEBAKANGKA_REWARD.BAND_8_PLUS.XP };
 }
-

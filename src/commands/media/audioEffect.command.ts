@@ -1,12 +1,11 @@
 import { downloadMediaMessage } from "@whiskeysockets/baileys";
 
 import { logger } from "../../config/logger";
-import {
-  audioEffectService,
-  type AudioEffectType,
-} from "../../services/media/audioEffect.service";
+import { audioEffectService, type AudioEffectType } from "../../services/media/audioEffect.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import { isMediaCommandAllowed } from "../../utils/dmAccess";
 import { resolveMediaTarget, type MediaTarget } from "../../utils/mediaTarget";
+import { formatUserSafeError } from "../../utils/userSafeError";
 
 const BYTES_PER_MB = 1024 * 1024;
 const MAX_AUDIO_INPUT_MB = 30;
@@ -35,14 +34,11 @@ export const audioEffectCommands: CommandDefinition[] = [
   },
 ];
 
-async function handleAudioEffect(
-  context: CommandContext,
-  effect: AudioEffectType,
-): Promise<void> {
+async function handleAudioEffect(context: CommandContext, effect: AudioEffectType): Promise<void> {
   try {
-    if (!isMediaCommandAllowed(context)) {
+    if (!(await isMediaCommandAllowed(context))) {
       await context.reply(
-        "Fitur ini hanya tersedia di grup tenant aktif atau private chat Tenant Owner.",
+        "Fitur ini hanya tersedia di grup tenant aktif atau private chat pengguna tenant aktif.",
       );
       return;
     }
@@ -82,16 +78,11 @@ async function handleAudioEffect(
     );
   } catch (error: unknown) {
     logger.error({ error, effect, chatJid: context.chatJid }, "Gagal memproses audio effect");
-    const message =
-      error instanceof Error ? error.message : "Gagal memproses audio. Pastikan file valid.";
-    await context.reply(message);
+    await context.reply(formatUserSafeError(error, "Gagal memproses audio. Pastikan file valid."));
   }
 }
 
-async function downloadTargetMedia(
-  context: CommandContext,
-  target: MediaTarget,
-): Promise<Buffer> {
+async function downloadTargetMedia(context: CommandContext, target: MediaTarget): Promise<Buffer> {
   const buffer = await downloadMediaMessage(
     target.message,
     "buffer",
@@ -103,8 +94,4 @@ async function downloadTargetMedia(
   );
 
   return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
-}
-
-function isMediaCommandAllowed(context: CommandContext): boolean {
-  return context.isGroup || context.role === "TENANT_OWNER" || context.role === "SUPER_OWNER";
 }

@@ -60,11 +60,7 @@ export class LimitPurchaseService {
     private readonly db: PurchaseDb = prisma,
   ) {}
 
-  async buyLimit(
-    groupJid: string,
-    userJid: string,
-    amount: number,
-  ): Promise<LimitPurchaseResult> {
+  async buyLimit(groupJid: string, userJid: string, amount: number): Promise<LimitPurchaseResult> {
     if (!Number.isInteger(amount) || amount <= 0) {
       throw new InvalidAmountError("Jumlah limit harus bilangan bulat positif");
     }

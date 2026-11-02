@@ -1,11 +1,13 @@
 import ffmpegStatic from "ffmpeg-static";
 import { existsSync } from "node:fs";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
-import { spawn } from "node:child_process";
 
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
+import { AppUserError } from "../../errors/appUserError";
+import { mediaQueueService } from "../../utils/boundedQueue";
+import { runExternalProcess } from "../../utils/processRunner";
 import { createTempDir, removeTempDir } from "../../utils/tempFile";
 
 export interface PreparedPlayAudio {
@@ -16,25 +18,35 @@ export interface PreparedPlayAudio {
 
 export class PlayAudioService {
   async prepareMp3Audio(videoUrl: string): Promise<PreparedPlayAudio> {
-    const tempDir = await createTempDir("play");
-    const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
-    const outputPath = path.join(tempDir, "audio.mp3");
+    return mediaQueueService.heavySubprocessQueue.run(async () => {
+      const tempDir = await createTempDir("play");
+      const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
+      const outputPath = path.join(tempDir, "audio.mp3");
 
-    try {
-      await runYtDlp(videoUrl, rawOutputTemplate);
-      const inputPath = await findDownloadedFile(tempDir);
-      const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
-      await runFfmpeg(inputPath, outputPath, ffmpegPath);
+      try {
+        await runYtDlp(videoUrl, rawOutputTemplate);
+        const inputPath = await findDownloadedFile(tempDir);
+        const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
+        await runFfmpeg(inputPath, outputPath, ffmpegPath);
 
-      return {
-        buffer: await readFile(outputPath),
-        mimetype: "audio/mpeg",
-        tempDir,
-      };
-    } catch (error: unknown) {
-      await removeTempDir(tempDir);
-      throw error;
-    }
+        const fileStat = await stat(outputPath);
+        const maxBytes = env.MAX_DOWNLOAD_FILE_MB * 1024 * 1024;
+        if (fileStat.size > maxBytes) {
+          throw new AppUserError(
+            `Ukuran audio (${(fileStat.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal ${String(env.MAX_DOWNLOAD_FILE_MB)} MB.`,
+          );
+        }
+
+        return {
+          buffer: await readFile(outputPath),
+          mimetype: "audio/mpeg",
+          tempDir,
+        };
+      } catch (error: unknown) {
+        await removeTempDir(tempDir);
+        throw error;
+      }
+    });
   }
 
   async cleanup(tempDir: string): Promise<void> {
@@ -46,67 +58,61 @@ export class PlayAudioService {
   }
 }
 
-const DEFAULT_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
-
-function runYtDlp(videoUrl: string, outputTemplate: string): Promise<void> {
-  const cookiesPath = env.YOUTUBE_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
-  const args = [
-    "-f",
-    "bestaudio/best",
-    "--no-playlist",
-    "--no-warnings",
-    "--user-agent",
-    DEFAULT_USER_AGENT,
-    "-o",
-    outputTemplate,
-  ];
-
-  if (cookiesPath && existsSync(cookiesPath)) {
-    args.push("--cookies", cookiesPath);
+async function runYtDlp(url: string, outputTemplate: string): Promise<void> {
+  const binary = env.DOWNLOADER_BIN;
+  if (!binary) {
+    throw new Error("YT_DLP_PATH belum dikonfigurasi.");
   }
 
-  args.push("--", videoUrl);
+  const args: string[] = [
+    "--no-playlist",
+    "--extract-audio",
+    "--audio-format",
+    "mp3",
+    "--audio-quality",
+    "0",
+    "--max-filesize",
+    `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
+    "-o",
+    outputTemplate,
+    url,
+  ];
 
-  return runProcess(
-    env.DOWNLOADER_BIN,
+  await runProcess(
+    binary,
     args,
-    "Download audio melewati batas waktu.",
-    "Download audio gagal dijalankan.",
+    "Download audio YouTube melebihi batas waktu.",
+    "yt-dlp tidak dapat digunakan",
   );
 }
 
-function runFfmpeg(inputPath: string, outputPath: string, ffmpegPath: string): Promise<void> {
-  return runProcess(
+async function runFfmpeg(inputPath: string, outputPath: string, ffmpegPath: string): Promise<void> {
+  const args: string[] = [
+    "-y",
+    "-i",
+    inputPath,
+    "-vn",
+    "-c:a",
+    "libmp3lame",
+    "-b:a",
+    "192k",
+    outputPath,
+  ];
+
+  await runProcess(
     ffmpegPath,
-    [
-      "-y",
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-i",
-      inputPath,
-      "-vn",
-      "-c:a",
-      "libmp3lame",
-      "-b:a",
-      "192k",
-      outputPath,
-    ],
-    "Convert audio melewati batas waktu.",
-    "Convert audio gagal dijalankan.",
+    args,
+    "Konversi audio melebihi batas waktu.",
+    "FFmpeg tidak dapat digunakan",
   );
 }
 
 async function findDownloadedFile(tempDir: string): Promise<string> {
   const entries = await readdir(tempDir);
-  const downloadedFile = entries.find(
-    (entry) =>
-      entry.startsWith("raw.") &&
-      !entry.endsWith(".part") &&
-      !entry.endsWith(".ytdl") &&
-      !entry.endsWith(".json"),
-  );
+  const downloadedFile = entries.find((file) => {
+    const fullPath = path.join(tempDir, file);
+    return existsSync(fullPath) && file !== "audio.mp3";
+  });
 
   if (!downloadedFile) {
     throw new Error("File hasil download audio tidak ditemukan.");
@@ -115,45 +121,24 @@ async function findDownloadedFile(tempDir: string): Promise<string> {
   return path.join(tempDir, downloadedFile);
 }
 
-function runProcess(
+async function runProcess(
   command: string,
   args: string[],
   timeoutMessage: string,
   unavailableMessage: string,
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      windowsHide: true,
-      env: {
-        ...process.env,
-        PATH: `/usr/local/bin:/usr/bin:${process.env.PATH ?? ""}`,
-      },
+  try {
+    await runExternalProcess(command, args, {
+      timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
+      extraPathDirs: ["/usr/local/bin", "/usr/bin"],
     });
-    let stderr = "";
-    const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new Error(timeoutMessage));
-    }, env.DOWNLOADER_TIMEOUT_MS);
-
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf8");
-    });
-
-    child.on("error", (error) => {
-      clearTimeout(timeout);
-      reject(new Error(`${unavailableMessage}: ${error.message}`));
-    });
-
-    child.on("close", (code) => {
-      clearTimeout(timeout);
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(new Error(`${unavailableMessage}: ${stderr.slice(-500)}`));
-    });
-  });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes("melewati batas waktu")) {
+      throw new Error(timeoutMessage);
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`${unavailableMessage}: ${msg}`);
+  }
 }
 
 export const playAudioService = new PlayAudioService();

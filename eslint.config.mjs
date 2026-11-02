@@ -10,8 +10,11 @@ export default [
       "node_modules/**",
       "coverage/**",
       "sessions/**",
+      "sessions-test/**",
       "tmp/**",
+      "tmp-test/**",
       "eslint.config.mjs",
+      "prisma/migrations/**",
     ],
   },
   js.configs.recommended,
@@ -32,6 +35,14 @@ export default [
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
     },
   },
 ];

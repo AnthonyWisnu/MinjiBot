@@ -11,23 +11,33 @@ export class GroupMemberProfileRepository {
 
   // Lazy-create: dipanggil saat member pertama kali berinteraksi di grup.
   // Tidak mereset saldo jika profil sudah ada.
-  findOrCreate(
+  async findOrCreate(
     groupJid: string,
     userJid: string,
     tx?: PrismaTransactionClient,
   ): Promise<GroupMemberProfile> {
     const client = tx ?? this.client;
 
-    return client.groupMemberProfile.upsert({
-      where: { groupJid_userJid: { groupJid, userJid } },
-      create: {
-        groupJid,
-        userJid,
-        limitBalance: INITIAL_LIMIT_BALANCE,
-        totalLimitsEarned: INITIAL_LIMIT_BALANCE,
-      },
-      update: {},
-    });
+    try {
+      return await client.groupMemberProfile.upsert({
+        where: { groupJid_userJid: { groupJid, userJid } },
+        create: {
+          groupJid,
+          userJid,
+          limitBalance: INITIAL_LIMIT_BALANCE,
+          totalLimitsEarned: INITIAL_LIMIT_BALANCE,
+        },
+        update: {},
+      });
+    } catch (error: unknown) {
+      const maybePrismaError = error as { code?: string };
+      if (maybePrismaError.code === "P2002") {
+        return client.groupMemberProfile.findUniqueOrThrow({
+          where: { groupJid_userJid: { groupJid, userJid } },
+        });
+      }
+      throw error;
+    }
   }
 
   // Read-only lookup: tidak membuat profil baru jika belum ada.
@@ -52,7 +62,7 @@ export class GroupMemberProfileRepository {
         tenantGroup: {
           status: TenantStatus.ACTIVE,
           isBlocked: false,
-          expiresAt: { gt: now },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
         },
       },
       orderBy: { limitBalance: "desc" },
@@ -135,21 +145,46 @@ export class GroupMemberProfileRepository {
 
   // Catat aktivitas pesan member (non-blocking)
   async recordActivity(groupJid: string, userJid: string): Promise<void> {
-    await this.client.groupMemberProfile.upsert({
-      where: { groupJid_userJid: { groupJid, userJid } },
-      create: {
-        groupJid,
-        userJid,
-        limitBalance: INITIAL_LIMIT_BALANCE,
-        totalLimitsEarned: INITIAL_LIMIT_BALANCE,
-        messageCount: 1,
-        lastActiveAt: new Date(),
-      },
-      update: {
-        messageCount: { increment: 1 },
-        lastActiveAt: new Date(),
-      },
-    });
+    await this.recordActivityBatch(groupJid, userJid, 1);
+  }
+
+  // Batch recording untuk ActivityBufferService (mengurangi beban SQL)
+  async recordActivityBatch(
+    groupJid: string,
+    userJid: string,
+    count: number,
+    lastActiveAt: Date = new Date(),
+  ): Promise<void> {
+    try {
+      await this.client.groupMemberProfile.upsert({
+        where: { groupJid_userJid: { groupJid, userJid } },
+        create: {
+          groupJid,
+          userJid,
+          limitBalance: INITIAL_LIMIT_BALANCE,
+          totalLimitsEarned: INITIAL_LIMIT_BALANCE,
+          messageCount: count,
+          lastActiveAt,
+        },
+        update: {
+          messageCount: { increment: count },
+          lastActiveAt,
+        },
+      });
+    } catch (error: unknown) {
+      const maybePrismaError = error as { code?: string };
+      if (maybePrismaError.code === "P2002") {
+        await this.client.groupMemberProfile.update({
+          where: { groupJid_userJid: { groupJid, userJid } },
+          data: {
+            messageCount: { increment: count },
+            lastActiveAt,
+          },
+        });
+      } else {
+        throw error;
+      }
+    }
   }
 
   // Top aktif chat - untuk .topaktif / .topchat
@@ -186,10 +221,7 @@ export class GroupMemberProfileRepository {
     return this.client.groupMemberProfile.findMany({
       where: {
         groupJid,
-        OR: [
-          { messageCount: 0 },
-          { lastActiveAt: { lt: since } },
-        ],
+        OR: [{ messageCount: 0 }, { lastActiveAt: { lt: since } }],
       },
       orderBy: { lastActiveAt: "asc" },
     });
@@ -209,3 +241,5 @@ export class GroupMemberProfileRepository {
     return active.map((profile) => profile.userJid);
   }
 }
+
+export const groupMemberProfileRepository = new GroupMemberProfileRepository();

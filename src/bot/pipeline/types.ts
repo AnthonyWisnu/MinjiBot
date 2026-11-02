@@ -1,10 +1,12 @@
 import type { WAMessage, WASocket } from "@whiskeysockets/baileys";
+import type { TenantRuntimeSnapshot } from "../../services/tenant/tenantRuntimeCache.service";
 
 export interface IncomingPipelineContext {
   readonly socket: WASocket;
   readonly message: WAMessage;
   readonly remoteJid?: string | null;
   readonly isGroup: boolean;
+  tenantSnapshot?: TenantRuntimeSnapshot | null;
 }
 
 export interface InterceptorResult {

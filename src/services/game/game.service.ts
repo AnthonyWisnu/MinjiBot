@@ -4,7 +4,10 @@ import path from "node:path";
 
 import type { CommandContext } from "../../types/command";
 import { type GameRewardService, gameRewardService } from "./gameReward.service";
+import { TICTACTOE_REWARD } from "./gameReward.constants";
 import { generateCorrelationId } from "../member/memberEconomy.service";
+import { identityResolverService } from "../identity/identityResolver.service";
+import { getBotCanonicalJids, normalizeUserJid } from "../../utils/jid";
 
 type QuizType = "kuis" | "family100" | "tebakkata" | "tebakemoji" | "tebakangka" | "mtk";
 type TicTacToeCell = "X" | "O" | null;
@@ -33,8 +36,8 @@ interface QuizSession {
 
 interface TicTacToeSession {
   groupJid: string;
-  player1Jid: string;   // X -- who sent the challenge
-  player2Jid: string;   // O -- who was challenged
+  player1Jid: string; // X -- who sent the challenge
+  player2Jid: string; // O -- who was challenged
   currentTurn: "X" | "O";
   board: TicTacToeCell[];
   createdAt: number;
@@ -77,8 +80,14 @@ const FALLBACK_QUIZ: Record<Exclude<QuizType, "tebakangka" | "mtk">, Question[]>
     { prompt: "Planet apa yang paling dekat dengan matahari?", answers: ["merkurius", "mercury"] },
   ],
   family100: [
-    { prompt: "Sebutkan sesuatu yang biasanya ada di dapur.", answers: ["kompor", "panci", "wajan", "pisau", "sendok", "piring"] },
-    { prompt: "Sebutkan benda yang sering dibawa ke sekolah.", answers: ["tas", "buku", "pensil", "pulpen", "penghapus", "penggaris"] },
+    {
+      prompt: "Sebutkan sesuatu yang biasanya ada di dapur.",
+      answers: ["kompor", "panci", "wajan", "pisau", "sendok", "piring"],
+    },
+    {
+      prompt: "Sebutkan benda yang sering dibawa ke sekolah.",
+      answers: ["tas", "buku", "pensil", "pulpen", "penghapus", "penggaris"],
+    },
   ],
   tebakkata: [
     { prompt: "Aku punya kunci tapi tidak punya pintu. Apakah aku?", answers: ["keyboard"] },
@@ -115,6 +124,7 @@ const MOVE_TTL_MS = 5 * 60 * 1000;
 export class GameService {
   private readonly quizSessions = new Map<string, QuizSession>();
   private readonly ticTacToeSessions = new Map<string, TicTacToeSession>();
+  private readonly inFlightResolutions = new Set<string>();
   private readonly quizBank: typeof QUIZ_BANK;
 
   constructor(
@@ -122,9 +132,7 @@ export class GameService {
     private readonly randomInt: (min: number, max: number) => number = defaultRandomInt,
     quizBankOverride?: Partial<typeof QUIZ_BANK>,
   ) {
-    this.quizBank = quizBankOverride
-      ? { ...QUIZ_BANK, ...quizBankOverride }
-      : QUIZ_BANK;
+    this.quizBank = quizBankOverride ? { ...QUIZ_BANK, ...quizBankOverride } : QUIZ_BANK;
   }
 
   // ---- Quiz ----
@@ -205,11 +213,17 @@ export class GameService {
             xpReceivers.map((userJid) => {
               if (quiz.type === "tebakkata") {
                 return this.rewardService.awardTebakKataSurrender(
-                  context.chatJid, userJid, quiz.roundId, quiz.correlationId,
+                  context.chatJid,
+                  userJid,
+                  quiz.roundId,
+                  quiz.correlationId,
                 );
               }
               return this.rewardService.awardTebakEmojiSurrender(
-                context.chatJid, userJid, quiz.roundId, quiz.correlationId,
+                context.chatJid,
+                userJid,
+                quiz.roundId,
+                quiz.correlationId,
               );
             }),
           );
@@ -221,7 +235,10 @@ export class GameService {
         await Promise.allSettled(
           participants.map((userJid) =>
             this.rewardService.recordFamily100GamePlayed(
-              context.chatJid, userJid, quiz.roundId, quiz.correlationId,
+              context.chatJid,
+              userJid,
+              quiz.roundId,
+              quiz.correlationId,
             ),
           ),
         );
@@ -232,32 +249,45 @@ export class GameService {
 
     const tictactoe = this.ticTacToeSessions.get(context.chatJid);
     if (tictactoe) {
+      const candidateSet = identityResolverService.getCanonicalCandidateSet(
+        context.senderUserJid,
+        context.senderAltJids,
+      );
+      const isPlayer1 = candidateSet.has(normalizeUserJid(tictactoe.player1Jid));
+      const isPlayer2 = candidateSet.has(normalizeUserJid(tictactoe.player2Jid));
+
+      if (!isPlayer1 && !isPlayer2) {
+        return "Kamu bukan pemain dalam sesi ini.";
+      }
+
       this.ticTacToeSessions.delete(context.chatJid);
 
       if (tictactoe.state === "waiting") {
         return "Tantangan dibatalkan.";
       }
 
-      const senderJid = context.senderUserJid;
-      const isSurrender1 = senderJid === tictactoe.player1Jid;
-      const isSurrender2 = senderJid === tictactoe.player2Jid;
-
-      if (!isSurrender1 && !isSurrender2) {
-        return "Kamu bukan pemain dalam sesi ini.";
-      }
-
-      const loserJid = senderJid;
-      const winnerJid = isSurrender1 ? tictactoe.player2Jid : tictactoe.player1Jid;
+      const loserJid = isPlayer1 ? tictactoe.player1Jid : tictactoe.player2Jid;
+      const winnerJid = isPlayer1 ? tictactoe.player2Jid : tictactoe.player1Jid;
 
       await Promise.allSettled([
-        this.rewardService.awardTicTacToeLoss(context.chatJid, loserJid, tictactoe.roundId, tictactoe.correlationId),
-        this.rewardService.awardTicTacToeWin(context.chatJid, winnerJid, tictactoe.roundId, tictactoe.correlationId),
+        this.rewardService.awardTicTacToeLoss(
+          context.chatJid,
+          loserJid,
+          tictactoe.roundId,
+          tictactoe.correlationId,
+        ),
+        this.rewardService.awardTicTacToeWin(
+          context.chatJid,
+          winnerJid,
+          tictactoe.roundId,
+          tictactoe.correlationId,
+        ),
       ]);
 
       return [
         "Menyerah. Game selesai.",
         `Pemenang: ${winnerJid}`,
-        `Poin menang: ${String(250)} | XP: ${String(100)}`,
+        `Poin menang: ${String(TICTACTOE_REWARD.WIN_POINTS)} | XP: ${String(TICTACTOE_REWARD.WIN_XP)}`,
       ].join("\n");
     }
 
@@ -297,7 +327,17 @@ export class GameService {
       return "Mention pemain yang ingin ditantang. Contoh: .tictactoe @pemain";
     }
 
-    if (challengedJid === context.senderUserJid) {
+    const botJids = getBotCanonicalJids(context.socket);
+    const challengedNorm = normalizeUserJid(challengedJid);
+    if (botJids.has(challengedNorm)) {
+      return "Tidak bisa menantang bot bermain TicTacToe.";
+    }
+
+    const senderCandidateSet = identityResolverService.getCanonicalCandidateSet(
+      context.senderUserJid,
+      context.senderAltJids,
+    );
+    if (senderCandidateSet.has(challengedNorm)) {
       return "Tidak bisa menantang diri sendiri.";
     }
 
@@ -307,8 +347,8 @@ export class GameService {
 
     const session: TicTacToeSession = {
       groupJid: context.chatJid,
-      player1Jid: context.senderUserJid,
-      player2Jid: challengedJid,
+      player1Jid: normalizeUserJid(context.senderUserJid),
+      player2Jid: normalizeUserJid(challengedJid),
       currentTurn: "X",
       board: Array<TicTacToeCell>(9).fill(null),
       createdAt: Date.now(),
@@ -334,7 +374,8 @@ export class GameService {
     }
 
     if (session.state === "active") {
-      const currentPlayerJid = session.currentTurn === "X" ? session.player1Jid : session.player2Jid;
+      const currentPlayerJid =
+        session.currentTurn === "X" ? session.player1Jid : session.player2Jid;
       return [
         "Tic tac toe sedang berlangsung.",
         `Giliran: ${currentPlayerJid} (${session.currentTurn})`,
@@ -345,7 +386,11 @@ export class GameService {
       ].join("\n");
     }
 
-    if (session.player2Jid !== context.senderUserJid) {
+    const senderCandidateSet = identityResolverService.getCanonicalCandidateSet(
+      context.senderUserJid,
+      context.senderAltJids,
+    );
+    if (!senderCandidateSet.has(normalizeUserJid(session.player2Jid))) {
       return "Tantangan ini bukan untukmu.";
     }
 
@@ -372,7 +417,11 @@ export class GameService {
 
     const currentPlayerJid = session.currentTurn === "X" ? session.player1Jid : session.player2Jid;
 
-    if (context.senderUserJid !== currentPlayerJid) {
+    const senderCandidateSet = identityResolverService.getCanonicalCandidateSet(
+      context.senderUserJid,
+      context.senderAltJids,
+    );
+    if (!senderCandidateSet.has(normalizeUserJid(currentPlayerJid))) {
       return `Bukan giliranmu. Giliran: ${currentPlayerJid} (${session.currentTurn})`;
     }
 
@@ -397,12 +446,24 @@ export class GameService {
       const loserJid = mark === "X" ? session.player2Jid : session.player1Jid;
 
       const [winResult, lossResult] = await Promise.allSettled([
-        this.rewardService.awardTicTacToeWin(context.chatJid, winnerJid, session.roundId, session.correlationId),
-        this.rewardService.awardTicTacToeLoss(context.chatJid, loserJid, session.roundId, session.correlationId),
+        this.rewardService.awardTicTacToeWin(
+          context.chatJid,
+          winnerJid,
+          session.roundId,
+          session.correlationId,
+        ),
+        this.rewardService.awardTicTacToeLoss(
+          context.chatJid,
+          loserJid,
+          session.roundId,
+          session.correlationId,
+        ),
       ]);
 
-      const winPts = winResult.status === "fulfilled" ? winResult.value.points : 250;
-      const lossPts = lossResult.status === "fulfilled" ? lossResult.value.points : 50;
+      const winPts =
+        winResult.status === "fulfilled" ? winResult.value.points : TICTACTOE_REWARD.WIN_POINTS;
+      const lossPts =
+        lossResult.status === "fulfilled" ? lossResult.value.points : TICTACTOE_REWARD.LOSS_POINTS;
 
       return [
         `${winnerJid} menang.`,
@@ -416,8 +477,18 @@ export class GameService {
       this.ticTacToeSessions.delete(context.chatJid);
 
       await Promise.allSettled([
-        this.rewardService.awardTicTacToeDraw(context.chatJid, session.player1Jid, session.roundId, session.correlationId),
-        this.rewardService.awardTicTacToeDraw(context.chatJid, session.player2Jid, session.roundId, session.correlationId),
+        this.rewardService.awardTicTacToeDraw(
+          context.chatJid,
+          session.player1Jid,
+          session.roundId,
+          session.correlationId,
+        ),
+        this.rewardService.awardTicTacToeDraw(
+          context.chatJid,
+          session.player2Jid,
+          session.roundId,
+          session.correlationId,
+        ),
       ]);
 
       return [
@@ -457,13 +528,23 @@ export class GameService {
       const winnerJid = session.currentTurn === "X" ? session.player2Jid : session.player1Jid;
 
       await Promise.allSettled([
-        this.rewardService.recordTicTacToeTimeout(groupJid, timedOutJid, session.roundId, session.correlationId),
-        this.rewardService.awardTicTacToeWin(groupJid, winnerJid, session.roundId, session.correlationId),
+        this.rewardService.recordTicTacToeTimeout(
+          groupJid,
+          timedOutJid,
+          session.roundId,
+          session.correlationId,
+        ),
+        this.rewardService.awardTicTacToeWin(
+          groupJid,
+          winnerJid,
+          session.roundId,
+          session.correlationId,
+        ),
       ]);
 
       return [
         `${timedOutJid} habis waktu. ${winnerJid} menang.`,
-        `Pemenang mendapat ${String(250)} poin dan ${String(100)} XP.`,
+        `Pemenang mendapat ${String(TICTACTOE_REWARD.WIN_POINTS)} poin dan ${String(TICTACTOE_REWARD.WIN_XP)} XP.`,
       ].join("\n");
     }
 
@@ -472,78 +553,109 @@ export class GameService {
 
   // ---- Private: Quiz helpers ----
 
-  private async answerQuiz(context: CommandContext, type: QuizType, answerText: string): Promise<string> {
-    const session = this.quizSessions.get(context.chatJid);
-    if (!session) {
-      return `Belum ada ${formatGameName(type)} aktif. Gunakan .${type} untuk mulai.`;
+  private async answerQuiz(
+    context: CommandContext,
+    type: QuizType,
+    answerText: string,
+  ): Promise<string> {
+    if (this.inFlightResolutions.has(context.chatJid)) {
+      return "Jawaban sedang diproses. Silakan coba sesaat lagi.";
     }
+    this.inFlightResolutions.add(context.chatJid);
 
-    if (session.type !== type) {
-      return `Game aktif saat ini adalah ${formatGameName(session.type)}.`;
-    }
-
-    if (type === "tebakangka") {
-      return this.answerNumberGuess(context, session, answerText);
-    }
-
-    const normalizedAnswer = normalizeAnswer(answerText);
-    const matchedAnswer = session.question.answers.find(
-      (answer) => normalizeAnswer(answer) === normalizedAnswer,
-    );
-
-    if (!matchedAnswer) {
-      if (!session.wrongParticipants.has(context.senderUserJid)) {
-        session.wrongParticipants.add(context.senderUserJid);
-        if (type === "kuis") {
-          await this.rewardService.awardKuisWrongParticipation(
-            context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
-          );
-        } else if (type === "mtk") {
-          await this.rewardService.awardMtkWrongParticipation(
-            context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
-          );
-        }
+    try {
+      const session = this.quizSessions.get(context.chatJid);
+      if (!session) {
+        return `Belum ada ${formatGameName(type)} aktif. Gunakan .${type} untuk mulai.`;
       }
-      return "Jawaban belum benar. Coba lagi.";
-    }
 
-    if (type === "family100") {
-      return this.answerFamily100(context, session, normalizedAnswer);
-    }
+      if (session.type !== type) {
+        return `Game aktif saat ini adalah ${formatGameName(session.type)}.`;
+      }
 
-    if (session.answered.has(normalizedAnswer)) {
-      return "Jawaban itu sudah ditemukan.";
-    }
+      if (type === "tebakangka") {
+        return await this.answerNumberGuess(context, session, answerText);
+      }
 
-    session.answered.add(normalizedAnswer);
-
-    let reward: { points: number; xp: number };
-    if (type === "kuis") {
-      reward = await this.rewardService.awardKuisCorrect(
-        context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
+      const normalizedAnswer = normalizeAnswer(answerText);
+      const matchedAnswer = session.question.answers.find(
+        (answer) => normalizeAnswer(answer) === normalizedAnswer,
       );
-    } else if (type === "mtk") {
-      reward = await this.rewardService.awardMtkCorrect(
-        context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
-      );
-    } else if (type === "tebakkata") {
-      reward = await this.rewardService.awardTebakKataCorrect(
-        context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
-      );
-    } else {
-      reward = await this.rewardService.awardTebakEmojiCorrect(
-        context.chatJid, context.senderUserJid, session.roundId, session.correlationId,
-      );
+
+      if (!matchedAnswer) {
+        if (!session.wrongParticipants.has(context.senderUserJid)) {
+          session.wrongParticipants.add(context.senderUserJid);
+          if (type === "kuis") {
+            await this.rewardService.awardKuisWrongParticipation(
+              context.chatJid,
+              context.senderUserJid,
+              session.roundId,
+              session.correlationId,
+            );
+          } else if (type === "mtk") {
+            await this.rewardService.awardMtkWrongParticipation(
+              context.chatJid,
+              context.senderUserJid,
+              session.roundId,
+              session.correlationId,
+            );
+          }
+        }
+        return "Jawaban belum benar. Coba lagi.";
+      }
+
+      if (type === "family100") {
+        return await this.answerFamily100(context, session, normalizedAnswer);
+      }
+
+      if (session.answered.has(normalizedAnswer)) {
+        return "Jawaban itu sudah ditemukan.";
+      }
+
+      session.answered.add(normalizedAnswer);
+
+      let reward: { points: number; xp: number };
+      if (type === "kuis") {
+        reward = await this.rewardService.awardKuisCorrect(
+          context.chatJid,
+          context.senderUserJid,
+          session.roundId,
+          session.correlationId,
+        );
+      } else if (type === "mtk") {
+        reward = await this.rewardService.awardMtkCorrect(
+          context.chatJid,
+          context.senderUserJid,
+          session.roundId,
+          session.correlationId,
+        );
+      } else if (type === "tebakkata") {
+        reward = await this.rewardService.awardTebakKataCorrect(
+          context.chatJid,
+          context.senderUserJid,
+          session.roundId,
+          session.correlationId,
+        );
+      } else {
+        reward = await this.rewardService.awardTebakEmojiCorrect(
+          context.chatJid,
+          context.senderUserJid,
+          session.roundId,
+          session.correlationId,
+        );
+      }
+
+      this.quizSessions.delete(context.chatJid);
+
+      return [
+        "Benar.",
+        `Poin bertambah: ${String(reward.points)}`,
+        `XP bertambah: ${String(reward.xp)}`,
+        "Game selesai.",
+      ].join("\n");
+    } finally {
+      this.inFlightResolutions.delete(context.chatJid);
     }
-
-    this.quizSessions.delete(context.chatJid);
-
-    return [
-      "Benar.",
-      `Poin bertambah: ${String(reward.points)}`,
-      `XP bertambah: ${String(reward.xp)}`,
-      "Game selesai.",
-    ].join("\n");
   }
 
   private async answerFamily100(
@@ -583,7 +695,10 @@ export class GameService {
     const answerNumber = matchedIndex >= 0 ? matchedIndex + 1 : "?";
 
     if (isLastAnswer) {
-      const updatedEarned = session.family100EarnedByUser.get(context.senderUserJid) ?? { points: 0, xp: 0 };
+      const updatedEarned = session.family100EarnedByUser.get(context.senderUserJid) ?? {
+        points: 0,
+        xp: 0,
+      };
       const bonusResult = await this.rewardService.awardFamily100FinalBonus(
         context.chatJid,
         context.senderUserJid,
@@ -597,7 +712,10 @@ export class GameService {
       await Promise.allSettled(
         participants.map((userJid) =>
           this.rewardService.recordFamily100GamePlayed(
-            context.chatJid, userJid, session.roundId, session.correlationId,
+            context.chatJid,
+            userJid,
+            session.roundId,
+            session.correlationId,
           ),
         ),
       );
@@ -606,7 +724,9 @@ export class GameService {
 
       const bonusLines = bonusResult.capped
         ? ["• Bonus jawaban terakhir tidak diterima (cap sudah penuh)."]
-        : [`• Bonus jawaban terakhir: +${String(bonusResult.points)} Poin, +${String(bonusResult.xp)} XP`];
+        : [
+            `• Bonus jawaban terakhir: +${String(bonusResult.points)} Poin, +${String(bonusResult.xp)} XP`,
+          ];
 
       return [
         "Benar.",
@@ -683,7 +803,11 @@ export class GameService {
 
     this.quizSessions.delete(context.chatJid);
     const reward = await this.rewardService.awardTebakAngkaCorrect(
-      context.chatJid, context.senderUserJid, session.roundId, attempts, session.correlationId,
+      context.chatJid,
+      context.senderUserJid,
+      session.roundId,
+      attempts,
+      session.correlationId,
     );
 
     return [

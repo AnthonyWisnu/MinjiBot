@@ -1,3 +1,4 @@
+import { avatarService } from "../services/media/avatar.service";
 import { menuService } from "../services/menu/menu.service";
 import type { CommandContext, CommandDefinition } from "../types/command";
 
@@ -25,7 +26,31 @@ export const menuCommands: CommandDefinition[] = [
 ];
 
 async function handleMenu(context: CommandContext): Promise<void> {
-  await context.reply(await menuService.buildMenu(context));
+  const menuText = await menuService.buildMenu(context);
+  const avatar = await avatarService.getAvatarWithFallback(
+    context.socket,
+    context.senderUserJid,
+    context.senderAltJids,
+  );
+
+  try {
+    if (typeof context.socket.sendMessage === "function" && avatar.length > 0) {
+      await context.socket.sendMessage(
+        context.chatJid,
+        {
+          image: avatar,
+          caption: menuText,
+          mentions: [context.senderUserJid],
+        },
+        { quoted: context.message },
+      );
+      return;
+    }
+  } catch {
+    // Fall back to text reply if media message sending encounters an issue
+  }
+
+  await context.reply(menuText, { mentions: [context.senderUserJid] });
 }
 
 async function handleOwnerMenu(context: CommandContext): Promise<void> {

@@ -1,15 +1,15 @@
-import fs from "node:fs";
-import path from "node:path";
-
-import type { CommandContext, CommandDefinition } from "../../types/command";
-import { memberProfileViewService } from "../../services/member/memberProfileView.service";
-import type { MemberProfileViewService, ProfileView } from "../../services/member/memberProfileView.service";
-import { profileCardService } from "../../services/member/profileCard.service";
 import { roleGuard } from "../../guards/roleGuard";
+import { identityResolverService } from "../../services/identity/identityResolver.service";
+import { avatarService } from "../../services/media/avatar.service";
+import { memberProfileViewService } from "../../services/member/memberProfileView.service";
+import type {
+  MemberProfileViewService,
+  ProfileView,
+} from "../../services/member/memberProfileView.service";
+import { profileCardService } from "../../services/member/profileCard.service";
+import { tenantAdminService } from "../../services/tenant/tenantAdmin.service";
+import type { CommandContext, CommandDefinition } from "../../types/command";
 import { normalizeUserJid } from "../../utils/jid";
-import { TenantAdminRepository } from "../../repositories/tenantAdmin.repository";
-
-const tenantAdminRepo = new TenantAdminRepository();
 
 function formatProfileView(
   view: ProfileView,
@@ -56,72 +56,19 @@ async function resolveTargetInfo(
   context: CommandContext,
   rawJid: string,
 ): Promise<{ userJid: string; phone: string; mentions: string[] }> {
-  let canonicalJid = normalizeUserJid(rawJid);
+  const canonicalJid = await identityResolverService.resolveCanonicalUserJid(
+    context.socket,
+    context.chatJid,
+    rawJid,
+  );
   const mentions = [canonicalJid];
-
-  const rawSocket = (context as { socket?: unknown }).socket;
-  if (
-    canonicalJid.endsWith("@lid") &&
-    context.isGroup &&
-    rawSocket &&
-    typeof rawSocket === "object" &&
-    "groupMetadata" in rawSocket
-  ) {
-    try {
-      const socket = rawSocket as {
-        groupMetadata: (jid: string) => Promise<{
-          participants: {
-            id: string;
-            jid?: string;
-            lid?: string;
-          }[];
-        }>;
-      };
-      const metadata = await socket.groupMetadata(context.chatJid);
-      const participant = metadata.participants.find((p) => {
-        const pJid = p.jid;
-        const pLid = p.lid;
-        const matchId = normalizeUserJid(p.id) === canonicalJid;
-        const matchJid = pJid ? normalizeUserJid(pJid) === canonicalJid : false;
-        const matchLid = pLid ? normalizeUserJid(pLid) === canonicalJid : false;
-        return matchId || matchJid || matchLid;
-      });
-
-      if (participant) {
-        const phoneJid = (participant as { jid?: string }).jid ?? participant.id;
-        if (phoneJid && !phoneJid.endsWith("@lid")) {
-          canonicalJid = normalizeUserJid(phoneJid);
-          mentions.push(canonicalJid);
-        }
-      }
-    } catch {
-      // ignore metadata lookup failure
-    }
+  const normalizedRaw = normalizeUserJid(rawJid);
+  if (normalizedRaw && normalizedRaw !== canonicalJid) {
+    mentions.push(normalizedRaw);
   }
 
   const phone = canonicalJid.split("@")[0] ?? canonicalJid;
   return { userJid: canonicalJid, phone, mentions };
-}
-
-function getFallbackAvatarBuffer(): Buffer | null {
-  const possiblePaths = [
-    path.resolve(process.cwd(), "assets/minji.png"),
-    path.resolve(process.cwd(), "src/Minji.png"),
-    path.resolve(__dirname, "../../assets/minji.png"),
-    path.resolve(__dirname, "../../../assets/minji.png"),
-    path.resolve(__dirname, "../../Minji.png"),
-  ];
-
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-      try {
-        return fs.readFileSync(p);
-      } catch {
-        // ignore read error
-      }
-    }
-  }
-  return null;
 }
 
 interface SendProfileCardOptions {
@@ -140,18 +87,12 @@ async function sendProfileMessage(
   cardOptions?: SendProfileCardOptions,
 ): Promise<void> {
   const rawSocket = (context as { socket?: unknown }).socket;
-  if (!rawSocket || typeof rawSocket !== "object") {
-    await context.reply(text, { mentions });
-    return;
-  }
-
-  const socket = rawSocket as {
+  const socket = (rawSocket ?? {}) as {
     sendMessage?: (
       chatJid: string,
       content: { image: Buffer; caption: string; mentions?: string[] },
       options?: { quoted?: unknown },
     ) => Promise<unknown>;
-    profilePictureUrl?: (jid: string, type?: "image" | "preview") => Promise<string>;
   };
 
   if (typeof socket.sendMessage !== "function") {
@@ -159,38 +100,12 @@ async function sendProfileMessage(
     return;
   }
 
-  let avatarBuffer: Buffer | null = null;
-
-  if (typeof socket.profilePictureUrl === "function") {
-    try {
-      const profilePictureUrl = await socket.profilePictureUrl(targetUserJid, "image");
-      if (profilePictureUrl) {
-        const res = await fetch(profilePictureUrl);
-        if (res.ok) {
-          avatarBuffer = Buffer.from(await res.arrayBuffer());
-        }
-      }
-    } catch {
-      for (const altJid of mentions) {
-        if (altJid !== targetUserJid) {
-          try {
-            const profilePictureUrl = await socket.profilePictureUrl(altJid, "image");
-            if (profilePictureUrl) {
-              const res = await fetch(profilePictureUrl);
-              if (res.ok) {
-                avatarBuffer = Buffer.from(await res.arrayBuffer());
-                break;
-              }
-            }
-          } catch {
-            // ignore
-          }
-        }
-      }
-    }
-  }
-
-  avatarBuffer ??= getFallbackAvatarBuffer();
+  let avatarBuffer: Buffer | null = await avatarService.fetchUserAvatar(
+    context.socket,
+    targetUserJid,
+    mentions,
+  );
+  avatarBuffer ??= avatarService.getFallbackAvatar();
 
   if (cardOptions) {
     try {
@@ -247,7 +162,7 @@ async function resolveMemberRole(
 
   // 3. Tenant Admin
   try {
-    const isTenantAdmin = await tenantAdminRepo.exists(context.chatJid, targetUserJid);
+    const isTenantAdmin = await tenantAdminService.isTenantAdmin(context.chatJid, targetUserJid);
     if (isTenantAdmin) {
       return "Tenant Admin";
     }
@@ -258,37 +173,13 @@ async function resolveMemberRole(
   // 4. Admin WhatsApp Grup
   if (context.isGroup) {
     try {
-      const rawSocket = (context as { socket?: unknown }).socket;
-      if (rawSocket && typeof rawSocket === "object" && "groupMetadata" in rawSocket) {
-        const socket = rawSocket as {
-          groupMetadata: (jid: string) => Promise<{
-            participants: {
-              id: string;
-              jid?: string;
-              lid?: string;
-              admin?: "admin" | "superadmin" | null;
-            }[];
-          }>;
-        };
-
-        if (typeof socket.groupMetadata === "function") {
-          const metadata = await socket.groupMetadata(context.chatJid);
-          const participant = metadata.participants.find((p) => {
-            const matchId =
-              normalizeUserJid(p.id) === targetUserJid || targetMentions.includes(normalizeUserJid(p.id));
-            const matchJid = p.jid
-              ? normalizeUserJid(p.jid) === targetUserJid || targetMentions.includes(normalizeUserJid(p.jid))
-              : false;
-            const matchLid = p.lid
-              ? normalizeUserJid(p.lid) === targetUserJid || targetMentions.includes(normalizeUserJid(p.lid))
-              : false;
-            return matchId || matchJid || matchLid;
-          });
-
-          if (participant?.admin === "admin" || participant?.admin === "superadmin") {
-            return "Admin Grup";
-          }
-        }
+      const isGroupAdmin = await identityResolverService.isGroupAdmin(
+        context.socket,
+        context.chatJid,
+        targetUserJid,
+      );
+      if (isGroupAdmin) {
+        return "Admin Grup";
       }
     } catch {
       // ignore
@@ -301,7 +192,10 @@ async function resolveMemberRole(
 
 async function executeProfile(
   context: CommandContext,
-  service: Pick<MemberProfileViewService, "getOwnProfile"> = memberProfileViewService,
+  service: Pick<
+    MemberProfileViewService,
+    "getOwnProfile" | "getTargetProfile"
+  > = memberProfileViewService,
 ): Promise<void> {
   if (!context.isGroup || !context.tenantGroup) {
     await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
@@ -324,12 +218,18 @@ async function executeProfile(
   const ownSenderJid = normalizeUserJid(context.senderUserJid);
 
   if (rawTargetJid && rawTargetJid !== ownSenderJid) {
-    // View another member's profile
+    // View another member's profile (read-only, does NOT create ghost profile - LOG-09)
     const targetInfo = await resolveTargetInfo(context, rawTargetJid);
-    const view = await service.getOwnProfile(
-      context.chatJid,
-      targetInfo.userJid,
-    );
+    const view =
+      typeof service.getTargetProfile === "function"
+        ? await service.getTargetProfile(context.chatJid, targetInfo.userJid)
+        : await service.getOwnProfile(context.chatJid, targetInfo.userJid);
+    if (!view) {
+      await context.reply(
+        "Member tersebut belum memiliki riwayat aktivitas atau profil di grup ini.",
+      );
+      return;
+    }
     const label = `@${targetInfo.phone}`;
     const isSuperOwner = roleGuard.isSuperOwner(targetInfo.userJid);
     const role = await resolveMemberRole(context, targetInfo.userJid, targetInfo.mentions);
@@ -344,10 +244,7 @@ async function executeProfile(
   } else {
     // View own profile (creates if not exists).
     const senderInfo = await resolveTargetInfo(context, ownSenderJid);
-    const view = await service.getOwnProfile(
-      context.chatJid,
-      senderInfo.userJid,
-    );
+    const view = await service.getOwnProfile(context.chatJid, senderInfo.userJid);
     const label = `@${senderInfo.phone}`;
     const isSuperOwner = roleGuard.isSuperOwner(senderInfo.userJid);
     const role = await resolveMemberRole(context, senderInfo.userJid, senderInfo.mentions);
@@ -362,48 +259,66 @@ async function executeProfile(
   }
 }
 
-export function createProfileCommands(
+async function executeSimpleBalance(
+  context: CommandContext,
+  asset: "poin" | "limit" | "xp",
   service: Pick<MemberProfileViewService, "getOwnProfile"> = memberProfileViewService,
+): Promise<void> {
+  if (!context.isGroup || !context.tenantGroup) {
+    await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
+    return;
+  }
+
+  const senderInfo = await resolveTargetInfo(context, context.senderUserJid);
+  const view = await service.getOwnProfile(context.chatJid, senderInfo.userJid);
+  const isSuperOwner = roleGuard.isSuperOwner(senderInfo.userJid);
+
+  if (asset === "poin") {
+    const val = isSuperOwner
+      ? "999.999 (Unlimited)"
+      : `${view.profile.pointsBalance.toLocaleString("id-ID")} Poin`;
+    await context.reply(`💰 Poin kamu: *${val}*`);
+    return;
+  }
+
+  if (asset === "limit") {
+    const val = isSuperOwner ? "Unlimited" : `${String(view.profile.limitBalance)} Limit`;
+    await context.reply(`⚡ Limit kamu: *${val}*`);
+    return;
+  }
+
+  const val = isSuperOwner
+    ? "999.999 XP (Immortal [MAX])"
+    : `${view.profile.experience.toLocaleString("id-ID")} XP (${view.rank})`;
+  await context.reply(`⭐ XP kamu: *${val}*`);
+}
+
+export function createProfileCommands(
+  service: Pick<
+    MemberProfileViewService,
+    "getOwnProfile" | "getTargetProfile"
+  > = memberProfileViewService,
 ): CommandDefinition[] {
   return [
     {
       name: "profile",
+      aliases: ["profil", "me"],
       execute: (context) => executeProfile(context, service),
     },
     {
       name: "poin",
-      execute: async (context) => {
-        if (!context.isGroup || !context.tenantGroup) {
-          await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
-          return;
-        }
-        if (roleGuard.isSuperOwner(context.senderUserJid)) {
-          await context.reply(
-            [
-              "*─── [ SALDO MEMBER ] ───*",
-              "• Role: Super Owner (Master)",
-              "• Rank: Immortal [MAX]",
-              "• Poin: 999.999",
-              "• Limit: 999 (Unlimited)",
-              "• XP: 999.999",
-            ].join("\n"),
-          );
-          return;
-        }
-        const view = await service.getOwnProfile(
-          context.chatJid,
-          context.senderUserJid,
-        );
-        await context.reply(
-          [
-            "*─── [ SALDO MEMBER ] ───*",
-            `• Rank: ${view.rank}`,
-            `• Poin: ${view.profile.pointsBalance.toLocaleString("id-ID")}`,
-            `• Limit: ${String(view.profile.limitBalance)}`,
-            `• XP: ${view.profile.experience.toLocaleString("id-ID")}`,
-          ].join("\n"),
-        );
-      },
+      aliases: ["point", "saldo", "ceksaldo"],
+      execute: (context) => executeSimpleBalance(context, "poin", service),
+    },
+    {
+      name: "limit",
+      aliases: ["sisa-limit"],
+      execute: (context) => executeSimpleBalance(context, "limit", service),
+    },
+    {
+      name: "xp",
+      aliases: ["exp", "rank"],
+      execute: (context) => executeSimpleBalance(context, "xp", service),
     },
   ];
 }

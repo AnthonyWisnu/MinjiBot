@@ -1,6 +1,8 @@
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import type { CommandContext } from "../../types/command";
-import { normalizeUserJid } from "../../utils/jid";
+import { getBotCanonicalJids, normalizeUserJid } from "../../utils/jid";
+import { identityResolverService } from "../identity/identityResolver.service";
+import { activityBufferService } from "./activityBuffer.service";
 
 const WIB_TIMEZONE = "Asia/Jakarta";
 
@@ -10,9 +12,7 @@ export interface StatsResponse {
 }
 
 export class GroupStatsService {
-  constructor(
-    private readonly profileRepo = new GroupMemberProfileRepository(),
-  ) {}
+  constructor(private readonly profileRepo = new GroupMemberProfileRepository()) {}
 
   /**
    * Catat aktivitas pesan member (non-blocking).
@@ -28,6 +28,8 @@ export class GroupStatsService {
     if (!context.isGroup) {
       throw new Error("Command ini hanya bisa digunakan di dalam grup.");
     }
+
+    await activityBufferService.flushGroup(context.chatJid);
 
     const [stats, topMembers] = await Promise.all([
       this.profileRepo.getGroupActivityStats(context.chatJid),
@@ -46,7 +48,9 @@ export class GroupStatsService {
     } else {
       topMembers.forEach((member, index) => {
         const username = member.userJid.split("@")[0] ?? "";
-        topLines.push(`   ${String(index + 1)}. @${username} — *${member.messageCount.toLocaleString("id-ID")}* pesan`);
+        topLines.push(
+          `   ${String(index + 1)}. @${username} — *${member.messageCount.toLocaleString("id-ID")}* pesan`,
+        );
         mentions.push(member.userJid);
       });
     }
@@ -75,6 +79,8 @@ export class GroupStatsService {
       throw new Error("Command ini hanya bisa digunakan di dalam grup.");
     }
 
+    await activityBufferService.flushGroup(context.chatJid);
+
     const topMembers = await this.profileRepo.listTopByMessageCount(context.chatJid, 10);
 
     if (topMembers.length === 0) {
@@ -95,7 +101,9 @@ export class GroupStatsService {
     topMembers.forEach((member, index) => {
       const rankBadge = medals[index] ?? `${String(index + 1)}.`;
       const username = member.userJid.split("@")[0] ?? "";
-      lines.push(`${rankBadge} @${username} — *${member.messageCount.toLocaleString("id-ID")}* pesan`);
+      lines.push(
+        `${rankBadge} @${username} — *${member.messageCount.toLocaleString("id-ID")}* pesan`,
+      );
       mentions.push(member.userJid);
     });
 
@@ -120,34 +128,50 @@ export class GroupStatsService {
     const parsedDays = Math.max(1, Math.min(365, Math.floor(days)));
     const since = new Date(Date.now() - parsedDays * 24 * 60 * 60 * 1000);
 
-    const botJid = context.socket.user?.id
-      ? normalizeUserJid(context.socket.user.id)
-      : null;
+    await activityBufferService.flushGroup(context.chatJid);
+
+    const botJids = getBotCanonicalJids(context.socket);
 
     // Ambil user JID yang aktif sejak threshold date
     const activeUserJids = await this.profileRepo.listActiveUserJidsSince(context.chatJid, since);
     const activeSet = new Set(activeUserJids.map((j) => normalizeUserJid(j)));
 
-    // Ambil daftar participant langsung dari metadata grup
-    let participants: string[] = [];
-    try {
-      const metadata = await context.socket.groupMetadata(context.chatJid);
-      participants = metadata.participants.map((p) => normalizeUserJid(p.id));
-    } catch {
-      // Fallback jika metadata gagal diambil: gunakan database
-      const inactiveProfiles = await this.profileRepo.findInactiveMembers(context.chatJid, since);
-      participants = inactiveProfiles.map((p) => normalizeUserJid(p.userJid));
-    }
-
-    // Ambil profil tidak aktif dari database untuk keterangan last active
+    // Ambil profil tidak aktif dari database sekali (PERF-03: eliminasi query ganda)
     const inactiveProfiles = await this.profileRepo.findInactiveMembers(context.chatJid, since);
     const profileMap = new Map(inactiveProfiles.map((p) => [normalizeUserJid(p.userJid), p]));
 
+    // Ambil daftar participant langsung dari metadata grup
+    let participants: { id: string; jid?: string; lid?: string }[] = [];
+    try {
+      const metadata = await context.socket.groupMetadata(context.chatJid);
+      participants = metadata.participants;
+    } catch {
+      // Fallback jika metadata gagal diambil: gunakan peserta dari profil database
+      participants = inactiveProfiles.map((p) => ({ id: p.userJid }));
+    }
+
     // Saring member pasif: ada di peserta grup, bukan bot, dan TIDAK aktif di activeSet
-    const silentJids = participants.filter((jid) => {
-      if (botJid && jid === botJid) return false;
-      return !activeSet.has(jid);
-    });
+    const silentJids: string[] = [];
+    for (const p of participants) {
+      const candidateSet = identityResolverService.getCanonicalCandidateSet(
+        p.id,
+        [p.jid, p.lid].filter(Boolean) as string[],
+      );
+
+      const isBot = [...candidateSet].some((c) => botJids.has(c));
+      if (isBot) continue;
+
+      const isActive = [...candidateSet].some((c) => activeSet.has(c));
+      if (!isActive) {
+        const canonicalPhoneJid = await identityResolverService.resolveCanonicalUserJid(
+          context.socket,
+          context.chatJid,
+          p.id,
+          [p.jid, p.lid].filter(Boolean) as string[],
+        );
+        silentJids.push(canonicalPhoneJid);
+      }
+    }
 
     if (silentJids.length === 0) {
       return {
@@ -163,7 +187,7 @@ export class GroupStatsService {
     const mentions: string[] = [];
     const lines: string[] = [
       "👻 *[ SIDER / MEMBER PASIF HUNTER ]*",
-      `Kriteria: Tidak aktif chat $\\ge$ *${String(parsedDays)} hari* terakhir`,
+      `Kriteria: Tidak aktif chat >= *${String(parsedDays)} hari* terakhir`,
       `Terdeteksi *${String(silentJids.length)}* member pasif / sider:`,
       "",
     ];
@@ -174,7 +198,9 @@ export class GroupStatsService {
       let statusDesc = "Belum pernah chat";
 
       if (profile && profile.messageCount > 0) {
-        const diffDays = Math.floor((Date.now() - profile.lastActiveAt.getTime()) / (24 * 60 * 60 * 1000));
+        const diffDays = Math.floor(
+          (Date.now() - profile.lastActiveAt.getTime()) / (24 * 60 * 60 * 1000),
+        );
         statusDesc = `${String(diffDays)} hari lalu (${String(profile.messageCount)} chat)`;
       }
 
@@ -188,7 +214,9 @@ export class GroupStatsService {
     }
 
     lines.push("");
-    lines.push("💡 *Tip Admin:* Gunakan daftar ini untuk menertibkan sider atau evaluasi keanggotaan.");
+    lines.push(
+      "💡 *Tip Admin:* Gunakan daftar ini untuk menertibkan sider atau evaluasi keanggotaan.",
+    );
 
     return { text: lines.join("\n"), mentions };
   }

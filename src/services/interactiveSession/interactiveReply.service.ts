@@ -6,7 +6,7 @@ import { featureGuard } from "../../guards/featureGuard";
 import { roleGuard } from "../../guards/roleGuard";
 import { tenantGuard } from "../../guards/tenantGuard";
 import { gameService } from "../game/game.service";
-import { getPreferredUserJid, isGroupJid, isStatusBroadcastJid } from "../../utils/jid";
+import { isGroupJid, isStatusBroadcastJid } from "../../utils/jid";
 import type { CommandContext } from "../../types/command";
 import { parseRawMessageContext } from "../../bot/messageParser";
 
@@ -55,15 +55,9 @@ export class InteractiveReplyService {
     const session = this.game.getActiveQuiz(rawContext.chatJid);
     if (!session) return false;
 
-    const botUserJid = socket.user?.id ? getPreferredUserJid([socket.user.id]) : undefined;
     const isQuotingQuiz =
       (session.messageId !== undefined && quoted.id === session.messageId) ||
-      Boolean(quoted.text?.includes(session.question.prompt)) ||
-      Boolean(
-        botUserJid &&
-          quoted.participantJid &&
-          quoted.participantJid.split("@")[0] === botUserJid.split("@")[0],
-      );
+      Boolean(quoted.text?.includes(session.question.prompt));
 
     if (!isQuotingQuiz) return false;
 
@@ -121,21 +115,11 @@ export class InteractiveReplyService {
     const session = this.game.getActiveTicTacToe(rawContext.chatJid);
     if (!session) return false;
 
-    const botUserJid = socket.user?.id ? getPreferredUserJid([socket.user.id]) : undefined;
-    const isBotMessage =
-      (session.messageId !== undefined && quoted.id === session.messageId) ||
-      Boolean(
-        botUserJid &&
-          quoted.participantJid &&
-          quoted.participantJid.split("@")[0] === botUserJid.split("@")[0],
-      );
-
     // Skenario 1: Sesi menunggu konfirmasi tantangan (state: "waiting")
     if (session.state === "waiting") {
       const isQuotingChallenge =
         (session.messageId !== undefined && quoted.id === session.messageId) ||
-        Boolean(quoted.text?.includes("Tantangan dikirim")) ||
-        Boolean(isBotMessage && quoted.text?.includes("tictactoe"));
+        Boolean(quoted.text?.includes("Tantangan dikirim"));
 
       if (!isQuotingChallenge) return false;
 
@@ -194,10 +178,9 @@ export class InteractiveReplyService {
       (session.messageId !== undefined && quoted.id === session.messageId) ||
       Boolean(
         quoted.text &&
-          (quoted.text.includes("Giliran:") ||
-            quoted.text.includes("Game dimulai") ||
-            quoted.text.includes("Langkah diterima") ||
-            quoted.text.includes("Tic tac toe")),
+        (quoted.text.includes("Giliran:") ||
+          quoted.text.includes("Game dimulai") ||
+          quoted.text.includes("Langkah diterima")),
       );
 
     if (!isQuotingBoard) return false;

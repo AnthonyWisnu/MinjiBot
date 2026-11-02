@@ -5,7 +5,16 @@ import { TenantAuditRepository } from "../repositories/tenantAudit.repository";
 import { TenantGroupRepository } from "../repositories/tenantGroup.repository";
 import type { CommandContext } from "../types/command";
 
-const EXPIRED_ALLOWED_COMMANDS = new Set(["menu", "status", "tenantstatus", "owner", "whoami"]);
+const EXPIRED_ALLOWED_COMMANDS = new Set([
+  "menu",
+  "help",
+  "ping",
+  "whoami",
+  "panel",
+  "tenantstatus",
+  "infosewa",
+  "sewa",
+]);
 
 interface TenantGroupLookup {
   findByGroupJid(groupJid: string): Promise<TenantGroup | null>;
@@ -18,7 +27,7 @@ export type TenantGuardResult =
     }
   | {
       allowed: false;
-      message: string;
+      message?: string;
       tenantGroup?: TenantGroup;
     };
 
@@ -35,6 +44,14 @@ export class TenantGuard {
     const tenantGroup = await this.loadCurrentTenant(context.chatJid, context.senderUserJid);
     context.tenantGroup = tenantGroup ?? undefined;
 
+    // 1. Super Owner bypasses all tenant restrictions
+    if (context.role === "SUPER_OWNER") {
+      return {
+        allowed: true,
+        tenantGroup: tenantGroup ?? undefined,
+      };
+    }
+
     if (!tenantGroup) {
       return {
         allowed: false,
@@ -42,26 +59,19 @@ export class TenantGuard {
       };
     }
 
-    if (this.isInfoCommand(context.commandName)) {
-      return {
-        allowed: true,
-        tenantGroup,
-      };
-    }
-
+    // 2. Blocked groups: silent ignore (no message per AGENTS.md §3)
     if (tenantGroup.isBlocked || tenantGroup.status === TenantStatus.BLOCKED) {
       return {
         allowed: false,
         tenantGroup,
-        message: "Grup ini sedang diblokir. Silakan hubungi owner bot.",
       };
     }
 
-    if (tenantGroup.status === TenantStatus.PENDING) {
+    // 3. Info / sewa commands allowed for pending/expired tenants
+    if (this.isInfoCommand(context.commandName)) {
       return {
-        allowed: false,
+        allowed: true,
         tenantGroup,
-        message: "Grup ini belum aktif sebagai tenant. Silakan hubungi owner bot untuk aktivasi.",
       };
     }
 
@@ -70,6 +80,14 @@ export class TenantGuard {
         allowed: false,
         tenantGroup,
         message: "Grup ini sudah dihapus dari manajemen tenant.",
+      };
+    }
+
+    if (tenantGroup.status === TenantStatus.PENDING) {
+      return {
+        allowed: false,
+        tenantGroup,
+        message: "Grup ini belum aktif sebagai tenant. Silakan hubungi owner bot untuk aktivasi.",
       };
     }
 
@@ -98,7 +116,10 @@ export class TenantGuard {
     };
   }
 
-  private readonly tenantCache = new Map<string, { tenant: TenantGroup | null; cachedAt: number }>();
+  private readonly tenantCache = new Map<
+    string,
+    { tenant: TenantGroup | null; cachedAt: number }
+  >();
   private static readonly CACHE_TTL_MS = 20_000; // 20 detik
 
   invalidateCache(groupJid: string): void {

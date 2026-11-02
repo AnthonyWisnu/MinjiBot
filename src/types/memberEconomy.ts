@@ -56,12 +56,7 @@ interface BaseInput {
 
 export interface CreditPointsInput extends BaseInput {
   amount: number;
-  type:
-    | "DAILY_REWARD"
-    | "GAME_REWARD"
-    | "GIFT_RECEIVED"
-    | "SUPER_OWNER_ADD"
-    | "CORRECTION";
+  type: "DAILY_REWARD" | "GAME_REWARD" | "GIFT_RECEIVED" | "SUPER_OWNER_ADD" | "CORRECTION";
   idempotencyKey?: string;
   correlationId?: string;
   note?: string;
@@ -70,10 +65,7 @@ export interface CreditPointsInput extends BaseInput {
 
 export interface DebitPointsInput extends BaseInput {
   amount: number;
-  type:
-    | "LIMIT_PURCHASE_POINT_DEBIT"
-    | "GIFT_SENT"
-    | "CORRECTION";
+  type: "LIMIT_PURCHASE_POINT_DEBIT" | "GIFT_SENT" | "CORRECTION";
   idempotencyKey?: string;
   correlationId?: string;
   note?: string;
@@ -128,11 +120,7 @@ export interface SetLimitInput extends BaseInput {
 
 export interface CreditXpInput extends BaseInput {
   amount: number;
-  type:
-    | "DAILY_REWARD"
-    | "GAME_REWARD"
-    | "SUPER_OWNER_ADD"
-    | "CORRECTION";
+  type: "DAILY_REWARD" | "GAME_REWARD" | "SUPER_OWNER_ADD" | "CORRECTION";
   idempotencyKey?: string;
   correlationId?: string;
   note?: string;

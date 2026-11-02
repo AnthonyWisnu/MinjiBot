@@ -6,12 +6,12 @@ import {
   type ExtractedAudio,
 } from "../../services/media/downloader.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
-import { parseHttpUrl } from "../../utils/urlValidator";
+import { parseAllowedDownloaderUrl } from "../../utils/urlValidator";
 import {
-  resolveFeatureAccess,
-  reserveFeatureLimit,
   consumeFeatureLimit,
   refundFeatureLimit,
+  reserveFeatureLimit,
+  resolveFeatureAccess,
 } from "./heavyFeatureHelper";
 
 export const downloaderCommands: CommandDefinition[] = [
@@ -34,9 +34,8 @@ export const downloaderCommands: CommandDefinition[] = [
 
 async function handleTikTokDownloader(context: CommandContext): Promise<void> {
   const rawUrl = context.args[0];
-  const parsedUrl = parseHttpUrl(rawUrl);
-  const hostname = parsedUrl?.hostname.toLowerCase() ?? "";
-  if (!parsedUrl || (!hostname.includes("tiktok.com") && !hostname.endsWith("tiktok.com"))) {
+  const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "tiktok");
+  if (!parsedUrl) {
     await context.reply("Format command salah.\nGunakan: .tt <link TikTok>");
     return;
   }
@@ -109,10 +108,7 @@ async function handleTikTokDownloader(context: CommandContext): Promise<void> {
   }
 }
 
-async function sendAudioMessage(
-  context: CommandContext,
-  audio: ExtractedAudio,
-): Promise<void> {
+async function sendAudioMessage(context: CommandContext, audio: ExtractedAudio): Promise<void> {
   try {
     await context.socket.sendMessage(
       context.chatJid,
@@ -123,9 +119,8 @@ async function sendAudioMessage(
       },
       { quoted: context.message },
     );
-  } catch (error: unknown) {
+  } catch {
     // Audio dikirim secara best-effort, tidak menggagalkan perintah jika gagal kirim
-    void error;
   }
 }
 
@@ -134,14 +129,8 @@ async function sendAudioMessage(
 
 async function handleInstagramDownloader(context: CommandContext): Promise<void> {
   const rawUrl = context.args[0];
-  const parsedUrl = parseHttpUrl(rawUrl);
-  const hostname = parsedUrl?.hostname.toLowerCase() ?? "";
-  if (
-    !parsedUrl ||
-    (!hostname.includes("instagram.com") &&
-      !hostname.endsWith("instagram.com") &&
-      !hostname.includes("instagr.am"))
-  ) {
+  const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "instagram");
+  if (!parsedUrl) {
     await context.reply("Format command salah.\nGunakan: .ig <link Instagram>");
     return;
   }
@@ -191,16 +180,12 @@ async function handleInstagramDownloader(context: CommandContext): Promise<void>
 }
 
 // ─── YouTube Video (.yt) ──────────────────────────────────────────────────
-// Max 480p, max 12 menit, pakai sistem limit yang sama
+// Max 720p, max 12 menit, pakai sistem limit yang sama
 
 async function handleYoutubeVideoDownloader(context: CommandContext): Promise<void> {
   const rawUrl = context.args[0];
-  const parsedUrl = parseHttpUrl(rawUrl);
-  const hostname = parsedUrl?.hostname.toLowerCase() ?? "";
-  if (
-    !parsedUrl ||
-    (!hostname.includes("youtube.com") && !hostname.includes("youtu.be"))
-  ) {
+  const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "youtube");
+  if (!parsedUrl) {
     await context.reply("Format command salah.\nGunakan: .yt <link YouTube>");
     return;
   }
@@ -251,10 +236,7 @@ async function handleYoutubeVideoDownloader(context: CommandContext): Promise<vo
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
-async function sendMediaItem(
-  context: CommandContext,
-  item: DownloadedMediaItem,
-): Promise<void> {
+async function sendMediaItem(context: CommandContext, item: DownloadedMediaItem): Promise<void> {
   if (item.mediaType === "video") {
     await context.socket.sendMessage(
       context.chatJid,
@@ -277,8 +259,7 @@ async function sendMediaItem(
   }
 }
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 function formatTikTokError(error: unknown): string {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
@@ -312,11 +293,7 @@ function formatInstagramError(error: unknown): string {
 
 function formatYoutubeError(error: unknown): string {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
-  if (
-    message.includes("duration") ||
-    message.includes("match-filter") ||
-    message.includes("720")
-  ) {
+  if (message.includes("duration") || message.includes("match-filter") || message.includes("720")) {
     return "Video melebihi batas durasi 12 menit.";
   }
   if (message.includes("max-filesize") || message.includes("maksimal")) {

@@ -1,12 +1,16 @@
-import type { GroupMemberProfile } from "@prisma/client";
+import {
+  MemberTransactionAsset,
+  MemberTransactionType,
+  type GroupMemberProfile,
+} from "@prisma/client";
 
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
+import { prisma } from "../../repositories/prismaClient";
 import { DuplicateOperationError } from "../../types/memberEconomy";
 import { isConsecutiveWibDay, toWibDateKey } from "../../utils/wibDate";
-import { MemberEconomyService } from "./memberEconomy.service";
+import { generateCorrelationId } from "./memberEconomy.service";
 import { defaultRandom } from "./randomProvider";
 import type { RandomProvider } from "./randomProvider";
-import { generateCorrelationId } from "./memberEconomy.service";
 
 const DAILY_XP = 50;
 const DAILY_POINTS_MIN = 10;
@@ -25,7 +29,7 @@ export interface DailyClaimResult {
 
 // Minimal profile store interface for DI and testing.
 interface DailyProfileStore {
-  findOrCreate(groupJid: string, userJid: string): Promise<GroupMemberProfile>;
+  findOrCreate(groupJid: string, userJid: string, tx?: unknown): Promise<GroupMemberProfile>;
   updateBalances(
     id: string,
     data: {
@@ -64,11 +68,41 @@ interface DailyEconomyService {
   }): Promise<GroupMemberProfile>;
 }
 
+interface DailyTx {
+  groupMemberProfile?: {
+    updateMany: (args: {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    }) => Promise<{ count: number }>;
+  };
+  groupMemberTransaction?: {
+    createMany: (args: {
+      data: {
+        profileId: string;
+        groupJid: string;
+        userJid: string;
+        asset: MemberTransactionAsset;
+        type: MemberTransactionType;
+        amount: number;
+        balanceBefore: number;
+        balanceAfter: number;
+        correlationId: string;
+        idempotencyKey: string;
+      }[];
+    }) => Promise<{ count: number }>;
+  };
+}
+
+interface DailyDb {
+  $transaction<T>(fn: (tx: DailyTx) => Promise<T>): Promise<T>;
+}
+
 export class DailyClaimService {
   constructor(
-    private readonly economyService: DailyEconomyService = new MemberEconomyService(),
+    _economyService?: DailyEconomyService,
     private readonly profileRepo: DailyProfileStore = new GroupMemberProfileRepository(),
     private readonly random: RandomProvider = defaultRandom,
+    private readonly db: DailyDb = prisma,
   ) {}
 
   async claimDaily(
@@ -77,83 +111,131 @@ export class DailyClaimService {
     now: Date = new Date(),
   ): Promise<DailyClaimResult> {
     const wibDateKey = toWibDateKey(now);
+    const startOfTodayWib = new Date(`${wibDateKey}T00:00:00+07:00`);
     const idempotencyKey = `daily:${groupJid}:${userJid}:${wibDateKey}`;
     const correlationId = generateCorrelationId();
 
-    // Check if already claimed today using last claim timestamp.
-    const profile = await this.economyService.findOrCreateProfile(groupJid, userJid);
-    if (profile.lastDailyClaimAt !== null) {
-      const lastClaimWibKey = toWibDateKey(profile.lastDailyClaimAt);
-      if (lastClaimWibKey === wibDateKey) {
-        throw new DuplicateOperationError("Bonus harian sudah diambil hari ini");
-      }
-    }
-
-    // Calculate rewards.
     const pointsGained = this.random.intBetween(DAILY_POINTS_MIN, DAILY_POINTS_MAX);
     const xpGained = DAILY_XP;
     const bonusLimitGained = this.random.chance(DAILY_BONUS_LIMIT_PROBABILITY) ? 1 : 0;
 
-    // Calculate new streak.
-    const newStreak = this.calculateStreak(profile.lastDailyClaimAt, now, profile.currentStreak);
-    const newLongestStreak = Math.max(newStreak, profile.longestStreak);
+    return this.db.$transaction(async (tx) => {
+      const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
 
-    // Credit points - idempotency key prevents concurrent double-claim.
-    await this.economyService.creditPoints({
-      groupJid,
-      userJid,
-      amount: pointsGained,
-      type: "DAILY_REWARD",
-      idempotencyKey,
-      correlationId,
+      // Check if already claimed today using last claim timestamp.
+      if (profile.lastDailyClaimAt !== null) {
+        const lastClaimWibKey = toWibDateKey(profile.lastDailyClaimAt);
+        if (lastClaimWibKey === wibDateKey) {
+          throw new DuplicateOperationError("Bonus harian sudah diambil hari ini");
+        }
+      }
+
+      const newStreak = this.calculateStreak(profile.lastDailyClaimAt, now, profile.currentStreak);
+      const newLongestStreak = Math.max(newStreak, profile.longestStreak);
+
+      if (tx.groupMemberProfile?.updateMany) {
+        const updateResult = await tx.groupMemberProfile.updateMany({
+          where: {
+            id: profile.id,
+            OR: [{ lastDailyClaimAt: null }, { lastDailyClaimAt: { lt: startOfTodayWib } }],
+          },
+          data: {
+            pointsBalance: { increment: pointsGained },
+            totalPointsEarned: { increment: pointsGained },
+            experience: { increment: xpGained },
+            limitBalance: { increment: bonusLimitGained },
+            totalLimitsEarned: { increment: bonusLimitGained },
+            currentStreak: newStreak,
+            longestStreak: newLongestStreak,
+            lastDailyClaimAt: now,
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new DuplicateOperationError("Bonus harian sudah diambil hari ini");
+        }
+      } else {
+        await this.profileRepo.updateBalances(
+          profile.id,
+          {
+            lastDailyClaimAt: now,
+            currentStreak: newStreak,
+            longestStreak: newLongestStreak,
+          },
+          tx,
+        );
+      }
+
+      if (tx.groupMemberTransaction?.createMany) {
+        const txEntries: {
+          profileId: string;
+          groupJid: string;
+          userJid: string;
+          asset: MemberTransactionAsset;
+          type: MemberTransactionType;
+          amount: number;
+          balanceBefore: number;
+          balanceAfter: number;
+          correlationId: string;
+          idempotencyKey: string;
+        }[] = [
+          {
+            profileId: profile.id,
+            groupJid,
+            userJid,
+            asset: MemberTransactionAsset.POINT,
+            type: MemberTransactionType.DAILY_REWARD,
+            amount: pointsGained,
+            balanceBefore: profile.pointsBalance,
+            balanceAfter: profile.pointsBalance + pointsGained,
+            correlationId,
+            idempotencyKey,
+          },
+          {
+            profileId: profile.id,
+            groupJid,
+            userJid,
+            asset: MemberTransactionAsset.EXPERIENCE,
+            type: MemberTransactionType.DAILY_REWARD,
+            amount: xpGained,
+            balanceBefore: profile.experience,
+            balanceAfter: profile.experience + xpGained,
+            correlationId,
+            idempotencyKey: `${idempotencyKey}:xp`,
+          },
+        ];
+
+        if (bonusLimitGained > 0) {
+          txEntries.push({
+            profileId: profile.id,
+            groupJid,
+            userJid,
+            asset: MemberTransactionAsset.LIMIT,
+            type: MemberTransactionType.DAILY_REWARD,
+            amount: bonusLimitGained,
+            balanceBefore: profile.limitBalance,
+            balanceAfter: profile.limitBalance + bonusLimitGained,
+            correlationId,
+            idempotencyKey: `${idempotencyKey}:limit`,
+          });
+        }
+
+        await tx.groupMemberTransaction.createMany({ data: txEntries });
+      }
+
+      return {
+        pointsGained,
+        xpGained,
+        bonusLimitGained,
+        currentPoints: profile.pointsBalance + pointsGained,
+        currentLimit: profile.limitBalance + bonusLimitGained,
+        currentXp: profile.experience + xpGained,
+        currentStreak: newStreak,
+      };
     });
-
-    // Credit XP.
-    await this.economyService.creditXp({
-      groupJid,
-      userJid,
-      amount: xpGained,
-      type: "DAILY_REWARD",
-      correlationId,
-    });
-
-    // Credit bonus limit if applicable.
-    if (bonusLimitGained > 0) {
-      await this.economyService.creditLimit({
-        groupJid,
-        userJid,
-        amount: bonusLimitGained,
-        type: "DAILY_REWARD",
-        correlationId,
-      });
-    }
-
-    // Update streak and claim timestamp.
-    await this.profileRepo.updateBalances(profile.id, {
-      lastDailyClaimAt: now,
-      currentStreak: newStreak,
-      longestStreak: newLongestStreak,
-    });
-
-    // Return final state from a fresh read.
-    const updated = await this.economyService.findOrCreateProfile(groupJid, userJid);
-
-    return {
-      pointsGained,
-      xpGained,
-      bonusLimitGained,
-      currentPoints: updated.pointsBalance,
-      currentLimit: updated.limitBalance,
-      currentXp: updated.experience,
-      currentStreak: newStreak,
-    };
   }
 
-  private calculateStreak(
-    lastClaimAt: Date | null,
-    now: Date,
-    currentStreak: number,
-  ): number {
+  private calculateStreak(lastClaimAt: Date | null, now: Date, currentStreak: number): number {
     if (!lastClaimAt) {
       return 1;
     }

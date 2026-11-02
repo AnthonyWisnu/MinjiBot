@@ -1,4 +1,9 @@
-import { proto, WAMessageStubType, type BaileysEventMap, type WASocket } from "@whiskeysockets/baileys";
+import {
+  proto,
+  WAMessageStubType,
+  type BaileysEventMap,
+  type WASocket,
+} from "@whiskeysockets/baileys";
 
 import { logger } from "../../config/logger";
 import { antiDeleteService } from "../../services/moderation/antiDelete.service";
@@ -17,7 +22,12 @@ export async function handleMessagesUpdate(
       protocolKey
     ) {
       try {
-        await antiDeleteService.handleMessageRevoke(socket, protocolKey);
+        const revokerJid =
+          item.key.participant ??
+          item.key.remoteJid ??
+          item.update.messageStubParameters?.[0] ??
+          (item.update as { participant?: string }).participant;
+        await antiDeleteService.handleMessageRevoke(socket, protocolKey, revokerJid);
       } catch (error: unknown) {
         logger.error({ error }, "Gagal memproses deteksi pesan ditarik via protocolMessage");
       }
@@ -31,9 +41,13 @@ export async function handleMessagesUpdate(
       item.update.messageStubType === WAMessageStubType.REVOKE ||
       (item.update as { messageStubType?: number }).messageStubType === 1;
 
-    if (isRevokeStub && item.key) {
+    if (isRevokeStub) {
       try {
-        await antiDeleteService.handleMessageRevoke(socket, item.key);
+        const revokerJid =
+          item.update.messageStubParameters?.[0] ??
+          (item.update as { participant?: string }).participant ??
+          item.key.participant;
+        await antiDeleteService.handleMessageRevoke(socket, item.key, revokerJid);
       } catch (error: unknown) {
         logger.error({ error }, "Gagal memproses deteksi pesan ditarik via stubType");
       }

@@ -7,23 +7,58 @@ import { rateLimitGuard } from "../guards/rateLimitGuard";
 import { roleGuard } from "../guards/roleGuard";
 import { tenantGuard } from "../guards/tenantGuard";
 import { isGroupJid } from "../utils/jid";
-import { reportCommandExecution, reportIncomingMessage } from "../services/telemetry.service";
+import { formatUserSafeError } from "../utils/userSafeError";
 import { parseCommandMessage } from "./messageParser";
 import { defaultMessagePipeline } from "./pipeline";
 
 type MessagesUpsertEvent = BaileysEventMap["messages.upsert"];
 
+const UPSERT_CONCURRENCY = 5;
+
 export async function handleMessagesUpsert(
   socket: WASocket,
   event: MessagesUpsertEvent,
 ): Promise<void> {
-  if (event.type !== "notify") {
+  if (event.type !== "notify" || !event.messages.length) {
     return;
   }
 
+  // Kelompokkan pesan per sender (chatJid + senderJid) agar urutan pesan dari pengirim yang sama tidak tertukar
+  const senderQueues = new Map<string, MessagesUpsertEvent["messages"]>();
   for (const message of event.messages) {
-    await handleIncomingMessage(socket, message);
+    const chatJid = message.key.remoteJid ?? "";
+    const senderJid = message.key.participant ?? (message.key.fromMe ? "me" : chatJid);
+    const queueKey = `${chatJid}:${senderJid}`;
+
+    let queue = senderQueues.get(queueKey);
+    if (!queue) {
+      queue = [];
+      senderQueues.set(queueKey, queue);
+    }
+    queue.push(message);
   }
+
+  const allQueues = Array.from(senderQueues.values());
+  let nextQueueIndex = 0;
+
+  const processSenderQueue = async (messages: MessagesUpsertEvent["messages"]): Promise<void> => {
+    for (const message of messages) {
+      await handleIncomingMessage(socket, message);
+    }
+  };
+
+  const workerCount = Math.min(UPSERT_CONCURRENCY, allQueues.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (nextQueueIndex < allQueues.length) {
+      const queueIndex = nextQueueIndex++;
+      const queue = allQueues[queueIndex];
+      if (queue) {
+        await processSenderQueue(queue);
+      }
+    }
+  });
+
+  await Promise.all(workers);
 }
 
 async function handleIncomingMessage(
@@ -32,18 +67,6 @@ async function handleIncomingMessage(
 ): Promise<void> {
   const remoteJid = message.key.remoteJid;
   const isGroup = Boolean(remoteJid && isGroupJid(remoteJid));
-
-  // Laporkan metrik pesan masuk ke Pulse Analytics secara asinkron (fire-and-forget)
-  reportIncomingMessage({
-    isGroup,
-    hasMedia: Boolean(
-      message.message?.imageMessage ??
-        message.message?.videoMessage ??
-        message.message?.documentMessage ??
-        message.message?.audioMessage ??
-        message.message?.stickerMessage,
-    ),
-  });
 
   // 1. Eksekusi interceptor pipeline terurut (PendingTenant, AntiDelete, AFK, AntiLink, AntiSpam, InteractiveReply)
   const halted = await defaultMessagePipeline.execute({
@@ -64,8 +87,12 @@ async function handleIncomingMessage(
     return;
   }
 
+  // Check if command is registered before checking guards or replying
+  if (!commandRouter.has(context.commandName)) {
+    return;
+  }
+
   // 3. Resolusi Guard dan Eksekusi Command
-  const commandStartTime = Date.now();
   try {
     context.role = await roleGuard.resolveRole({
       chatJid: context.chatJid,
@@ -84,7 +111,9 @@ async function handleIncomingMessage(
 
     const tenantAccess = await tenantGuard.checkGroupCommandAccess(context);
     if (!tenantAccess.allowed) {
-      await context.reply(tenantAccess.message);
+      if (tenantAccess.message) {
+        await context.reply(tenantAccess.message);
+      }
       return;
     }
 
@@ -99,24 +128,7 @@ async function handleIncomingMessage(
     }
 
     await commandRouter.handle(context);
-
-    reportCommandExecution({
-      command: context.commandName,
-      role: context.role,
-      isGroup: context.isGroup,
-      status: "success",
-      executionTimeMs: Date.now() - commandStartTime,
-    });
   } catch (error: unknown) {
-    reportCommandExecution({
-      command: context.commandName,
-      role: context.role,
-      isGroup: context.isGroup,
-      status: "error",
-      executionTimeMs: Date.now() - commandStartTime,
-      errorMessage: error instanceof Error ? error.message : String(error),
-    });
-
     logger.error(
       {
         error,
@@ -127,6 +139,6 @@ async function handleIncomingMessage(
       "Command gagal diproses",
     );
 
-    await context.reply("Command gagal diproses. Silakan coba lagi.");
+    await context.reply(formatUserSafeError(error, "Command gagal diproses. Silakan coba lagi."));
   }
 }

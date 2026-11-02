@@ -2,10 +2,10 @@ import ffmpegStatic from "ffmpeg-static";
 import { randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { spawn } from "node:child_process";
 
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
+import { runExternalProcess } from "../../utils/processRunner";
 import { createTempDir, removeTempDir } from "../../utils/tempFile";
 
 export type AudioEffectType = "bass" | "chipmunk" | "slowed" | "nightcore" | "tovn";
@@ -25,10 +25,7 @@ const EFFECT_FILTERS: Record<Exclude<AudioEffectType, "tovn">, string> = {
 };
 
 export class AudioEffectService {
-  async applyEffect(
-    inputBuffer: Buffer,
-    effect: AudioEffectType,
-  ): Promise<AudioEffectResult> {
+  async applyEffect(inputBuffer: Buffer, effect: AudioEffectType): Promise<AudioEffectResult> {
     const tempDir = await createTempDir("audio-fx");
     const inputPath = path.join(tempDir, `input-${randomUUID()}.bin`);
     const isVn = effect === "tovn";
@@ -38,14 +35,7 @@ export class AudioEffectService {
       await writeFile(inputPath, inputBuffer);
       const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
 
-      const args: string[] = [
-        "-y",
-        "-i",
-        inputPath,
-        "-vn",
-        "-t",
-        "300",
-      ];
+      const args: string[] = ["-y", "-i", inputPath, "-vn", "-t", "300"];
 
       if (isVn) {
         args.push("-c:a", "libopus", "-b:a", "64k", "-ac", "1", outputPath);
@@ -57,7 +47,15 @@ export class AudioEffectService {
         args.push("-c:a", "libmp3lame", "-q:a", "2", outputPath);
       }
 
-      await runProcess(ffmpegPath, args, env.DOWNLOADER_TIMEOUT_MS);
+      try {
+        await runExternalProcess(ffmpegPath, args, {
+          timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
+        });
+      } catch (err: unknown) {
+        logger.warn({ err }, "FFmpeg audio effect error");
+        throw new Error("Gagal memproses efek audio. Format media tidak didukung.");
+      }
+
       const buffer = await readFile(outputPath);
 
       return {
@@ -70,36 +68,6 @@ export class AudioEffectService {
       await removeTempDir(tempDir);
     }
   }
-}
-
-function runProcess(command: string, args: string[], timeoutMs: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { windowsHide: true });
-    let stderr = "";
-    const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new Error("Pemrosesan audio melewati batas waktu."));
-    }, timeoutMs);
-
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf8");
-    });
-
-    child.on("error", (error) => {
-      clearTimeout(timeout);
-      reject(new Error(`Gagal menjalankan FFmpeg: ${error.message}`));
-    });
-
-    child.on("close", (code) => {
-      clearTimeout(timeout);
-      if (code === 0) {
-        resolve();
-        return;
-      }
-      logger.warn({ stderr: stderr.slice(-300) }, "FFmpeg audio effect error");
-      reject(new Error("Gagal memproses efek audio. Format media tidak didukung."));
-    });
-  });
 }
 
 export const audioEffectService = new AudioEffectService();

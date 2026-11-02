@@ -8,7 +8,9 @@ import {
 } from "@prisma/client";
 import type { WAMessage, WASocket } from "@whiskeysockets/baileys";
 
+import { env } from "../../config/env";
 import { logger } from "../../config/logger";
+import { roleGuard } from "../../guards/roleGuard";
 import {
   moderationGuard,
   type ModerationContextState,
@@ -21,9 +23,11 @@ import { TenantGroupRepository } from "../../repositories/tenantGroup.repository
 import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSetting.repository";
 import type { CommandContext } from "../../types/command";
 import type { Role } from "../../types/role";
-import { getIdentityCandidateJids, getMessageSenderJid } from "../../utils/jid";
+import { getIdentityCandidateJids, getMessageSenderJid, normalizeUserJid } from "../../utils/jid";
 import { extractTextFromMessageContent } from "../../utils/messageText";
 import { tenantFeatureService } from "../tenant/tenantFeature.service";
+import { identityResolverService } from "../identity/identityResolver.service";
+import { antiDeleteService } from "./antiDelete.service";
 
 const MESSAGE_FLOOD_WINDOW_MS = 10_000;
 const MESSAGE_FLOOD_LIMIT = 6;
@@ -69,7 +73,7 @@ export class AntiSpamService {
   ): Promise<AntiSpamConfigResult> {
     const tenantGroup = await this.resolveManagedTenant(context);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const tenantFeatureRepository = new TenantFeatureRepository(tx);
       const tenantGroupSettingRepository = new TenantGroupSettingRepository(tx);
       const tenantAuditRepository = new TenantAuditRepository(tx);
@@ -96,6 +100,9 @@ export class AntiSpamService {
         groupSetting,
       };
     });
+
+    tenantFeatureService.invalidateCache(tenantGroup.groupJid);
+    return result;
   }
 
   async setAntiSpamMode(
@@ -104,7 +111,7 @@ export class AntiSpamService {
   ): Promise<AntiSpamConfigResult> {
     const tenantGroup = await this.resolveManagedTenant(context);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const tenantFeatureRepository = new TenantFeatureRepository(tx);
       const tenantGroupSettingRepository = new TenantGroupSettingRepository(tx);
       const tenantAuditRepository = new TenantAuditRepository(tx);
@@ -131,6 +138,9 @@ export class AntiSpamService {
         groupSetting,
       };
     });
+
+    tenantFeatureService.invalidateCache(tenantGroup.groupJid);
+    return result;
   }
 
   async getAntiSpamConfig(context: CommandContext): Promise<AntiSpamConfigResult> {
@@ -164,6 +174,25 @@ export class AntiSpamService {
       return;
     }
 
+    let senderJids = this.getMessageSenderCandidateJids(message, senderJid);
+    if (typeof socket.groupMetadata === "function") {
+      try {
+        const metadata = await socket.groupMetadata(groupJid);
+        const resolved = identityResolverService.getCanonicalCandidateSet(metadata, senderJid);
+        senderJids = Array.from(new Set([...senderJids, ...resolved]));
+      } catch {
+        // ignore
+      }
+    }
+    const isSuperOwner = senderJids.some((j) => roleGuard.isSuperOwner(j));
+    const isTenantOwner = Boolean(
+      tenantGroup.ownerJid && senderJids.includes(normalizeUserJid(tenantGroup.ownerJid)),
+    );
+
+    if (isSuperOwner || isTenantOwner) {
+      return;
+    }
+
     const reason = this.detectSpam(groupJid, senderJid, message);
     if (!reason) {
       return;
@@ -176,7 +205,6 @@ export class AntiSpamService {
     }
     bucket.lastActionAt = now;
 
-    const senderJids = this.getMessageSenderCandidateJids(message, senderJid);
     const groupSetting = await this.tenantGroupSettingRepository.ensureForGroup(groupJid);
 
     if (groupSetting.antiSpamMode === AntiSpamMode.NORMAL) {
@@ -299,13 +327,22 @@ export class AntiSpamService {
     const now = Date.now();
     const bucket = this.getBucket(groupJid, senderJid);
     const text = extractTextFromMessageContent(message.message).trim().toLowerCase();
-    const isCommand = text.startsWith(".");
+    const prefix = env.COMMAND_PREFIX;
+    const isCommand = text.startsWith(prefix) || text.startsWith(".");
+
+    const unwrapped =
+      message.message?.ephemeralMessage?.message ??
+      message.message?.viewOnceMessage?.message ??
+      message.message?.viewOnceMessageV2?.message ??
+      message.message?.documentWithCaptionMessage?.message ??
+      message.message;
+
     const isMedia = Boolean(
-      message.message?.imageMessage ??
-      message.message?.videoMessage ??
-      message.message?.audioMessage ??
-      message.message?.documentMessage ??
-      message.message?.stickerMessage,
+      unwrapped?.imageMessage ??
+      unwrapped?.videoMessage ??
+      unwrapped?.audioMessage ??
+      unwrapped?.documentMessage ??
+      unwrapped?.stickerMessage,
     );
 
     bucket.messageTimes = pushWindow(bucket.messageTimes, now, MESSAGE_FLOOD_WINDOW_MS);
@@ -423,6 +460,8 @@ export class AntiSpamService {
       return;
     }
 
+    antiDeleteService.suppressModerationDelete(remoteJid, messageId);
+
     try {
       await socket.sendMessage(remoteJid, {
         delete: message.key,
@@ -486,7 +525,12 @@ export class AntiSpamService {
       const latestMessage = bucket.messageTimes[bucket.messageTimes.length - 1] ?? 0;
       const latestCommand = bucket.commandTimes[bucket.commandTimes.length - 1] ?? 0;
       const latestMedia = bucket.mediaTimes[bucket.mediaTimes.length - 1] ?? 0;
-      const lastActivity = Math.max(latestMessage, latestCommand, latestMedia, bucket.lastActionAt ?? 0);
+      const lastActivity = Math.max(
+        latestMessage,
+        latestCommand,
+        latestMedia,
+        bucket.lastActionAt ?? 0,
+      );
 
       if (lastActivity < expiryThreshold) {
         this.buckets.delete(key);

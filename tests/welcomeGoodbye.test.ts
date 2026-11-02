@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { TenantFeatureSetting, TenantGroup, TenantGroupSetting } from "@prisma/client";
+import type { TenantFeatureSetting, TenantGroup } from "@prisma/client";
+import {
+  buildTenantFeatureSetting,
+  buildTenantGroup,
+  buildTenantGroupSetting,
+} from "./helpers/factories";
 import { TenantStatus } from "@prisma/client";
 import type { WASocket } from "@whiskeysockets/baileys";
 
@@ -32,11 +37,9 @@ void test("WelcomeService: renderMessage replaces {user} and {group} placeholder
     name: "Komunitas Bisnis",
   } as unknown as TenantGroup;
 
-  const rendered = service.renderMessage(
-    "Halo {user} di {group}!",
-    mockTenant,
-    ["6281234567890@s.whatsapp.net"],
-  );
+  const rendered = service.renderMessage("Halo {user} di {group}!", mockTenant, [
+    "6281234567890@s.whatsapp.net",
+  ]);
 
   assert.equal(rendered, "Halo @6281234567890 di Komunitas Bisnis!");
 });
@@ -62,50 +65,19 @@ void test("GoodBye Event: sends formal notice when participant is removed", asyn
     },
   } as unknown as WASocket;
 
-  const mockTenantGroup: TenantGroup = {
-    id: "tenant-1",
+  const mockTenantGroup = buildTenantGroup({
     groupJid: "120363001@g.us",
-    tenantCode: "MNJ001",
     name: "Komunitas Kreatif",
-    status: TenantStatus.ACTIVE,
-    ownerJid: "628999@s.whatsapp.net",
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    isBlocked: false,
-    approvedAt: new Date(),
-    activatedAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  const mockFeatureSetting: TenantFeatureSetting = {
-    id: "feature-1",
+  });
+  const mockFeatureSetting = buildTenantFeatureSetting({
     groupJid: "120363001@g.us",
-    downloaderEnabled: true,
-    hdEnabled: true,
-    gameEnabled: true,
-    welcomeEnabled: true,
-    antiLinkEnabled: true,
-    antiSpamEnabled: true,
-    reminderEnabled: true,
-    tagAllEnabled: true,
-    antiDeleteEnabled: true,
     goodbyeEnabled: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  const mockGroupSetting: TenantGroupSetting = {
-    id: "setting-1",
+  });
+  const _mockGroupSetting = buildTenantGroupSetting({
     groupJid: "120363001@g.us",
-    welcomeMessage: null, // default
-    goodbyeMessage: null, // default
-    antiLinkAutoKick: false,
-    antiSpamMode: "NORMAL" as any,
-    tagAllCooldownSec: 600,
-    remindAllCooldownSec: 600,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+    welcomeMessage: null,
+    goodbyeMessage: null,
+  });
 
   const mockGroupRepo = {
     findByGroupJid: async () => mockTenantGroup,
@@ -114,7 +86,7 @@ void test("GoodBye Event: sends formal notice when participant is removed", asyn
     findByGroupJid: async () => mockFeatureSetting,
   };
   const mockGroupSettingRepo = {
-    ensureForGroup: async () => mockGroupSetting,
+    ensureForGroup: async () => _mockGroupSetting,
   };
 
   const service = new WelcomeService(
@@ -131,11 +103,14 @@ void test("GoodBye Event: sends formal notice when participant is removed", asyn
 
   assert.equal(sentMessages.length, 1);
   const sent = sentMessages[0];
+  assert.ok(sent);
   assert.equal(sent.jid, "120363001@g.us");
   assert.ok(sent.content.text.includes("*[ PEMBERITAHUAN ]*"));
   assert.ok(sent.content.text.includes("@628123456789"));
   assert.ok(sent.content.text.includes("telah keluar dari *Komunitas Kreatif*."));
-  assert.ok(sent.content.text.includes("Terima kasih atas kerja sama dan kebersamaannya selama ini."));
+  assert.ok(
+    sent.content.text.includes("Terima kasih atas kerja sama dan kebersamaannya selama ini."),
+  );
   assert.deepEqual(sent.content.mentions, ["628123456789@s.whatsapp.net"]);
 });
 
@@ -149,41 +124,23 @@ void test("GoodBye Event: ignores when goodbyeEnabled is false", async () => {
     },
   } as unknown as WASocket;
 
-  const mockTenantGroup: TenantGroup = {
-    id: "tenant-1",
+  const mockTenantGroup = buildTenantGroup({
     groupJid: "120363001@g.us",
-    tenantCode: "MNJ001",
     name: "Komunitas Kreatif",
-    status: TenantStatus.ACTIVE,
-    ownerJid: "628999@s.whatsapp.net",
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    isBlocked: false,
-    approvedAt: new Date(),
-    activatedAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  const mockFeatureSetting: TenantFeatureSetting = {
-    id: "feature-1",
+  });
+  const mockFeatureSetting = buildTenantFeatureSetting({
     groupJid: "120363001@g.us",
-    downloaderEnabled: true,
-    hdEnabled: true,
-    gameEnabled: true,
-    welcomeEnabled: true,
-    antiLinkEnabled: true,
-    antiSpamEnabled: true,
-    reminderEnabled: true,
-    tagAllEnabled: true,
-    antiDeleteEnabled: true,
-    goodbyeEnabled: false, // OFF!
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+    goodbyeEnabled: false,
+  });
+  const _mockGroupSetting = buildTenantGroupSetting({
+    groupJid: "120363001@g.us",
+    welcomeMessage: null,
+    goodbyeMessage: null,
+  });
 
   const mockGroupRepo = { findByGroupJid: async () => mockTenantGroup };
   const mockFeatureRepo = { findByGroupJid: async () => mockFeatureSetting };
-  const mockGroupSettingRepo = { ensureForGroup: async () => ({}) };
+  const mockGroupSettingRepo = { ensureForGroup: async () => buildTenantGroupSetting() };
 
   const service = new WelcomeService(
     mockGroupRepo as any,
@@ -222,7 +179,7 @@ void test("GoodBye Event: ignores when participant removed is the bot itself", a
 
   const mockGroupRepo = { findByGroupJid: async () => mockTenantGroup };
   const mockFeatureRepo = { findByGroupJid: async () => mockFeatureSetting };
-  const mockGroupSettingRepo = { ensureForGroup: async () => ({}) };
+  const mockGroupSettingRepo = { ensureForGroup: async () => buildTenantGroupSetting() };
 
   const service = new WelcomeService(
     mockGroupRepo as any,

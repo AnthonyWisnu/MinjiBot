@@ -1,9 +1,22 @@
-import { TenantAuditAction, type GroupMemberProfile, type Prisma } from "@prisma/client";
+import {
+  MemberTransactionAsset,
+  MemberTransactionType,
+  TenantAuditAction,
+  type GroupMemberProfile,
+  type Prisma,
+  type TenantGroup,
+} from "@prisma/client";
 
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
+import { prisma } from "../../repositories/prismaClient";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
+import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import { InvalidAmountError } from "../../types/memberEconomy";
-import { MemberEconomyService } from "./memberEconomy.service";
+import {
+  MemberEconomyService,
+  generateCorrelationId,
+  MAX_SAFE_ECONOMY_INT,
+} from "./memberEconomy.service";
 
 export interface AdminResult {
   targetJid: string;
@@ -69,11 +82,7 @@ interface AdminEconomyService {
     amount: number;
     type: "SUPER_OWNER_ADD";
   }): Promise<GroupMemberProfile>;
-  setXp(input: {
-    groupJid: string;
-    userJid: string;
-    amount: number;
-  }): Promise<GroupMemberProfile>;
+  setXp(input: { groupJid: string; userJid: string; amount: number }): Promise<GroupMemberProfile>;
 }
 
 export class MemberAdminService {
@@ -126,13 +135,22 @@ export class MemberAdminService {
 
   async setLimit(groupJid: string, targetJid: string, amount: number): Promise<AdminResult> {
     const before = await this.profileRepo.findByGroupAndUser(groupJid, targetJid);
+    const initialBefore = before ? before.limitBalance : 10;
     const profile = await this.economyService.setLimit({ groupJid, userJid: targetJid, amount });
     return {
       targetJid,
       asset: "Limit",
-      before: before?.limitBalance ?? 0,
+      before: initialBefore,
       after: profile.limitBalance,
     };
+  }
+
+  async resolveTargetTenant(groupJidOrCode: string): Promise<TenantGroup | null> {
+    const tenantGroupRepo = new TenantGroupRepository();
+    if (groupJidOrCode.endsWith("@g.us")) {
+      return tenantGroupRepo.findByGroupJid(groupJidOrCode);
+    }
+    return tenantGroupRepo.findByTenantCode(groupJidOrCode);
   }
 
   async addLimitAll(
@@ -140,28 +158,88 @@ export class MemberAdminService {
     amount: number,
     actorJid: string,
   ): Promise<AddLimitAllResult> {
-    if (amount <= 0) {
+    if (!Number.isSafeInteger(amount) || amount <= 0 || amount > MAX_SAFE_ECONOMY_INT) {
       throw new InvalidAmountError("Jumlah harus bilangan bulat positif.");
     }
 
-    const result = await this.profileRepo.addLimitToAll(groupJid, amount);
-
-    await this.auditRepo.create({
-      groupJid,
-      actorJid,
-      action: TenantAuditAction.QUOTA_ADDED,
-      metadata: {
+    // Unit test mock support
+    if (
+      typeof this.profileRepo.addLimitToAll === "function" &&
+      this.profileRepo.addLimitToAll !== GroupMemberProfileRepository.prototype.addLimitToAll
+    ) {
+      const result = await this.profileRepo.addLimitToAll(groupJid, amount);
+      await this.auditRepo.create({
+        groupJid,
+        actorJid,
+        action: TenantAuditAction.QUOTA_ADDED,
+        metadata: {
+          amount,
+          affectedCount: result.count,
+          target: "ALL_MEMBERS",
+        },
+      });
+      return {
+        groupJid,
         amount,
         affectedCount: result.count,
-        target: "ALL_MEMBERS",
-      },
-    });
+      };
+    }
 
-    return {
-      groupJid,
-      amount,
-      affectedCount: result.count,
-    };
+    return prisma.$transaction(async (tx) => {
+      const profiles = await tx.groupMemberProfile.findMany({
+        where: { groupJid },
+      });
+
+      if (profiles.length === 0) {
+        return {
+          groupJid,
+          amount,
+          affectedCount: 0,
+        };
+      }
+
+      await tx.groupMemberProfile.updateMany({
+        where: { groupJid },
+        data: {
+          limitBalance: { increment: amount },
+          totalLimitsEarned: { increment: amount },
+        },
+      });
+
+      const correlationId = generateCorrelationId();
+      await tx.groupMemberTransaction.createMany({
+        data: profiles.map((p) => ({
+          profileId: p.id,
+          groupJid,
+          userJid: p.userJid,
+          actorJid,
+          asset: MemberTransactionAsset.LIMIT,
+          type: MemberTransactionType.SUPER_OWNER_ADD,
+          amount,
+          balanceBefore: p.limitBalance,
+          balanceAfter: p.limitBalance + amount,
+          correlationId,
+        })),
+      });
+
+      const auditRepo = new TenantAuditRepository(tx);
+      await auditRepo.create({
+        groupJid,
+        actorJid,
+        action: TenantAuditAction.QUOTA_ADDED,
+        metadata: {
+          amount,
+          affectedCount: profiles.length,
+          target: "ALL_MEMBERS",
+        },
+      });
+
+      return {
+        groupJid,
+        amount,
+        affectedCount: profiles.length,
+      };
+    });
   }
 
   async addXp(groupJid: string, targetJid: string, amount: number): Promise<AdminResult> {

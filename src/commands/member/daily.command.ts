@@ -30,10 +30,7 @@ async function executeDaily(context: CommandContext): Promise<void> {
   }
 
   try {
-    const result = await dailyClaimService.claimDaily(
-      context.chatJid,
-      context.senderUserJid,
-    );
+    const result = await dailyClaimService.claimDaily(context.chatJid, context.senderUserJid);
     await context.reply(formatDailyResult(result));
   } catch (error: unknown) {
     if (error instanceof DuplicateOperationError) {

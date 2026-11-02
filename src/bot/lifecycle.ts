@@ -4,12 +4,11 @@ import qrcode from "qrcode-terminal";
 import { env } from "../config/env";
 import { logger } from "../config/logger";
 import { disconnectPrisma } from "../repositories/prismaClient";
+import { activityBufferService } from "../services/stats/activityBuffer.service";
 import { reminderScheduler } from "../services/reminder/reminderScheduler";
 import { levelUpNotifierService } from "../services/member/levelUpNotifier.service";
 import { createBotSocket } from "./connection";
-import { registerEventSubscribers } from "./subscribers";
-import { alertServer } from "../services/alertServer";
-import { exportQrToWeb, cleanupQrFromWeb } from "../utils/qrExporter";
+import { flushCredsQueue, registerEventSubscribers } from "./subscribers";
 
 export class BotLifecycle {
   private socket: WASocket | null = null;
@@ -19,7 +18,6 @@ export class BotLifecycle {
 
   async start(): Promise<void> {
     this.isStopping = false;
-    alertServer.start();
     await this.connect();
   }
 
@@ -31,9 +29,6 @@ export class BotLifecycle {
       this.reconnectTimer = null;
     }
 
-    alertServer.setSocket(null);
-    alertServer.stop();
-
     if (this.socket) {
       this.socket.end(undefined);
       this.socket = null;
@@ -41,6 +36,20 @@ export class BotLifecycle {
 
     reminderScheduler.stop();
     levelUpNotifierService.setSocket(null);
+
+    try {
+      await activityBufferService.flush();
+      activityBufferService.stopFlushTimer();
+    } catch (error: unknown) {
+      logger.error({ error }, "Gagal flush activity buffer saat shutdown");
+    }
+
+    try {
+      await flushCredsQueue();
+    } catch (error: unknown) {
+      logger.error({ error }, "Gagal flush creds queue saat shutdown");
+    }
+
     await disconnectPrisma();
     logger.info({ reason }, "Lifecycle MinjiBot dihentikan");
   }
@@ -48,11 +57,21 @@ export class BotLifecycle {
   private async connect(): Promise<void> {
     try {
       const botSocket = await createBotSocket();
+      if (this.isStopping) {
+        botSocket.socket.end(undefined);
+        return;
+      }
+
       this.socket = botSocket.socket;
-      alertServer.setSocket(botSocket.socket);
+      const currentSocket = botSocket.socket;
+
       registerEventSubscribers(botSocket.socket, {
         saveCreds: botSocket.saveCreds,
         onConnectionUpdate: (update) => {
+          if (this.socket !== currentSocket) {
+            logger.debug("Mengabaikan connection.update dari soket usang");
+            return;
+          }
           this.handleConnectionUpdate(update);
         },
       });
@@ -66,13 +85,10 @@ export class BotLifecycle {
     if (update.qr) {
       logger.info("QR login WhatsApp tersedia. Scan QR yang tampil di terminal.");
       qrcode.generate(update.qr, { small: true });
-      void exportQrToWeb(update.qr);
     }
 
     if (update.connection === "open") {
       this.reconnectAttempt = 0;
-      alertServer.setSocket(this.socket);
-      cleanupQrFromWeb();
       logger.info("Koneksi WhatsApp terbuka");
       return;
     }
@@ -82,7 +98,6 @@ export class BotLifecycle {
     }
 
     if (this.isStopping) {
-      alertServer.setSocket(null);
       this.socket = null;
       return;
     }
@@ -98,7 +113,6 @@ export class BotLifecycle {
       "Koneksi WhatsApp tertutup",
     );
 
-    alertServer.setSocket(null);
     this.socket = null;
 
     if (shouldReconnect) {
@@ -117,7 +131,9 @@ export class BotLifecycle {
 
     this.reconnectAttempt += 1;
     if (this.reconnectAttempt > 10) {
-      logger.error("Reconnect WhatsApp gagal 10 kali berturut-turut. Keluar agar PM2 me-restart proses.");
+      logger.error(
+        "Reconnect WhatsApp gagal 10 kali berturut-turut. Keluar agar PM2 me-restart proses.",
+      );
       process.exit(1);
     }
     const delayMs = Math.min(

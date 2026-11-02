@@ -7,7 +7,7 @@ const optionalPathSchema = z
   .transform((value) => (value.length > 0 ? value : undefined))
   .optional();
 
-const envSchema = z.object({
+export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().min(1),
   COMMAND_PREFIX: z.string().min(1),
@@ -39,9 +39,8 @@ const envSchema = z.object({
   TENANT_SESSION_TTL_DAYS: z.coerce.number().int().positive(),
   REMINDER_POLL_MS: z.coerce.number().int().positive(),
   FFMPEG_PATH: optionalPathSchema,
-  AI_UPSCALE_BIN: optionalPathSchema,
+  BOT_AVATAR_PATH: optionalPathSchema,
   GALLERY_DL_BIN: z.string().default("gallery-dl"),
-  INTERNAL_ALERT_SECRET: z.string().default("minji-internal-alert-secret-key"),
 });
 
 export type Env = z.infer<typeof envSchema>;

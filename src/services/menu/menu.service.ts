@@ -1,3 +1,4 @@
+import os from "node:os";
 import type { TenantFeatureSetting, TenantGroup } from "@prisma/client";
 
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
@@ -7,12 +8,59 @@ import { formatDateId, formatNullableText } from "../../utils/format";
 export class MenuService {
   constructor(private readonly tenantFeatureRepository = new TenantFeatureRepository()) {}
 
-  async buildMenu(context: CommandContext): Promise<string> {
-    if (!context.isGroup) {
-      return this.buildPrivateMenu(context);
-    }
+  buildHeader(context: CommandContext): string {
+    const rawNumber = context.senderUserJid.split("@")[0] ?? context.senderUserJid;
+    const now = new Date();
 
-    return this.buildGroupMenu(context);
+    const dayName = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      timeZone: "Asia/Jakarta",
+    }).format(now);
+
+    const dateFormatted = new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      timeZone: "Asia/Jakarta",
+    }).format(now);
+
+    const timeFormatted = new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Jakarta",
+    }).format(now);
+
+    const cpus = os.cpus();
+    const cpuCores = cpus.length;
+    const cpuSpeed = cpus[0]?.speed ? (cpus[0].speed / 1000).toFixed(1) : "2.5";
+    const totalMemGb = (os.totalmem() / (1024 * 1024 * 1024)).toFixed(2);
+    const freeMemGb = (os.freemem() / (1024 * 1024 * 1024)).toFixed(2);
+
+    return [
+      `Hello @~${rawNumber}`,
+      "",
+      `🌤️ Hari: ${dayName}`,
+      `📅 Tanggal: ${dateFormatted}`,
+      `⏰ Waktu: ${timeFormatted} Wib`,
+      "",
+      "Status:",
+      "▶ Country: Indonesia",
+      `▶ Platform: ${os.platform()}`,
+      `▶ CPU: ${String(cpuCores)} Cores - ${cpuSpeed}GHz`,
+      `▶ RAM: ${freeMemGb} GB / ${totalMemGb} GB Free`,
+      `▶ Arch: ${os.arch()}`,
+    ].join("\n");
+  }
+
+  async buildMenu(context: CommandContext): Promise<string> {
+    const header = this.buildHeader(context);
+    const body = !context.isGroup
+      ? this.buildPrivateMenu(context)
+      : await this.buildGroupMenu(context);
+
+    return `${header}\n\n${body}`;
   }
 
   buildOwnerMenu(): string {
@@ -30,6 +78,8 @@ export class MenuService {
       "• .blocktenant <kode>",
       "• .unblocktenant <kode>",
       "• .removetenant <kode>",
+      "• .purgetenant <kode>",
+      "• .addlimitall <kode> <jumlah>",
       "",
       "*─── [ NAVIGASI ] ───*",
       "• .tenantmenu",
@@ -148,10 +198,16 @@ export class MenuService {
       `Exp: ${tenantGroup ? formatDateId(tenantGroup.expiresAt) : "-"}`,
       "",
       "*─── [ MANAJEMEN TENANT ] ───*",
+      "• .activatetenant <kode> <owner>",
+      "• .listtenant",
       "• .tenantinfo <kode>",
       "• .extendtenant <kode> <durasi>",
+      "• .settenantexpire <kode> <tgl>",
       "• .blocktenant <kode>",
       "• .unblocktenant <kode>",
+      "• .removetenant <kode>",
+      "• .purgetenant <kode>",
+      "• .addlimitall <kode> <jumlah>",
       "• .transferowner @user",
       "• .addtenantadmin <nomor>",
       "• .removetenantadmin <nomor>",
@@ -332,6 +388,7 @@ export class MenuService {
       "• .toppoint",
       "• .stats",
       "• .topaktif",
+      "• .deletemydata",
     ];
   }
 

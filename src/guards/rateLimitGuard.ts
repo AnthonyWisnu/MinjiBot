@@ -42,10 +42,7 @@ export class RateLimitGuard {
   }
 
   check(context: CommandContext): RateLimitResult {
-    const candidateJids = getIdentityCandidateJids(
-      context.senderUserJid,
-      context.senderAltJids,
-    );
+    const candidateJids = getIdentityCandidateJids(context.senderUserJid, context.senderAltJids);
 
     if (
       context.role === "SUPER_OWNER" ||
@@ -80,9 +77,7 @@ export class RateLimitGuard {
       return { allowed: false, warnUser: false };
     }
 
-    bucket.timestamps = bucket.timestamps.filter(
-      (time) => now - time < this.windowMs,
-    );
+    bucket.timestamps = bucket.timestamps.filter((time) => now - time < this.windowMs);
 
     if (bucket.timestamps.length >= this.maxRequests) {
       bucket.blockedUntil = now + this.cooldownMs;
@@ -116,9 +111,7 @@ export class RateLimitGuard {
 
     for (const [key, bucket] of this.buckets.entries()) {
       const isBlocked = now < bucket.blockedUntil;
-      const hasRecentTimestamps = bucket.timestamps.some(
-        (time) => now - time < ENTRY_MAX_AGE_MS,
-      );
+      const hasRecentTimestamps = bucket.timestamps.some((time) => now - time < ENTRY_MAX_AGE_MS);
 
       if (!isBlocked && !hasRecentTimestamps) {
         this.buckets.delete(key);

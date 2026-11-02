@@ -227,6 +227,10 @@ export class TenantAdminService {
     return targetCandidateJids.some((jid) => botJids.includes(jid));
   }
 
+  async isTenantAdmin(groupJid: string, userJid: string): Promise<boolean> {
+    return this.tenantAdminRepository.exists(groupJid, userJid);
+  }
+
   private getActorCandidateJids(context: CommandContext): string[] {
     return getIdentityCandidateJids(context.senderUserJid, [
       context.senderJid,

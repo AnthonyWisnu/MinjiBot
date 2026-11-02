@@ -1,11 +1,15 @@
 import type { WASocket } from "@whiskeysockets/baileys";
 
 import { logger } from "../../config/logger";
+import { AppUserError } from "../../errors/appUserError";
+import { roleGuard } from "../../guards/roleGuard";
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSetting.repository";
 import type { CommandContext } from "../../types/command";
 import { normalizeUserJid } from "../../utils/jid";
+import { identityResolverService } from "../identity/identityResolver.service";
+import { tenantFeatureService } from "../tenant/tenantFeature.service";
 
 export class AntiRaidService {
   private readonly joinTimestampsByGroup = new Map<string, number[]>();
@@ -22,7 +26,7 @@ export class AntiRaidService {
 
   async handleParticipantsJoin(
     socket: WASocket,
-    update: { id: string; action: string; participants: string[] },
+    update: { id: string; action: string; participants: string[]; author?: string },
   ): Promise<boolean> {
     if (update.action !== "add" || !update.participants.length) {
       return false;
@@ -30,13 +34,35 @@ export class AntiRaidService {
 
     const groupJid = update.id;
     const tenantGroup = await this.tenantGroupRepo.findByGroupJid(groupJid);
-    if (tenantGroup?.status !== "ACTIVE") {
+    if (
+      tenantGroup?.status !== "ACTIVE" ||
+      tenantGroup.isBlocked ||
+      (tenantGroup.expiresAt && tenantGroup.expiresAt.getTime() <= Date.now())
+    ) {
       return false;
     }
 
     const feature = await this.tenantFeatureRepo.findByGroupJid(groupJid);
     if (!feature?.antiRaidEnabled) {
       return false;
+    }
+
+    // If an author added the participants, verify if author is immune (bot, super owner, tenant owner, group admin)
+    if (update.author) {
+      const authorJid = normalizeUserJid(update.author);
+      const isBotOrOwner =
+        authorJid === normalizeUserJid(socket.user?.id ?? "") ||
+        roleGuard.isSuperOwner(authorJid) ||
+        (tenantGroup.ownerJid !== null && authorJid === normalizeUserJid(tenantGroup.ownerJid));
+
+      if (isBotOrOwner) {
+        return false;
+      }
+
+      const isGroupAdmin = await identityResolverService.isGroupAdmin(socket, groupJid, authorJid);
+      if (isGroupAdmin) {
+        return false;
+      }
     }
 
     const now = Date.now();
@@ -74,7 +100,13 @@ export class AntiRaidService {
         "Anti-Raid triggered: Surge member baru terdeteksi! Mengaktifkan emergency lockdown.",
       );
 
-      await this.triggerEmergencyLockdown(socket, groupJid, tenantGroup.ownerJid, validTimestamps.length, settings.antiRaidWindowSec);
+      await this.triggerEmergencyLockdown(
+        socket,
+        groupJid,
+        tenantGroup.ownerJid,
+        validTimestamps.length,
+        settings.antiRaidWindowSec,
+      );
       return true;
     }
 
@@ -116,7 +148,10 @@ export class AntiRaidService {
 
       mentions = [...new Set(adminJids)];
     } catch (error: unknown) {
-      logger.warn({ error, groupJid }, "Gagal mengambil metadata grup untuk mention Anti-Raid alert");
+      logger.warn(
+        { error, groupJid },
+        "Gagal mengambil metadata grup untuk mention Anti-Raid alert",
+      );
     }
 
     // 4. Send alert message
@@ -147,9 +182,11 @@ export class AntiRaidService {
     this.assertGroup(context);
     this.assertCanManage(context);
 
+    await this.tenantFeatureRepo.ensureForGroup(context.chatJid);
     await this.tenantFeatureRepo.update(context.chatJid, {
       antiRaidEnabled: enabled,
     });
+    tenantFeatureService.invalidateCache(context.chatJid);
 
     return `🛡️ Anti-Raid Protection berhasil ${enabled ? "*diaktifkan (ON)*" : "*dinonaktifkan (OFF)*"}.`;
   }
@@ -163,13 +200,14 @@ export class AntiRaidService {
     this.assertCanManage(context);
 
     if (Number.isNaN(threshold) || threshold < 2 || threshold > 50) {
-      throw new Error("[ERROR] Threshold serbuan harus berupa angka antara 2 sampai 50.");
+      throw new AppUserError("Threshold serbuan harus berupa angka antara 2 sampai 50.");
     }
 
     if (Number.isNaN(windowSec) || windowSec < 3 || windowSec > 120) {
-      throw new Error("[ERROR] Rentang waktu (detik) harus berupa angka antara 3 sampai 120 detik.");
+      throw new AppUserError("Rentang waktu (detik) harus berupa angka antara 3 sampai 120 detik.");
     }
 
+    await this.groupSettingRepo.ensureForGroup(context.chatJid);
     await this.groupSettingRepo.update(context.chatJid, {
       antiRaidThreshold: threshold,
       antiRaidWindowSec: windowSec,
@@ -203,6 +241,14 @@ export class AntiRaidService {
     this.assertGroup(context);
     this.assertCanManage(context);
 
+    const isBotAdmin = await identityResolverService.isBotGroupAdmin(
+      context.socket,
+      context.chatJid,
+    );
+    if (!isBotAdmin) {
+      throw new AppUserError("Bot harus menjadi admin grup untuk mengubah setelan ini.");
+    }
+
     const setting = mode === "open" ? "not_announcement" : "announcement";
     await context.socket.groupSettingUpdate(context.chatJid, setting);
 
@@ -213,7 +259,7 @@ export class AntiRaidService {
 
   private assertGroup(context: CommandContext): void {
     if (!context.isGroup) {
-      throw new Error("[ERROR] Command ini hanya dapat digunakan di dalam grup.");
+      throw new AppUserError("Command ini hanya dapat digunakan di dalam grup.");
     }
   }
 
@@ -223,7 +269,7 @@ export class AntiRaidService {
       context.role !== "TENANT_OWNER" &&
       context.role !== "TENANT_ADMIN"
     ) {
-      throw new Error("[ERROR] Hanya Owner atau Admin yang dapat mengatur setelan ini.");
+      throw new AppUserError("Hanya Owner atau Admin yang dapat mengatur setelan ini.");
     }
   }
 

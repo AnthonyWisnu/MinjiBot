@@ -1,6 +1,7 @@
 import { BotLifecycle } from "./bot/lifecycle";
 import { env } from "./config/env";
 import { logger } from "./config/logger";
+import { memberEconomyService } from "./services/member/memberEconomy.service";
 import { cleanAllStaleTempDirs, sweepStaleTempFiles } from "./utils/tempFile";
 
 async function main(): Promise<void> {
@@ -8,9 +9,32 @@ async function main(): Promise<void> {
   await cleanAllStaleTempDirs();
 
   // Jadwalkan pembersihan otomatis setiap 1 jam untuk file temp berusia > 30 menit
-  setInterval(() => {
-    void sweepStaleTempFiles();
-  }, 60 * 60 * 1000).unref();
+  setInterval(
+    () => {
+      void sweepStaleTempFiles();
+    },
+    60 * 60 * 1000,
+  ).unref();
+
+  // Rekonsiliasi limit reservasi yang menggantung akibat crash/restart sebelumnya
+  try {
+    const recovered = await memberEconomyService.reconcileOrphanedReservations();
+    if (recovered > 0) {
+      logger.info({ recovered }, "Berhasil merekonsiliasi reservasi limit yatim saat startup");
+    }
+  } catch (error: unknown) {
+    logger.error({ error }, "Gagal rekonsiliasi reservasi limit yatim saat startup");
+  }
+
+  // Jadwalkan rekonsiliasi berkala setiap 30 menit
+  setInterval(
+    () => {
+      memberEconomyService.reconcileOrphanedReservations().catch((error: unknown) => {
+        logger.error({ error }, "Gagal rekonsiliasi reservasi limit yatim periodik");
+      });
+    },
+    30 * 60 * 1000,
+  ).unref();
 
   logger.info(
     {

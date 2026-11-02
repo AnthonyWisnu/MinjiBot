@@ -7,10 +7,11 @@ import { TenantStatus } from "@prisma/client";
 import { GroupMemberProfileRepository } from "../src/repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../src/repositories/groupMemberTransaction.repository";
 import { MemberTransactionAsset, MemberTransactionType } from "@prisma/client";
+import { buildMemberProfile } from "./helpers/factories";
 
 // Helper to build a minimal GroupMemberProfile stub
 function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberProfile {
-  return {
+  return buildMemberProfile({
     id: "profile-1",
     groupJid: "group-1@g.us",
     userJid: "user-1@s.whatsapp.net",
@@ -28,7 +29,7 @@ function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberPr
     createdAt: new Date("2026-09-01T00:00:00Z"),
     updatedAt: new Date("2026-09-01T00:00:00Z"),
     ...overrides,
-  };
+  });
 }
 
 void test("GroupMemberProfileRepository.findOrCreate returns initial balances for new profile", async () => {

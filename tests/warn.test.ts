@@ -14,7 +14,9 @@ function createMockService(options?: {
   senderCanModerate?: boolean;
   kickedUsers?: string[];
 }) {
-  const warnings: GroupMemberWarning[] = options?.initialWarnings ? [...options.initialWarnings] : [];
+  const warnings: GroupMemberWarning[] = options?.initialWarnings
+    ? [...options.initialWarnings]
+    : [];
   const kickedUsers: string[] = options?.kickedUsers ?? [];
 
   const mockWarnRepo = {
@@ -161,9 +163,7 @@ function makeContext(overrides?: Partial<CommandContext>): CommandContext {
         }),
       groupParticipantsUpdate: (_jid: string, participants: string[], action: string) => {
         if (action === "remove") {
-          return Promise.resolve([
-            { status: "200", jid: participants[0] ?? "" },
-          ]);
+          return Promise.resolve([{ status: "200", jid: participants[0] ?? "" }]);
         }
         return Promise.resolve([]);
       },

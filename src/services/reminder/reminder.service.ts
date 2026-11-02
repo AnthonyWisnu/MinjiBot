@@ -6,6 +6,7 @@ import { prisma } from "../../repositories/prismaClient";
 import { ReminderRepository } from "../../repositories/reminder.repository";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
+import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSetting.repository";
 import type { CommandContext } from "../../types/command";
 import type { Role } from "../../types/role";
 import { parseReminderTime } from "../../utils/time";
@@ -16,9 +17,12 @@ export interface CreateReminderResult {
 }
 
 export class ReminderService {
+  private readonly remindAllCooldownUntilByGroup = new Map<string, number>();
+
   constructor(
     private readonly reminderRepository = new ReminderRepository(),
     private readonly tenantGroupRepository = new TenantGroupRepository(),
+    private readonly tenantGroupSettingRepository = new TenantGroupSettingRepository(),
   ) {}
 
   async createReminder(
@@ -32,8 +36,14 @@ export class ReminderService {
     }
     const tenantGroup = context.tenantGroup;
 
+    let remindAllCooldownSec = 0;
     if (mentionAll) {
       this.assertCanMentionAll(context.role);
+      const setting = await this.tenantGroupSettingRepository.ensureForGroup(
+        context.tenantGroup.groupJid,
+      );
+      remindAllCooldownSec = setting.remindAllCooldownSec;
+      this.assertRemindAllCooldownAvailable(context.tenantGroup.groupJid, remindAllCooldownSec);
     }
 
     const trimmedMessage = message.trim();
@@ -46,7 +56,7 @@ export class ReminderService {
       throw new Error("Waktu reminder harus di masa depan.");
     }
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const reminderRepository = new ReminderRepository(tx);
       const tenantAuditRepository = new TenantAuditRepository(tx);
       const reminder = await reminderRepository.create({
@@ -73,6 +83,12 @@ export class ReminderService {
         tenantGroup,
       };
     });
+
+    if (mentionAll && remindAllCooldownSec > 0) {
+      this.setRemindAllCooldown(context.tenantGroup.groupJid, remindAllCooldownSec);
+    }
+
+    return result;
   }
 
   async listGroupReminders(context: CommandContext): Promise<Reminder[]> {
@@ -142,15 +158,69 @@ export class ReminderService {
       ? await this.loadGroupParticipantMentions(socket, reminder.groupJid)
       : [];
 
-    await socket.sendMessage(reminder.groupJid, {
-      text: reminder.message,
-      mentions,
-    });
-    await this.reminderRepository.markSent(reminder.id);
+    try {
+      await socket.sendMessage(reminder.groupJid, {
+        text: reminder.message,
+        mentions,
+      });
+      await this.reminderRepository.markSent(reminder.id);
+    } catch (error: unknown) {
+      const maybeBoom = error as {
+        output?: { statusCode?: number };
+        status?: number;
+        data?: number;
+        message?: string;
+      };
+      const statusCode = maybeBoom.output?.statusCode ?? maybeBoom.status ?? maybeBoom.data;
+      const message = (maybeBoom.message ?? "").toLowerCase();
+
+      if (
+        statusCode === 403 ||
+        statusCode === 404 ||
+        statusCode === 401 ||
+        message.includes("not-authorized") ||
+        message.includes("forbidden")
+      ) {
+        logger.warn(
+          { reminderId: reminder.id, groupJid: reminder.groupJid, statusCode },
+          "Reminder dibatalkan karena bot tidak memiliki izin atau telah dikeluarkan dari grup (403/404/not-authorized)",
+        );
+        await this.reminderRepository.markSent(reminder.id);
+        return;
+      }
+
+      throw error;
+    }
   }
 
   async listDue(now = new Date()): Promise<Reminder[]> {
     return this.reminderRepository.listDue(now);
+  }
+
+  private assertRemindAllCooldownAvailable(groupJid: string, cooldownSec: number): void {
+    if (cooldownSec <= 0) return;
+    const now = Date.now();
+    const cooldownUntil = this.remindAllCooldownUntilByGroup.get(groupJid) ?? 0;
+    if (cooldownUntil <= now) return;
+
+    const remainingSec = Math.ceil((cooldownUntil - now) / 1000);
+    throw new Error(`Remind all masih cooldown. Coba lagi dalam ${String(remainingSec)} detik.`);
+  }
+
+  private setRemindAllCooldown(groupJid: string, cooldownSec: number): void {
+    if (cooldownSec <= 0) {
+      this.remindAllCooldownUntilByGroup.delete(groupJid);
+      return;
+    }
+    const now = Date.now();
+    this.remindAllCooldownUntilByGroup.set(groupJid, now + cooldownSec * 1000);
+    if (this.remindAllCooldownUntilByGroup.size > 100) {
+      for (const [jid, expiry] of this.remindAllCooldownUntilByGroup.entries()) {
+        if (expiry <= now) {
+          this.remindAllCooldownUntilByGroup.delete(jid);
+        }
+      }
+    }
   }
 
   private async loadGroupParticipantMentions(

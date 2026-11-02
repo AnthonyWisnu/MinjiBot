@@ -11,7 +11,7 @@ import {
   InvalidAmountError,
 } from "../../types/memberEconomy";
 import { normalizeUserJid } from "../../utils/jid";
-import { generateCorrelationId } from "./memberEconomy.service";
+import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "./memberEconomy.service";
 
 const SELF_TRANSFER_ERROR = "Tidak bisa mengirim ke diri sendiri.";
 const BOT_TRANSFER_ERROR = "Tidak bisa mengirim ke bot.";
@@ -20,12 +20,14 @@ const NON_PARTICIPANT_ERROR = "Penerima bukan peserta grup ini.";
 export interface GiftInput {
   groupJid: string;
   senderJid: string;
+  senderAltJids?: readonly string[];
   recipientJid: string;
   amount: number;
   idempotencyKey?: string;
   /** Current participant JIDs from Baileys group metadata. */
   participantJids: readonly string[];
-  botJid: string;
+  botJid?: string;
+  botJids?: Set<string> | readonly string[];
 }
 
 export interface GiftResult {
@@ -96,27 +98,51 @@ export class GiftService {
     asset: MemberTransactionAsset,
     balanceField: "pointsBalance" | "limitBalance",
   ): Promise<GiftResult> {
-    const { groupJid, senderJid, recipientJid, amount, idempotencyKey, participantJids, botJid } =
-      input;
+    const {
+      groupJid,
+      senderJid,
+      senderAltJids = [],
+      recipientJid,
+      amount,
+      idempotencyKey,
+      participantJids,
+      botJid = "",
+      botJids,
+    } = input;
 
-    if (!Number.isInteger(amount) || amount <= 0) {
+    if (!Number.isSafeInteger(amount) || amount <= 0 || amount > MAX_SAFE_ECONOMY_INT) {
       throw new InvalidAmountError("Jumlah harus bilangan bulat positif.");
     }
 
     const normalizedSender = normalizeUserJid(senderJid);
     const normalizedRecipient = normalizeUserJid(recipientJid);
-    const normalizedBot = normalizeUserJid(botJid);
+    const senderCandidates = [normalizedSender, ...senderAltJids.map((j) => normalizeUserJid(j))];
 
-    if (normalizedSender === normalizedRecipient) {
+    if (senderCandidates.includes(normalizedRecipient)) {
       throw new InvalidAmountError(SELF_TRANSFER_ERROR);
     }
 
-    if (normalizedRecipient === normalizedBot) {
+    const normalizedBot = normalizeUserJid(botJid);
+    const botCandidateSet = new Set<string>();
+    if (normalizedBot) {
+      botCandidateSet.add(normalizedBot);
+    }
+    if (botJids) {
+      for (const bj of botJids) {
+        const nb = normalizeUserJid(bj);
+        if (nb) botCandidateSet.add(nb);
+      }
+    }
+
+    if (botCandidateSet.has(normalizedRecipient)) {
       throw new InvalidAmountError(BOT_TRANSFER_ERROR);
     }
 
     const normalizedParticipants = participantJids.map((jid) => normalizeUserJid(jid));
-    if (!normalizedParticipants.includes(normalizedRecipient)) {
+    if (
+      normalizedParticipants.length > 0 &&
+      !normalizedParticipants.includes(normalizedRecipient)
+    ) {
       throw new InvalidAmountError(NON_PARTICIPANT_ERROR);
     }
 

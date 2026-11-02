@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { GroupMemberProfile } from "@prisma/client";
 
-import { LevelUpNotifierService, type LevelUpNotification } from "../src/services/member/levelUpNotifier.service";
+import { buildMemberProfile } from "./helpers/factories";
+
+import {
+  LevelUpNotifierService,
+  type LevelUpNotification,
+} from "../src/services/member/levelUpNotifier.service";
 import { MemberEconomyService } from "../src/services/member/memberEconomy.service";
 
 class MockProfileStore {
@@ -12,7 +17,7 @@ class MockProfileStore {
     const key = `${groupJid}_${userJid}`;
     let profile = this.profiles.get(key);
     if (!profile) {
-      profile = {
+      profile = buildMemberProfile({
         id: `prof_${key}`,
         groupJid,
         userJid,
@@ -21,15 +26,13 @@ class MockProfileStore {
         reservedLimit: 0,
         totalLimitsEarned: 10,
         experience: 0,
-        dailyStreak: 1,
-        lastDailyClaimAt: null,
         totalGamesPlayed: 0,
         totalGamesWon: 0,
         messageCount: 0,
         lastActiveAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      });
       this.profiles.set(key, profile);
     }
     return profile;
@@ -65,7 +68,10 @@ class MockTransactionalDb {
           for (const [key, prof] of this.store.profiles.entries()) {
             if (prof.id === args.where.id) {
               const inc = args.data.experience.increment ?? 0;
-              const setVal = typeof args.data.experience === "number" ? args.data.experience : prof.experience + inc;
+              const setVal =
+                typeof args.data.experience === "number"
+                  ? args.data.experience
+                  : prof.experience + inc;
               const updated = { ...prof, experience: setVal };
               this.store.profiles.set(key, updated);
               return updated;

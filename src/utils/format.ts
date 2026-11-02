@@ -4,6 +4,7 @@ export function formatDateId(date: Date | null | undefined): string {
   }
 
   return new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
     day: "numeric",
     month: "long",
     year: "numeric",

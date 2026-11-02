@@ -40,6 +40,12 @@ export class TenantSessionRepository {
     });
   }
 
+  clearByGroupJid(groupJid: string): Promise<{ count: number }> {
+    return this.client.tenantPrivateSession.deleteMany({
+      where: { groupJid },
+    });
+  }
+
   deleteExpired(now = new Date()): Promise<{ count: number }> {
     return this.client.tenantPrivateSession.deleteMany({
       where: {

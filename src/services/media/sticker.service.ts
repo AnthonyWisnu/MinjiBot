@@ -2,12 +2,15 @@ import ffmpegStatic from "ffmpeg-static";
 import { randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import sharp from "sharp";
-import { spawn } from "node:child_process";
 import webp from "node-webpmux";
+import sharp from "sharp";
 
 import { env } from "../../config/env";
+import { AppUserError } from "../../errors/appUserError";
+import { MAX_SAFE_ANIMATED_PAGES, MAX_SAFE_IMAGE_PIXELS } from "../../utils/imageSafety";
+import { runExternalProcess } from "../../utils/processRunner";
 import { createTempDir, removeTempDir } from "../../utils/tempFile";
+import { clampAndWrapText, clampText, codePointLength, escapeXml } from "../../utils/xml";
 
 export const DEFAULT_STICKER_PACK = "MinjiBot Official Pack";
 export const DEFAULT_STICKER_AUTHOR = "MinjiBot";
@@ -15,7 +18,10 @@ export const DEFAULT_STICKER_AUTHOR = "MinjiBot";
 const STICKER_SIZE = 512;
 const ANIMATED_STICKER_SECONDS = 6;
 const STICKER_FPS = 15;
-const MEME_TEXT_MAX_LENGTH = 160;
+const MEME_TEXT_MAX_LENGTH = 80;
+const BRAT_TEXT_MAX_LENGTH = 250;
+const BRAT_MAX_CHARS_PER_LINE = 16;
+const BRAT_MAX_LINES = 8;
 
 export type StickerSourceType = "image" | "video";
 
@@ -73,12 +79,12 @@ export class StickerService {
     const normalizedBottomText = normalizeMemeText(bottomText);
 
     if (!normalizedTopText && !normalizedBottomText) {
-      throw new Error("Teks meme tidak boleh kosong.");
+      throw new AppUserError("Teks meme tidak boleh kosong.");
     }
 
     const baseImage = await sharp(inputBuffer, {
       animated: false,
-      limitInputPixels: false,
+      limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
     })
       .rotate()
       .resize(STICKER_SIZE, STICKER_SIZE, {
@@ -88,7 +94,9 @@ export class StickerService {
       .png()
       .toBuffer();
 
-    const memeWebp = await sharp(baseImage)
+    const memeWebp = await sharp(baseImage, {
+      limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
+    })
       .composite([
         {
           input: Buffer.from(createMemeTextSvg(normalizedTopText, normalizedBottomText)),
@@ -108,11 +116,13 @@ export class StickerService {
   async createBratSticker(text: string): Promise<Buffer> {
     const trimmed = text.trim();
     if (!trimmed) {
-      throw new Error("Teks stiker brat tidak boleh kosong.");
+      throw new AppUserError("Teks stiker brat tidak boleh kosong.");
     }
 
     const svgString = createBratSvg(trimmed);
-    const bratWebp = await sharp(Buffer.from(svgString))
+    const bratWebp = await sharp(Buffer.from(svgString), {
+      limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
+    })
       .resize(STICKER_SIZE, STICKER_SIZE)
       .webp({
         quality: 85,
@@ -126,10 +136,14 @@ export class StickerService {
   private async isAnimatedSticker(inputBuffer: Buffer): Promise<boolean> {
     const metadata = await sharp(inputBuffer, {
       animated: true,
-      limitInputPixels: false,
+      limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
     }).metadata();
 
     const pages = metadata.pages ?? 1;
+    if (pages > MAX_SAFE_ANIMATED_PAGES) {
+      throw new AppUserError("Durasi/jumlah frame stiker terlalu panjang (maks 150 frame).");
+    }
+
     const delayCount = metadata.delay?.length ?? 0;
     const height = metadata.height;
     const pageHeight = metadata.pageHeight;
@@ -140,7 +154,7 @@ export class StickerService {
   private async createStaticSticker(inputBuffer: Buffer): Promise<Buffer> {
     return sharp(inputBuffer, {
       animated: false,
-      limitInputPixels: false,
+      limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
     })
       .rotate()
       .resize(STICKER_SIZE, STICKER_SIZE, {
@@ -157,7 +171,7 @@ export class StickerService {
   private async staticStickerToImage(inputBuffer: Buffer): Promise<Buffer> {
     return sharp(inputBuffer, {
       animated: false,
-      limitInputPixels: false,
+      limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
     })
       .png()
       .toBuffer();
@@ -203,6 +217,15 @@ export class StickerService {
   }
 
   private async animatedStickerToVideo(inputBuffer: Buffer): Promise<Buffer> {
+    const metadata = await sharp(inputBuffer, {
+      animated: true,
+      limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
+    }).metadata();
+
+    if ((metadata.pages ?? 1) > MAX_SAFE_ANIMATED_PAGES) {
+      throw new AppUserError("Durasi/jumlah frame stiker terlalu panjang (maks 150 frame).");
+    }
+
     const tempDir = await createTempDir("sticker");
     const inputPath = path.join(tempDir, "sticker.webp");
     const gifPath = path.join(tempDir, "sticker.gif");
@@ -215,7 +238,7 @@ export class StickerService {
       } catch {
         const gifBuffer = await sharp(inputBuffer, {
           animated: true,
-          limitInputPixels: false,
+          limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
         })
           .gif({
             effort: 4,
@@ -257,42 +280,23 @@ export class StickerService {
   }
 }
 
-function runFfmpeg(args: string[]): Promise<void> {
+async function runFfmpeg(args: string[]): Promise<void> {
   const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
 
-  return new Promise((resolve, reject) => {
-    const child = spawn(ffmpegPath, args, {
-      windowsHide: true,
+  try {
+    await runExternalProcess(ffmpegPath, args, {
+      timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
     });
-    let stderr = "";
-    const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new Error("Konversi sticker melewati batas waktu."));
-    }, env.DOWNLOADER_TIMEOUT_MS);
-
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf8");
-    });
-
-    child.on("error", (error) => {
-      clearTimeout(timeout);
-      reject(new Error(`FFmpeg tidak tersedia: ${error.message}`));
-    });
-
-    child.on("close", (code) => {
-      clearTimeout(timeout);
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(new Error(`Konversi sticker gagal: ${stderr.slice(-500)}`));
-    });
-  });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes("melewati batas waktu")) {
+      throw new AppUserError("Konversi sticker melewati batas waktu.");
+    }
+    throw new Error(`Konversi sticker gagal: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 function normalizeMemeText(text: string): string {
-  return text.trim().replace(/\s+/g, " ").slice(0, MEME_TEXT_MAX_LENGTH);
+  return clampText(text.replace(/\s+/g, " "), MEME_TEXT_MAX_LENGTH, "");
 }
 
 function createMemeTextSvg(topText: string, bottomText: string): string {
@@ -324,13 +328,13 @@ function createMemeTextSvg(topText: string, bottomText: string): string {
 function getMemeFontSize(topText: string, bottomText: string): number {
   const longestText = [topText, bottomText]
     .flatMap((text) => text.split(/\s+/))
-    .reduce((longest, word) => Math.max(longest, word.length), 0);
+    .reduce((longest, word) => Math.max(longest, codePointLength(word)), 0);
 
   if (longestText > 18) {
     return 34;
   }
 
-  if (topText.length + bottomText.length > 80) {
+  if (codePointLength(topText) + codePointLength(bottomText) > 80) {
     return 38;
   }
 
@@ -343,29 +347,7 @@ function wrapMemeLines(text: string, fontSize: number): string[] {
   }
 
   const maxChars = Math.max(10, Math.floor(430 / (fontSize * 0.58)));
-  const words = text.split(/\s+/);
-  const lines: string[] = [];
-  let currentLine = "";
-
-  for (const word of words) {
-    const nextLine = currentLine ? `${currentLine} ${word}` : word;
-    if (nextLine.length <= maxChars) {
-      currentLine = nextLine;
-      continue;
-    }
-
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-
-    currentLine = word;
-  }
-
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
-  return lines.slice(0, 4);
+  return clampAndWrapText(text, MEME_TEXT_MAX_LENGTH, maxChars, 4);
 }
 
 function createSvgTextLine(text: string, y: number, fontSize: number): string {
@@ -374,35 +356,19 @@ function createSvgTextLine(text: string, y: number, fontSize: number): string {
     ` font-family="Arial, Helvetica, sans-serif" font-weight="900"`,
     ` font-size="${String(fontSize)}" letter-spacing="0"`,
     ` fill="#ffffff" stroke="#000000" stroke-width="7" stroke-linejoin="round"`,
-    ` paint-order="stroke fill">${escapeSvgText(text.toUpperCase())}</text>`,
+    ` paint-order="stroke fill">${escapeXml(text.toUpperCase())}</text>`,
   ].join("");
 }
 
-function escapeSvgText(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function createBratSvg(text: string): string {
-  const words = text.trim().split(/\s+/);
-  const lines: string[] = [];
-  let currentLine = "";
-
-  for (const word of words) {
-    if ((currentLine + " " + word).trim().length <= 16) {
-      currentLine = (currentLine + " " + word).trim();
-    } else {
-      if (currentLine) lines.push(currentLine);
-      currentLine = word;
-    }
-  }
-  if (currentLine) lines.push(currentLine);
-  if (lines.length === 0) lines.push(text.trim());
-
-  const maxLines = lines.slice(0, 8);
+  const wrappedLines = clampAndWrapText(
+    text,
+    BRAT_TEXT_MAX_LENGTH,
+    BRAT_MAX_CHARS_PER_LINE,
+    BRAT_MAX_LINES,
+  );
+  const maxLines =
+    wrappedLines.length > 0 ? wrappedLines : [clampText(text, BRAT_MAX_CHARS_PER_LINE)];
   const fontSize =
     maxLines.length <= 2 ? 62 : maxLines.length <= 4 ? 46 : maxLines.length <= 6 ? 36 : 28;
   const lineHeight = fontSize * 1.18;
@@ -412,7 +378,7 @@ function createBratSvg(text: string): string {
   const tspans = maxLines
     .map(
       (line, i) =>
-        `<tspan x="256" y="${String(Math.round(startY + i * lineHeight))}">${escapeSvgText(line)}</tspan>`,
+        `<tspan x="256" y="${String(Math.round(startY + i * lineHeight))}">${escapeXml(line)}</tspan>`,
     )
     .join("");
 
@@ -446,7 +412,7 @@ export async function addStickerMetadata(
       "sticker-pack-id": "com.minjibot.sticker",
       "sticker-pack-name": packName,
       "sticker-pack-publisher": author,
-      "emojis": ["🤖", "✨"],
+      emojis: ["🤖", "✨"],
     };
 
     const exifHeader = Buffer.from([

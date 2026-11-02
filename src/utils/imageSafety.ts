@@ -1,0 +1,2 @@
+export const MAX_SAFE_IMAGE_PIXELS = 4096 * 4096;
+export const MAX_SAFE_ANIMATED_PAGES = 150;

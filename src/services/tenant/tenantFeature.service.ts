@@ -3,6 +3,8 @@ import { TenantAuditAction, type TenantFeatureSetting, type TenantGroup } from "
 import { prisma } from "../../repositories/prismaClient";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
+import { tenantRuntimeCacheService } from "./tenantRuntimeCache.service";
+import { tenantGuard } from "../../guards/tenantGuard";
 import { tenantOwnerSessionService } from "./tenantOwnerSession.service";
 import type { Role } from "../../types/role";
 import type { TenantFeatureKey } from "../../types/feature";
@@ -37,13 +39,17 @@ export interface ResolveFeatureTenantInput {
 }
 
 export class TenantFeatureService {
-  private readonly settingCache = new Map<string, { setting: TenantFeatureSetting; cachedAt: number }>();
+  private readonly settingCache = new Map<
+    string,
+    { setting: TenantFeatureSetting; cachedAt: number }
+  >();
   private static readonly CACHE_TTL_MS = 20_000; // 20 detik
 
   constructor(private readonly tenantFeatureRepository = new TenantFeatureRepository()) {}
 
   invalidateCache(groupJid: string): void {
     this.settingCache.delete(groupJid);
+    tenantRuntimeCacheService.invalidate(groupJid);
   }
 
   async getFeatureSetting(groupJid: string): Promise<TenantFeatureSetting> {
@@ -73,6 +79,7 @@ export class TenantFeatureService {
     }
 
     this.invalidateCache(input.tenantGroup.groupJid);
+    tenantGuard.invalidateCache(input.tenantGroup.groupJid);
 
     return prisma.$transaction(async (tx) => {
       const tenantFeatureRepository = new TenantFeatureRepository(tx);
@@ -123,6 +130,15 @@ export class TenantFeatureService {
       );
     }
 
+    if (
+      currentTenant.tenantGroup.status !== "ACTIVE" ||
+      currentTenant.tenantGroup.isBlocked ||
+      (currentTenant.tenantGroup.expiresAt !== null &&
+        currentTenant.tenantGroup.expiresAt.getTime() <= Date.now())
+    ) {
+      throw new Error("Tenant yang dipilih sudah tidak aktif atau expired.");
+    }
+
     return currentTenant.tenantGroup;
   }
 
@@ -139,6 +155,18 @@ export class TenantFeatureService {
 
     if (normalized === "tag-all") {
       return "tagall";
+    }
+
+    if (normalized === "anti-delete") {
+      return "antidelete";
+    }
+
+    if (normalized === "anti-raid") {
+      return "antiraid";
+    }
+
+    if (normalized === "good-bye") {
+      return "goodbye";
     }
 
     if (isTenantFeatureKey(normalized)) {
@@ -181,6 +209,9 @@ function isTenantFeatureKey(value: string): value is TenantFeatureKey {
     "antispam",
     "reminder",
     "tagall",
+    "antidelete",
+    "goodbye",
+    "antiraid",
   ].includes(value);
 }
 

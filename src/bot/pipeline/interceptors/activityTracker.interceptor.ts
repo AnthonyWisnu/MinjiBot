@@ -1,7 +1,11 @@
 import { env } from "../../../config/env";
 import { logger } from "../../../config/logger";
-import { groupStatsService } from "../../../services/stats/groupStats.service";
-import { getMessageSenderJid, getPreferredUserJid, getUniqueNormalizedJids } from "../../../utils/jid";
+import { activityBufferService } from "../../../services/stats/activityBuffer.service";
+import {
+  getMessageSenderJid,
+  getPreferredUserJid,
+  getUniqueNormalizedJids,
+} from "../../../utils/jid";
 import { extractTextFromMessageContent } from "../../../utils/messageText";
 import type { IncomingPipelineContext, InterceptorOutput, MessageInterceptor } from "../types";
 
@@ -39,10 +43,8 @@ export class ActivityTrackerInterceptor implements MessageInterceptor {
         senderAltJids.includes(senderJid) ? senderAltJids : [senderJid, ...senderAltJids],
       );
 
-      // Non-blocking fire-and-forget activity recording
-      void groupStatsService.trackActivity(chatJid, senderUserJid).catch((error: unknown) => {
-        logger.warn({ error, chatJid, senderUserJid }, "Gagal mencatat aktivitas member di ActivityTracker");
-      });
+      // In-memory write-behind batching (PERF-01: 0 DB calls per chat message)
+      activityBufferService.recordMessage(chatJid, senderUserJid);
     } catch (error: unknown) {
       logger.warn({ error, chatJid }, "Error resolving sender JID in ActivityTrackerInterceptor");
     }

@@ -7,7 +7,7 @@ import type { WAMessage, WASocket } from "@whiskeysockets/baileys";
 process.env.NODE_ENV = "test";
 process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/minjibot_test";
 process.env.COMMAND_PREFIX = ".";
-process.env.SUPER_OWNER_JIDS = "62895366009208@s.whatsapp.net";
+process.env.SUPER_OWNER_JIDS = "628000000101@s.whatsapp.net";
 process.env.SESSION_DIR = "./sessions-test";
 process.env.TEMP_DIR = "./tmp-test";
 process.env.LOG_LEVEL = "silent";
@@ -27,7 +27,7 @@ void test("AntiLinkService auto kick does not kick super owner resolved from LID
     extraParticipants: [
       {
         id: "111111@lid",
-        jid: "62895366009208@s.whatsapp.net",
+        jid: "628000000101@s.whatsapp.net",
         lid: "111111@lid",
         admin: null,
       },
@@ -36,9 +36,9 @@ void test("AntiLinkService auto kick does not kick super owner resolved from LID
 
   await service.handleIncomingMessage(socket, createLinkMessage("1", "111111@lid"));
 
-  assert.equal(socket.deletedMessages, 1);
+  assert.equal(socket.deletedMessages, 0);
   assert.equal(socket.kickedUsers.length, 0);
-  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /user dilindungi dari kick/);
+  assert.equal(socket.sentMessages.length, 0);
 });
 
 void test("AntiLinkService auto kick does not kick tenant owner resolved from LID participant", async () => {
@@ -56,9 +56,9 @@ void test("AntiLinkService auto kick does not kick tenant owner resolved from LI
 
   await service.handleIncomingMessage(socket, createLinkMessage("1", "222222@lid"));
 
-  assert.equal(socket.deletedMessages, 1);
+  assert.equal(socket.deletedMessages, 0);
   assert.equal(socket.kickedUsers.length, 0);
-  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /user dilindungi dari kick/);
+  assert.equal(socket.sentMessages.length, 0);
 });
 
 void test("AntiLinkService auto kick does not kick tenant admin", async () => {
@@ -76,9 +76,9 @@ void test("AntiLinkService auto kick does not kick tenant admin", async () => {
 
   await service.handleIncomingMessage(socket, createLinkMessage("1", "444444@lid"));
 
-  assert.equal(socket.deletedMessages, 1);
+  assert.equal(socket.deletedMessages, 0);
   assert.equal(socket.kickedUsers.length, 0);
-  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /user dilindungi dari kick/);
+  assert.equal(socket.sentMessages.length, 0);
 });
 
 void test("AntiLinkService auto kick does not kick group admin", async () => {
@@ -95,9 +95,9 @@ void test("AntiLinkService auto kick does not kick group admin", async () => {
 
   await service.handleIncomingMessage(socket, createLinkMessage("1", "333333@lid"));
 
-  assert.equal(socket.deletedMessages, 1);
+  assert.equal(socket.deletedMessages, 0);
   assert.equal(socket.kickedUsers.length, 0);
-  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /user dilindungi dari kick/);
+  assert.equal(socket.sentMessages.length, 0);
 });
 
 void test("AntiLinkService auto kick does not kick bot", async () => {
@@ -112,9 +112,9 @@ void test("AntiLinkService auto kick does not kick bot", async () => {
 
   await service.handleIncomingMessage(socket, createLinkMessage("1", "999@s.whatsapp.net"));
 
-  assert.equal(socket.deletedMessages, 1);
+  assert.equal(socket.deletedMessages, 0);
   assert.equal(socket.kickedUsers.length, 0);
-  assert.match(socket.sentMessages.at(-1)?.content.text ?? "", /user dilindungi dari kick/);
+  assert.equal(socket.sentMessages.length, 0);
 });
 
 void test("AntiLinkService auto kick removes regular member when bot is admin", async () => {
@@ -138,7 +138,7 @@ async function createAntiLinkService(options: {
   tenantAdminJids?: string[];
   extraParticipants?: TestParticipant[];
 }): Promise<{
-  service: { handleIncomingMessage(socket: WASocket, message: WAMessage): Promise<void> };
+  service: { handleIncomingMessage(socket: WASocket, message: WAMessage): Promise<boolean> };
   socket: TestSocket;
 }> {
   const { AntiLinkService } = await import("../src/services/moderation/antiLink.service");

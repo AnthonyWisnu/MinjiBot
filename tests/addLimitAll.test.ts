@@ -1,14 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { TenantAuditAction, TenantStatus, type TenantGroup } from "@prisma/client";
+import { TenantAuditAction, type TenantGroup } from "@prisma/client";
 
 import { MemberAdminService } from "../src/services/member/memberAdmin.service";
 import { handleAddLimitAll } from "../src/commands/member/memberAdmin.command";
 import { InvalidAmountError } from "../src/types/memberEconomy";
 import type { CommandContext } from "../src/types/command";
 import type { TenantGroupRepository } from "../src/repositories/tenantGroup.repository";
-import type { TenantAdminRepository } from "../src/repositories/tenantAdmin.repository";
+import { buildTenantGroup } from "./helpers/factories";
 
 void test("MemberAdminService: addLimitAll throws InvalidAmountError if amount is not positive", async () => {
   const service = new MemberAdminService(
@@ -104,24 +104,18 @@ function createMockContext(overrides: Partial<CommandContext> = {}): {
 }
 
 function createMockTenant(overrides: Partial<TenantGroup> = {}): TenantGroup {
-  return {
-    id: "tenant-1",
-    groupJid: "group-1@g.us",
+  return buildTenantGroup({
     tenantCode: "GRP1",
     name: "Komunitas Alpha",
     ownerJid: "owner@s.whatsapp.net",
-    status: TenantStatus.ACTIVE,
-    isBlocked: false,
-    expiresAt: new Date(Date.now() + 86400000),
-    createdAt: new Date(),
-    updatedAt: new Date(),
     ...overrides,
-  };
+  });
 }
 
 void test("handleAddLimitAll: private chat requires code and amount", async () => {
   const { context, replies } = createMockContext({
     isGroup: false,
+    role: "SUPER_OWNER",
     args: ["GRP1"],
   });
 
@@ -135,6 +129,7 @@ void test("handleAddLimitAll: private chat requires code and amount", async () =
 void test("handleAddLimitAll: validates amount must be positive integer between 1 and 100", async () => {
   const { context: ctxInvalid, replies: repliesInvalid } = createMockContext({
     isGroup: false,
+    role: "SUPER_OWNER",
     args: ["GRP1", "abc"],
   });
   await handleAddLimitAll(ctxInvalid);
@@ -142,6 +137,7 @@ void test("handleAddLimitAll: validates amount must be positive integer between 
 
   const { context: ctxOutOfRange, replies: repliesOutOfRange } = createMockContext({
     isGroup: false,
+    role: "SUPER_OWNER",
     args: ["GRP1", "150"],
   });
   await handleAddLimitAll(ctxOutOfRange);
@@ -151,6 +147,8 @@ void test("handleAddLimitAll: validates amount must be positive integer between 
 void test("handleAddLimitAll: rejects if tenant is not found", async () => {
   const { context, replies } = createMockContext({
     isGroup: false,
+    role: "SUPER_OWNER",
+    senderUserJid: "super_owner@s.whatsapp.net",
     args: ["UNKNOWN", "10"],
   });
 
@@ -178,17 +176,12 @@ void test("handleAddLimitAll: rejects if caller lacks permission", async () => {
     findByTenantCode: () => Promise.resolve(tenant),
   } as unknown as TenantGroupRepository;
 
-  const mockAdminRepo = {
-    exists: () => Promise.resolve(false),
-  } as unknown as TenantAdminRepository;
-
   await handleAddLimitAll(context, {
     tenantGroupRepo: mockTenantRepo,
-    tenantAdminRepo: mockAdminRepo,
   });
 
   assert.equal(replies.length, 1);
-  assert.match(replies[0]!, /Kamu tidak memiliki izin/);
+  assert.match(replies[0]!, /Perintah ini hanya bisa digunakan oleh Super Owner/);
 });
 
 void test("handleAddLimitAll: allows Super Owner in private chat", async () => {
@@ -205,7 +198,8 @@ void test("handleAddLimitAll: allows Super Owner in private chat", async () => {
   } as unknown as TenantGroupRepository;
 
   const mockAdminService = {
-    addLimitAll: () => Promise.resolve({ groupJid: tenant.groupJid, amount: 25, affectedCount: 12 }),
+    addLimitAll: () =>
+      Promise.resolve({ groupJid: tenant.groupJid, amount: 25, affectedCount: 12 }),
   } as unknown as MemberAdminService;
 
   await handleAddLimitAll(context, {
@@ -221,7 +215,7 @@ void test("handleAddLimitAll: allows Super Owner in private chat", async () => {
   assert.match(replies[0]!, /12 member/);
 });
 
-void test("handleAddLimitAll: allows Tenant Owner in private chat for own group", async () => {
+void test("handleAddLimitAll: rejects Tenant Owner in private chat (Super Owner only)", async () => {
   const tenant = createMockTenant({ ownerJid: "owner@s.whatsapp.net" });
   const { context, replies } = createMockContext({
     isGroup: false,
@@ -234,22 +228,15 @@ void test("handleAddLimitAll: allows Tenant Owner in private chat for own group"
     findByTenantCode: () => Promise.resolve(tenant),
   } as unknown as TenantGroupRepository;
 
-  const mockAdminService = {
-    addLimitAll: () => Promise.resolve({ groupJid: tenant.groupJid, amount: 15, affectedCount: 8 }),
-  } as unknown as MemberAdminService;
-
   await handleAddLimitAll(context, {
     tenantGroupRepo: mockTenantRepo,
-    adminService: mockAdminService,
   });
 
   assert.equal(replies.length, 1);
-  assert.match(replies[0]!, /Limit berhasil ditambahkan ke semua member/);
-  assert.match(replies[0]!, /\+15 limit/);
-  assert.match(replies[0]!, /8 member/);
+  assert.match(replies[0]!, /Perintah ini hanya bisa digunakan oleh Super Owner/);
 });
 
-void test("handleAddLimitAll: works in group chat with single amount argument", async () => {
+void test("handleAddLimitAll: works in group chat with single amount argument for Super Owner", async () => {
   const tenant = createMockTenant({
     groupJid: "group-123@g.us",
     ownerJid: "owner@s.whatsapp.net",
@@ -257,8 +244,8 @@ void test("handleAddLimitAll: works in group chat with single amount argument", 
   const { context, replies } = createMockContext({
     isGroup: true,
     chatJid: "group-123@g.us",
-    senderUserJid: "owner@s.whatsapp.net",
-    role: "TENANT_OWNER",
+    senderUserJid: "super_owner@s.whatsapp.net",
+    role: "SUPER_OWNER",
     tenantGroup: tenant,
     args: ["10"],
   });
@@ -281,8 +268,8 @@ void test("handleAddLimitAll: informs if 0 members were affected", async () => {
   const tenant = createMockTenant();
   const { context, replies } = createMockContext({
     isGroup: false,
-    senderUserJid: "owner@s.whatsapp.net",
-    role: "TENANT_OWNER",
+    senderUserJid: "super_owner@s.whatsapp.net",
+    role: "SUPER_OWNER",
     args: ["GRP1", "10"],
   });
 

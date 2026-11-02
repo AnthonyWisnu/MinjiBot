@@ -7,9 +7,6 @@ import {
 } from "@prisma/client";
 import type { WASocket } from "@whiskeysockets/baileys";
 
-import fs from "node:fs";
-import path from "node:path";
-
 import { prisma } from "../../repositories/prismaClient";
 import { TenantAuditRepository } from "../../repositories/tenantAudit.repository";
 import { TenantFeatureRepository } from "../../repositories/tenantFeature.repository";
@@ -18,6 +15,7 @@ import { TenantGroupSettingRepository } from "../../repositories/tenantGroupSett
 import type { CommandContext } from "../../types/command";
 import type { Role } from "../../types/role";
 import { normalizeJid } from "../../utils/jid";
+import { avatarService } from "../media/avatar.service";
 import { tenantFeatureService } from "../tenant/tenantFeature.service";
 
 export const DEFAULT_WELCOME_MESSAGE = `Selamat datang {user} di *{group}*.
@@ -62,7 +60,7 @@ export class WelcomeService {
   async setWelcomeEnabled(context: CommandContext, enabled: boolean): Promise<WelcomeConfigResult> {
     const tenantGroup = await this.resolveManagedTenant(context);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const tenantFeatureRepository = new TenantFeatureRepository(tx);
       const tenantGroupSettingRepository = new TenantGroupSettingRepository(tx);
       const tenantAuditRepository = new TenantAuditRepository(tx);
@@ -89,6 +87,9 @@ export class WelcomeService {
         groupSetting,
       };
     });
+
+    tenantFeatureService.invalidateCache(tenantGroup.groupJid);
+    return result;
   }
 
   async setWelcomeMessage(
@@ -129,7 +130,7 @@ export class WelcomeService {
   async setGoodbyeEnabled(context: CommandContext, enabled: boolean): Promise<GoodbyeConfigResult> {
     const tenantGroup = await this.resolveManagedTenant(context);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const tenantFeatureRepository = new TenantFeatureRepository(tx);
       const tenantGroupSettingRepository = new TenantGroupSettingRepository(tx);
       const tenantAuditRepository = new TenantAuditRepository(tx);
@@ -156,6 +157,9 @@ export class WelcomeService {
         groupSetting,
       };
     });
+
+    tenantFeatureService.invalidateCache(tenantGroup.groupJid);
+    return result;
   }
 
   async setGoodbyeMessage(
@@ -205,7 +209,10 @@ export class WelcomeService {
     }
   }
 
-  private async handleWelcomeEvent(socket: WASocket, update: GroupParticipantsUpdate): Promise<void> {
+  private async handleWelcomeEvent(
+    socket: WASocket,
+    update: GroupParticipantsUpdate,
+  ): Promise<void> {
     const groupJid = normalizeJid(update.id);
     const tenantGroup = await this.tenantGroupRepository.findByGroupJid(groupJid);
     if (!this.isTenantActive(tenantGroup)) {
@@ -235,7 +242,7 @@ export class WelcomeService {
       return;
     }
 
-    const fallbackAvatar = getFallbackMinjiAvatar();
+    const fallbackAvatar = avatarService.getFallbackAvatar();
 
     for (const participant of update.participants) {
       const participantJid = normalizeJid(participant);
@@ -266,17 +273,15 @@ export class WelcomeService {
         }
       }
 
-      if (fallbackAvatar) {
-        try {
-          await socket.sendMessage(groupJid, {
-            image: fallbackAvatar,
-            caption: text,
-            mentions: [participantJid],
-          });
-          continue;
-        } catch {
-          // fallback to text message
-        }
+      try {
+        await socket.sendMessage(groupJid, {
+          image: fallbackAvatar,
+          caption: text,
+          mentions: [participantJid],
+        });
+        continue;
+      } catch {
+        // fallback to text message
       }
 
       // Final fallback to text message
@@ -287,7 +292,10 @@ export class WelcomeService {
     }
   }
 
-  private async handleGoodbyeEvent(socket: WASocket, update: GroupParticipantsUpdate): Promise<void> {
+  private async handleGoodbyeEvent(
+    socket: WASocket,
+    update: GroupParticipantsUpdate,
+  ): Promise<void> {
     const groupJid = normalizeJid(update.id);
     const tenantGroup = await this.tenantGroupRepository.findByGroupJid(groupJid);
     if (!this.isTenantActive(tenantGroup)) {
@@ -370,22 +378,14 @@ export class WelcomeService {
     throw new Error("Command goodbye hanya dapat digunakan oleh pengelola tenant.");
   }
 
-  renderMessage(
-    template: string,
-    tenantGroup: TenantGroup,
-    mentions: string[],
-  ): string {
+  renderMessage(template: string, tenantGroup: TenantGroup, mentions: string[]): string {
     const mentionText = mentions.map((jid) => `@${jid.split("@")[0] ?? jid}`).join(" ");
     const groupName = tenantGroup.name ?? "grup ini";
 
     return template.replaceAll("{user}", mentionText).replaceAll("{group}", groupName).trim();
   }
 
-  renderWelcomeMessage(
-    template: string,
-    tenantGroup: TenantGroup,
-    mentions: string[],
-  ): string {
+  renderWelcomeMessage(template: string, tenantGroup: TenantGroup, mentions: string[]): string {
     return this.renderMessage(template, tenantGroup, mentions);
   }
 
@@ -408,27 +408,6 @@ export class WelcomeService {
       tenantGroup.expiresAt.getTime() > Date.now(),
     );
   }
-}
-
-function getFallbackMinjiAvatar(): Buffer | null {
-  const possiblePaths = [
-    path.resolve(process.cwd(), "assets/minji.png"),
-    path.resolve(process.cwd(), "src/Minji.png"),
-    path.resolve(__dirname, "../../assets/minji.png"),
-    path.resolve(__dirname, "../../../assets/minji.png"),
-    path.resolve(__dirname, "../../Minji.png"),
-  ];
-
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-      try {
-        return fs.readFileSync(p);
-      } catch {
-        // ignore read error
-      }
-    }
-  }
-  return null;
 }
 
 export const welcomeService = new WelcomeService();

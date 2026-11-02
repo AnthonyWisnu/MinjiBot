@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { HeavyFeatureType } from "@prisma/client";
 import type { GroupMemberProfile } from "@prisma/client";
 
+import { buildMemberProfile } from "./helpers/factories";
 import { HeavyFeatureLimitService } from "../src/services/member/heavyFeatureLimit.service";
 import { HeavyFeatureAccessService } from "../src/services/quota/heavyFeatureAccess.service";
 import { InsufficientLimitError } from "../src/types/memberEconomy";
@@ -31,10 +32,20 @@ void test("getFeatureCost: Song lyrics costs 1", () => {
   assert.equal(getFeatureCost(HeavyFeatureType.SONG_LYRICS), 1);
 });
 
+void test("getFeatureCost: all HeavyFeatureType enum values have cost >= 1", () => {
+  for (const featureType of Object.values(HeavyFeatureType)) {
+    const cost = getFeatureCost(featureType);
+    assert.ok(
+      typeof cost === "number" && cost >= 1,
+      `Feature ${featureType} must have cost >= 1, got ${String(cost)}`,
+    );
+  }
+});
+
 // ---- HeavyFeatureLimitService ----
 
 function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberProfile {
-  return {
+  return buildMemberProfile({
     id: "p-1",
     groupJid: "g@g.us",
     userJid: "u@s.whatsapp.net",
@@ -52,7 +63,7 @@ function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberPr
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
-  };
+  });
 }
 
 function makeLimitService(opts: {
@@ -66,7 +77,9 @@ function makeLimitService(opts: {
   let refundCalled = false;
 
   const economyService = {
-    findBestLimitProfileForPrivateChat: (...args: unknown[]): Promise<GroupMemberProfile | null> => {
+    findBestLimitProfileForPrivateChat: (
+      ...args: unknown[]
+    ): Promise<GroupMemberProfile | null> => {
       void args;
       return Promise.resolve(opts.bestProfile ?? null);
     },
@@ -92,9 +105,15 @@ function makeLimitService(opts: {
 
   return {
     service,
-    get reserveCalled() { return reserveCalled; },
-    get consumeCalled() { return consumeCalled; },
-    get refundCalled() { return refundCalled; },
+    get reserveCalled() {
+      return reserveCalled;
+    },
+    get consumeCalled() {
+      return consumeCalled;
+    },
+    get refundCalled() {
+      return refundCalled;
+    },
   };
 }
 
@@ -131,13 +150,19 @@ void test("HeavyFeatureLimitService.refund: calls economyService.refundLimit", a
 void test("HeavyFeatureLimitService.resolvePrivateChatGroupJid: returns groupJid when profile found", async () => {
   const profile = makeProfile({ groupJid: "target-group@g.us", limitBalance: 3 });
   const { service } = makeLimitService({ bestProfile: profile });
-  const result = await service.resolvePrivateChatGroupJid("u@s.whatsapp.net", HeavyFeatureType.TIKTOK_DOWNLOAD);
+  const result = await service.resolvePrivateChatGroupJid(
+    "u@s.whatsapp.net",
+    HeavyFeatureType.TIKTOK_DOWNLOAD,
+  );
   assert.equal(result, "target-group@g.us");
 });
 
 void test("HeavyFeatureLimitService.resolvePrivateChatGroupJid: returns null when no eligible profile", async () => {
   const { service } = makeLimitService({ bestProfile: null });
-  const result = await service.resolvePrivateChatGroupJid("u@s.whatsapp.net", HeavyFeatureType.TIKTOK_DOWNLOAD);
+  const result = await service.resolvePrivateChatGroupJid(
+    "u@s.whatsapp.net",
+    HeavyFeatureType.TIKTOK_DOWNLOAD,
+  );
   assert.equal(result, null);
 });
 
@@ -158,7 +183,9 @@ function makeAccessService(opts: { activeGroups?: string[] } = {}) {
       return Promise.resolve((opts.activeGroups ?? []).map((g) => ({ groupJid: g })));
     },
   };
-  return new HeavyFeatureAccessService(repo as Parameters<typeof HeavyFeatureAccessService>[0]);
+  return new HeavyFeatureAccessService(
+    repo as ConstructorParameters<typeof HeavyFeatureAccessService>[0],
+  );
 }
 
 void test("HeavyFeatureAccessService: Super Owner in group is skipLimit=true", async () => {
@@ -215,7 +242,8 @@ void test("HeavyFeatureAccessService: regular member in group is skipLimit=false
   };
   const result = await service.resolveAccess(ctx as never);
   assert.ok(result.allowed);
-  if (result.allowed && !result.skipLimit) { // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+  if (result.allowed && !result.skipLimit) {
+    // eslint-disable-line @typescript-eslint/no-unnecessary-condition
     assert.equal(result.groupJid, "g@g.us");
     assert.equal(result.userJid, "member@s.whatsapp.net");
   }
@@ -260,7 +288,7 @@ void test("HeavyFeatureAccessService: Tenant Owner in private with active contra
   assert.ok(result.allowed && result.skipLimit); // eslint-disable-line @typescript-eslint/no-unnecessary-condition
 });
 
-void test("HeavyFeatureAccessService: Tenant Owner in private without active contract is not allowed", async () => {
+void test("HeavyFeatureAccessService: Tenant Owner in private without active contract falls back to PRIVATE member profile", async () => {
   const service = makeAccessService({ activeGroups: [] });
   const ctx: MockContext = {
     isGroup: false,
@@ -269,7 +297,10 @@ void test("HeavyFeatureAccessService: Tenant Owner in private without active con
     chatJid: "owner@s.whatsapp.net",
   };
   const result = await service.resolveAccess(ctx as never);
-  assert.ok(!result.allowed);
+  assert.ok(result.allowed);
+  if (result.allowed && !result.skipLimit) {
+    assert.equal(result.groupJid, "PRIVATE");
+  }
 });
 
 void test("HeavyFeatureAccessService: regular member in private gets PRIVATE sentinel groupJid", async () => {
@@ -282,7 +313,8 @@ void test("HeavyFeatureAccessService: regular member in private gets PRIVATE sen
   };
   const result = await service.resolveAccess(ctx as never);
   assert.ok(result.allowed);
-  if (result.allowed && !result.skipLimit) { // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+  if (result.allowed && !result.skipLimit) {
+    // eslint-disable-line @typescript-eslint/no-unnecessary-condition
     assert.equal(result.groupJid, "PRIVATE");
   }
 });
@@ -301,9 +333,9 @@ void test("HeavyFeatureAccessService: Tenant Owner balance is NOT charged when m
   // eslint-disable-next-line @typescript-eslint/dot-notation
   const result = service["resolveGroupAccess"](ctx as never);
   assert.ok(result.allowed);
-  if (result.allowed && !result.skipLimit) { // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+  if (result.allowed && !result.skipLimit) {
+    // eslint-disable-line @typescript-eslint/no-unnecessary-condition
     assert.equal(result.userJid, "member@s.whatsapp.net");
     assert.notEqual(result.userJid, "owner@s.whatsapp.net");
   }
 });
-

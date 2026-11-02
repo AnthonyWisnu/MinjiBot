@@ -1,9 +1,9 @@
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import { InsufficientPointsError, InvalidAmountError } from "../../types/memberEconomy";
 import {
-  InsufficientPointsError,
-  InvalidAmountError,
-} from "../../types/memberEconomy";
-import { limitPurchaseService, LIMIT_PRICE_POINTS } from "../../services/member/limitPurchase.service";
+  limitPurchaseService,
+  LIMIT_PRICE_POINTS,
+} from "../../services/member/limitPurchase.service";
 import type { LimitPurchaseResult } from "../../services/member/limitPurchase.service";
 
 function formatPurchaseResult(result: LimitPurchaseResult): string {
