@@ -5,6 +5,36 @@ import { runExternalProcess } from "../../utils/processRunner";
 
 export class VideoNormalizeService {
   /**
+   * Membaca durasi video dalam satuan detik menggunakan FFmpeg probe ringan.
+   * Mengembalikan null apabila durasi tidak dapat dideteksi.
+   */
+  async getVideoDurationSeconds(inputPath: string): Promise<number | null> {
+    const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
+    try {
+      const result = await runExternalProcess(ffmpegPath, ["-hide_banner", "-i", inputPath], {
+        timeoutMs: 8000,
+        throwOnNonZeroExit: false,
+      });
+
+      const match = /Duration:\s*(\d{2,}):(\d{2}):(\d{2}(?:\.\d+)?)/i.exec(result.stderr);
+      if (!match?.[1] || !match[2] || !match[3]) {
+        return null;
+      }
+
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      const seconds = Number(match[3]);
+      if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) {
+        return null;
+      }
+
+      return hours * 3600 + minutes * 60 + seconds;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Memeriksa apakah video berformat H.264 (avc1) yang aman untuk diputar
    * langsung pada perangkat WhatsApp (iOS & Android) tanpa transcode lambat.
    */

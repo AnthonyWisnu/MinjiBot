@@ -6,7 +6,7 @@ import {
   type ExtractedAudio,
 } from "../../services/media/downloader.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
-import { parseAllowedDownloaderUrl } from "../../utils/urlValidator";
+import { extractFirstHttpUrl, parseAllowedDownloaderUrl } from "../../utils/urlValidator";
 import {
   consumeFeatureLimit,
   refundFeatureLimit,
@@ -40,10 +40,10 @@ export const downloaderCommands: CommandDefinition[] = [
 ];
 
 // ─── TikTok (.tt) ──────────────────────────────────────────────────────────
-// Handles: video tanpa watermark, single photo, & photo carousel (max 12 item) + BGM audio
+// Handles: video tanpa watermark (maks. 70 menit), single photo, & photo carousel (maks. 25 item) + BGM audio
 
 async function handleTikTokDownloader(context: CommandContext): Promise<void> {
-  const rawUrl = context.args[0];
+  const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
   const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "tiktok");
   if (!parsedUrl) {
     await context.reply("Format command salah.\nGunakan: .tt <link TikTok>");
@@ -132,10 +132,10 @@ async function sendAudioMessage(context: CommandContext, audio: ExtractedAudio):
 }
 
 // ─── Instagram Unified (.ig) ───────────────────────────────────────────────
-// Handles: reels, foto tunggal, story, carousel (max 10 item)
+// Handles: reels, foto tunggal, story, carousel (maks. 15 item, video maks. 30 menit)
 
 async function handleInstagramDownloader(context: CommandContext): Promise<void> {
-  const rawUrl = context.args[0];
+  const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
   const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "instagram");
   if (!parsedUrl) {
     await context.reply("Format command salah.\nGunakan: .ig <link Instagram>");
@@ -162,9 +162,11 @@ async function handleInstagramDownloader(context: CommandContext): Promise<void>
     if (result.type === "single") {
       await sendMediaItem(context, result.item);
     } else {
-      await context.reply(
-        `Terdeteksi ${String(result.totalCount)} item. Mengirim satu per satu...`,
-      );
+      const totalMsg =
+        result.totalCount > result.items.length
+          ? `Terdeteksi ${String(result.totalCount)} item Instagram (mengirim maks. ${String(result.items.length)}). Mengirim satu per satu...`
+          : `Terdeteksi ${String(result.items.length)} item Instagram. Mengirim satu per satu...`;
+      await context.reply(totalMsg);
       for (const item of result.items) {
         await sendMediaItem(context, item);
         await sleep(300);
@@ -187,10 +189,10 @@ async function handleInstagramDownloader(context: CommandContext): Promise<void>
 }
 
 // ─── YouTube Video (.yt) ──────────────────────────────────────────────────
-// Max 720p, max 12 menit, pakai sistem limit yang sama
+// Max 720p, max 1 jam (60 menit), pakai sistem limit yang sama
 
 async function handleYoutubeVideoDownloader(context: CommandContext): Promise<void> {
-  const rawUrl = context.args[0];
+  const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
   const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "youtube");
   if (!parsedUrl) {
     await context.reply("Format command salah.\nGunakan: .yt <link YouTube>");
@@ -234,10 +236,10 @@ async function handleYoutubeVideoDownloader(context: CommandContext): Promise<vo
 }
 
 // ─── Twitter / X (.x, .twt) ────────────────────────────────────────────────
-// Max duration 30 menit, format mobile-safe H.264/AAC, smart send <= 100MB video / > 100MB document
+// Max 10 media, max durasi video 30 menit, format mobile-safe H.264/AAC
 
 async function handleTwitterDownloader(context: CommandContext): Promise<void> {
-  const rawUrl = context.args[0];
+  const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
   const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "twitter");
   if (!parsedUrl) {
     await context.reply("Format command salah.\nGunakan: .x <link tweet / x.com> atau .twt <link>");
@@ -308,7 +310,7 @@ async function handleTwitterDownloader(context: CommandContext): Promise<void> {
 // Foto resolusi asli HD / Video Pinterest, supports pin.it shortlink
 
 async function handlePinterestDownloader(context: CommandContext): Promise<void> {
-  const rawUrl = context.args[0];
+  const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
   const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "pinterest");
   if (!parsedUrl) {
     await context.reply("Format command salah.\nGunakan: .pin <link Pinterest / pin.it>");
@@ -408,9 +410,9 @@ function formatTikTokError(error: unknown): string {
     return "Media TikTok terlalu besar untuk dikirim (maks. 400 MB).";
   }
   if (
+    message.includes("durasi") ||
     message.includes("duration") ||
-    message.includes("match-filter") ||
-    message.includes("4200")
+    message.includes("match-filter")
   ) {
     return "Video TikTok melebihi batas durasi 70 menit (1 jam 10 menit).";
   }
@@ -434,9 +436,9 @@ function formatInstagramError(error: unknown): string {
     return "Media terlalu besar untuk dikirim (maks. 400 MB).";
   }
   if (
+    message.includes("durasi") ||
     message.includes("duration") ||
-    message.includes("match-filter") ||
-    message.includes("1800")
+    message.includes("match-filter")
   ) {
     return "Video Instagram melebihi batas durasi 30 menit.";
   }
@@ -449,10 +451,9 @@ function formatInstagramError(error: unknown): string {
 function formatYoutubeError(error: unknown): string {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   if (
+    message.includes("durasi") ||
     message.includes("duration") ||
-    message.includes("match-filter") ||
-    message.includes("3600") ||
-    message.includes("720")
+    message.includes("match-filter")
   ) {
     return "Video melebihi batas durasi 1 jam.";
   }
@@ -465,16 +466,19 @@ function formatYoutubeError(error: unknown): string {
 function formatTwitterError(error: unknown): string {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   if (
+    message.includes("durasi") ||
     message.includes("duration") ||
-    message.includes("match-filter") ||
-    message.includes("1800")
+    message.includes("match-filter")
   ) {
     return "Video X (Twitter) melebihi batas durasi 30 menit.";
   }
   if (message.includes("max-filesize") || message.includes("maksimal")) {
     return "Media X (Twitter) terlalu besar untuk dikirim (maks. 400 MB).";
   }
-  return "Media X (Twitter) gagal diambil. Pastikan tweet bersifat publik dan berisi video/media.";
+  if (message.includes("hanya menerima link resmi")) {
+    return "Format command salah.\nGunakan: .x <link tweet / x.com> atau .twt <link>";
+  }
+  return "Media X (Twitter) gagal diambil. Pastikan tweet bersifat publik dan berisi media.";
 }
 
 function formatPinterestError(error: unknown): string {

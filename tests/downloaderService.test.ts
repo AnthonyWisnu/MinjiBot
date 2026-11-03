@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { AppUserError } from "../src/errors/appUserError";
-import { downloaderService } from "../src/services/media/downloader.service";
+import {
+  downloaderService,
+  TIKTOK_MEDIA_ALLOWED_DOMAINS,
+  TWITTER_MEDIA_ALLOWED_DOMAINS,
+} from "../src/services/media/downloader.service";
 import { videoNormalizeService } from "../src/services/media/videoNormalize.service";
+import { matchesAllowedDomain } from "../src/utils/urlValidator";
 
 test("downloaderService: rejects non-TikTok URLs with AppUserError", async () => {
   await assert.rejects(
@@ -83,4 +88,34 @@ test("videoNormalizeService: isH264Video returns boolean", async () => {
   // Verifies probe function executes without crash
   const isH264 = await videoNormalizeService.isH264Video("non-existent-video.mp4");
   assert.equal(typeof isH264, "boolean");
+});
+
+test("videoNormalizeService: getVideoDurationSeconds returns null safely on missing file", async () => {
+  const duration = await videoNormalizeService.getVideoDurationSeconds("non-existent-video.mp4");
+  assert.equal(duration, null);
+});
+
+test("downloaderService: CDN allowlists permit official TikTok and Twitter CDNs while blocking spoofs", () => {
+  assert.equal(
+    matchesAllowedDomain("p16-common-sign.tiktokcdn-us.com", TIKTOK_MEDIA_ALLOWED_DOMAINS),
+    true,
+  );
+  assert.equal(matchesAllowedDomain("v16m.tiktokcdn-us.com", TIKTOK_MEDIA_ALLOWED_DOMAINS), true);
+  assert.equal(
+    matchesAllowedDomain("v16-ies-music.tiktokcdn-us.com", TIKTOK_MEDIA_ALLOWED_DOMAINS),
+    true,
+  );
+  assert.equal(
+    matchesAllowedDomain("p16-sign-sg.tiktokcdn.com", TIKTOK_MEDIA_ALLOWED_DOMAINS),
+    true,
+  );
+  assert.equal(matchesAllowedDomain("www.tikwm.com", TIKTOK_MEDIA_ALLOWED_DOMAINS), true);
+  assert.equal(
+    matchesAllowedDomain("tiktokcdn-us.com.attacker.org", TIKTOK_MEDIA_ALLOWED_DOMAINS),
+    false,
+  );
+
+  assert.equal(matchesAllowedDomain("pbs.twimg.com", TWITTER_MEDIA_ALLOWED_DOMAINS), true);
+  assert.equal(matchesAllowedDomain("video.twimg.com", TWITTER_MEDIA_ALLOWED_DOMAINS), true);
+  assert.equal(matchesAllowedDomain("twimg.com.evil.net", TWITTER_MEDIA_ALLOWED_DOMAINS), false);
 });

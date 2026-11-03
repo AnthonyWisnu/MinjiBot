@@ -33,6 +33,7 @@ export const envSchema = z.object({
   YOUTUBE_COOKIES_PATH: optionalPathSchema,
   INSTAGRAM_COOKIES_PATH: optionalPathSchema,
   TIKTOK_COOKIES_PATH: optionalPathSchema,
+  TWITTER_COOKIES_PATH: optionalPathSchema,
   DOWNLOADER_TIMEOUT_MS: z.coerce.number().int().positive(),
   HD_MAX_INPUT_MB: z.coerce.number().int().positive(),
   HD_AI_MAX_CONCURRENT_JOBS: z.coerce.number().int().positive(),

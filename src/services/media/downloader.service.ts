@@ -16,6 +16,7 @@ import { createTempDir, removeTempDir } from "../../utils/tempFile";
 import {
   ALLOWED_DOWNLOADER_DOMAINS,
   assertSafeExternalUrl,
+  isAllowedDomainUrl,
   parseAllowedDownloaderUrl,
   resolveRedirectUrl,
   safeFetchExternal,
@@ -25,12 +26,66 @@ import { videoNormalizeService } from "./videoNormalize.service";
 const BYTES_PER_MB = 1024 * 1024;
 const DEFAULT_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+// Agreed platform limits
+const MAX_TIKTOK_DURATION_SEC = 4200; // 70 menit (1 jam 10 menit)
+const MAX_TIKTOK_SLIDES = 25;
+const MAX_INSTAGRAM_DURATION_SEC = 1800; // 30 menit
+const MAX_INSTAGRAM_SLIDES = 15;
+const MAX_YOUTUBE_DURATION_SEC = 3600; // 1 jam
+const MAX_TWITTER_DURATION_SEC = 1800; // 30 menit
+const MAX_TWITTER_ITEMS = 10;
+
+export const TIKTOK_MEDIA_ALLOWED_DOMAINS = [
+  "tikwm.com",
+  "tiktok.com",
+  "tiktokcdn.com",
+  "tiktokcdn-us.com",
+  "tiktokcdn-eu.com",
+  "tiktokcdn-in.com",
+  "tiktokv.com",
+  "tiktokv.us",
+  "tiktokv.eu",
+  "byteoversea.com",
+  "ibytedtos.com",
+  "ipstatp.com",
+  "muscdn.com",
+  "musical.ly",
+  "ttwstatic.com",
+] as const;
+
+export const TWITTER_MEDIA_ALLOWED_DOMAINS = [
+  "twimg.com",
+  "pbs.twimg.com",
+  "video.twimg.com",
+  "fxtwitter.com",
+  "vxtwitter.com",
+] as const;
+
+const TWITTER_CANONICAL_DOMAINS = [
+  "twitter.com",
+  "x.com",
+  "mobile.twitter.com",
+  "m.twitter.com",
+  "fxtwitter.com",
+  "vxtwitter.com",
+  "fixupx.com",
+] as const;
+
+const TIKTOK_SHORTLINK_HOSTS = new Set([
+  "vt.tiktok.com",
+  "vm.tiktok.com",
+  "t.tiktok.com",
+  "lite.tiktok.com",
+]);
+
 const MOBILE_SAFE_FORMAT =
   "bv*[vcodec^=avc1][height<=720][ext=mp4]+ba[ext=m4a]/" +
   "b[vcodec^=avc1][height<=720][ext=mp4]/" +
   "bv*[height<=720][ext=mp4]+ba[ext=m4a]/" +
   "b[height<=720][ext=mp4]/" +
   "best[height<=720][ext=mp4]/best[ext=mp4]/best";
+
 const YT_VIDEO_FORMAT_SMART =
   // Prioritas 1: 720p 60 FPS (H.264 mp4) jika video approx <= 100MB
   "bv*[vcodec^=avc1][height<=720][fps>30][filesize_approx<=100M][ext=mp4]+ba[ext=m4a]/" +
@@ -82,6 +137,7 @@ interface TikWmResponse {
   code: number;
   msg: string;
   data?: {
+    duration?: number;
     play?: string;
     hdplay?: string;
     wmplay?: string;
@@ -95,6 +151,37 @@ interface TikWmResponse {
       author?: string;
     };
   };
+}
+
+interface FxTwitterMediaEntry {
+  type?: string;
+  url?: string;
+  duration?: number;
+}
+
+interface FxTwitterResponse {
+  code?: number;
+  tweet?: {
+    media?: {
+      all?: FxTwitterMediaEntry[];
+    };
+  } | null;
+}
+
+function resolveTikWmMediaUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  if (trimmed.startsWith("/")) {
+    return new URL(trimmed, "https://www.tikwm.com").toString();
+  }
+  return trimmed;
+}
+
+function isPolicyLimitError(error: unknown): boolean {
+  if (!(error instanceof AppUserError)) {
+    return false;
+  }
+  const lower = error.message.toLowerCase();
+  return lower.includes("durasi") || lower.includes("maksimal");
 }
 
 async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> {
@@ -116,19 +203,29 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
     throw new Error(`TikWM API response error: ${json.msg || "Unknown error"}`);
   }
 
+  const isSlidePost = Array.isArray(json.data.images) && json.data.images.length > 0;
+  if (
+    !isSlidePost &&
+    typeof json.data.duration === "number" &&
+    json.data.duration > MAX_TIKTOK_DURATION_SEC
+  ) {
+    throw new AppUserError("Video TikTok melebihi batas durasi 70 menit (1 jam 10 menit).");
+  }
+
   // Unduh audio / musik latar jika tersedia di respon API
   let audio: ExtractedAudio | undefined;
-  const musicUrl = json.data.music ?? json.data.music_info?.play;
-  if (musicUrl) {
+  const rawMusicUrl = json.data.music ?? json.data.music_info?.play;
+  if (rawMusicUrl) {
     try {
+      const musicUrl = resolveTikWmMediaUrl(rawMusicUrl);
       const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
       const { buffer: musicBuf } = await fetchBufferWithLimit(musicUrl, {
         maxBytes,
         timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
-        allowedDomains: ["tikwm.com"],
+        allowedDomains: TIKTOK_MEDIA_ALLOWED_DOMAINS,
         headers: {
           "User-Agent": DEFAULT_USER_AGENT,
-          Referer: "https://www.tikwm.com/",
+          Referer: "https://www.tiktok.com/",
         },
       });
       if (musicBuf.byteLength > 0) {
@@ -137,27 +234,28 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
           mimetype: "audio/mpeg",
         };
       }
-    } catch (err) {
+    } catch (err: unknown) {
       logger.warn({ err }, "Gagal mengunduh audio TikWM langsung");
     }
   }
 
   // Deteksi jika konten adalah slide foto TikTok
-  if (Array.isArray(json.data.images) && json.data.images.length > 0) {
+  if (isSlidePost && json.data.images) {
     const totalCount = json.data.images.length;
-    const targetUrls = json.data.images.slice(0, 25);
+    const targetUrls = json.data.images.slice(0, MAX_TIKTOK_SLIDES);
 
     const imageResults = await Promise.all(
-      targetUrls.map(async (imgUrl, i): Promise<DownloadedMediaItem | null> => {
+      targetUrls.map(async (rawImgUrl, i): Promise<DownloadedMediaItem | null> => {
+        const imgUrl = resolveTikWmMediaUrl(rawImgUrl);
         try {
           const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
           const { buffer: fetchedBuf } = await fetchBufferWithLimit(imgUrl, {
             maxBytes,
             timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
-            allowedDomains: ["tikwm.com"],
+            allowedDomains: TIKTOK_MEDIA_ALLOWED_DOMAINS,
             headers: {
               "User-Agent": DEFAULT_USER_AGENT,
-              Referer: "https://www.tikwm.com/",
+              Referer: "https://www.tiktok.com/",
             },
           });
           if (fetchedBuf.byteLength <= 0) return null;
@@ -189,7 +287,7 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
             mimetype: mime,
             mediaType: "image",
           };
-        } catch (err) {
+        } catch (err: unknown) {
           logger.warn({ err, imgUrl }, "Gagal mengunduh slide gambar TikTok");
           return null;
         }
@@ -210,19 +308,20 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
   }
 
   // Jika bukan slide foto, proses sebagai video
-  const videoUrl = json.data.play ?? json.data.hdplay ?? json.data.wmplay;
-  if (!videoUrl) {
+  const rawVideoUrl = json.data.play ?? json.data.hdplay ?? json.data.wmplay;
+  if (!rawVideoUrl) {
     throw new Error("Link video TikTok tidak ditemukan dalam respon API.");
   }
 
+  const videoUrl = resolveTikWmMediaUrl(rawVideoUrl);
   const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
   const { buffer } = await fetchBufferWithLimit(videoUrl, {
     maxBytes,
     timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
-    allowedDomains: ["tikwm.com"],
+    allowedDomains: TIKTOK_MEDIA_ALLOWED_DOMAINS,
     headers: {
       "User-Agent": DEFAULT_USER_AGENT,
-      Referer: "https://www.tikwm.com/",
+      Referer: "https://www.tiktok.com/",
     },
   });
 
@@ -239,7 +338,7 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
 
 export class DownloaderService {
   /**
-   * Download TikTok media — unified handler for video and photo slides carousel (up to 12 items).
+   * Download TikTok media — unified handler for video (max 70 min) and photo slides (max 25 items).
    * Also extracts/provides background audio (BGM) if available.
    */
   async downloadTikTok(url: string): Promise<TikTokDownloadResult> {
@@ -256,7 +355,7 @@ export class DownloaderService {
         if (directResult.type === "video" && !directResult.audio) {
           try {
             directResult.audio = await this.extractAudioFromVideo(directResult.video.buffer);
-          } catch (err) {
+          } catch (err: unknown) {
             logger.warn({ err }, "Extract audio dari video TikWM gagal");
           }
         }
@@ -274,7 +373,29 @@ export class DownloaderService {
 
         return directResult;
       } catch (error: unknown) {
-        logger.warn({ error }, "TikTok direct API gagal, mencoba fallback gallery-dl / yt-dlp");
+        if (isPolicyLimitError(error)) {
+          throw error;
+        }
+        logger.warn(
+          { err: error },
+          "TikTok direct API gagal, mencoba fallback gallery-dl / yt-dlp",
+        );
+      }
+
+      // Resolve shortlink (vt.tiktok.com / vm.tiktok.com) sebelum fallback CLI
+      let fallbackUrl = parsedUrl.toString();
+      if (TIKTOK_SHORTLINK_HOSTS.has(parsedUrl.hostname.toLowerCase())) {
+        try {
+          const resolved = await resolveRedirectUrl(fallbackUrl, {
+            allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.tiktok,
+          });
+          const verified = await assertSafeExternalUrl(resolved, {
+            allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.tiktok,
+          });
+          fallbackUrl = verified.toString();
+        } catch (err: unknown) {
+          logger.warn({ err }, "Gagal resolve shortlink TikTok, lanjut memakai URL awal");
+        }
       }
 
       // 2. Fallback using gallery-dl (supports photos & videos) and yt-dlp
@@ -283,20 +404,26 @@ export class DownloaderService {
         let items: DownloadedMediaItem[] = [];
 
         try {
-          await this.runGalleryDlTikTok(parsedUrl.toString(), tempDir);
-          items = await scanDownloadedMediaFiles(tempDir, "minjibot-tiktok");
-        } catch (gdlErr) {
-          logger.warn({ gdlErr }, "gallery-dl TikTok gagal, mencoba yt-dlp");
+          await this.runGalleryDlTikTok(fallbackUrl, tempDir);
+          items = await scanDownloadedMediaFiles(tempDir, "minjibot-tiktok", {
+            maxVideoDurationSec: MAX_TIKTOK_DURATION_SEC,
+            durationErrorMessage: "Video TikTok melebihi batas durasi 70 menit (1 jam 10 menit).",
+          });
+        } catch (gdlErr: unknown) {
+          if (isPolicyLimitError(gdlErr)) {
+            throw gdlErr;
+          }
+          logger.warn({ err: gdlErr }, "gallery-dl TikTok gagal, mencoba yt-dlp");
         }
 
         if (items.length > 0) {
           const imageItems = items.filter((it) => it.mediaType === "image");
           if (imageItems.length > 0) {
-            const targetItems = imageItems.slice(0, 25);
+            const targetItems = imageItems.slice(0, MAX_TIKTOK_SLIDES);
             let audio: ExtractedAudio | undefined;
             try {
-              audio = await this.downloadTikTokAudioFallback(parsedUrl.toString());
-            } catch (err) {
+              audio = await this.downloadTikTokAudioFallback(fallbackUrl);
+            } catch (err: unknown) {
               logger.warn({ err }, "Fallback audio extraction untuk slide TikTok gagal");
             }
 
@@ -324,7 +451,7 @@ export class DownloaderService {
             let audio: ExtractedAudio | undefined;
             try {
               audio = await this.extractAudioFromVideo(videoItem.buffer);
-            } catch (err) {
+            } catch (err: unknown) {
               logger.warn({ err }, "Extract audio fallback video gagal");
             }
 
@@ -345,8 +472,13 @@ export class DownloaderService {
         const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
         const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
 
-        await this.runTikTokArgs(parsedUrl.toString(), rawOutputTemplate);
+        await this.runTikTokArgs(fallbackUrl, rawOutputTemplate);
         const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
+        await assertVideoDurationAllowed(
+          rawVideoPath,
+          MAX_TIKTOK_DURATION_SEC,
+          "Video TikTok melebihi batas durasi 70 menit (1 jam 10 menit).",
+        );
         const outputPath = await prepareMobileVideo(
           rawVideoPath,
           remuxedOutputPath,
@@ -358,7 +490,7 @@ export class DownloaderService {
         let audio: ExtractedAudio | undefined;
         try {
           audio = await this.extractAudioFromVideo(buffer);
-        } catch (err) {
+        } catch (err: unknown) {
           logger.warn({ err }, "Extract audio fallback yt-dlp gagal");
         }
 
@@ -407,52 +539,91 @@ export class DownloaderService {
 
   /**
    * Download Instagram content — unified handler for reel, photo, story, carousel.
-   * Returns single item or multi items (carousel up to 10).
+   * Max 15 items, max video duration 30 minutes (1800s).
    */
   async downloadInstagram(url: string): Promise<DownloadResult> {
     return mediaQueueService.heavySubprocessQueue.run(async () => {
       const preParsed = parseSupportedUrl(url, "instagram");
-      const parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
+      let parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
         allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.instagram,
       });
+
+      // Resolve shortlink instagr.am atau link share baru (/share/reel/..., /share/p/...)
+      const lowerPathInitial = parsedUrl.pathname.toLowerCase();
+      if (
+        parsedUrl.hostname.toLowerCase() === "instagr.am" ||
+        lowerPathInitial.startsWith("/share/")
+      ) {
+        try {
+          const resolved = await resolveRedirectUrl(parsedUrl.toString(), {
+            allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.instagram,
+          });
+          parsedUrl = await assertSafeExternalUrl(resolved, {
+            allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.instagram,
+          });
+        } catch (err: unknown) {
+          logger.warn({ err }, "Gagal resolve shortlink Instagram, lanjut memakai URL awal");
+        }
+      }
+
       const targetUrl = parsedUrl.toString();
       const startedAt = Date.now();
       const tempDir = await createTempDir("ig-download");
+      const scanOptions: ScanMediaOptions = {
+        maxVideoDurationSec: MAX_INSTAGRAM_DURATION_SEC,
+        durationErrorMessage: "Video Instagram melebihi batas durasi 30 menit.",
+      };
 
       try {
         let items: DownloadedMediaItem[] = [];
-        const isReel = parsedUrl.pathname.toLowerCase().includes("/reel/");
+        const lowerPath = parsedUrl.pathname.toLowerCase();
+        const preferYtDlp =
+          lowerPath.includes("/reel/") ||
+          lowerPath.includes("/reels/") ||
+          lowerPath.includes("/tv/") ||
+          lowerPath.includes("/stories/");
 
-        if (isReel) {
-          // Reels diproses via yt-dlp terlebih dahulu
+        if (preferYtDlp) {
+          // Reels & Stories diproses via yt-dlp terlebih dahulu
           try {
             await this.runYtDlpInstagram(targetUrl, tempDir);
-            items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig");
-          } catch (ytErr) {
+            items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig", scanOptions);
+          } catch (ytErr: unknown) {
+            if (isPolicyLimitError(ytErr)) {
+              throw ytErr;
+            }
             logger.warn(
-              { ytErr, url: targetUrl },
-              "yt-dlp gagal download reel, mencoba fallback gallery-dl",
+              { err: ytErr, url: targetUrl },
+              "yt-dlp gagal download IG video/story, mencoba fallback gallery-dl",
             );
             await this.runGalleryDl(targetUrl, tempDir);
-            items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig");
+            items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig", scanOptions);
           }
         } else {
-          // Foto tunggal, carousel slide, atau post foto/video:
+          // Foto tunggal, carousel slide, atau post foto/video (/p/):
           // Gunakan gallery-dl terlebih dahulu karena yt-dlp tidak men-download foto
           try {
             await this.runGalleryDl(targetUrl, tempDir);
-            items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig");
-          } catch (gdlErr) {
-            logger.warn({ gdlErr, url: targetUrl }, "gallery-dl gagal, mencoba fallback yt-dlp");
+            items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig", scanOptions);
+          } catch (gdlErr: unknown) {
+            if (isPolicyLimitError(gdlErr)) {
+              throw gdlErr;
+            }
+            logger.warn(
+              { err: gdlErr, url: targetUrl },
+              "gallery-dl gagal, mencoba fallback yt-dlp",
+            );
           }
 
-          // Jika gallery-dl tidak menghasilkan media (misal video post), coba yt-dlp
           if (items.length === 0) {
             try {
               await this.runYtDlpInstagram(targetUrl, tempDir);
-              items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig");
-            } catch (ytErr) {
-              logger.warn({ ytErr, url: targetUrl }, "yt-dlp fallback juga gagal");
+              items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig", scanOptions);
+            } catch (ytErr: unknown) {
+              if (isPolicyLimitError(ytErr)) {
+                throw ytErr;
+              }
+              logger.warn({ err: ytErr, url: targetUrl }, "yt-dlp fallback IG juga gagal");
             }
           }
         }
@@ -466,10 +637,16 @@ export class DownloaderService {
           "Instagram download selesai",
         );
 
-        return items.length === 1
-          ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            { type: "single", item: items[0]! }
-          : { type: "multi", items, totalCount: items.length };
+        if (items.length === 1) {
+          const first = items[0];
+          if (!first) {
+            throw new AppUserError("Tidak ada media yang berhasil diunduh.");
+          }
+          return { type: "single", item: first };
+        }
+
+        const targetItems = items.slice(0, MAX_INSTAGRAM_SLIDES);
+        return { type: "multi", items: targetItems, totalCount: items.length };
       } finally {
         await removeTempDir(tempDir);
       }
@@ -477,7 +654,7 @@ export class DownloaderService {
   }
 
   /**
-   * Download YouTube video — max 720p, max 12 minutes (720 seconds).
+   * Download YouTube video — max 720p, max 1 hour (3600 seconds).
    */
   async downloadYoutube(url: string): Promise<DownloadedMediaItem> {
     return mediaQueueService.heavySubprocessQueue.run(async () => {
@@ -497,11 +674,11 @@ export class DownloaderService {
           "--no-warnings",
           "--no-playlist",
           "--ies",
-          "youtube",
+          "youtube,youtube:clip",
           "--max-filesize",
           `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
           "--match-filter",
-          "duration <= 3600",
+          "duration <=? 3600 & !is_live",
           "-f",
           YT_VIDEO_FORMAT_SMART,
           "--merge-output-format",
@@ -525,6 +702,11 @@ export class DownloaderService {
         await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
 
         const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
+        await assertVideoDurationAllowed(
+          rawVideoPath,
+          MAX_YOUTUBE_DURATION_SEC,
+          "Video YouTube melebihi batas durasi 1 jam.",
+        );
         const outputPath = await prepareMobileVideo(
           rawVideoPath,
           remuxedOutputPath,
@@ -551,36 +733,68 @@ export class DownloaderService {
   }
 
   /**
-   * Download Twitter / X media — supports single/multi photos (1-4), single/multi videos (1-4),
-   * and mixed-media posts (photos + videos). Returns DownloadResult.
+   * Download Twitter / X media — supports single/multi photos, single/multi videos,
+   * and mixed-media posts (up to 10 items, max video duration 30 minutes / 1800s).
    */
   async downloadTwitter(url: string): Promise<DownloadResult> {
     return mediaQueueService.heavySubprocessQueue.run(async () => {
       const preParsed = parseSupportedUrl(url, "twitter");
-      const parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
+      let parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
         allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.twitter,
       });
+
+      // Jika shortlink t.co, resolve redirect dan pastikan tujuannya benar-benar domain X/Twitter
+      if (parsedUrl.hostname.toLowerCase() === "t.co") {
+        const resolved = await resolveRedirectUrl(parsedUrl.toString(), {
+          allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.twitter,
+        });
+        const verifiedTwitter = isAllowedDomainUrl(resolved, TWITTER_CANONICAL_DOMAINS);
+        if (!verifiedTwitter) {
+          throw new AppUserError("Command .x hanya menerima link resmi X (Twitter).");
+        }
+        parsedUrl = await assertSafeExternalUrl(verifiedTwitter.toString(), {
+          allowedDomains: TWITTER_CANONICAL_DOMAINS,
+        });
+      }
+
+      // Normalisasi domain embed alternatif (fxtwitter/vxtwitter/fixupx) ke x.com untuk CLI
+      const lowerHost = parsedUrl.hostname.toLowerCase();
+      if (
+        lowerHost.endsWith("fxtwitter.com") ||
+        lowerHost.endsWith("vxtwitter.com") ||
+        lowerHost.endsWith("fixupx.com")
+      ) {
+        parsedUrl.hostname = "x.com";
+      }
+
       const targetUrl = parsedUrl.toString();
       const startedAt = Date.now();
       const tempDir = await createTempDir("x-download");
+      const scanOptions: ScanMediaOptions = {
+        maxVideoDurationSec: MAX_TWITTER_DURATION_SEC,
+        durationErrorMessage: "Video X (Twitter) melebihi batas durasi 30 menit.",
+      };
 
       try {
         let items: DownloadedMediaItem[] = [];
+        const cookiesPath = env.TWITTER_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
 
         // 1. Primary: gallery-dl (extracts ALL photos in full resolution and videos in highest bitrate)
         try {
-          const args = ["--no-mtime", "-D", tempDir];
-          const cookiesPath = env.DOWNLOADER_COOKIES_PATH;
+          const args = ["--range", `1-${String(MAX_TWITTER_ITEMS)}`, "--no-mtime", "-D", tempDir];
           if (cookiesPath && existsSync(cookiesPath)) {
             args.push("--cookies", cookiesPath);
           }
           args.push("--", targetUrl);
 
           await runProcess(env.GALLERY_DL_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
-          items = await scanDownloadedMediaFiles(tempDir, "minjibot-x");
-        } catch (gdlErr) {
+          items = await scanDownloadedMediaFiles(tempDir, "minjibot-x", scanOptions);
+        } catch (gdlErr: unknown) {
+          if (isPolicyLimitError(gdlErr)) {
+            throw gdlErr;
+          }
           logger.warn(
-            { gdlErr, url: targetUrl },
+            { err: gdlErr, url: targetUrl },
             "gallery-dl Twitter gagal, mencoba fallback yt-dlp",
           );
         }
@@ -592,12 +806,14 @@ export class DownloaderService {
             const args = [
               "--no-warnings",
               "--yes-playlist",
+              "--playlist-items",
+              `1-${String(MAX_TWITTER_ITEMS)}`,
               "--ies",
-              "twitter",
+              "twitter,twitter:amplify,twitter:card",
               "--max-filesize",
               `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
               "--match-filter",
-              "duration <= 1800",
+              "duration <=? 1800 & !is_live",
               "-f",
               MOBILE_SAFE_FORMAT,
               "--merge-output-format",
@@ -612,16 +828,33 @@ export class DownloaderService {
               rawOutputTemplate,
             ];
 
-            const cookiesPath = env.DOWNLOADER_COOKIES_PATH;
             if (cookiesPath && existsSync(cookiesPath)) {
               args.push("--cookies", cookiesPath);
             }
 
             args.push("--", targetUrl);
             await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
-            items = await scanDownloadedMediaFiles(tempDir, "minjibot-x");
-          } catch (ytErr) {
-            logger.warn({ ytErr, url: targetUrl }, "yt-dlp Twitter fallback juga gagal");
+            items = await scanDownloadedMediaFiles(tempDir, "minjibot-x", scanOptions);
+          } catch (ytErr: unknown) {
+            if (isPolicyLimitError(ytErr)) {
+              throw ytErr;
+            }
+            logger.warn(
+              { err: ytErr, url: targetUrl },
+              "yt-dlp Twitter fallback gagal, mencoba FxTwitter API",
+            );
+          }
+        }
+
+        // 3. Fallback terakhir: FxTwitter API (menangani postingan sensitif / age-gated tanpa cookies)
+        if (items.length === 0) {
+          try {
+            items = await downloadTwitterFxFallback(parsedUrl, tempDir);
+          } catch (fxErr: unknown) {
+            if (isPolicyLimitError(fxErr)) {
+              throw fxErr;
+            }
+            logger.warn({ err: fxErr, url: targetUrl }, "FxTwitter API fallback juga gagal");
           }
         }
 
@@ -642,9 +875,7 @@ export class DownloaderService {
           return { type: "single", item: first };
         }
 
-        const maxItems = 10;
-        const targetItems = items.slice(0, maxItems);
-
+        const targetItems = items.slice(0, MAX_TWITTER_ITEMS);
         return { type: "multi", items: targetItems, totalCount: items.length };
       } finally {
         await removeTempDir(tempDir);
@@ -654,17 +885,19 @@ export class DownloaderService {
 
   /**
    * Download Pinterest photo or video — original resolution HD.
-   * Supports pin.it shortlinks and full pinterest.com URLs.
+   * Supports pin.it shortlinks and regional pinterest.* domains.
    */
   async downloadPinterest(url: string): Promise<DownloadedMediaItem> {
     return mediaQueueService.heavySubprocessQueue.run(async () => {
-      let targetUrlStr = url.trim();
-      if (targetUrlStr.includes("pin.it")) {
+      const initialParsed = parseSupportedUrl(url.trim(), "pinterest");
+      let targetUrlStr = initialParsed.toString();
+
+      if (initialParsed.hostname.toLowerCase() === "pin.it") {
         try {
           targetUrlStr = await resolveRedirectUrl(targetUrlStr, {
             allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.pinterest,
           });
-        } catch (err) {
+        } catch (err: unknown) {
           logger.warn({ err }, "Gagal resolve shortlink pin.it, lanjut dengan URL asli");
         }
       }
@@ -685,8 +918,14 @@ export class DownloaderService {
           const args = ["--no-mtime", "-D", tempDir, "--", canonicalUrl];
           await runProcess(env.GALLERY_DL_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
           items = await scanDownloadedMediaFiles(tempDir, "minjibot-pinterest");
-        } catch (gdlErr) {
-          logger.warn({ gdlErr, url: canonicalUrl }, "gallery-dl Pinterest gagal, mencoba yt-dlp");
+        } catch (gdlErr: unknown) {
+          if (isPolicyLimitError(gdlErr)) {
+            throw gdlErr;
+          }
+          logger.warn(
+            { err: gdlErr, url: canonicalUrl },
+            "gallery-dl Pinterest gagal, mencoba yt-dlp",
+          );
         }
 
         // 2. Jika gallery-dl tidak menghasilkan file (misal pin video), coba yt-dlp
@@ -699,6 +938,8 @@ export class DownloaderService {
             const args = [
               "--no-warnings",
               "--no-playlist",
+              "--ies",
+              "pinterest,pinterestcollection",
               "--max-filesize",
               `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
               "-f",
@@ -730,8 +971,11 @@ export class DownloaderService {
               mimetype: "video/mp4",
               mediaType: "video",
             });
-          } catch (ytErr) {
-            logger.warn({ ytErr, url: canonicalUrl }, "yt-dlp Pinterest juga gagal");
+          } catch (ytErr: unknown) {
+            if (isPolicyLimitError(ytErr)) {
+              throw ytErr;
+            }
+            logger.warn({ err: ytErr, url: canonicalUrl }, "yt-dlp Pinterest juga gagal");
           }
         }
 
@@ -756,11 +1000,11 @@ export class DownloaderService {
       "--no-playlist",
       "--no-warnings",
       "--ies",
-      "tiktok",
+      "tiktok,vm.tiktok",
       "--max-filesize",
       `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
       "--match-filter",
-      "duration <= 4200",
+      "duration <=? 4200 & !is_live",
       "-f",
       MOBILE_SAFE_FORMAT,
       "--merge-output-format",
@@ -811,13 +1055,13 @@ export class DownloaderService {
       "--no-warnings",
       "--no-playlist",
       "--ies",
-      "instagram",
+      "instagram,instagram:story",
       "--max-filesize",
       `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
       "--match-filter",
-      "duration <= 1800",
+      "duration <=? 1800 & !is_live",
       "--playlist-items",
-      "1-15",
+      `1-${String(MAX_INSTAGRAM_SLIDES)}`,
       "--merge-output-format",
       "mp4",
       "--remux-video",
@@ -842,7 +1086,13 @@ export class DownloaderService {
   }
 
   private async runGalleryDl(url: string, tempDir: string): Promise<void> {
-    const args: string[] = ["--range", "1-15", "--no-mtime", "-D", tempDir];
+    const args: string[] = [
+      "--range",
+      `1-${String(MAX_INSTAGRAM_SLIDES)}`,
+      "--no-mtime",
+      "-D",
+      tempDir,
+    ];
 
     const cookiesPath = env.INSTAGRAM_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
     if (cookiesPath && existsSync(cookiesPath)) {
@@ -854,7 +1104,13 @@ export class DownloaderService {
   }
 
   private async runGalleryDlTikTok(url: string, tempDir: string): Promise<void> {
-    const args: string[] = ["--range", "1-25", "--no-mtime", "-D", tempDir];
+    const args: string[] = [
+      "--range",
+      `1-${String(MAX_TIKTOK_SLIDES)}`,
+      "--no-mtime",
+      "-D",
+      tempDir,
+    ];
 
     const cookiesPath = env.TIKTOK_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
     if (cookiesPath && existsSync(cookiesPath)) {
@@ -874,7 +1130,7 @@ export class DownloaderService {
         "--no-warnings",
         "--no-playlist",
         "--ies",
-        "tiktok",
+        "tiktok,vm.tiktok",
         "-x",
         "--audio-format",
         "mp3",
@@ -901,9 +1157,123 @@ export class DownloaderService {
   }
 }
 
+async function downloadTwitterFxFallback(
+  tweetUrl: URL,
+  tempDir: string,
+): Promise<DownloadedMediaItem[]> {
+  const match = /\/status\/(\d+)/i.exec(tweetUrl.pathname);
+  const tweetId = match?.[1];
+  if (!tweetId) {
+    return [];
+  }
+
+  const apiUrl = `https://api.fxtwitter.com/i/status/${tweetId}`;
+  const response = await safeFetchExternal(apiUrl, {
+    allowedDomains: ["fxtwitter.com"],
+    headers: {
+      "User-Agent": DEFAULT_USER_AGENT,
+      Accept: "application/json",
+    },
+    signal: AbortSignal.timeout(env.DOWNLOADER_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`FxTwitter API status ${String(response.status)}`);
+  }
+
+  const json = (await response.json()) as FxTwitterResponse;
+  const mediaList = json.tweet?.media?.all;
+  if (!Array.isArray(mediaList) || mediaList.length === 0) {
+    return [];
+  }
+
+  const targetEntries = mediaList.slice(0, MAX_TWITTER_ITEMS);
+  const maxBytes = env.MAX_DOWNLOAD_FILE_MB * BYTES_PER_MB;
+  const items: DownloadedMediaItem[] = [];
+
+  for (let i = 0; i < targetEntries.length; i += 1) {
+    const entry = targetEntries[i];
+    if (!entry?.url) continue;
+
+    const isVideo = entry.type === "video" || entry.type === "gif";
+    if (
+      isVideo &&
+      typeof entry.duration === "number" &&
+      entry.duration > MAX_TWITTER_DURATION_SEC
+    ) {
+      throw new AppUserError("Video X (Twitter) melebihi batas durasi 30 menit.");
+    }
+
+    const { buffer: rawBuf } = await fetchBufferWithLimit(entry.url, {
+      maxBytes,
+      timeoutMs: env.DOWNLOADER_TIMEOUT_MS,
+      allowedDomains: TWITTER_MEDIA_ALLOWED_DOMAINS,
+      headers: {
+        "User-Agent": DEFAULT_USER_AGENT,
+      },
+    });
+    if (rawBuf.byteLength <= 0) continue;
+
+    if (isVideo) {
+      const rawPath = path.join(tempDir, `fx-${String(i + 1)}.mp4`);
+      const remuxedPath = path.join(tempDir, `fx-${String(i + 1)}.remuxed.mp4`);
+      const normalizedPath = path.join(tempDir, `fx-${String(i + 1)}.normalized.mp4`);
+      await writeFile(rawPath, rawBuf);
+      await assertVideoDurationAllowed(
+        rawPath,
+        MAX_TWITTER_DURATION_SEC,
+        "Video X (Twitter) melebihi batas durasi 30 menit.",
+      );
+      const finalPath = await prepareMobileVideo(rawPath, remuxedPath, normalizedPath);
+      await assertFileSizeAllowed(finalPath);
+      items.push({
+        buffer: await readFile(finalPath),
+        fileName: `minjibot-x-${String(i + 1)}.mp4`,
+        mimetype: "video/mp4",
+        mediaType: "video",
+      });
+    } else {
+      let imgBuffer = rawBuf;
+      let mime = "image/jpeg";
+      let ext = ".jpg";
+      try {
+        const meta = await sharp(imgBuffer, {
+          limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
+        }).metadata();
+        if (meta.format === "webp") {
+          imgBuffer = Buffer.from(
+            await sharp(imgBuffer, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
+              .jpeg({ quality: 95 })
+              .toBuffer(),
+          );
+        } else if (meta.format === "png") {
+          mime = "image/png";
+          ext = ".png";
+        }
+      } catch {
+        // Biarkan buffer asli apabila metadata tidak dikenali
+      }
+      items.push({
+        buffer: imgBuffer,
+        fileName: `minjibot-x-${String(i + 1)}${ext}`,
+        mimetype: mime,
+        mediaType: "image",
+      });
+    }
+  }
+
+  return items;
+}
+
+interface ScanMediaOptions {
+  maxVideoDurationSec?: number;
+  durationErrorMessage?: string;
+}
+
 async function scanDownloadedMediaFiles(
   tempDir: string,
   defaultName = "minjibot-media",
+  options?: ScanMediaOptions,
 ): Promise<DownloadedMediaItem[]> {
   const filePaths = await findMediaFilesRecursive(tempDir);
   const items: DownloadedMediaItem[] = [];
@@ -913,6 +1283,14 @@ async function scanDownloadedMediaFiles(
     const ext = path.extname(filePath).toLowerCase();
 
     if (VIDEO_EXTS.has(ext)) {
+      if (options?.maxVideoDurationSec && options.durationErrorMessage) {
+        await assertVideoDurationAllowed(
+          filePath,
+          options.maxVideoDurationSec,
+          options.durationErrorMessage,
+        );
+      }
+
       const parentDir = path.dirname(filePath);
       const baseName = path.basename(filePath, ext);
       const remuxedPath = path.join(parentDir, `${baseName}.remuxed.mp4`);
@@ -1008,7 +1386,7 @@ async function prepareMobileVideo(
     await videoNormalizeService.remuxForWhatsApp(rawVideoPath, remuxedOutputPath);
     return remuxedOutputPath;
   } catch (error: unknown) {
-    logger.warn({ error }, "Remux video gagal, memakai normalisasi penuh");
+    logger.warn({ err: error }, "Remux video gagal, memakai normalisasi penuh");
     await videoNormalizeService.normalizeForWhatsApp(rawVideoPath, normalizedOutputPath);
     return normalizedOutputPath;
   }
@@ -1041,6 +1419,17 @@ async function assertFileSizeAllowed(filePath: string): Promise<void> {
 
   if (fileStat.size > maxBytes) {
     throw new AppUserError(`Ukuran file maksimal ${String(env.MAX_DOWNLOAD_FILE_MB)} MB.`);
+  }
+}
+
+async function assertVideoDurationAllowed(
+  filePath: string,
+  maxDurationSec: number,
+  errorMessage: string,
+): Promise<void> {
+  const durationSec = await videoNormalizeService.getVideoDurationSeconds(filePath);
+  if (durationSec !== null && durationSec > maxDurationSec) {
+    throw new AppUserError(errorMessage);
   }
 }
 

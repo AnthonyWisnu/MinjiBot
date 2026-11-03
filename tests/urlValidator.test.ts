@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   ALLOWED_DOWNLOADER_DOMAINS,
   assertSafeExternalUrl,
+  extractFirstHttpUrl,
   isPrivateOrReservedIp,
   isValidHttpUrl,
   matchesAllowedDomain,
@@ -197,4 +198,40 @@ void test("resolveRedirectUrl: safely resolves short URLs with mocked DNS and fe
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+void test("extractFirstHttpUrl: extracts embedded URL from mobile share captions", () => {
+  assert.equal(
+    extractFirstHttpUrl("Lihat video lucu ini! https://vt.tiktok.com/ZSM123456/ keren banget"),
+    "https://vt.tiktok.com/ZSM123456/",
+  );
+  assert.equal(
+    extractFirstHttpUrl("Cek pin ini (https://pin.it/abc1234)."),
+    "https://pin.it/abc1234",
+  );
+  assert.equal(
+    extractFirstHttpUrl("https://x.com/user/status/999"),
+    "https://x.com/user/status/999",
+  );
+  assert.equal(extractFirstHttpUrl(""), undefined);
+  assert.equal(extractFirstHttpUrl(undefined), undefined);
+});
+
+void test("parseAllowedDownloaderUrl: supports extended mobile/regional domains safely", () => {
+  assert.notEqual(parseAllowedDownloaderUrl("https://lite.tiktok.com/t/ZS123/", "tiktok"), null);
+  assert.notEqual(
+    parseAllowedDownloaderUrl("https://t.tiktok.com/i18n/share/video/123", "tiktok"),
+    null,
+  );
+  assert.notEqual(parseAllowedDownloaderUrl("https://fxtwitter.com/u/status/123", "twitter"), null);
+  assert.notEqual(parseAllowedDownloaderUrl("https://vxtwitter.com/u/status/123", "twitter"), null);
+  assert.notEqual(parseAllowedDownloaderUrl("https://t.co/abcd1234", "twitter"), null);
+  assert.notEqual(
+    parseAllowedDownloaderUrl("https://www.pinterest.jp/pin/12345/", "pinterest"),
+    null,
+  );
+  assert.notEqual(
+    parseAllowedDownloaderUrl("https://www.pinterest.co.uk/pin/12345/", "pinterest"),
+    null,
+  );
 });

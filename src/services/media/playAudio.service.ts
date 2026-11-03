@@ -53,10 +53,13 @@ export class PlayAudioService {
     try {
       await removeTempDir(tempDir);
     } catch (error: unknown) {
-      logger.warn({ error, tempDir }, "Cleanup temp audio gagal");
+      logger.warn({ err: error, tempDir }, "Cleanup temp audio gagal");
     }
   }
 }
+
+const DEFAULT_PLAY_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 async function runYtDlp(url: string, outputTemplate: string): Promise<void> {
   const binary = env.DOWNLOADER_BIN;
@@ -65,7 +68,12 @@ async function runYtDlp(url: string, outputTemplate: string): Promise<void> {
   }
 
   const args: string[] = [
+    "--no-warnings",
     "--no-playlist",
+    "--ies",
+    "youtube,youtube:clip",
+    "--match-filter",
+    "duration <=? 3600 & !is_live",
     "--extract-audio",
     "--audio-format",
     "mp3",
@@ -73,10 +81,18 @@ async function runYtDlp(url: string, outputTemplate: string): Promise<void> {
     "0",
     "--max-filesize",
     `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
+    "--add-header",
+    `User-Agent:${DEFAULT_PLAY_USER_AGENT}`,
     "-o",
     outputTemplate,
-    url,
   ];
+
+  const cookiesPath = env.YOUTUBE_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
+  if (cookiesPath && existsSync(cookiesPath)) {
+    args.push("--cookies", cookiesPath);
+  }
+
+  args.push("--", url);
 
   await runProcess(
     binary,

@@ -6,11 +6,42 @@ import { AppUserError } from "../errors/appUserError";
 export type DownloaderPlatform = "tiktok" | "instagram" | "youtube" | "twitter" | "pinterest";
 
 export const ALLOWED_DOWNLOADER_DOMAINS: Record<DownloaderPlatform, readonly string[]> = {
-  tiktok: ["tiktok.com", "vt.tiktok.com", "vm.tiktok.com", "m.tiktok.com"],
+  tiktok: [
+    "tiktok.com",
+    "vt.tiktok.com",
+    "vm.tiktok.com",
+    "m.tiktok.com",
+    "t.tiktok.com",
+    "lite.tiktok.com",
+  ],
   instagram: ["instagram.com", "instagr.am"],
   youtube: ["youtube.com", "youtu.be", "music.youtube.com"],
-  twitter: ["twitter.com", "x.com", "mobile.twitter.com", "m.twitter.com"],
-  pinterest: ["pinterest.com", "www.pinterest.com", "pin.it", "id.pinterest.com"],
+  twitter: [
+    "twitter.com",
+    "x.com",
+    "mobile.twitter.com",
+    "m.twitter.com",
+    "t.co",
+    "fxtwitter.com",
+    "vxtwitter.com",
+    "fixupx.com",
+  ],
+  pinterest: [
+    "pinterest.com",
+    "www.pinterest.com",
+    "pin.it",
+    "id.pinterest.com",
+    "pinterest.co.uk",
+    "pinterest.jp",
+    "pinterest.de",
+    "pinterest.fr",
+    "pinterest.ca",
+    "pinterest.com.au",
+    "pinterest.es",
+    "pinterest.it",
+    "pinterest.ph",
+    "pinterest.co.kr",
+  ],
 };
 
 export interface DnsAddressRecord {
@@ -101,6 +132,29 @@ export function parseAllowedDownloaderUrl(
   platform: DownloaderPlatform,
 ): URL | null {
   return isAllowedDomainUrl(rawUrl, ALLOWED_DOWNLOADER_DOMAINS[platform]);
+}
+
+/**
+ * Mengekstrak URL HTTP/HTTPS pertama dari teks argumen mentah.
+ * Berguna ketika pengguna membagikan tautan dari aplikasi mobile yang menyertakan
+ * teks caption sebelum/sesudah tautan (contoh: "Lihat video ini! https://vt.tiktok.com/...").
+ */
+export function extractFirstHttpUrl(input?: string): string | undefined {
+  if (!input || typeof input !== "string") {
+    return undefined;
+  }
+
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const match = /https?:\/\/[^\s<>"'`]+/i.exec(trimmed);
+  if (match?.[0]) {
+    return match[0].replace(/[),.;!?]+$/, "");
+  }
+
+  return trimmed.split(/\s+/)[0];
 }
 
 function parseIpv4Octets(ip: string): [number, number, number, number] | null {
@@ -351,6 +405,9 @@ export async function safeFetchExternal(
   throw new Error("Gagal mengikuti pengalihan URL.");
 }
 
+const REDIRECT_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
 export async function resolveRedirectUrl(
   rawUrl: string,
   options: {
@@ -359,7 +416,7 @@ export async function resolveRedirectUrl(
     dnsLookup?: DnsLookupAllFn;
   } = {},
 ): Promise<string> {
-  const { maxRedirects = 3, allowedDomains, dnsLookup } = options;
+  const { maxRedirects = 4, allowedDomains, dnsLookup } = options;
   let currentUrl = rawUrl;
   for (let hop = 0; hop <= maxRedirects; hop += 1) {
     const validatedUrl = await assertSafeExternalUrl(currentUrl, {
@@ -373,11 +430,16 @@ export async function resolveRedirectUrl(
       response = await fetch(validatedUrl.toString(), {
         method: "HEAD",
         redirect: "manual",
+        headers: { "User-Agent": REDIRECT_USER_AGENT },
+        signal: AbortSignal.timeout(10_000),
       });
-      if (response.status === 405) {
+      if (response.status === 405 || response.status === 403 || response.status === 400) {
+        await response.body?.cancel();
         response = await fetch(validatedUrl.toString(), {
           method: "GET",
           redirect: "manual",
+          headers: { "User-Agent": REDIRECT_USER_AGENT },
+          signal: AbortSignal.timeout(10_000),
         });
       }
     } catch {
@@ -385,10 +447,12 @@ export async function resolveRedirectUrl(
     }
 
     if (!REDIRECT_STATUSES.has(response.status)) {
+      await response.body?.cancel();
       return currentUrl;
     }
 
     const location = response.headers.get("location");
+    await response.body?.cancel();
     if (!location) {
       return currentUrl;
     }
