@@ -137,13 +137,16 @@ Setiap perubahan saldo wajib mencatat baris baru pada tabel `GroupMemberTransact
 
 ## 5. Fitur Berat (Heavy Features) & Konsumsi Limit
 
-Fitur berat mengonsumsi Limit Member dengan pola isolasi akses:
+Fitur berat mengonsumsi Limit Member dengan pola isolasi akses (Batas Ukuran File Global: **400 MB**):
 
-- **TikTok Media Downloader (`.tt <link>`)**: Mengonsumsi **1 Limit**. Mendukung download video tanpa watermark, serta foto slide carousel (hingga 12 foto) beserta audio/musik pengiring (BGM) via direct API dan fallback gallery-dl / yt-dlp.
-- **Instagram Downloader (`.ig <link>`)**: Mengonsumsi **1 Limit**. Mendukung single reel/post, carousel foto/video (multi-item), dan story.
-- **YouTube Video Downloader (`.yt <link>`)**: Mengonsumsi **1 Limit**. Menggunakan **Adaptive Smart Resolution**: Prioritas 1 **720p 60fps** dan Prioritas 2 **720p 30fps** (jika estimasi ukuran <= 100MB), dengan fallback dinamis ke **480p** untuk video berdurasi hingga 12 menit. Seluruh video dijamin menggunakan codec **AVC1/H.264 + AAC** mobile-safe agar langsung bisa diputar lancar di WhatsApp tanpa lag.
+- **TikTok Media Downloader (`.tt <link>`)**: Mengonsumsi **1 Limit**. Mendukung download video tanpa watermark hingga durasi **70 menit (1 jam 10 menit)**, serta foto slide carousel (hingga **25 foto**) beserta audio/musik pengiring (BGM) via direct API dan fallback gallery-dl / yt-dlp.
+- **Instagram Downloader (`.ig <link>`)**: Mengonsumsi **1 Limit**. Mendukung single reel/post, carousel foto/video (multi-item hingga **15 slide**), dan story dengan durasi video hingga **30 menit**.
+- **YouTube Video Downloader (`.yt <link>`)**: Mengonsumsi **1 Limit**. Mendukung durasi hingga **1 Jam (3.600 detik)** menggunakan **Adaptive Smart Resolution**: Prioritas 1 **720p 60fps** dan Prioritas 2 **720p 30fps** (jika estimasi ukuran <= 100MB), dengan fallback dinamis ke **720p / 480p** mobile-safe H.264 + AAC.
+- **Twitter / X Downloader (`.x <link>`, `.twt <link>`)**: Mengonsumsi **1 Limit**. Mendukung unduh video post/tweet X (Twitter) hingga durasi **30 menit** dengan format AVC1/H.264 + AAC mobile-safe.
+- **Pinterest Downloader (`.pin <link>`)**: Mengonsumsi **1 Limit**. Mendukung unduh foto resolusi asli HD (_original quality uncompressed_) serta video pin Pinterest (dilengkapi resolusi otomatis shortlink `pin.it`).
 - **HD Photo Enhancer (`.hd`)**: Mengonsumsi **1 Limit**. Meningkatkan ketajaman foto menggunakan pipeline Sharp Super-Clarity lokal (mks2021 + CLAHE + LAB Sharpening) tanpa dependensi model eksternal.
-- **Play Song & Lyrics (`.play <judul>`, `.lirik <judul>`)**: Mengonsumsi **1 Limit**. Streaming audio MP3 dan pencarian lirik musik.
+- **Play Song & Lyrics (`.play <judul>`, `.lirik <judul>`)**: Mengonsumsi **1 Limit**. Streaming audio MP3 hingga durasi **1 Jam (3.600 detik)** dan pencarian lirik musik.
+- **Smart WhatsApp Delivery Engine**: Mendeteksi ukuran file video secara otomatis: video $\le$ 100 MB dikirim langsung sebagai inline video WhatsApp; video > 100 MB s/d 400 MB otomatis dikirim sebagai dokumen video HD (`video/mp4`) agar transmisi selalu berhasil tanpa batasan streaming WA. File sementara di VPS langsung dihapus seketika setelah buffer dikirim.
 
 ### 5.1. Studio Kreatif & Media Ringan
 

@@ -116,6 +116,8 @@ export class MenuService {
       "• .tt <url>",
       "• .ig <url>",
       "• .yt <url>",
+      "• .x <url>",
+      "• .pin <url>",
       "• .play <lagu>",
       "• .lirik [doc] <judul>",
       "• .sticker / .s",
@@ -350,6 +352,8 @@ export class MenuService {
       "• .tt <url>",
       "• .ig <url>",
       "• .yt <url>",
+      "• .x <url>",
+      "• .pin <url>",
       "• .hd [doc]",
       "• .afk [alasan]",
     ];

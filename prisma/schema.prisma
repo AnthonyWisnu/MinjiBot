@@ -24,6 +24,8 @@ enum HeavyFeatureType {
   PLAY_SONG
   SONG_LYRICS
   YOUTUBE_VIDEO_DOWNLOAD
+  TWITTER_DOWNLOAD
+  PINTEREST_DOWNLOAD
 }
 
 enum TenantAuditAction {

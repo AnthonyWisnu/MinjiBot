@@ -9,6 +9,7 @@ import {
   matchesAllowedDomain,
   parseAllowedDownloaderUrl,
   parseHttpUrl,
+  resolveRedirectUrl,
 } from "../src/utils/urlValidator";
 
 void test("isValidHttpUrl: validates valid http and https urls", () => {
@@ -145,4 +146,55 @@ void test("assertSafeExternalUrl: rejects SSRF attacks and internal network IPs"
     dnsLookup: mockPublicDns,
   });
   assert.equal(safeUrl.hostname, "www.tiktok.com");
+});
+
+void test("parseAllowedDownloaderUrl: validates twitter and pinterest URLs", () => {
+  const xValid = parseAllowedDownloaderUrl("https://x.com/user/status/123456", "twitter");
+  assert.notEqual(xValid, null);
+  assert.equal(xValid?.hostname, "x.com");
+
+  const twtValid = parseAllowedDownloaderUrl("https://twitter.com/user/status/123456", "twitter");
+  assert.notEqual(twtValid, null);
+  assert.equal(twtValid?.hostname, "twitter.com");
+
+  const pinValid = parseAllowedDownloaderUrl(
+    "https://id.pinterest.com/pin/123456789/",
+    "pinterest",
+  );
+  assert.notEqual(pinValid, null);
+  assert.equal(pinValid?.hostname, "id.pinterest.com");
+
+  const pinItValid = parseAllowedDownloaderUrl("https://pin.it/abc1234", "pinterest");
+  assert.notEqual(pinItValid, null);
+  assert.equal(pinItValid?.hostname, "pin.it");
+
+  // Rejections
+  assert.equal(parseAllowedDownloaderUrl("https://x.com.evil.com/status/123", "twitter"), null);
+  assert.equal(parseAllowedDownloaderUrl("https://fake-pin.it/test", "pinterest"), null);
+});
+
+void test("resolveRedirectUrl: safely resolves short URLs with mocked DNS and fetch", async () => {
+  const mockPublicDns = async () => [{ address: "151.101.0.84", family: 4 }];
+  const originalFetch = globalThis.fetch;
+
+  try {
+    globalThis.fetch = async (url: string | URL | Request) => {
+      const urlStr = url.toString();
+      if (urlStr.includes("pin.it/abc1234")) {
+        return new Response(null, {
+          status: 301,
+          headers: { location: "https://www.pinterest.com/pin/999888777/" },
+        });
+      }
+      return new Response("OK", { status: 200 });
+    };
+
+    const resolved = await resolveRedirectUrl("https://pin.it/abc1234", {
+      allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.pinterest,
+      dnsLookup: mockPublicDns,
+    });
+    assert.equal(resolved, "https://www.pinterest.com/pin/999888777/");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

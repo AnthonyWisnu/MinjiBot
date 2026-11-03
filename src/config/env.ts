@@ -27,7 +27,7 @@ export const envSchema = z.object({
   BOT_BROWSER_NAME: z.string().min(1),
   RECONNECT_INITIAL_MS: z.coerce.number().int().positive(),
   RECONNECT_MAX_MS: z.coerce.number().int().positive(),
-  MAX_DOWNLOAD_FILE_MB: z.coerce.number().int().positive(),
+  MAX_DOWNLOAD_FILE_MB: z.coerce.number().int().positive().default(400),
   DOWNLOADER_BIN: z.string().min(1),
   DOWNLOADER_COOKIES_PATH: optionalPathSchema,
   YOUTUBE_COOKIES_PATH: optionalPathSchema,

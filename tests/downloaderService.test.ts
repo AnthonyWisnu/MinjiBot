@@ -38,6 +38,28 @@ test("downloaderService: rejects non-YouTube URLs with AppUserError", async () =
   );
 });
 
+test("downloaderService: rejects non-Twitter URLs with AppUserError", async () => {
+  await assert.rejects(
+    () => downloaderService.downloadTwitter("https://evil-x.com/user/status/123"),
+    (err: unknown) => {
+      assert.ok(err instanceof AppUserError);
+      assert.ok(err.message.includes("Twitter"));
+      return true;
+    },
+  );
+});
+
+test("downloaderService: rejects non-Pinterest URLs with AppUserError", async () => {
+  await assert.rejects(
+    () => downloaderService.downloadPinterest("https://fake-pinterest.com/pin/123"),
+    (err: unknown) => {
+      assert.ok(err instanceof AppUserError);
+      assert.ok(err.message.includes("Pinterest"));
+      return true;
+    },
+  );
+});
+
 test("downloaderService: rejects SSRF attempts with localhost / cloud metadata IP", async () => {
   await assert.rejects(
     () => downloaderService.downloadTikTok("http://127.0.0.1:8080/video"),
@@ -45,6 +67,14 @@ test("downloaderService: rejects SSRF attempts with localhost / cloud metadata I
   );
   await assert.rejects(
     () => downloaderService.downloadYoutube("http://169.254.169.254/latest/meta-data"),
+    AppUserError,
+  );
+  await assert.rejects(
+    () => downloaderService.downloadTwitter("http://127.0.0.1/status/123"),
+    AppUserError,
+  );
+  await assert.rejects(
+    () => downloaderService.downloadPinterest("http://169.254.169.254/pin/123"),
     AppUserError,
   );
 });

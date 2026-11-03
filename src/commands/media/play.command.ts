@@ -11,7 +11,7 @@ import {
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { executeWithHeavyFeatureLimit } from "./heavyFeatureHelper";
 
-const MAX_DURATION_SECONDS = 10 * 60;
+const MAX_DURATION_SECONDS = 60 * 60;
 const MAX_SEARCH_RESULTS = 3;
 const GENERIC_PLAY_ERROR = "Audio gagal diproses. Silakan coba lagi nanti.";
 
@@ -38,7 +38,7 @@ async function handlePlay(context: CommandContext): Promise<void> {
       );
 
       if (playableVideos.length === 0) {
-        throw new AppUserError("Durasi lagu maksimal 10 menit.");
+        throw new AppUserError("Durasi lagu maksimal 1 jam.");
       }
 
       let tempDir: string | undefined;

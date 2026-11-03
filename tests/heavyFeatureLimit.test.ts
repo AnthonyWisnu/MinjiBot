@@ -32,6 +32,14 @@ void test("getFeatureCost: Song lyrics costs 1", () => {
   assert.equal(getFeatureCost(HeavyFeatureType.SONG_LYRICS), 1);
 });
 
+void test("getFeatureCost: Twitter costs 1", () => {
+  assert.equal(getFeatureCost(HeavyFeatureType.TWITTER_DOWNLOAD), 1);
+});
+
+void test("getFeatureCost: Pinterest costs 1", () => {
+  assert.equal(getFeatureCost(HeavyFeatureType.PINTEREST_DOWNLOAD), 1);
+});
+
 void test("getFeatureCost: all HeavyFeatureType enum values have cost >= 1", () => {
   for (const featureType of Object.values(HeavyFeatureType)) {
     const cost = getFeatureCost(featureType);

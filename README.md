@@ -77,9 +77,14 @@
 
 ### 🚀 7. High-Throughput Media Downloader Pipeline
 
-- **TikTok (`.tt`)**: Watermark-free HD video download with direct fast-API extraction and robust yt-dlp fallback.
-- **Instagram (`.ig`)**: Unified downloader supporting Reels, Posts, multi-slide Carousels, and Stories.
-- **YouTube (`.yt`)**: Smart Adaptive Resolution Engine prioritizing **720p 60FPS** and **720p 30FPS** for crystal-clear high-definition fidelity (`<= 100MB`), with intelligent dynamic fallback to **480p** for extended videos (up to 12 minutes). Remuxed with mobile-safe **AVC1 (H.264) + AAC** for instant, native playback on all iOS & Android devices. Ekstraksi audio dilengkapi custom browser user-agent dan isolasi error logging terstruktur.
+- **Global File Limit**: Up to **400 MB** (`MAX_DOWNLOAD_FILE_MB = 400`) with zero-retention ephemeral temp file cleanup.
+- **Smart WhatsApp Delivery**: Videos $\le$ 100 MB sent as inline video player; videos > 100 MB up to 400 MB automatically delivered as HD document video (`video/mp4`).
+- **TikTok (`.tt`)**: Watermark-free HD video download up to **70 minutes (1 hour 10 minutes)** or photo slides carousel up to **25 photos** + background audio (BGM).
+- **Instagram (`.ig`)**: Unified downloader supporting Reels, Posts, multi-slide Carousels (up to **15 slides**), and Stories (video up to **30 minutes**).
+- **YouTube (`.yt`)**: Smart Adaptive Resolution Engine prioritizing **720p 60FPS** and **720p 30FPS** for crystal-clear high-definition fidelity (`<= 100MB`), with intelligent dynamic fallback for extended videos up to **1 Hour (3,600s)**. Mobile-safe **AVC1 (H.264) + AAC** for instant playback.
+- **X / Twitter (`.x` / `.twt`)**: Video post downloader for X (Twitter) up to **30 minutes** in mobile-safe H.264 + AAC.
+- **Pinterest (`.pin`)**: Original uncompressed HD photo and video downloader with automated `pin.it` shortlink resolution.
+- **Play Song (`.play`)**: High-fidelity YouTube MP3 audio stream up to **1 Hour (3,600s)**.
 - **HD Image Enhancer (`.hd`)**: Upscales and sharpens low-res photos using local Sharp Super-Clarity algorithms (mks2021 + CLAHE + LAB Sharpening).
 
 ### 🛡️ 8. Enterprise Resilience & Auto-Reconnect
@@ -135,60 +140,62 @@ flowchart TD
 
 ## 📋 Command Showcase
 
-| Category                    | Command                      | Description                                                                   | Limit / Cost |
-| --------------------------- | ---------------------------- | ----------------------------------------------------------------------------- | ------------ |
-| **Member Economy & Status** | `.daily` / `.claim`          | Claim daily points, XP, and streak bonus                                      | Free         |
-|                             | `.profile` [@user]           | Generate Glassmorphism 2.0 visual card with avatar, rank, and XP bar          | Free         |
-|                             | `.belilimit <count>`         | Exchange 1,000 Points per Limit                                               | Points       |
-|                             | `.giftpoint @user <n>`       | Send points to a fellow group member                                          | Points       |
-|                             | `.giftlimit @user <n>`       | Send limits to a fellow group member                                          | Limit        |
-|                             | `.toppoint` / `.toprank`     | View top 10 richest and highest XP members                                    | Free         |
-| **Activity Analytics**      | `.stats`                     | Group activity analytics (total chats, active hours, top chatters)            | Free         |
-|                             | `.topaktif` / `.topchat`     | Top 10 most active members by message count                                   | Free         |
-|                             | `.silent [hari]`             | Sider hunter: detect members with 0 messages over X days (default 7)          | Free         |
-| **Viral Studio**            | `.quote` [reply] [-s]        | Render dark glassmorphism quote card (add `-s` for WhatsApp sticker)          | Free         |
-|                             | `.tweet` [@user] `<text>`    | Render Dark Mode X / Twitter tweet mockup with verified blue badge            | Free         |
-| **Media Engine**            | `.tt <url>`                  | Download TikTok video (no watermark) or Photo Slides (up to 12) + BGM audio   | 1 Limit      |
-|                             | `.ig <url>`                  | Download Instagram Reel, Post, Carousel, or Story                             | 1 Limit      |
-|                             | `.yt <url>`                  | Download YouTube video (Adaptive 720p60/720p30/480p, max 12 mins)             | 1 Limit      |
-|                             | `.hd` [reply photo]          | Enhance photo quality using AI restoration                                    | 2 Limits     |
-|                             | `.play <query>`              | Stream & send MP3 audio track                                                 | 1 Limit      |
-|                             | `.lirik <query>`             | Search song lyrics                                                            | 1 Limit      |
-|                             | `.s` / `.sticker`            | Create sticker from photo/short video with official MinjiBot watermark        | Free         |
-|                             | `.smeme <text>`              | Create top/bottom meme sticker with official MinjiBot watermark               | Free         |
-|                             | `.brat <text>`               | Create Brat aesthetic text sticker (Charli XCX style) with MinjiBot watermark | Free         |
-|                             | `.toimg` / `.tovideo`        | Convert static sticker to PNG image or animated sticker to MP4 video          | Free         |
-|                             | `.bass` / `.chipmunk`        | Apply bass boost or chipmunk vocal effect to audio/VN                         | Free         |
-|                             | `.slowed` / `.nightcore`     | Apply slowed+reverb or nightcore tempo effect to audio/VN                     | Free         |
-|                             | `.tovn`                      | Convert any audio track into official WhatsApp Voice Note (PTT)               | Free         |
-| **Mini Games**              | `.slot` [amount \| allin]    | Play dynamic educational fruit slot machine                                   | Variable     |
-|                             | `.family100`                 | Start interactive Family 100 survey game                                      | Free         |
-|                             | `.tictactoe @user`           | Challenge a member to a TicTacToe PvP battle                                  | Free         |
-|                             | `.mtk` / `.math`             | Math challenge with direct reply answer                                       | Free         |
-|                             | `.tebakkata` / `.tebakemoji` | Guessing riddles with direct reply answer                                     | Free         |
-|                             | `.nyerah`                    | Surrender active quiz or TicTacToe game                                       | Free         |
-| **Tenant Moderation (P0)**  | `.warn @user <alasan>`       | Give disciplinary warning (Auto-kick on threshold)                            | Free (Admin) |
-|                             | `.unwarn @user`              | Remove latest warning from member                                             | Free (Admin) |
-|                             | `.warns [@user]`             | View warning history and violation list                                       | Free (Admin) |
-|                             | `.resetwarn @user`           | Reset all warnings for a member                                               | Free (Admin) |
-|                             | `.setwarn <1-10>`            | Set warning threshold before auto-kick                                        | Free (Admin) |
-|                             | `.antiraid` [on \| off]      | Toggle anti-raid surge defense                                                | Free (Admin) |
-|                             | `.antiraid setting <n> <s>`  | Configure surge threshold ($n$ members in $s$ seconds)                        | Free (Admin) |
-|                             | `.grup <buka \| tutup>`      | Manually lock or unlock group chat                                            | Free (Admin) |
-|                             | `.panel` / `.tenantstatus`   | Open SaaS administrative dashboard and modular switchboard                    | Free (Admin) |
-|                             | `.hidetag <msg>`             | Broadcast announcement with hidden mentions                                   | Free (Admin) |
-|                             | `.antidelete` [on \| off]    | Reveal deleted / revoked messages with sender info                            | Free (Admin) |
-|                             | `.antilink` [on \| off]      | Toggle group anti-invite link moderation                                      | Free (Admin) |
-|                             | `.antispam` [mode]           | Configure spam protection (normal/soft/strict)                                | Free (Admin) |
-|                             | `.welcome` [on \| off]       | Toggle welcome message greeting                                               | Free (Admin) |
-|                             | `.setwelcome <msg>`          | Customize group greeting message                                              | Free (Admin) |
-|                             | `.goodbye` [on \| off]       | Toggle goodbye notification on member leave                                   | Free (Admin) |
-|                             | `.setgoodbye <msg>`          | Customize group goodbye message                                               | Free (Admin) |
-|                             | `.reminder <time> <msg>`     | Set automatic group reminder                                                  | Free (Admin) |
-| **Super Owner**             | `.tenant list`               | List all tenant groups and rental statuses                                    | Admin        |
-|                             | `.tenant activate <id> <d>`  | Activate group rental for _d_ days                                            | Admin        |
-|                             | `.tenant extend <id> <d>`    | Extend group rental period                                                    | Admin        |
-|                             | `.tenant block <id>`         | Block abusive tenant group                                                    | Admin        |
+| Category                    | Command                      | Description                                                                    | Limit / Cost |
+| --------------------------- | ---------------------------- | ------------------------------------------------------------------------------ | ------------ |
+| **Member Economy & Status** | `.daily` / `.claim`          | Claim daily points, XP, and streak bonus                                       | Free         |
+|                             | `.profile` [@user]           | Generate Glassmorphism 2.0 visual card with avatar, rank, and XP bar           | Free         |
+|                             | `.belilimit <count>`         | Exchange 1,000 Points per Limit                                                | Points       |
+|                             | `.giftpoint @user <n>`       | Send points to a fellow group member                                           | Points       |
+|                             | `.giftlimit @user <n>`       | Send limits to a fellow group member                                           | Limit        |
+|                             | `.toppoint` / `.toprank`     | View top 10 richest and highest XP members                                     | Free         |
+| **Activity Analytics**      | `.stats`                     | Group activity analytics (total chats, active hours, top chatters)             | Free         |
+|                             | `.topaktif` / `.topchat`     | Top 10 most active members by message count                                    | Free         |
+|                             | `.silent [hari]`             | Sider hunter: detect members with 0 messages over X days (default 7)           | Free         |
+| **Viral Studio**            | `.quote` [reply] [-s]        | Render dark glassmorphism quote card (add `-s` for WhatsApp sticker)           | Free         |
+|                             | `.tweet` [@user] `<text>`    | Render Dark Mode X / Twitter tweet mockup with verified blue badge             | Free         |
+| **Media Engine**            | `.tt <url>`                  | Download TikTok video (no watermark, max 70m) or Photo Slides (up to 25) + BGM | 1 Limit      |
+|                             | `.ig <url>`                  | Download Instagram Reel, Post, Carousel (up to 15), or Story (max 30m)         | 1 Limit      |
+|                             | `.yt <url>`                  | Download YouTube video (Adaptive 720p/480p, max 1 hour, up to 400MB)           | 1 Limit      |
+|                             | `.x <url>` / `.twt <url>`    | Download X / Twitter video post (max 30m, up to 400MB)                         | 1 Limit      |
+|                             | `.pin <url>`                 | Download Pinterest original HD photo or video (supports pin.it)                | 1 Limit      |
+|                             | `.hd` [reply photo]          | Enhance photo quality using AI restoration                                     | 1 Limit      |
+|                             | `.play <query>`              | Stream & send MP3 audio track (max 1 hour)                                     | 1 Limit      |
+|                             | `.lirik <query>`             | Search song lyrics                                                             | 1 Limit      |
+|                             | `.s` / `.sticker`            | Create sticker from photo/short video with official MinjiBot watermark         | Free         |
+|                             | `.smeme <text>`              | Create top/bottom meme sticker with official MinjiBot watermark                | Free         |
+|                             | `.brat <text>`               | Create Brat aesthetic text sticker (Charli XCX style) with MinjiBot watermark  | Free         |
+|                             | `.toimg` / `.tovideo`        | Convert static sticker to PNG image or animated sticker to MP4 video           | Free         |
+|                             | `.bass` / `.chipmunk`        | Apply bass boost or chipmunk vocal effect to audio/VN                          | Free         |
+|                             | `.slowed` / `.nightcore`     | Apply slowed+reverb or nightcore tempo effect to audio/VN                      | Free         |
+|                             | `.tovn`                      | Convert any audio track into official WhatsApp Voice Note (PTT)                | Free         |
+| **Mini Games**              | `.slot` [amount \| allin]    | Play dynamic educational fruit slot machine                                    | Variable     |
+|                             | `.family100`                 | Start interactive Family 100 survey game                                       | Free         |
+|                             | `.tictactoe @user`           | Challenge a member to a TicTacToe PvP battle                                   | Free         |
+|                             | `.mtk` / `.math`             | Math challenge with direct reply answer                                        | Free         |
+|                             | `.tebakkata` / `.tebakemoji` | Guessing riddles with direct reply answer                                      | Free         |
+|                             | `.nyerah`                    | Surrender active quiz or TicTacToe game                                        | Free         |
+| **Tenant Moderation (P0)**  | `.warn @user <alasan>`       | Give disciplinary warning (Auto-kick on threshold)                             | Free (Admin) |
+|                             | `.unwarn @user`              | Remove latest warning from member                                              | Free (Admin) |
+|                             | `.warns [@user]`             | View warning history and violation list                                        | Free (Admin) |
+|                             | `.resetwarn @user`           | Reset all warnings for a member                                                | Free (Admin) |
+|                             | `.setwarn <1-10>`            | Set warning threshold before auto-kick                                         | Free (Admin) |
+|                             | `.antiraid` [on \| off]      | Toggle anti-raid surge defense                                                 | Free (Admin) |
+|                             | `.antiraid setting <n> <s>`  | Configure surge threshold ($n$ members in $s$ seconds)                         | Free (Admin) |
+|                             | `.grup <buka \| tutup>`      | Manually lock or unlock group chat                                             | Free (Admin) |
+|                             | `.panel` / `.tenantstatus`   | Open SaaS administrative dashboard and modular switchboard                     | Free (Admin) |
+|                             | `.hidetag <msg>`             | Broadcast announcement with hidden mentions                                    | Free (Admin) |
+|                             | `.antidelete` [on \| off]    | Reveal deleted / revoked messages with sender info                             | Free (Admin) |
+|                             | `.antilink` [on \| off]      | Toggle group anti-invite link moderation                                       | Free (Admin) |
+|                             | `.antispam` [mode]           | Configure spam protection (normal/soft/strict)                                 | Free (Admin) |
+|                             | `.welcome` [on \| off]       | Toggle welcome message greeting                                                | Free (Admin) |
+|                             | `.setwelcome <msg>`          | Customize group greeting message                                               | Free (Admin) |
+|                             | `.goodbye` [on \| off]       | Toggle goodbye notification on member leave                                    | Free (Admin) |
+|                             | `.setgoodbye <msg>`          | Customize group goodbye message                                                | Free (Admin) |
+|                             | `.reminder <time> <msg>`     | Set automatic group reminder                                                   | Free (Admin) |
+| **Super Owner**             | `.tenant list`               | List all tenant groups and rental statuses                                     | Admin        |
+|                             | `.tenant activate <id> <d>`  | Activate group rental for _d_ days                                             | Admin        |
+|                             | `.tenant extend <id> <d>`    | Extend group rental period                                                     | Admin        |
+|                             | `.tenant block <id>`         | Block abusive tenant group                                                     | Admin        |
 
 ---
 

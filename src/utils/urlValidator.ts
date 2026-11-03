@@ -3,12 +3,14 @@ import net from "node:net";
 
 import { AppUserError } from "../errors/appUserError";
 
-export type DownloaderPlatform = "tiktok" | "instagram" | "youtube";
+export type DownloaderPlatform = "tiktok" | "instagram" | "youtube" | "twitter" | "pinterest";
 
 export const ALLOWED_DOWNLOADER_DOMAINS: Record<DownloaderPlatform, readonly string[]> = {
   tiktok: ["tiktok.com", "vt.tiktok.com", "vm.tiktok.com", "m.tiktok.com"],
   instagram: ["instagram.com", "instagr.am"],
   youtube: ["youtube.com", "youtu.be", "music.youtube.com"],
+  twitter: ["twitter.com", "x.com", "mobile.twitter.com", "m.twitter.com"],
+  pinterest: ["pinterest.com", "www.pinterest.com", "pin.it", "id.pinterest.com"],
 };
 
 export interface DnsAddressRecord {
@@ -347,4 +349,51 @@ export async function safeFetchExternal(
   }
 
   throw new Error("Gagal mengikuti pengalihan URL.");
+}
+
+export async function resolveRedirectUrl(
+  rawUrl: string,
+  options: {
+    maxRedirects?: number;
+    allowedDomains?: readonly string[];
+    dnsLookup?: DnsLookupAllFn;
+  } = {},
+): Promise<string> {
+  const { maxRedirects = 3, allowedDomains, dnsLookup } = options;
+  let currentUrl = rawUrl;
+  for (let hop = 0; hop <= maxRedirects; hop += 1) {
+    const validatedUrl = await assertSafeExternalUrl(currentUrl, {
+      allowedDomains: hop === 0 ? allowedDomains : undefined,
+      requireHttps: true,
+      dnsLookup,
+    });
+
+    let response: Response;
+    try {
+      response = await fetch(validatedUrl.toString(), {
+        method: "HEAD",
+        redirect: "manual",
+      });
+      if (response.status === 405) {
+        response = await fetch(validatedUrl.toString(), {
+          method: "GET",
+          redirect: "manual",
+        });
+      }
+    } catch {
+      return currentUrl;
+    }
+
+    if (!REDIRECT_STATUSES.has(response.status)) {
+      return currentUrl;
+    }
+
+    const location = response.headers.get("location");
+    if (!location) {
+      return currentUrl;
+    }
+
+    currentUrl = new URL(location, validatedUrl).toString();
+  }
+  return currentUrl;
 }

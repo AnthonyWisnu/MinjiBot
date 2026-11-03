@@ -17,6 +17,7 @@ import {
   ALLOWED_DOWNLOADER_DOMAINS,
   assertSafeExternalUrl,
   parseAllowedDownloaderUrl,
+  resolveRedirectUrl,
   safeFetchExternal,
 } from "../../utils/urlValidator";
 import { videoNormalizeService } from "./videoNormalize.service";
@@ -35,17 +36,19 @@ const YT_VIDEO_FORMAT_SMART =
   "bv*[vcodec^=avc1][height<=720][fps>30][filesize_approx<=100M][ext=mp4]+ba[ext=m4a]/" +
   // Prioritas 2: 720p 30 FPS (H.264 mp4) jika video approx <= 100MB
   "bv*[vcodec^=avc1][height<=720][fps<=30][filesize_approx<=100M][ext=mp4]+ba[ext=m4a]/" +
-  // Prioritas 3: 480p (H.264 mp4) untuk video panjang hingga 12 menit
+  // Prioritas 3: 720p (H.264 mp4) untuk video panjang hingga 1 jam
+  "bv*[vcodec^=avc1][height<=720][ext=mp4]+ba[ext=m4a]/" +
+  // Prioritas 4: 480p (H.264 mp4) jika 720p terlalu besar atau fallback
   "bv*[vcodec^=avc1][height<=480][ext=mp4]+ba[ext=m4a]/" +
   // Fallback format jika avc1 tidak tersedia
-  "bv*[height<=720][filesize_approx<=100M][ext=mp4]+ba[ext=m4a]/" +
+  "bv*[height<=720][ext=mp4]+ba[ext=m4a]/" +
   "b[height<=720][ext=mp4]/" +
   "best[height<=720]/best";
 
 const IMAGE_EXTS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const VIDEO_EXTS = new Set([".mp4", ".webm", ".mkv", ".mov", ".avi"]);
 
-export type DownloaderKind = "tiktok" | "instagram" | "youtube";
+export type DownloaderKind = "tiktok" | "instagram" | "youtube" | "twitter" | "pinterest";
 export type MediaType = "video" | "image";
 
 export interface DownloadedMediaItem {
@@ -142,7 +145,7 @@ async function downloadTikTokDirect(url: string): Promise<TikTokDownloadResult> 
   // Deteksi jika konten adalah slide foto TikTok
   if (Array.isArray(json.data.images) && json.data.images.length > 0) {
     const totalCount = json.data.images.length;
-    const targetUrls = json.data.images.slice(0, 12);
+    const targetUrls = json.data.images.slice(0, 25);
 
     const imageResults = await Promise.all(
       targetUrls.map(async (imgUrl, i): Promise<DownloadedMediaItem | null> => {
@@ -281,7 +284,7 @@ export class DownloaderService {
 
         try {
           await this.runGalleryDlTikTok(parsedUrl.toString(), tempDir);
-          items = await scanDownloadedMediaFiles(tempDir);
+          items = await scanDownloadedMediaFiles(tempDir, "minjibot-tiktok");
         } catch (gdlErr) {
           logger.warn({ gdlErr }, "gallery-dl TikTok gagal, mencoba yt-dlp");
         }
@@ -289,7 +292,7 @@ export class DownloaderService {
         if (items.length > 0) {
           const imageItems = items.filter((it) => it.mediaType === "image");
           if (imageItems.length > 0) {
-            const targetItems = imageItems.slice(0, 12);
+            const targetItems = imageItems.slice(0, 25);
             let audio: ExtractedAudio | undefined;
             try {
               audio = await this.downloadTikTokAudioFallback(parsedUrl.toString());
@@ -424,21 +427,21 @@ export class DownloaderService {
           // Reels diproses via yt-dlp terlebih dahulu
           try {
             await this.runYtDlpInstagram(targetUrl, tempDir);
-            items = await scanDownloadedMediaFiles(tempDir);
+            items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig");
           } catch (ytErr) {
             logger.warn(
               { ytErr, url: targetUrl },
               "yt-dlp gagal download reel, mencoba fallback gallery-dl",
             );
             await this.runGalleryDl(targetUrl, tempDir);
-            items = await scanDownloadedMediaFiles(tempDir);
+            items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig");
           }
         } else {
           // Foto tunggal, carousel slide, atau post foto/video:
           // Gunakan gallery-dl terlebih dahulu karena yt-dlp tidak men-download foto
           try {
             await this.runGalleryDl(targetUrl, tempDir);
-            items = await scanDownloadedMediaFiles(tempDir);
+            items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig");
           } catch (gdlErr) {
             logger.warn({ gdlErr, url: targetUrl }, "gallery-dl gagal, mencoba fallback yt-dlp");
           }
@@ -447,7 +450,7 @@ export class DownloaderService {
           if (items.length === 0) {
             try {
               await this.runYtDlpInstagram(targetUrl, tempDir);
-              items = await scanDownloadedMediaFiles(tempDir);
+              items = await scanDownloadedMediaFiles(tempDir, "minjibot-ig");
             } catch (ytErr) {
               logger.warn({ ytErr, url: targetUrl }, "yt-dlp fallback juga gagal");
             }
@@ -498,7 +501,7 @@ export class DownloaderService {
           "--max-filesize",
           `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
           "--match-filter",
-          "duration <= 720",
+          "duration <= 3600",
           "-f",
           YT_VIDEO_FORMAT_SMART,
           "--merge-output-format",
@@ -547,6 +550,179 @@ export class DownloaderService {
     });
   }
 
+  /**
+   * Download Twitter / X video or media — max duration 30 minutes (1800s).
+   */
+  async downloadTwitter(url: string): Promise<DownloadedMediaItem> {
+    return mediaQueueService.heavySubprocessQueue.run(async () => {
+      const preParsed = parseSupportedUrl(url, "twitter");
+      const parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
+        allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.twitter,
+      });
+      const targetUrl = parsedUrl.toString();
+      const startedAt = Date.now();
+      const tempDir = await createTempDir("x-download");
+      const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
+      const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
+      const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
+
+      try {
+        const args = [
+          "--no-warnings",
+          "--no-playlist",
+          "--ies",
+          "twitter",
+          "--max-filesize",
+          `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
+          "--match-filter",
+          "duration <= 1800",
+          "-f",
+          MOBILE_SAFE_FORMAT,
+          "--merge-output-format",
+          "mp4",
+          "--remux-video",
+          "mp4",
+          "--concurrent-fragments",
+          "4",
+          "--add-header",
+          `User-Agent:${DEFAULT_USER_AGENT}`,
+          "-o",
+          rawOutputTemplate,
+        ];
+
+        const cookiesPath = env.DOWNLOADER_COOKIES_PATH;
+        if (cookiesPath && existsSync(cookiesPath)) {
+          args.push("--cookies", cookiesPath);
+        }
+
+        args.push("--", targetUrl);
+        await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+
+        const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
+        const outputPath = await prepareMobileVideo(
+          rawVideoPath,
+          remuxedOutputPath,
+          normalizedOutputPath,
+        );
+        await assertFileSizeAllowed(outputPath);
+        const buffer = await readFile(outputPath);
+
+        logger.info(
+          { elapsedMs: Date.now() - startedAt, sizeBytes: buffer.byteLength },
+          "Twitter / X video download selesai",
+        );
+
+        return {
+          buffer,
+          fileName: "minjibot-x.mp4",
+          mimetype: "video/mp4",
+          mediaType: "video",
+        };
+      } finally {
+        await removeTempDir(tempDir);
+      }
+    });
+  }
+
+  /**
+   * Download Pinterest photo or video — original resolution HD.
+   * Supports pin.it shortlinks and full pinterest.com URLs.
+   */
+  async downloadPinterest(url: string): Promise<DownloadedMediaItem> {
+    return mediaQueueService.heavySubprocessQueue.run(async () => {
+      let targetUrlStr = url.trim();
+      if (targetUrlStr.includes("pin.it")) {
+        try {
+          targetUrlStr = await resolveRedirectUrl(targetUrlStr, {
+            allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.pinterest,
+          });
+        } catch (err) {
+          logger.warn({ err }, "Gagal resolve shortlink pin.it, lanjut dengan URL asli");
+        }
+      }
+
+      const preParsed = parseSupportedUrl(targetUrlStr, "pinterest");
+      const parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
+        allowedDomains: ALLOWED_DOWNLOADER_DOMAINS.pinterest,
+      });
+      const canonicalUrl = parsedUrl.toString();
+      const startedAt = Date.now();
+      const tempDir = await createTempDir("pin-download");
+
+      try {
+        let items: DownloadedMediaItem[] = [];
+
+        // 1. Coba gallery-dl terlebih dahulu (terbaik untuk resolusi asli foto & video Pinterest)
+        try {
+          const args = ["--no-mtime", "-D", tempDir, "--", canonicalUrl];
+          await runProcess(env.GALLERY_DL_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+          items = await scanDownloadedMediaFiles(tempDir, "minjibot-pinterest");
+        } catch (gdlErr) {
+          logger.warn({ gdlErr, url: canonicalUrl }, "gallery-dl Pinterest gagal, mencoba yt-dlp");
+        }
+
+        // 2. Jika gallery-dl tidak menghasilkan file (misal pin video), coba yt-dlp
+        if (items.length === 0) {
+          try {
+            const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
+            const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
+            const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
+
+            const args = [
+              "--no-warnings",
+              "--no-playlist",
+              "--max-filesize",
+              `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
+              "-f",
+              MOBILE_SAFE_FORMAT,
+              "--merge-output-format",
+              "mp4",
+              "--remux-video",
+              "mp4",
+              "--add-header",
+              `User-Agent:${DEFAULT_USER_AGENT}`,
+              "-o",
+              rawOutputTemplate,
+              "--",
+              canonicalUrl,
+            ];
+
+            await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+            const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
+            const outputPath = await prepareMobileVideo(
+              rawVideoPath,
+              remuxedOutputPath,
+              normalizedOutputPath,
+            );
+            await assertFileSizeAllowed(outputPath);
+            const buffer = await readFile(outputPath);
+            items.push({
+              buffer,
+              fileName: "minjibot-pinterest.mp4",
+              mimetype: "video/mp4",
+              mediaType: "video",
+            });
+          } catch (ytErr) {
+            logger.warn({ ytErr, url: canonicalUrl }, "yt-dlp Pinterest juga gagal");
+          }
+        }
+
+        const chosenItem = items[0];
+        if (!chosenItem) {
+          throw new AppUserError("Media Pinterest tidak ditemukan atau gagal diunduh.");
+        }
+        logger.info(
+          { elapsedMs: Date.now() - startedAt, mediaType: chosenItem.mediaType },
+          "Pinterest download selesai",
+        );
+
+        return chosenItem;
+      } finally {
+        await removeTempDir(tempDir);
+      }
+    });
+  }
+
   private async runTikTokArgs(url: string, outputTemplate: string): Promise<void> {
     const args = [
       "--no-playlist",
@@ -555,6 +731,8 @@ export class DownloaderService {
       "tiktok",
       "--max-filesize",
       `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
+      "--match-filter",
+      "duration <= 4200",
       "-f",
       MOBILE_SAFE_FORMAT,
       "--merge-output-format",
@@ -608,8 +786,10 @@ export class DownloaderService {
       "instagram",
       "--max-filesize",
       `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
+      "--match-filter",
+      "duration <= 1800",
       "--playlist-items",
-      "1-10",
+      "1-15",
       "--merge-output-format",
       "mp4",
       "--remux-video",
@@ -634,7 +814,7 @@ export class DownloaderService {
   }
 
   private async runGalleryDl(url: string, tempDir: string): Promise<void> {
-    const args: string[] = ["--range", "1-10", "--no-mtime", "-D", tempDir];
+    const args: string[] = ["--range", "1-15", "--no-mtime", "-D", tempDir];
 
     const cookiesPath = env.INSTAGRAM_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
     if (cookiesPath && existsSync(cookiesPath)) {
@@ -646,7 +826,7 @@ export class DownloaderService {
   }
 
   private async runGalleryDlTikTok(url: string, tempDir: string): Promise<void> {
-    const args: string[] = ["--range", "1-12", "--no-mtime", "-D", tempDir];
+    const args: string[] = ["--range", "1-25", "--no-mtime", "-D", tempDir];
 
     const cookiesPath = env.TIKTOK_COOKIES_PATH ?? env.DOWNLOADER_COOKIES_PATH;
     if (cookiesPath && existsSync(cookiesPath)) {
@@ -693,7 +873,10 @@ export class DownloaderService {
   }
 }
 
-async function scanDownloadedMediaFiles(tempDir: string): Promise<DownloadedMediaItem[]> {
+async function scanDownloadedMediaFiles(
+  tempDir: string,
+  defaultName = "minjibot-media",
+): Promise<DownloadedMediaItem[]> {
   const filePaths = await findMediaFilesRecursive(tempDir);
   const items: DownloadedMediaItem[] = [];
 
@@ -712,7 +895,7 @@ async function scanDownloadedMediaFiles(tempDir: string): Promise<DownloadedMedi
         buffer: await readFile(finalPath),
         mediaType: "video",
         mimetype: "video/mp4",
-        fileName: "minjibot-ig.mp4",
+        fileName: `${defaultName}.mp4`,
       });
     } else if (IMAGE_EXTS.has(ext)) {
       let imgBuffer = await readFile(filePath);
@@ -734,7 +917,7 @@ async function scanDownloadedMediaFiles(tempDir: string): Promise<DownloadedMedi
         buffer: imgBuffer,
         mediaType: "image",
         mimetype: mime,
-        fileName: `minjibot-ig${outExt}`,
+        fileName: `${defaultName}${outExt}`,
       });
     }
   }
@@ -812,7 +995,13 @@ function parseSupportedUrl(url: string, kind: DownloaderKind): URL {
     if (kind === "instagram") {
       throw new AppUserError("Command .ig hanya menerima link resmi Instagram.");
     }
-    throw new AppUserError("Command .yt hanya menerima link resmi YouTube.");
+    if (kind === "youtube") {
+      throw new AppUserError("Command .yt hanya menerima link resmi YouTube.");
+    }
+    if (kind === "twitter") {
+      throw new AppUserError("Command .x hanya menerima link resmi X (Twitter).");
+    }
+    throw new AppUserError("Command .pin hanya menerima link resmi Pinterest.");
   }
 
   return parsedUrl;

@@ -13,6 +13,8 @@ export const HEAVY_FEATURE_COST: Record<HeavyFeatureType, number> = {
   [HeavyFeatureType.HD_AI_PHOTO_DOCUMENT]: 1,
   [HeavyFeatureType.PLAY_SONG]: 1,
   [HeavyFeatureType.SONG_LYRICS]: 1,
+  [HeavyFeatureType.TWITTER_DOWNLOAD]: 1,
+  [HeavyFeatureType.PINTEREST_DOWNLOAD]: 1,
 };
 
 export function getFeatureCost(feature: HeavyFeatureType): number {

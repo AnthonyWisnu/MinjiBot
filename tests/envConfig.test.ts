@@ -19,7 +19,7 @@ test("envConfig - .env.example should parse and validate cleanly against envSche
     `Validation errors: ${result.success ? "" : JSON.stringify(result.error.errors, null, 2)}`,
   );
 
-  assert.equal(result.data.MAX_DOWNLOAD_FILE_MB, 100);
+  assert.equal(result.data.MAX_DOWNLOAD_FILE_MB, 400);
   assert.equal(result.data.HD_MAX_INPUT_MB, 10);
   assert.equal(result.data.GALLERY_DL_BIN, "gallery-dl");
   assert.ok(result.data.SUPER_OWNER_JIDS.length > 0);
