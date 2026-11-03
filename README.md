@@ -61,7 +61,7 @@
 - **YouTube Music / Play (`.play`)**: High-fidelity MP3 audio stream for tracks and podcasts up to **1 Hour (3,600s)**.
 - **TikTok (`.tt`)**: Watermark-free HD video download up to **70 Minutes (4,200s)** or photo slides carousel up to **25 photos** + extracted background audio (BGM).
 - **Instagram (`.ig`)**: Unified downloader supporting Reels, Posts, multi-slide Carousels (up to **15 slides**), and Stories (video up to **30 minutes**).
-- **X / Twitter (`.x` / `.twt`)**: Full multi-media and mixed-media engine supporting **1–4 photos, 1–4 videos, or mixed photo+video combinations** up to **30 minutes** in mobile-safe AVC1/H.264 + AAC via dual-engine `gallery-dl` + `yt-dlp`.
+- **X / Twitter (`.x` / `.twt`)**: Full multi-media and mixed-media engine supporting up to **10 media items** (photos, videos, or mixed combinations) with video duration up to **30 minutes** in mobile-safe AVC1/H.264 + AAC via dual-engine `gallery-dl` + `yt-dlp`.
 - **Pinterest (`.pin`)**: Original uncompressed HD photo and video downloader with automated `pin.it` shortlink redirect resolution.
 - **HD Image Enhancer (`.hd`)**: Upscales and sharpens low-res photos using local Sharp Super-Clarity algorithms (mks2021 + CLAHE + LAB Sharpening) without external API costs.
 
@@ -140,69 +140,69 @@ flowchart TD
 
 ## 📋 Command Showcase
 
-| Category              | Command                    | Aliases         | Description                                                     | Limit / Cost | Access              |
-| --------------------- | -------------------------- | --------------- | --------------------------------------------------------------- | ------------ | ------------------- |
-| **Member Economy**    | `.daily`                   | `.claim`        | Claim daily points (10–30), XP (50), streak bonus               | Free         | Member              |
-|                       | `.profile`                 |                 | Visual Glassmorphism 2.0 card (avatar, rank, XP bar)            | Free         | Member              |
-|                       | `.belilimit <n>`           |                 | Buy limit with points (100 Points / 1 Limit)                    | Points       | Member              |
-|                       | `.giftpoint @user <n>`     |                 | Send points to a fellow group member                            | Points       | Member              |
-|                       | `.giftlimit @user <n>`     |                 | Send limits to a fellow group member                            | Limit        | Member              |
-|                       | `.toppoint`                | `.toprank`      | View top 10 richest and highest XP members                      | Free         | Member              |
-| **Media Downloader**  | `.tt <url>`                |                 | Download TikTok video (max 70m) or photos (max 25) + BGM        | 1 Limit      | Member / Free Owner |
-|                       | `.ig <url>`                |                 | Download Instagram Reel, Post, Carousel (15), Story (30m)       | 1 Limit      | Member / Free Owner |
-|                       | `.yt <url>`                |                 | Download YouTube video (Adaptive 720p/480p, max 1 hour)         | 1 Limit      | Member / Free Owner |
-|                       | `.x <url>`                 | `.twt`          | Download X / Twitter post (1–4 photos, 1–4 videos, mixed)       | 1 Limit      | Member / Free Owner |
-|                       | `.pin <url>`               | `.pinterest`    | Download Pinterest original HD photo/video (supports pin.it)    | 1 Limit      | Member / Free Owner |
-|                       | `.play <judul>`            |                 | Stream high-bitrate YouTube MP3 audio (max 1 hour)              | 1 Limit      | Member / Free Owner |
-|                       | `.lirik <judul>`           |                 | Search song lyrics with optional document flag                  | 1 Limit      | Member / Free Owner |
-|                       | `.hd`                      |                 | Enhance photo quality using Sharp Super-Clarity                 | 1 Limit      | Member / Free Owner |
-| **Creative Studio**   | `.s`                       | `.sticker`      | Convert photo/video to sticker with official Minji watermark    | Free         | Member              |
-|                       | `.smeme <teks>`            |                 | Create top/bottom meme sticker with official watermark          | Free         | Member              |
-|                       | `.brat <teks>`             |                 | Create dynamic Brat aesthetic text sticker (Charli XCX style)   | Free         | Member              |
-|                       | `.quote` [reply]           | `.q`            | Render dark glassmorphism quote card (add `-s` for sticker)     | Free         | Member              |
-|                       | `.tweet` [@u] `<txt>`      | `.twit`         | Render Dark Mode X tweet mockup with verified blue badge        | Free         | Member              |
-|                       | `.toimg`                   | `.tovideo`      | Convert sticker back into PNG image or MP4 video                | Free         | Member              |
-|                       | `.bass` / `.chipmunk`      |                 | Audio effects: bass boost or chipmunk voice                     | Free         | Member              |
-|                       | `.slowed` / `.nightcore`   |                 | Audio effects: slowed+reverb or nightcore tempo                 | Free         | Member              |
-|                       | `.tovn`                    | `.vn`           | Convert any audio track into official WhatsApp Voice Note (PTT) | Free         | Member              |
-| **Interactive Games** | `.slot` [amount\|allin]    |                 | Play educational slot machine with dynamic weighted RNG         | Variable     | Member              |
-|                       | `.family100`               |                 | Start interactive Family 100 survey game (reply to answer)      | Free         | Member              |
-|                       | `.tictactoe @user`         | `.ttt`          | Challenge a member to a TicTacToe PvP battle (reply 1–9)        | Free         | Member              |
-|                       | `.mtk`                     | `.math`         | Fast math calculation challenge (reply to answer)               | Free         | Member              |
-|                       | `.tebakkata`               |                 | Word scramble riddle game (reply to answer)                     | Free         | Member              |
-|                       | `.tebakemoji`              |                 | Guess the emoji riddle game (reply to answer)                   | Free         | Member              |
-|                       | `.nyerah`                  |                 | Surrender active quiz or TicTacToe match                        | Free         | Member              |
-| **Tenant Moderation** | `.warn @user <alasan>`     |                 | Issue warning to member (Auto-kick on threshold)                | Free         | Tenant Admin        |
-|                       | `.unwarn @user`            |                 | Remove latest warning from member                               | Free         | Tenant Admin        |
-|                       | `.warns [@user]`           |                 | View warning history and violation list                         | Free         | Tenant Admin        |
-|                       | `.resetwarn @user`         |                 | Reset all warnings for a member                                 | Free         | Tenant Admin        |
-|                       | `.setwarn <1-10>`          |                 | Configure warning threshold before auto-kick                    | Free         | Tenant Owner        |
-|                       | `.antiraid` [on\|off]      |                 | Toggle anti-raid surge defense                                  | Free         | Tenant Admin        |
-|                       | `.grup <buka\|tutup>`      |                 | Manually lock/unlock group chat to announcement mode            | Free         | Tenant Admin        |
-|                       | `.panel`                   | `.tenantstatus` | Open SaaS administrative dashboard and switchboard              | Free         | Tenant Admin        |
-|                       | `.hidetag <pesan>`         |                 | Broadcast announcement with hidden background mentions          | Free         | Tenant Admin        |
-|                       | `.antidelete` [on\|off]    |                 | Toggle anti-revoke deleted message recovery                     | Free         | Tenant Admin        |
-|                       | `.antilink` [on\|off]      |                 | Toggle group anti-invite link moderation                        | Free         | Tenant Admin        |
-|                       | `.antispam` [mode]         |                 | Configure spam protection (normal / soft / strict)              | Free         | Tenant Admin        |
-|                       | `.welcome` [on\|off]       |                 | Toggle welcome greeting with avatar photo                       | Free         | Tenant Admin        |
-|                       | `.setwelcome <pesan>`      |                 | Customize group greeting message template                       | Free         | Tenant Owner        |
-|                       | `.goodbye` [on\|off]       |                 | Toggle goodbye notice when member departs                       | Free         | Tenant Admin        |
-|                       | `.setgoodbye <pesan>`      |                 | Customize group goodbye notice template                         | Free         | Tenant Owner        |
-|                       | `.reminder <time> <msg>`   |                 | Schedule automatic group reminder (WIB)                         | Free         | Tenant Admin        |
-| **Tenant Owner**      | `.setowner @user`          |                 | Reassign official Tenant Owner in group                         | Free         | Tenant Owner        |
-|                       | `.addadmin @user`          |                 | Designate a member as Tenant Admin                              | Free         | Tenant Owner        |
-|                       | `.deladmin @user`          |                 | Revoke Tenant Admin privileges                                  | Free         | Tenant Owner        |
-|                       | `.transferowner <kd> <u>`  |                 | Transfer tenant ownership via confirmation code                 | Free         | Tenant Owner        |
-| **Super Owner**       | `.pendinggroup`            |                 | List all detected pending tenant groups                         | Free         | Super Owner         |
-|                       | `.activatetenant <kd> <u>` |                 | Activate rental contract for tenant group                       | Free         | Super Owner         |
-|                       | `.listtenant`              |                 | List all registered tenant groups and active rentals            | Free         | Super Owner         |
-|                       | `.tenantinfo <kode>`       |                 | Inspect detailed tenant profile and contract dates              | Free         | Super Owner         |
-|                       | `.extendtenant <kd> <d>`   |                 | Extend rental contract duration by _d_ days                     | Free         | Super Owner         |
-|                       | `.blocktenant <kode>`      |                 | Block tenant group from executing commands                      | Free         | Super Owner         |
-|                       | `.unblocktenant <kode>`    |                 | Unblock previously banned tenant group                          | Free         | Super Owner         |
-|                       | `.removetenant <kode>`     |                 | Remove tenant group from active tracking                        | Free         | Super Owner         |
-|                       | `.addpointall <kode> <n>`  |                 | Grant bonus points to all members in tenant                     | Free         | Super Owner         |
-|                       | `.addlimitall <kode> <n>`  |                 | Grant bonus limits to all members in tenant                     | Free         | Super Owner         |
+| Category              | Command                    | Aliases         | Description                                                            | Limit / Cost | Access              |
+| --------------------- | -------------------------- | --------------- | ---------------------------------------------------------------------- | ------------ | ------------------- |
+| **Member Economy**    | `.daily`                   | `.claim`        | Claim daily points (10–30), XP (50), streak bonus                      | Free         | Member              |
+|                       | `.profile`                 |                 | Visual Glassmorphism 2.0 card (avatar, rank, XP bar)                   | Free         | Member              |
+|                       | `.belilimit <n>`           |                 | Buy limit with points (100 Points / 1 Limit)                           | Points       | Member              |
+|                       | `.giftpoint @user <n>`     |                 | Send points to a fellow group member                                   | Points       | Member              |
+|                       | `.giftlimit @user <n>`     |                 | Send limits to a fellow group member                                   | Limit        | Member              |
+|                       | `.toppoint`                | `.toprank`      | View top 10 richest and highest XP members                             | Free         | Member              |
+| **Media Downloader**  | `.tt <url>`                |                 | Download TikTok video (max 70m) or photos (max 25) + BGM               | 1 Limit      | Member / Free Owner |
+|                       | `.ig <url>`                |                 | Download Instagram Reel, Post, Carousel (15), Story (30m)              | 1 Limit      | Member / Free Owner |
+|                       | `.yt <url>`                |                 | Download YouTube video (Adaptive 720p/480p, max 1 hour)                | 1 Limit      | Member / Free Owner |
+|                       | `.x <url>`                 | `.twt`          | Download X / Twitter post (Multi-item up to 10 media: photos & videos) | 1 Limit      | Member / Free Owner |
+|                       | `.pin <url>`               | `.pinterest`    | Download Pinterest original HD photo/video (supports pin.it)           | 1 Limit      | Member / Free Owner |
+|                       | `.play <judul>`            |                 | Stream high-bitrate YouTube MP3 audio (max 1 hour)                     | 1 Limit      | Member / Free Owner |
+|                       | `.lirik <judul>`           |                 | Search song lyrics with optional document flag                         | 1 Limit      | Member / Free Owner |
+|                       | `.hd`                      |                 | Enhance photo quality using Sharp Super-Clarity                        | 1 Limit      | Member / Free Owner |
+| **Creative Studio**   | `.s`                       | `.sticker`      | Convert photo/video to sticker with official Minji watermark           | Free         | Member              |
+|                       | `.smeme <teks>`            |                 | Create top/bottom meme sticker with official watermark                 | Free         | Member              |
+|                       | `.brat <teks>`             |                 | Create dynamic Brat aesthetic text sticker (Charli XCX style)          | Free         | Member              |
+|                       | `.quote` [reply]           | `.q`            | Render dark glassmorphism quote card (add `-s` for sticker)            | Free         | Member              |
+|                       | `.tweet` [@u] `<txt>`      | `.twit`         | Render Dark Mode X tweet mockup with verified blue badge               | Free         | Member              |
+|                       | `.toimg`                   | `.tovideo`      | Convert sticker back into PNG image or MP4 video                       | Free         | Member              |
+|                       | `.bass` / `.chipmunk`      |                 | Audio effects: bass boost or chipmunk voice                            | Free         | Member              |
+|                       | `.slowed` / `.nightcore`   |                 | Audio effects: slowed+reverb or nightcore tempo                        | Free         | Member              |
+|                       | `.tovn`                    | `.vn`           | Convert any audio track into official WhatsApp Voice Note (PTT)        | Free         | Member              |
+| **Interactive Games** | `.slot` [amount\|allin]    |                 | Play educational slot machine with dynamic weighted RNG                | Variable     | Member              |
+|                       | `.family100`               |                 | Start interactive Family 100 survey game (reply to answer)             | Free         | Member              |
+|                       | `.tictactoe @user`         | `.ttt`          | Challenge a member to a TicTacToe PvP battle (reply 1–9)               | Free         | Member              |
+|                       | `.mtk`                     | `.math`         | Fast math calculation challenge (reply to answer)                      | Free         | Member              |
+|                       | `.tebakkata`               |                 | Word scramble riddle game (reply to answer)                            | Free         | Member              |
+|                       | `.tebakemoji`              |                 | Guess the emoji riddle game (reply to answer)                          | Free         | Member              |
+|                       | `.nyerah`                  |                 | Surrender active quiz or TicTacToe match                               | Free         | Member              |
+| **Tenant Moderation** | `.warn @user <alasan>`     |                 | Issue warning to member (Auto-kick on threshold)                       | Free         | Tenant Admin        |
+|                       | `.unwarn @user`            |                 | Remove latest warning from member                                      | Free         | Tenant Admin        |
+|                       | `.warns [@user]`           |                 | View warning history and violation list                                | Free         | Tenant Admin        |
+|                       | `.resetwarn @user`         |                 | Reset all warnings for a member                                        | Free         | Tenant Admin        |
+|                       | `.setwarn <1-10>`          |                 | Configure warning threshold before auto-kick                           | Free         | Tenant Owner        |
+|                       | `.antiraid` [on\|off]      |                 | Toggle anti-raid surge defense                                         | Free         | Tenant Admin        |
+|                       | `.grup <buka\|tutup>`      |                 | Manually lock/unlock group chat to announcement mode                   | Free         | Tenant Admin        |
+|                       | `.panel`                   | `.tenantstatus` | Open SaaS administrative dashboard and switchboard                     | Free         | Tenant Admin        |
+|                       | `.hidetag <pesan>`         |                 | Broadcast announcement with hidden background mentions                 | Free         | Tenant Admin        |
+|                       | `.antidelete` [on\|off]    |                 | Toggle anti-revoke deleted message recovery                            | Free         | Tenant Admin        |
+|                       | `.antilink` [on\|off]      |                 | Toggle group anti-invite link moderation                               | Free         | Tenant Admin        |
+|                       | `.antispam` [mode]         |                 | Configure spam protection (normal / soft / strict)                     | Free         | Tenant Admin        |
+|                       | `.welcome` [on\|off]       |                 | Toggle welcome greeting with avatar photo                              | Free         | Tenant Admin        |
+|                       | `.setwelcome <pesan>`      |                 | Customize group greeting message template                              | Free         | Tenant Owner        |
+|                       | `.goodbye` [on\|off]       |                 | Toggle goodbye notice when member departs                              | Free         | Tenant Admin        |
+|                       | `.setgoodbye <pesan>`      |                 | Customize group goodbye notice template                                | Free         | Tenant Owner        |
+|                       | `.reminder <time> <msg>`   |                 | Schedule automatic group reminder (WIB)                                | Free         | Tenant Admin        |
+| **Tenant Owner**      | `.setowner @user`          |                 | Reassign official Tenant Owner in group                                | Free         | Tenant Owner        |
+|                       | `.addadmin @user`          |                 | Designate a member as Tenant Admin                                     | Free         | Tenant Owner        |
+|                       | `.deladmin @user`          |                 | Revoke Tenant Admin privileges                                         | Free         | Tenant Owner        |
+|                       | `.transferowner <kd> <u>`  |                 | Transfer tenant ownership via confirmation code                        | Free         | Tenant Owner        |
+| **Super Owner**       | `.pendinggroup`            |                 | List all detected pending tenant groups                                | Free         | Super Owner         |
+|                       | `.activatetenant <kd> <u>` |                 | Activate rental contract for tenant group                              | Free         | Super Owner         |
+|                       | `.listtenant`              |                 | List all registered tenant groups and active rentals                   | Free         | Super Owner         |
+|                       | `.tenantinfo <kode>`       |                 | Inspect detailed tenant profile and contract dates                     | Free         | Super Owner         |
+|                       | `.extendtenant <kd> <d>`   |                 | Extend rental contract duration by _d_ days                            | Free         | Super Owner         |
+|                       | `.blocktenant <kode>`      |                 | Block tenant group from executing commands                             | Free         | Super Owner         |
+|                       | `.unblocktenant <kode>`    |                 | Unblock previously banned tenant group                                 | Free         | Super Owner         |
+|                       | `.removetenant <kode>`     |                 | Remove tenant group from active tracking                               | Free         | Super Owner         |
+|                       | `.addpointall <kode> <n>`  |                 | Grant bonus points to all members in tenant                            | Free         | Super Owner         |
+|                       | `.addlimitall <kode> <n>`  |                 | Grant bonus limits to all members in tenant                            | Free         | Super Owner         |
 
 ---
 

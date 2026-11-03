@@ -642,7 +642,10 @@ export class DownloaderService {
           return { type: "single", item: first };
         }
 
-        return { type: "multi", items, totalCount: items.length };
+        const maxItems = 10;
+        const targetItems = items.slice(0, maxItems);
+
+        return { type: "multi", items: targetItems, totalCount: items.length };
       } finally {
         await removeTempDir(tempDir);
       }

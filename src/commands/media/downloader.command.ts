@@ -276,9 +276,12 @@ async function handleTwitterDownloader(context: CommandContext): Promise<void> {
         detail = ` (${String(imageCount)} foto)`;
       }
 
-      await context.reply(
-        `Terdeteksi ${String(result.totalCount)} media X (Twitter)${detail}. Mengirim satu per satu...`,
-      );
+      const totalMsg =
+        result.totalCount > result.items.length
+          ? `Terdeteksi ${String(result.totalCount)} media X (Twitter)${detail} (mengirim maks. ${String(result.items.length)}). Mengirim satu per satu...`
+          : `Terdeteksi ${String(result.items.length)} media X (Twitter)${detail}. Mengirim satu per satu...`;
+
+      await context.reply(totalMsg);
 
       for (const item of result.items) {
         await sendMediaItem(context, item);
