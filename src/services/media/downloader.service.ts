@@ -551,9 +551,10 @@ export class DownloaderService {
   }
 
   /**
-   * Download Twitter / X video or media — max duration 30 minutes (1800s).
+   * Download Twitter / X media — supports single/multi photos (1-4), single/multi videos (1-4),
+   * and mixed-media posts (photos + videos). Returns DownloadResult.
    */
-  async downloadTwitter(url: string): Promise<DownloadedMediaItem> {
+  async downloadTwitter(url: string): Promise<DownloadResult> {
     return mediaQueueService.heavySubprocessQueue.run(async () => {
       const preParsed = parseSupportedUrl(url, "twitter");
       const parsedUrl = await assertSafeExternalUrl(preParsed.toString(), {
@@ -562,62 +563,86 @@ export class DownloaderService {
       const targetUrl = parsedUrl.toString();
       const startedAt = Date.now();
       const tempDir = await createTempDir("x-download");
-      const rawOutputTemplate = path.join(tempDir, "raw.%(ext)s");
-      const remuxedOutputPath = path.join(tempDir, "remuxed.mp4");
-      const normalizedOutputPath = path.join(tempDir, "normalized.mp4");
 
       try {
-        const args = [
-          "--no-warnings",
-          "--no-playlist",
-          "--ies",
-          "twitter",
-          "--max-filesize",
-          `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
-          "--match-filter",
-          "duration <= 1800",
-          "-f",
-          MOBILE_SAFE_FORMAT,
-          "--merge-output-format",
-          "mp4",
-          "--remux-video",
-          "mp4",
-          "--concurrent-fragments",
-          "4",
-          "--add-header",
-          `User-Agent:${DEFAULT_USER_AGENT}`,
-          "-o",
-          rawOutputTemplate,
-        ];
+        let items: DownloadedMediaItem[] = [];
 
-        const cookiesPath = env.DOWNLOADER_COOKIES_PATH;
-        if (cookiesPath && existsSync(cookiesPath)) {
-          args.push("--cookies", cookiesPath);
+        // 1. Primary: gallery-dl (extracts ALL photos in full resolution and videos in highest bitrate)
+        try {
+          const args = ["--no-mtime", "-D", tempDir];
+          const cookiesPath = env.DOWNLOADER_COOKIES_PATH;
+          if (cookiesPath && existsSync(cookiesPath)) {
+            args.push("--cookies", cookiesPath);
+          }
+          args.push("--", targetUrl);
+
+          await runProcess(env.GALLERY_DL_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+          items = await scanDownloadedMediaFiles(tempDir, "minjibot-x");
+        } catch (gdlErr) {
+          logger.warn(
+            { gdlErr, url: targetUrl },
+            "gallery-dl Twitter gagal, mencoba fallback yt-dlp",
+          );
         }
 
-        args.push("--", targetUrl);
-        await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+        // 2. Fallback: yt-dlp with --yes-playlist if gallery-dl produced no media
+        if (items.length === 0) {
+          try {
+            const rawOutputTemplate = path.join(tempDir, "item-%(playlist_index)s.%(ext)s");
+            const args = [
+              "--no-warnings",
+              "--yes-playlist",
+              "--ies",
+              "twitter",
+              "--max-filesize",
+              `${String(env.MAX_DOWNLOAD_FILE_MB)}M`,
+              "--match-filter",
+              "duration <= 1800",
+              "-f",
+              MOBILE_SAFE_FORMAT,
+              "--merge-output-format",
+              "mp4",
+              "--remux-video",
+              "mp4",
+              "--concurrent-fragments",
+              "4",
+              "--add-header",
+              `User-Agent:${DEFAULT_USER_AGENT}`,
+              "-o",
+              rawOutputTemplate,
+            ];
 
-        const rawVideoPath = await findFirstDownloadedFile(tempDir, "raw.");
-        const outputPath = await prepareMobileVideo(
-          rawVideoPath,
-          remuxedOutputPath,
-          normalizedOutputPath,
-        );
-        await assertFileSizeAllowed(outputPath);
-        const buffer = await readFile(outputPath);
+            const cookiesPath = env.DOWNLOADER_COOKIES_PATH;
+            if (cookiesPath && existsSync(cookiesPath)) {
+              args.push("--cookies", cookiesPath);
+            }
+
+            args.push("--", targetUrl);
+            await runProcess(env.DOWNLOADER_BIN, args, env.DOWNLOADER_TIMEOUT_MS);
+            items = await scanDownloadedMediaFiles(tempDir, "minjibot-x");
+          } catch (ytErr) {
+            logger.warn({ ytErr, url: targetUrl }, "yt-dlp Twitter fallback juga gagal");
+          }
+        }
+
+        if (items.length === 0) {
+          throw new AppUserError("Media X (Twitter) tidak ditemukan atau gagal diunduh.");
+        }
 
         logger.info(
-          { elapsedMs: Date.now() - startedAt, sizeBytes: buffer.byteLength },
-          "Twitter / X video download selesai",
+          { elapsedMs: Date.now() - startedAt, itemCount: items.length },
+          "Twitter / X download selesai",
         );
 
-        return {
-          buffer,
-          fileName: "minjibot-x.mp4",
-          mimetype: "video/mp4",
-          mediaType: "video",
-        };
+        if (items.length === 1) {
+          const first = items[0];
+          if (!first) {
+            throw new AppUserError("Media X (Twitter) tidak ditemukan.");
+          }
+          return { type: "single", item: first };
+        }
+
+        return { type: "multi", items, totalCount: items.length };
       } finally {
         await removeTempDir(tempDir);
       }

@@ -261,7 +261,30 @@ async function handleTwitterDownloader(context: CommandContext): Promise<void> {
     await context.reply("Media X (Twitter) sedang diproses (maks. 30 menit). Mohon tunggu...");
     const result = await downloaderService.downloadTwitter(url);
 
-    await sendMediaItem(context, result);
+    if (result.type === "single") {
+      await sendMediaItem(context, result.item);
+    } else {
+      const videoCount = result.items.filter((it) => it.mediaType === "video").length;
+      const imageCount = result.items.filter((it) => it.mediaType === "image").length;
+
+      let detail = "";
+      if (videoCount > 0 && imageCount > 0) {
+        detail = ` (${String(videoCount)} video, ${String(imageCount)} foto)`;
+      } else if (videoCount > 0) {
+        detail = ` (${String(videoCount)} video)`;
+      } else if (imageCount > 0) {
+        detail = ` (${String(imageCount)} foto)`;
+      }
+
+      await context.reply(
+        `Terdeteksi ${String(result.totalCount)} media X (Twitter)${detail}. Mengirim satu per satu...`,
+      );
+
+      for (const item of result.items) {
+        await sendMediaItem(context, item);
+        await sleep(300);
+      }
+    }
 
     if (reserved && reservation !== null) {
       await consumeFeatureLimit(reservation);
