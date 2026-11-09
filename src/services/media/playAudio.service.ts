@@ -105,6 +105,8 @@ async function runYtDlp(url: string, outputTemplate: string): Promise<void> {
 async function runFfmpeg(inputPath: string, outputPath: string, ffmpegPath: string): Promise<void> {
   const args: string[] = [
     "-y",
+    "-threads",
+    "1",
     "-i",
     inputPath,
     "-vn",

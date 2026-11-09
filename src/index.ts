@@ -23,14 +23,14 @@ async function main(): Promise<void> {
       logger.info({ recovered }, "Berhasil merekonsiliasi reservasi limit yatim saat startup");
     }
   } catch (error: unknown) {
-    logger.error({ error }, "Gagal rekonsiliasi reservasi limit yatim saat startup");
+    logger.error({ err: error }, "Gagal rekonsiliasi reservasi limit yatim saat startup");
   }
 
   // Jadwalkan rekonsiliasi berkala setiap 30 menit
   setInterval(
     () => {
       memberEconomyService.reconcileOrphanedReservations().catch((error: unknown) => {
-        logger.error({ error }, "Gagal rekonsiliasi reservasi limit yatim periodik");
+        logger.error({ err: error }, "Gagal rekonsiliasi reservasi limit yatim periodik");
       });
     },
     30 * 60 * 1000,
@@ -45,11 +45,11 @@ async function main(): Promise<void> {
   );
 
   const lifecycle = new BotLifecycle();
-  registerShutdownHandlers(lifecycle);
+  registerProcessHandlers(lifecycle);
   await lifecycle.start();
 }
 
-function registerShutdownHandlers(lifecycle: BotLifecycle): void {
+function registerProcessHandlers(lifecycle: BotLifecycle): void {
   let isShuttingDown = false;
 
   const shutdown = (signal: NodeJS.Signals): void => {
@@ -63,7 +63,7 @@ function registerShutdownHandlers(lifecycle: BotLifecycle): void {
     lifecycle
       .stop(signal)
       .catch((error: unknown) => {
-        logger.error({ error }, "Gagal menghentikan lifecycle MinjiBot");
+        logger.error({ err: error }, "Gagal menghentikan lifecycle MinjiBot");
       })
       .finally(() => {
         process.exit(0);
@@ -72,9 +72,28 @@ function registerShutdownHandlers(lifecycle: BotLifecycle): void {
 
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);
+
+  process.on("unhandledRejection", (reason: unknown) => {
+    logger.error({ err: reason }, "Unhandled promise rejection terdeteksi pada proses utama");
+  });
+
+  process.on("uncaughtException", (error: Error) => {
+    logger.fatal({ err: error }, "Uncaught exception terdeteksi pada proses utama");
+    if (!isShuttingDown) {
+      isShuttingDown = true;
+      lifecycle
+        .stop("uncaughtException")
+        .catch((stopErr: unknown) => {
+          logger.error({ err: stopErr }, "Gagal menghentikan lifecycle saat uncaughtException");
+        })
+        .finally(() => {
+          process.exit(1);
+        });
+    }
+  });
 }
 
 main().catch((error: unknown) => {
-  logger.error({ error }, "MinjiBot gagal dijalankan");
+  logger.error({ err: error }, "MinjiBot gagal dijalankan");
   process.exitCode = 1;
 });

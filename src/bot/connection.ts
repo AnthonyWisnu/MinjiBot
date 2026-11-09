@@ -49,7 +49,7 @@ export async function createBotSocket(): Promise<BotSocket> {
     isLatest = versionResult.isLatest;
   } catch (error: unknown) {
     logger.warn(
-      { error, fallbackVersion: version.join(".") },
+      { err: error, fallbackVersion: version.join(".") },
       "Gagal mengambil versi Baileys terbaru, menggunakan fallback default",
     );
   }
@@ -70,6 +70,10 @@ export async function createBotSocket(): Promise<BotSocket> {
     logger: logger.child({ module: "baileys" }),
     markOnlineOnConnect: false,
     syncFullHistory: false,
+    keepAliveIntervalMs: 25_000,
+    connectTimeoutMs: 60_000,
+    defaultQueryTimeoutMs: 60_000,
+    retryRequestDelayMs: 500,
     cachedGroupMetadata: (jid) => Promise.resolve(groupMetadataCache.get(jid)),
     getMessage: (key) => {
       if (!key.id) return Promise.resolve(undefined);

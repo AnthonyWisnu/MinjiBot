@@ -6,6 +6,10 @@ export interface BoundedQueueOptions {
   queueFullMessage?: string;
 }
 
+export interface QueueRunOptions {
+  onQueued?: (position: number) => void | Promise<void>;
+}
+
 export class BoundedQueue {
   public readonly concurrency: number;
   public readonly maxQueue: number;
@@ -33,8 +37,8 @@ export class BoundedQueue {
     return this.waitingQueue.length;
   }
 
-  async run<T>(job: () => Promise<T>): Promise<T> {
-    await this.acquireSlot();
+  async run<T>(job: () => Promise<T>, options?: QueueRunOptions): Promise<T> {
+    await this.acquireSlot(options?.onQueued);
 
     try {
       return await job();
@@ -43,19 +47,30 @@ export class BoundedQueue {
     }
   }
 
-  private acquireSlot(): Promise<void> {
+  private async acquireSlot(onQueued?: (position: number) => void | Promise<void>): Promise<void> {
     if (this.activeJobs < this.concurrency) {
       this.activeJobs += 1;
-      return Promise.resolve();
+      return;
     }
 
     if (this.waitingQueue.length >= this.maxQueue) {
       throw new AppUserError(this.queueFullMessage);
     }
 
-    return new Promise<void>((resolve, reject) => {
+    const position = this.waitingQueue.length + 1;
+    const waitPromise = new Promise<void>((resolve, reject) => {
       this.waitingQueue.push({ resolve, reject });
     });
+
+    if (onQueued) {
+      try {
+        await onQueued(position);
+      } catch {
+        // Abaikan error pengiriman notifikasi antrean agar job tetap menunggu slot
+      }
+    }
+
+    await waitPromise;
   }
 
   private releaseSlot(): void {
@@ -70,8 +85,8 @@ export class BoundedQueue {
 
 /**
  * Service pengatur konkurensi media global bot:
- * - heavySubprocessQueue (concurrency: 2, maxQueue: 15): untuk download TikTok/IG/YouTube, play audio, & normalisasi video
- * - imageComputeQueue (concurrency: 3, maxQueue: 20): untuk komputasi Sharp HD Photo & konversi animasi stiker
+ * - heavySubprocessQueue (concurrency: 2, maxQueue: 15): untuk download TikTok/IG/YouTube/X/Pin, play audio, dan normalisasi video
+ * - imageComputeQueue (concurrency: 3, maxQueue: 20): untuk komputasi Sharp HD Photo dan konversi animasi stiker
  */
 export class MediaQueueService {
   public readonly heavySubprocessQueue: BoundedQueue;

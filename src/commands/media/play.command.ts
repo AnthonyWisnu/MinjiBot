@@ -70,6 +70,16 @@ async function handlePlay(context: CommandContext): Promise<void> {
       }
     });
   } catch (error: unknown) {
+    logger.error(
+      {
+        err: error,
+        commandName: "play",
+        query,
+        chatJid: context.chatJid,
+        senderJid: context.senderJid,
+      },
+      "Gagal memproses command play",
+    );
     await context.reply(formatPlayError(error));
   }
 }

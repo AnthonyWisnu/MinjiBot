@@ -41,13 +41,13 @@ export class BotLifecycle {
       await activityBufferService.flush();
       activityBufferService.stopFlushTimer();
     } catch (error: unknown) {
-      logger.error({ error }, "Gagal flush activity buffer saat shutdown");
+      logger.error({ err: error }, "Gagal flush activity buffer saat shutdown");
     }
 
     try {
       await flushCredsQueue();
     } catch (error: unknown) {
-      logger.error({ error }, "Gagal flush creds queue saat shutdown");
+      logger.error({ err: error }, "Gagal flush creds queue saat shutdown");
     }
 
     await disconnectPrisma();
@@ -76,7 +76,7 @@ export class BotLifecycle {
         },
       });
     } catch (error: unknown) {
-      logger.error({ error }, "Gagal membuat koneksi WhatsApp");
+      logger.error({ err: error }, "Gagal membuat koneksi WhatsApp");
       this.scheduleReconnect("connect-failed");
     }
   }
@@ -102,11 +102,13 @@ export class BotLifecycle {
       return;
     }
 
-    const statusCode = getDisconnectStatusCode(update.lastDisconnect?.error);
+    const disconnectError = update.lastDisconnect?.error;
+    const statusCode = getDisconnectStatusCode(disconnectError);
     const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
     logger.warn(
       {
+        err: disconnectError,
         statusCode,
         shouldReconnect,
       },
@@ -114,6 +116,12 @@ export class BotLifecycle {
     );
 
     this.socket = null;
+
+    if (statusCode === DisconnectReason.restartRequired) {
+      this.reconnectAttempt = 0;
+      this.scheduleReconnect("restart-required", 500);
+      return;
+    }
 
     if (shouldReconnect) {
       this.scheduleReconnect("connection-closed");
@@ -124,7 +132,7 @@ export class BotLifecycle {
     process.exit(1);
   }
 
-  private scheduleReconnect(reason: string): void {
+  private scheduleReconnect(reason: string, customDelayMs?: number): void {
     if (this.isStopping || this.reconnectTimer) {
       return;
     }
@@ -136,10 +144,9 @@ export class BotLifecycle {
       );
       process.exit(1);
     }
-    const delayMs = Math.min(
-      env.RECONNECT_INITIAL_MS * 2 ** (this.reconnectAttempt - 1),
-      env.RECONNECT_MAX_MS,
-    );
+    const delayMs =
+      customDelayMs ??
+      Math.min(env.RECONNECT_INITIAL_MS * 2 ** (this.reconnectAttempt - 1), env.RECONNECT_MAX_MS);
 
     logger.info(
       {

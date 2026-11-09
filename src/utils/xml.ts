@@ -2,6 +2,21 @@ const INVALID_XML_CHARS_REGEX =
   // eslint-disable-next-line no-control-regex
   /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
 
+const graphemeSegmenter =
+  typeof Intl !== "undefined" && typeof Intl.Segmenter === "function"
+    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    : null;
+
+export function splitGraphemes(input: string): string[] {
+  if (!input) {
+    return [];
+  }
+  if (graphemeSegmenter) {
+    return Array.from(graphemeSegmenter.segment(input), (seg) => seg.segment);
+  }
+  return Array.from(input);
+}
+
 export function stripInvalidXmlChars(input: string): string {
   return input.replace(INVALID_XML_CHARS_REGEX, "");
 }
@@ -16,16 +31,16 @@ export function escapeXml(input: string): string {
 }
 
 export function codePointLength(input: string): number {
-  return Array.from(input).length;
+  return splitGraphemes(input).length;
 }
 
-export function clampText(input: string, maxChars: number, ellipsis = "…"): string {
+export function clampText(input: string, maxChars: number, ellipsis = "\u2026"): string {
   const clean = stripInvalidXmlChars(input).trim();
   if (maxChars <= 0) {
     return "";
   }
 
-  const chars = Array.from(clean);
+  const chars = splitGraphemes(clean);
   if (chars.length <= maxChars) {
     return clean;
   }
@@ -34,13 +49,13 @@ export function clampText(input: string, maxChars: number, ellipsis = "…"): st
     return chars.slice(0, maxChars).join("");
   }
 
-  const ellipsisChars = Array.from(ellipsis);
+  const ellipsisChars = splitGraphemes(ellipsis);
   const keepCount = Math.max(0, maxChars - ellipsisChars.length);
   return `${chars.slice(0, keepCount).join("").trimEnd()}${ellipsis}`;
 }
 
-function splitLongToken(token: string, maxCharsPerLine: number): string[] {
-  const chars = Array.from(token);
+export function splitLongToken(token: string, maxCharsPerLine: number): string[] {
+  const chars = splitGraphemes(token);
   if (chars.length <= maxCharsPerLine) {
     return [token];
   }
@@ -120,10 +135,10 @@ export function clampAndWrapText(
   const truncated = rawLines.slice(0, safeMaxLines);
   const lastIndex = safeMaxLines - 1;
   const lastLine = truncated[lastIndex] ?? "";
-  if (!lastLine.endsWith("…")) {
-    const chars = Array.from(lastLine);
+  if (!lastLine.endsWith("\u2026")) {
+    const chars = splitGraphemes(lastLine);
     const maxChars = Math.max(0, safeMaxCharsPerLine - 1);
-    truncated[lastIndex] = `${chars.slice(0, maxChars).join("").trimEnd()}…`;
+    truncated[lastIndex] = `${chars.slice(0, maxChars).join("").trimEnd()}\u2026`;
   }
   return truncated;
 }

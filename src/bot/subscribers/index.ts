@@ -69,7 +69,7 @@ export async function flushCredsQueue(): Promise<void> {
 export function registerEventSubscribers(socket: WASocket, options: EventSubscriberOptions): void {
   socket.ev.on("creds.update", () => {
     queueSaveCreds(options.saveCreds).catch((error: unknown) => {
-      logger.error({ error }, "Gagal menyimpan auth state WhatsApp");
+      logger.error({ err: error }, "Gagal menyimpan auth state WhatsApp");
     });
   });
 
@@ -94,7 +94,7 @@ export function registerEventSubscribers(socket: WASocket, options: EventSubscri
     }
 
     handleMessagesUpsert(socket, event).catch((error: unknown) => {
-      logger.error({ error }, "Batch pesan WhatsApp gagal diproses");
+      logger.error({ err: error }, "Batch pesan WhatsApp gagal diproses");
     });
   });
 
@@ -111,13 +111,13 @@ export function registerEventSubscribers(socket: WASocket, options: EventSubscri
       groupMetadataCache.delete(event.id);
     }
     handleGroupParticipantsUpdate(socket, event).catch((error: unknown) => {
-      logger.error({ error }, "Update peserta grup gagal diproses");
+      logger.error({ err: error }, "Update peserta grup gagal diproses");
     });
   });
 
   socket.ev.on("messages.update", (updates) => {
     handleMessagesUpdate(socket, updates).catch((error: unknown) => {
-      logger.error({ error }, "Update pesan WhatsApp gagal diproses");
+      logger.error({ err: error }, "Update pesan WhatsApp gagal diproses");
     });
   });
 

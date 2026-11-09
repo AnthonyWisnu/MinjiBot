@@ -1,15 +1,22 @@
 import { HeavyFeatureType } from "@prisma/client";
 
-import {
-  downloaderService,
-  type DownloadedMediaItem,
-  type ExtractedAudio,
-} from "../../services/media/downloader.service";
+import { downloaderService } from "../../services/media/downloader.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { extractFirstHttpUrl, parseAllowedDownloaderUrl } from "../../utils/urlValidator";
 import {
+  formatInstagramError,
+  formatPinterestError,
+  formatTikTokError,
+  formatTwitterError,
+  formatYoutubeError,
+  handleDownloaderFailure,
+  notifyProcessingOrQueued,
+  sendAudioMessage,
+  sendMediaItem,
+  sleep,
+} from "./downloaderDelivery";
+import {
   consumeFeatureLimit,
-  refundFeatureLimit,
   reserveFeatureLimit,
   resolveFeatureAccess,
 } from "./heavyFeatureHelper";
@@ -39,9 +46,6 @@ export const downloaderCommands: CommandDefinition[] = [
   },
 ];
 
-// ─── TikTok (.tt) ──────────────────────────────────────────────────────────
-// Handles: video tanpa watermark (maks. 70 menit), single photo, & photo carousel (maks. 25 item) + BGM audio
-
 async function handleTikTokDownloader(context: CommandContext): Promise<void> {
   const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
   const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "tiktok");
@@ -64,7 +68,7 @@ async function handleTikTokDownloader(context: CommandContext): Promise<void> {
       reserved = true;
     }
 
-    await context.reply("Media TikTok sedang diproses. Mohon tunggu...");
+    await notifyProcessingOrQueued(context, "media TikTok");
     const result = await downloaderService.downloadTikTok(url);
 
     if (result.type === "video") {
@@ -74,23 +78,21 @@ async function handleTikTokDownloader(context: CommandContext): Promise<void> {
         mimetype: result.video.mimetype,
         mediaType: "video",
       });
+    } else if (result.items.length === 1) {
+      const firstItem = result.items[0];
+      if (firstItem) {
+        await sendMediaItem(context, firstItem);
+      }
     } else {
-      if (result.items.length === 1) {
-        const firstItem = result.items[0];
-        if (firstItem) {
-          await sendMediaItem(context, firstItem);
-        }
-      } else {
-        const totalMsg =
-          result.totalCount > result.items.length
-            ? `Terdeteksi ${String(result.totalCount)} foto slide TikTok (mengirim maks. ${String(result.items.length)}). Mengirim satu per satu...`
-            : `Terdeteksi ${String(result.items.length)} foto slide TikTok. Mengirim satu per satu...`;
-        await context.reply(totalMsg);
+      const totalMsg =
+        result.totalCount > result.items.length
+          ? `Terdeteksi ${String(result.totalCount)} foto slide TikTok (mengirim maks. ${String(result.items.length)}). Mengirim satu per satu...`
+          : `Terdeteksi ${String(result.items.length)} foto slide TikTok. Mengirim satu per satu...`;
+      await context.reply(totalMsg);
 
-        for (const item of result.items) {
-          await sendMediaItem(context, item);
-          await sleep(300);
-        }
+      for (const item of result.items) {
+        await sendMediaItem(context, item);
+        await sleep(300);
       }
     }
 
@@ -98,41 +100,23 @@ async function handleTikTokDownloader(context: CommandContext): Promise<void> {
       await consumeFeatureLimit(reservation);
     }
 
-    // Kirim audio / lagu pengiring (BGM) jika tersedia
     if (result.audio) {
       await sleep(500);
       await sendAudioMessage(context, result.audio);
     }
   } catch (error: unknown) {
-    if (reserved && reservation !== null) {
-      await refundFeatureLimit(reservation);
-      await context.reply(
-        `${formatTikTokError(error)}\nLimit yang sudah direservasi telah dikembalikan.`,
-      );
-    } else {
-      await context.reply(formatTikTokError(error));
-    }
+    await handleDownloaderFailure({
+      context,
+      commandName: "tt",
+      label: "TikTok",
+      url,
+      error,
+      reserved,
+      reservation,
+      formatError: formatTikTokError,
+    });
   }
 }
-
-async function sendAudioMessage(context: CommandContext, audio: ExtractedAudio): Promise<void> {
-  try {
-    await context.socket.sendMessage(
-      context.chatJid,
-      {
-        audio: audio.buffer,
-        mimetype: audio.mimetype,
-        ptt: false,
-      },
-      { quoted: context.message },
-    );
-  } catch {
-    // Audio dikirim secara best-effort, tidak menggagalkan perintah jika gagal kirim
-  }
-}
-
-// ─── Instagram Unified (.ig) ───────────────────────────────────────────────
-// Handles: reels, foto tunggal, story, carousel (maks. 15 item, video maks. 30 menit)
 
 async function handleInstagramDownloader(context: CommandContext): Promise<void> {
   const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
@@ -156,7 +140,7 @@ async function handleInstagramDownloader(context: CommandContext): Promise<void>
       reserved = true;
     }
 
-    await context.reply("Media Instagram sedang diproses. Mohon tunggu...");
+    await notifyProcessingOrQueued(context, "media Instagram");
     const result = await downloaderService.downloadInstagram(url);
 
     if (result.type === "single") {
@@ -177,19 +161,18 @@ async function handleInstagramDownloader(context: CommandContext): Promise<void>
       await consumeFeatureLimit(reservation);
     }
   } catch (error: unknown) {
-    if (reserved && reservation !== null) {
-      await refundFeatureLimit(reservation);
-      await context.reply(
-        `${formatInstagramError(error)}\nLimit yang sudah direservasi telah dikembalikan.`,
-      );
-    } else {
-      await context.reply(formatInstagramError(error));
-    }
+    await handleDownloaderFailure({
+      context,
+      commandName: "ig",
+      label: "Instagram",
+      url,
+      error,
+      reserved,
+      reservation,
+      formatError: formatInstagramError,
+    });
   }
 }
-
-// ─── YouTube Video (.yt) ──────────────────────────────────────────────────
-// Max 720p, max 1 jam (60 menit), pakai sistem limit yang sama
 
 async function handleYoutubeVideoDownloader(context: CommandContext): Promise<void> {
   const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
@@ -213,9 +196,7 @@ async function handleYoutubeVideoDownloader(context: CommandContext): Promise<vo
       reserved = true;
     }
 
-    await context.reply(
-      "Video YouTube sedang diproses (maks. 1 jam, hingga 720p). Mohon tunggu...",
-    );
+    await notifyProcessingOrQueued(context, "video YouTube (maks. 1 jam, hingga 720p)");
     const result = await downloaderService.downloadYoutube(url);
 
     await sendMediaItem(context, result);
@@ -224,19 +205,18 @@ async function handleYoutubeVideoDownloader(context: CommandContext): Promise<vo
       await consumeFeatureLimit(reservation);
     }
   } catch (error: unknown) {
-    if (reserved && reservation !== null) {
-      await refundFeatureLimit(reservation);
-      await context.reply(
-        `${formatYoutubeError(error)}\nLimit yang sudah direservasi telah dikembalikan.`,
-      );
-    } else {
-      await context.reply(formatYoutubeError(error));
-    }
+    await handleDownloaderFailure({
+      context,
+      commandName: "yt",
+      label: "YouTube",
+      url,
+      error,
+      reserved,
+      reservation,
+      formatError: formatYoutubeError,
+    });
   }
 }
-
-// ─── Twitter / X (.x, .twt) ────────────────────────────────────────────────
-// Max 10 media, max durasi video 30 menit, format mobile-safe H.264/AAC
 
 async function handleTwitterDownloader(context: CommandContext): Promise<void> {
   const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
@@ -260,7 +240,7 @@ async function handleTwitterDownloader(context: CommandContext): Promise<void> {
       reserved = true;
     }
 
-    await context.reply("Media X (Twitter) sedang diproses (maks. 30 menit). Mohon tunggu...");
+    await notifyProcessingOrQueued(context, "media X (Twitter)");
     const result = await downloaderService.downloadTwitter(url);
 
     if (result.type === "single") {
@@ -295,19 +275,18 @@ async function handleTwitterDownloader(context: CommandContext): Promise<void> {
       await consumeFeatureLimit(reservation);
     }
   } catch (error: unknown) {
-    if (reserved && reservation !== null) {
-      await refundFeatureLimit(reservation);
-      await context.reply(
-        `${formatTwitterError(error)}\nLimit yang sudah direservasi telah dikembalikan.`,
-      );
-    } else {
-      await context.reply(formatTwitterError(error));
-    }
+    await handleDownloaderFailure({
+      context,
+      commandName: "x",
+      label: "X (Twitter)",
+      url,
+      error,
+      reserved,
+      reservation,
+      formatError: formatTwitterError,
+    });
   }
 }
-
-// ─── Pinterest (.pin) ──────────────────────────────────────────────────────
-// Foto resolusi asli HD / Video Pinterest, supports pin.it shortlink
 
 async function handlePinterestDownloader(context: CommandContext): Promise<void> {
   const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
@@ -331,7 +310,7 @@ async function handlePinterestDownloader(context: CommandContext): Promise<void>
       reserved = true;
     }
 
-    await context.reply("Media Pinterest sedang diproses. Mohon tunggu...");
+    await notifyProcessingOrQueued(context, "media Pinterest");
     const result = await downloaderService.downloadPinterest(url);
 
     await sendMediaItem(context, result);
@@ -340,154 +319,15 @@ async function handlePinterestDownloader(context: CommandContext): Promise<void>
       await consumeFeatureLimit(reservation);
     }
   } catch (error: unknown) {
-    if (reserved && reservation !== null) {
-      await refundFeatureLimit(reservation);
-      await context.reply(
-        `${formatPinterestError(error)}\nLimit yang sudah direservasi telah dikembalikan.`,
-      );
-    } else {
-      await context.reply(formatPinterestError(error));
-    }
+    await handleDownloaderFailure({
+      context,
+      commandName: "pin",
+      label: "Pinterest",
+      url,
+      error,
+      reserved,
+      reservation,
+      formatError: formatPinterestError,
+    });
   }
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
-const MB_100 = 100 * 1024 * 1024;
-
-async function sendMediaItem(
-  context: CommandContext,
-  item: DownloadedMediaItem,
-  caption?: string,
-): Promise<void> {
-  if (item.mediaType === "video") {
-    if (item.buffer.byteLength <= MB_100) {
-      await context.socket.sendMessage(
-        context.chatJid,
-        {
-          video: item.buffer,
-          mimetype: "video/mp4",
-          fileName: item.fileName,
-          caption,
-        },
-        { quoted: context.message },
-      );
-    } else {
-      const sizeMb = (item.buffer.byteLength / (1024 * 1024)).toFixed(1);
-      const docCaption = caption
-        ? `${caption}\n\nℹ️ _Ukuran video (${sizeMb} MB) di atas 100 MB, dikirim sebagai dokumen video HD._`
-        : `ℹ️ _Ukuran video (${sizeMb} MB) di atas 100 MB, dikirim sebagai dokumen video HD._`;
-
-      await context.socket.sendMessage(
-        context.chatJid,
-        {
-          document: item.buffer,
-          mimetype: "video/mp4",
-          fileName: item.fileName.endsWith(".mp4") ? item.fileName : `${item.fileName}.mp4`,
-          caption: docCaption,
-        },
-        { quoted: context.message },
-      );
-    }
-  } else {
-    await context.socket.sendMessage(
-      context.chatJid,
-      {
-        image: item.buffer,
-        mimetype: item.mimetype,
-        caption,
-      },
-      { quoted: context.message },
-    );
-  }
-}
-
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-function formatTikTokError(error: unknown): string {
-  const message = error instanceof Error ? error.message.toLowerCase() : "";
-  if (message.includes("max-filesize") || message.includes("maksimal")) {
-    return "Media TikTok terlalu besar untuk dikirim (maks. 400 MB).";
-  }
-  if (
-    message.includes("durasi") ||
-    message.includes("duration") ||
-    message.includes("match-filter")
-  ) {
-    return "Video TikTok melebihi batas durasi 70 menit (1 jam 10 menit).";
-  }
-  if (message.includes("gagal mengambil foto") || message.includes("tidak ada media")) {
-    return "Konten foto slide TikTok gagal diambil. Pastikan link valid dan publik.";
-  }
-  return "Konten TikTok gagal diambil. Pastikan link masih aktif dan dapat dibuka.";
-}
-
-function formatInstagramError(error: unknown): string {
-  const message = error instanceof Error ? error.message.toLowerCase() : "";
-  if (
-    message.includes("login") ||
-    message.includes("cookies") ||
-    message.includes("private") ||
-    message.includes("not available")
-  ) {
-    return "Media gagal diambil. Pastikan link masih aktif dan dapat diakses.";
-  }
-  if (message.includes("max-filesize") || message.includes("maksimal")) {
-    return "Media terlalu besar untuk dikirim (maks. 400 MB).";
-  }
-  if (
-    message.includes("durasi") ||
-    message.includes("duration") ||
-    message.includes("match-filter")
-  ) {
-    return "Video Instagram melebihi batas durasi 30 menit.";
-  }
-  if (message.includes("tidak ada media")) {
-    return "Tidak ada media yang berhasil diunduh. Pastikan link valid.";
-  }
-  return "Media gagal diambil. Pastikan link masih aktif dan dapat dibuka.";
-}
-
-function formatYoutubeError(error: unknown): string {
-  const message = error instanceof Error ? error.message.toLowerCase() : "";
-  if (
-    message.includes("durasi") ||
-    message.includes("duration") ||
-    message.includes("match-filter")
-  ) {
-    return "Video melebihi batas durasi 1 jam.";
-  }
-  if (message.includes("max-filesize") || message.includes("maksimal")) {
-    return "Video terlalu besar untuk dikirim (maks. 400 MB).";
-  }
-  return "Video YouTube gagal diambil. Pastikan link masih aktif dan dapat dibuka.";
-}
-
-function formatTwitterError(error: unknown): string {
-  const message = error instanceof Error ? error.message.toLowerCase() : "";
-  if (
-    message.includes("durasi") ||
-    message.includes("duration") ||
-    message.includes("match-filter")
-  ) {
-    return "Video X (Twitter) melebihi batas durasi 30 menit.";
-  }
-  if (message.includes("max-filesize") || message.includes("maksimal")) {
-    return "Media X (Twitter) terlalu besar untuk dikirim (maks. 400 MB).";
-  }
-  if (message.includes("hanya menerima link resmi")) {
-    return "Format command salah.\nGunakan: .x <link tweet / x.com> atau .twt <link>";
-  }
-  return "Media X (Twitter) gagal diambil. Pastikan tweet bersifat publik dan berisi media.";
-}
-
-function formatPinterestError(error: unknown): string {
-  const message = error instanceof Error ? error.message.toLowerCase() : "";
-  if (message.includes("max-filesize") || message.includes("maksimal")) {
-    return "Media Pinterest terlalu besar untuk dikirim (maks. 400 MB).";
-  }
-  if (message.includes("tidak ditemukan") || message.includes("tidak ada media")) {
-    return "Media Pinterest tidak ditemukan. Pastikan link publik dan valid.";
-  }
-  return "Media Pinterest gagal diambil. Pastikan link masih aktif dan dapat dibuka.";
 }

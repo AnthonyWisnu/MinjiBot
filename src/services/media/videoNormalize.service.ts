@@ -90,6 +90,8 @@ export class VideoNormalizeService {
     const ffmpegPath = env.FFMPEG_PATH ?? ffmpegStatic ?? "ffmpeg";
     const args = [
       "-y",
+      "-threads",
+      "1",
       "-i",
       inputPath,
       "-map",

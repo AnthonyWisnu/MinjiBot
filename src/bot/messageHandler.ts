@@ -131,7 +131,7 @@ async function handleIncomingMessage(
   } catch (error: unknown) {
     logger.error(
       {
-        error,
+        err: error,
         commandName: context.commandName,
         chatJid: context.chatJid,
         senderJid: context.senderJid,

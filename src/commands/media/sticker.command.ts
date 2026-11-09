@@ -69,6 +69,10 @@ async function handleSticker(context: CommandContext): Promise<void> {
       { quoted: context.message },
     );
   } catch (error: unknown) {
+    logger.error(
+      { err: error, commandName: "s", chatJid: context.chatJid, senderJid: context.senderJid },
+      "Gagal memproses command sticker (.s)",
+    );
     await context.reply(formatStickerError(error));
   }
 }
@@ -185,6 +189,10 @@ async function handleBratSticker(context: CommandContext): Promise<void> {
       { quoted: context.message },
     );
   } catch (error: unknown) {
+    logger.error(
+      { err: error, commandName: "brat", chatJid: context.chatJid, senderJid: context.senderJid },
+      "Gagal memproses command brat",
+    );
     await context.reply(formatStickerError(error));
   }
 }
@@ -225,6 +233,10 @@ async function handleStickerMeme(context: CommandContext): Promise<void> {
       { quoted: context.message },
     );
   } catch (error: unknown) {
+    logger.error(
+      { err: error, commandName: "smeme", chatJid: context.chatJid, senderJid: context.senderJid },
+      "Gagal memproses command smeme",
+    );
     await context.reply(formatStickerError(error));
   }
 }
