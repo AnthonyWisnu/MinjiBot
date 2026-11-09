@@ -298,7 +298,7 @@ async function handlePinterestDownloader(context: CommandContext): Promise<void>
   }
 
   const rawUrl = extractFirstHttpUrl(rawInput);
-  const isUrlMode = rawUrl !== null || /^https?:\/\//i.test(rawInput);
+  const isUrlMode = rawUrl !== undefined || /^https?:\/\//i.test(rawInput);
   let targetUrl: string | null = null;
 
   if (isUrlMode) {
