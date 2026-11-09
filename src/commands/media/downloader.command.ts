@@ -297,12 +297,12 @@ async function handlePinterestDownloader(context: CommandContext): Promise<void>
     return;
   }
 
-  const rawUrl = extractFirstHttpUrl(rawInput);
-  const isUrlMode = rawUrl !== undefined || /^https?:\/\//i.test(rawInput);
+  const urlMatch = /https?:\/\/[^\s<>"'`]+/i.exec(rawInput);
   let targetUrl: string | null = null;
 
-  if (isUrlMode) {
-    const parsedUrl = parseAllowedDownloaderUrl(rawUrl ?? rawInput, "pinterest");
+  if (urlMatch !== null) {
+    const candidateUrl = urlMatch[0].replace(/[),.;!?]+$/, "");
+    const parsedUrl = parseAllowedDownloaderUrl(candidateUrl, "pinterest");
     if (!parsedUrl) {
       await context.reply(
         "Format command salah.\nGunakan: .pin <kata kunci> atau .pin <link Pinterest / pin.it>",
