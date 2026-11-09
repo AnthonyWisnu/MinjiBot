@@ -10,6 +10,10 @@ import {
   DEFAULT_STICKER_AUTHOR,
 } from "../src/services/media/sticker.service";
 import { createBratSvg, computeBratLayout } from "../src/services/media/sticker/bratRenderer";
+import {
+  extractPinterestImageUrlsFromHtml,
+  executePinterestSearch,
+} from "../src/services/media/downloaders/pinterestSearch";
 import { audioEffectService } from "../src/services/media/audioEffect.service";
 import { BoundedQueue } from "../src/utils/boundedQueue";
 
@@ -188,4 +192,39 @@ void test("Brat Sticker: rejects empty text", async () => {
 void test("Audio Effect Service: exists and exports singleton", () => {
   assert.ok(audioEffectService);
   assert.equal(typeof audioEffectService.applyEffect, "function");
+});
+
+void test("Pinterest Search: extractPinterestImageUrlsFromHtml extracts unique pinimg URLs and prefers originals", () => {
+  const sampleHtml = [
+    "murl&quot;:&quot;https://i.pinimg.com/736x/aa/bb/cc/aabbcc112233.jpg&quot;",
+    "murl&quot;:&quot;https://i.pinimg.com/originals/aa/bb/cc/aabbcc112233.jpg?nii=t&quot;",
+    "murl&quot;:&quot;https://i.pinimg.com/originals/dd/ee/ff/ddeeff445566.png&quot;",
+    "murl&quot;:&quot;https://example.com/not-pinterest.jpg&quot;",
+  ].join(" ");
+
+  const urls = extractPinterestImageUrlsFromHtml(sampleHtml);
+  assert.deepEqual(urls, [
+    "https://i.pinimg.com/originals/aa/bb/cc/aabbcc112233.jpg",
+    "https://i.pinimg.com/originals/dd/ee/ff/ddeeff445566.png",
+  ]);
+});
+
+void test("Pinterest Search: executePinterestSearch rejects empty or overly long queries", async () => {
+  await assert.rejects(
+    async () => {
+      await executePinterestSearch("   ");
+    },
+    {
+      message: "Kata kunci pencarian Pinterest tidak boleh kosong.",
+    },
+  );
+
+  await assert.rejects(
+    async () => {
+      await executePinterestSearch("a".repeat(101));
+    },
+    {
+      message: "Kata kunci pencarian Pinterest terlalu panjang (maks. 100 karakter).",
+    },
+  );
 });

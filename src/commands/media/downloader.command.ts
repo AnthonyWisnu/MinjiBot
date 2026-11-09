@@ -289,13 +289,31 @@ async function handleTwitterDownloader(context: CommandContext): Promise<void> {
 }
 
 async function handlePinterestDownloader(context: CommandContext): Promise<void> {
-  const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
-  const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "pinterest");
-  if (!parsedUrl) {
-    await context.reply("Format command salah.\nGunakan: .pin <link Pinterest / pin.it>");
+  const rawInput = context.argsText.trim();
+  if (!rawInput) {
+    await context.reply(
+      "Format command salah.\nGunakan: .pin <kata kunci> atau .pin <link Pinterest / pin.it>",
+    );
     return;
   }
-  const url = parsedUrl.toString();
+
+  const rawUrl = extractFirstHttpUrl(rawInput);
+  const isUrlMode = rawUrl !== null || /^https?:\/\//i.test(rawInput);
+  let targetUrl: string | null = null;
+
+  if (isUrlMode) {
+    const parsedUrl = parseAllowedDownloaderUrl(rawUrl ?? rawInput, "pinterest");
+    if (!parsedUrl) {
+      await context.reply(
+        "Format command salah.\nGunakan: .pin <kata kunci> atau .pin <link Pinterest / pin.it>",
+      );
+      return;
+    }
+    targetUrl = parsedUrl.toString();
+  } else if (rawInput.length > 100) {
+    await context.reply("Kata kunci pencarian Pinterest terlalu panjang (maks. 100 karakter).");
+    return;
+  }
 
   const access = await resolveFeatureAccess(context, HeavyFeatureType.PINTEREST_DOWNLOAD);
   if (access === null) return;
@@ -310,10 +328,18 @@ async function handlePinterestDownloader(context: CommandContext): Promise<void>
       reserved = true;
     }
 
-    await notifyProcessingOrQueued(context, "media Pinterest");
-    const result = await downloaderService.downloadPinterest(url);
-
-    await sendMediaItem(context, result);
+    if (targetUrl !== null) {
+      await notifyProcessingOrQueued(context, "media Pinterest");
+      const result = await downloaderService.downloadPinterest(targetUrl);
+      await sendMediaItem(context, result);
+    } else {
+      await notifyProcessingOrQueued(context, `3 foto Pinterest "${rawInput}"`);
+      const items = await downloaderService.searchPinterest(rawInput, 3);
+      for (const item of items) {
+        await sendMediaItem(context, item);
+        await sleep(300);
+      }
+    }
 
     if (reserved && reservation !== null) {
       await consumeFeatureLimit(reservation);
@@ -323,7 +349,7 @@ async function handlePinterestDownloader(context: CommandContext): Promise<void>
       context,
       commandName: "pin",
       label: "Pinterest",
-      url,
+      url: targetUrl ?? rawInput,
       error,
       reserved,
       reservation,

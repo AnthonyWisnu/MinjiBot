@@ -197,8 +197,11 @@ export function formatPinterestError(error: unknown): string {
   if (message.includes("max-filesize") || message.includes("maksimal")) {
     return "Media Pinterest terlalu besar untuk dikirim (maks. 400 MB).";
   }
-  if (message.includes("tidak ditemukan") || message.includes("tidak ada media")) {
-    return "Media Pinterest tidak ditemukan. Pastikan link publik dan valid.";
+  if (message.includes("kata kunci") && message.includes("tidak ditemukan")) {
+    return "Gambar Pinterest untuk kata kunci tersebut tidak ditemukan. Coba kata kunci lain.";
   }
-  return "Media Pinterest gagal diambil. Pastikan link masih aktif dan dapat dibuka.";
+  if (message.includes("tidak ditemukan") || message.includes("tidak ada media")) {
+    return "Media Pinterest tidak ditemukan. Pastikan kata kunci atau link valid.";
+  }
+  return "Media Pinterest gagal diambil. Pastikan kata kunci atau link masih aktif.";
 }

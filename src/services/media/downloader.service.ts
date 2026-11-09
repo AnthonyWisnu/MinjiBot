@@ -14,6 +14,7 @@ import {
 import { extractAudioFromVideoBuffer } from "./downloaders/downloader.utils";
 import { executeInstagramDownload } from "./downloaders/instagram.downloader";
 import { executePinterestDownload } from "./downloaders/pinterest.downloader";
+import { executePinterestSearch } from "./downloaders/pinterestSearch";
 import { executeTikTokDownload } from "./downloaders/tiktok.downloader";
 import { executeTwitterDownload } from "./downloaders/twitter.downloader";
 import { executeYoutubeDownload } from "./downloaders/youtube.downloader";
@@ -79,6 +80,17 @@ export class DownloaderService {
   ): Promise<DownloadedMediaItem> {
     return mediaQueueService.heavySubprocessQueue.run(
       () => executePinterestDownload(url),
+      queueOptions,
+    );
+  }
+
+  async searchPinterest(
+    query: string,
+    count = 3,
+    queueOptions?: QueueRunOptions,
+  ): Promise<DownloadedMediaItem[]> {
+    return mediaQueueService.heavySubprocessQueue.run(
+      () => executePinterestSearch(query, count),
       queueOptions,
     );
   }
