@@ -88,25 +88,41 @@ export class StickerService {
       throw new AppUserError("Teks meme tidak boleh kosong.");
     }
 
-    // Gunakan mode contain dengan latar transparan agar gambar asli utuh dan tidak terpotong
-    const baseImage = await sharp(inputBuffer, {
+    // 1. Kecilkan gambar sesuai rasio aslinya (fit: inside) tanpa padding transparan dulu
+    const { data: fittedImage, info } = await sharp(inputBuffer, {
       animated: false,
       limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
     })
       .rotate()
       .resize(STICKER_SIZE, STICKER_SIZE, {
-        fit: "contain",
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
+        fit: "inside",
       })
       .png()
-      .toBuffer();
+      .toBuffer({ resolveWithObject: true });
 
-    const overlays = await buildMemeOverlays(normalizedTopText, normalizedBottomText);
+    // 2. Tempelkan teks meme tepat di dalam area gambar asli (bukan di ruang kosong luar gambar)
+    const overlays = await buildMemeOverlays(
+      normalizedTopText,
+      normalizedBottomText,
+      info.width,
+      info.height,
+    );
 
-    const memeWebp = await sharp(baseImage, {
+    const compositedImage = await sharp(fittedImage, {
       limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
     })
       .composite(overlays)
+      .png()
+      .toBuffer();
+
+    // 3. Tempatkan gambar yang sudah berisi teks ke kanvas stiker 512x512 transparan (fit: contain)
+    const memeWebp = await sharp(compositedImage, {
+      limitInputPixels: MAX_SAFE_IMAGE_PIXELS,
+    })
+      .resize(STICKER_SIZE, STICKER_SIZE, {
+        fit: "contain",
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
       .webp({
         quality: 85,
         effort: 4,

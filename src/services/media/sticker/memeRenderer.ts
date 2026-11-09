@@ -5,9 +5,6 @@ import { clampText, codePointLength, escapeXml } from "../../../utils/xml";
 
 const STICKER_SIZE = 512;
 const MEME_TEXT_MAX_LENGTH = 100;
-const MEME_MAX_WIDTH = 468;
-const MEME_MAX_BLOCK_HEIGHT = 190;
-const MEME_PADDING_Y = 16;
 const MEME_FONT_STACK =
   "Arial Bold, Liberation Sans Bold, DejaVu Sans Bold, Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif";
 
@@ -33,23 +30,32 @@ export function normalizeMemeText(text: string): string {
   return clamped.replace(/[a-z]/g, (ch) => ch.toUpperCase());
 }
 
-function selectMemeFontPointSize(topText: string, bottomText: string): number {
+function selectMemeFontPointSize(
+  topText: string,
+  bottomText: string,
+  canvasWidth: number,
+  canvasHeight: number,
+): number {
   const maxLen = Math.max(codePointLength(topText), codePointLength(bottomText));
+  let basePt = 19;
   if (maxLen <= 20) {
-    return 34;
+    basePt = 34;
+  } else if (maxLen <= 45) {
+    basePt = 28;
+  } else if (maxLen <= 70) {
+    basePt = 23;
   }
-  if (maxLen <= 45) {
-    return 28;
-  }
-  if (maxLen <= 70) {
-    return 23;
-  }
-  return 19;
+
+  const minDim = Math.min(canvasWidth, canvasHeight);
+  const scale = Math.max(0.65, Math.min(1, minDim / STICKER_SIZE));
+  return Math.max(14, Math.round(basePt * scale));
 }
 
 async function renderOutlinedTextBlock(
   text: string,
   fontPt: number,
+  maxTextWidth: number,
+  maxBlockHeight: number,
 ): Promise<{
   fgBuffer: Buffer;
   outlineBuffer: Buffer;
@@ -61,7 +67,7 @@ async function renderOutlinedTextBlock(
     text: {
       text: pangoMarkup,
       font: `${MEME_FONT_STACK} ${String(fontPt)}`,
-      width: MEME_MAX_WIDTH,
+      width: maxTextWidth,
       align: "centre",
       wrap: "word-char",
       rgba: true,
@@ -74,9 +80,9 @@ async function renderOutlinedTextBlock(
   let width = meta.width;
   let height = meta.height;
 
-  if (width > MEME_MAX_WIDTH || height > MEME_MAX_BLOCK_HEIGHT) {
+  if (width > maxTextWidth || height > maxBlockHeight) {
     fgBuffer = await sharp(fgBuffer, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
-      .resize(MEME_MAX_WIDTH, MEME_MAX_BLOCK_HEIGHT, {
+      .resize(maxTextWidth, maxBlockHeight, {
         fit: "inside",
         withoutEnlargement: true,
       })
@@ -109,12 +115,16 @@ function buildBlockOverlays(
   block: { fgBuffer: Buffer; outlineBuffer: Buffer; width: number; height: number },
   baseLeft: number,
   baseTop: number,
+  canvasWidth: number,
+  canvasHeight: number,
 ): OverlayOptions[] {
   const overlays: OverlayOptions[] = [];
+  const maxLeft = Math.max(0, canvasWidth - block.width);
+  const maxTop = Math.max(0, canvasHeight - block.height);
 
   for (const [dx, dy] of OUTLINE_OFFSETS) {
-    const left = Math.max(0, Math.min(STICKER_SIZE - block.width, baseLeft + dx));
-    const top = Math.max(0, Math.min(STICKER_SIZE - block.height, baseTop + dy));
+    const left = Math.max(0, Math.min(maxLeft, baseLeft + dx));
+    const top = Math.max(0, Math.min(maxTop, baseTop + dy));
     overlays.push({
       input: block.outlineBuffer,
       left,
@@ -124,8 +134,8 @@ function buildBlockOverlays(
 
   overlays.push({
     input: block.fgBuffer,
-    left: Math.max(0, Math.min(STICKER_SIZE - block.width, baseLeft)),
-    top: Math.max(0, Math.min(STICKER_SIZE - block.height, baseTop)),
+    left: Math.max(0, Math.min(maxLeft, baseLeft)),
+    top: Math.max(0, Math.min(maxTop, baseTop)),
   });
 
   return overlays;
@@ -134,22 +144,34 @@ function buildBlockOverlays(
 export async function buildMemeOverlays(
   topText: string,
   bottomText: string,
+  canvasWidth = STICKER_SIZE,
+  canvasHeight = STICKER_SIZE,
 ): Promise<OverlayOptions[]> {
-  const fontPt = selectMemeFontPointSize(topText, bottomText);
+  const safeWidth = Math.max(64, canvasWidth);
+  const safeHeight = Math.max(64, canvasHeight);
+  const maxTextWidth = Math.max(48, safeWidth - 28);
+  const maxBlockHeight = Math.max(32, Math.round(safeHeight * 0.36));
+  const paddingY = Math.max(10, Math.round(safeHeight * 0.045));
+  const fontPt = selectMemeFontPointSize(topText, bottomText, safeWidth, safeHeight);
   const overlays: OverlayOptions[] = [];
 
   if (topText) {
-    const topBlock = await renderOutlinedTextBlock(topText, fontPt);
-    const left = Math.round((STICKER_SIZE - topBlock.width) / 2);
-    const top = MEME_PADDING_Y;
-    overlays.push(...buildBlockOverlays(topBlock, left, top));
+    const topBlock = await renderOutlinedTextBlock(topText, fontPt, maxTextWidth, maxBlockHeight);
+    const left = Math.round((safeWidth - topBlock.width) / 2);
+    const top = paddingY;
+    overlays.push(...buildBlockOverlays(topBlock, left, top, safeWidth, safeHeight));
   }
 
   if (bottomText) {
-    const bottomBlock = await renderOutlinedTextBlock(bottomText, fontPt);
-    const left = Math.round((STICKER_SIZE - bottomBlock.width) / 2);
-    const top = Math.max(MEME_PADDING_Y, STICKER_SIZE - bottomBlock.height - MEME_PADDING_Y);
-    overlays.push(...buildBlockOverlays(bottomBlock, left, top));
+    const bottomBlock = await renderOutlinedTextBlock(
+      bottomText,
+      fontPt,
+      maxTextWidth,
+      maxBlockHeight,
+    );
+    const left = Math.round((safeWidth - bottomBlock.width) / 2);
+    const top = Math.max(paddingY, safeHeight - bottomBlock.height - paddingY);
+    overlays.push(...buildBlockOverlays(bottomBlock, left, top, safeWidth, safeHeight));
   }
 
   return overlays;

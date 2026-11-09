@@ -119,11 +119,11 @@ void test("Static Sticker (.s): preserves non-1:1 aspect ratio with transparent 
   assert.ok(data[centerIdx + 3] > 200, "Center pixel must be opaque");
 });
 
-void test("Meme Sticker (.smeme): preserves non-1:1 aspect ratio and renders emoji text without error", async () => {
-  const portraitPng = await sharp({
+void test("Meme Sticker (.smeme): preserves non-1:1 aspect ratio and renders text/emoji strictly inside image bounds", async () => {
+  const landscapePng = await sharp({
     create: {
-      width: 400,
-      height: 800,
+      width: 800,
+      height: 400,
       channels: 4,
       background: { r: 30, g: 80, b: 200, alpha: 1 },
     },
@@ -132,7 +132,7 @@ void test("Meme Sticker (.smeme): preserves non-1:1 aspect ratio and renders emo
     .toBuffer();
 
   const memeBuf = await stickerService.createMemeSticker(
-    portraitPng,
+    landscapePng,
     "HALO \uD83D\uDE02\uD83D\uDD25",
     "MANTAP \u2764\uFE0F",
   );
@@ -143,7 +143,17 @@ void test("Meme Sticker (.smeme): preserves non-1:1 aspect ratio and renders emo
     .toBuffer({ resolveWithObject: true });
   assert.equal(info.width, 512);
   assert.equal(info.height, 512);
-  assert.equal(data[3], 0, "Top-left pillarbox pixel must be transparent (alpha = 0)");
+
+  // Landscape 800x400 di dalam 512x512 menempati y = 128..383.
+  // Area y < 128 (atas luar gambar) dan y >= 384 (bawah luar gambar) wajib tetap transparan (alpha = 0).
+  const topBarCenterIdx = (50 * 512 + 256) * 4;
+  const bottomBarCenterIdx = (450 * 512 + 256) * 4;
+  assert.equal(data[topBarCenterIdx + 3], 0, "Top letterbox area outside image must have no text");
+  assert.equal(
+    data[bottomBarCenterIdx + 3],
+    0,
+    "Bottom letterbox area outside image must have no text",
+  );
 });
 
 void test("BoundedQueue: triggers onQueued callback with queue position when concurrency is full", async () => {
