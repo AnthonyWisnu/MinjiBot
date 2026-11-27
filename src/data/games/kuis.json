@@ -1,0 +1,2877 @@
+[
+  {
+    "prompt": "Ibu kota resmi negara Australia adalah kota apa?",
+    "answers": [
+      "canberra"
+    ]
+  },
+  {
+    "prompt": "Planet terbesar di tata surya kita bernama apa?",
+    "answers": [
+      "jupiter",
+      "yupiter"
+    ]
+  },
+  {
+    "prompt": "Mata uang resmi negara Jepang yang sering jadi incaran wisatawan Indonesia adalah...",
+    "answers": [
+      "yen"
+    ]
+  },
+  {
+    "prompt": "Gunung tertinggi di Pulau Jawa yang terkenal dengan puncak Mahameru-nya bernama apa?",
+    "answers": [
+      "semeru",
+      "gunung semeru"
+    ]
+  },
+  {
+    "prompt": "Suku asli yang mendiami wilayah pedalaman Banten dan menolak modernisasi listrik disebut suku apa?",
+    "answers": [
+      "baduy",
+      "suku baduy"
+    ]
+  },
+  {
+    "prompt": "Teks Proklamasi Kemerdekaan RI diketik dengan mesin tik oleh tokoh muda siapa?",
+    "answers": [
+      "sayuti melik"
+    ]
+  },
+  {
+    "prompt": "Rumah adat khas masyarakat Toraja yang atapnya melengkung menyerupai perahu disebut apa?",
+    "answers": [
+      "tongkonan"
+    ]
+  },
+  {
+    "prompt": "Organ tubuh manusia yang berfungsi menyaring racun dan memproduksi cairan empedu adalah?",
+    "answers": [
+      "hati",
+      "liver"
+    ]
+  },
+  {
+    "prompt": "Logam cair yang digunakan dalam termometer raksa tradisional punya simbol kimia Hg. Apa nama unsurnya?",
+    "answers": [
+      "raksa",
+      "merkuri",
+      "air raksa"
+    ]
+  },
+  {
+    "prompt": "Pulau terbesar ketiga di dunia yang wilayahnya berbagi antara Indonesia, Malaysia, dan Brunei adalah?",
+    "answers": [
+      "kalimantan",
+      "borneo"
+    ]
+  },
+  {
+    "prompt": "Kerajaan Hindu tertua di Nusantara yang berdiri di tepi Sungai Mahakam bernama kerajaan apa?",
+    "answers": [
+      "kutai",
+      "kutai martadipura"
+    ]
+  },
+  {
+    "prompt": "Penulis novel tetralogi Laskar Pelangi berasal dari Belitung, siapakah nama lengkapnya?",
+    "answers": [
+      "andrea hirata"
+    ]
+  },
+  {
+    "prompt": "Selat sempit yang memisahkan Pulau Jawa dan Pulau Sumatra bernama Selat apa?",
+    "answers": [
+      "sunda",
+      "selat sunda"
+    ]
+  },
+  {
+    "prompt": "Mamalia darat tercepat di dunia yang mampu berlari hingga 110 km/jam bernama apa?",
+    "answers": [
+      "cheetah",
+      "citah"
+    ]
+  },
+  {
+    "prompt": "Gas yang jumlahnya paling melimpah di atmosfer Bumi sekitar 78 persen ialah gas apa?",
+    "answers": [
+      "nitrogen"
+    ]
+  },
+  {
+    "prompt": "Alat musik petik tradisional asal Nusa Tenggara Timur yang terbuat dari daun lontar berbentuk setengah lingkaran disebut?",
+    "answers": [
+      "sasando"
+    ]
+  },
+  {
+    "prompt": "Nama ilmuwan yang menemukan lampu pijar komersial sekaligus mendirikan laboratorium di Menlo Park?",
+    "answers": [
+      "thomas edison",
+      "thomas alfa edison",
+      "edison"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Riau yang terkenal dengan julukan Kota Bertuah bernama kota apa?",
+    "answers": [
+      "pekanbaru"
+    ]
+  },
+  {
+    "prompt": "Samudra terluas sekaligus terdalam di permukaan Bumi adalah Samudra apa?",
+    "answers": [
+      "pasifik",
+      "samudra pasifik"
+    ]
+  },
+  {
+    "prompt": "Lagu kebangsaan Indonesia Raya pertama kali diperdengarkan ke publik pada peristiwa bersejarah apa?",
+    "answers": [
+      "sumpah pemuda",
+      "kongres pemuda 2",
+      "kongres pemuda ii"
+    ]
+  },
+  {
+    "prompt": "Kota mana di Jawa Barat yang dijuluki sebagai Kota Hujan?",
+    "answers": [
+      "bogor"
+    ]
+  },
+  {
+    "prompt": "Pelukis maestro Indonesia yang dikenal dengan gaya ekspresionisme dan sering melukis tanpa kuas langsung dari tube?",
+    "answers": [
+      "affandi"
+    ]
+  },
+  {
+    "prompt": "Planet merah yang punya gunung berapi tertinggi di tata surya bernama Olympus Mons ialah planet apa?",
+    "answers": [
+      "mars"
+    ]
+  },
+  {
+    "prompt": "Sungai terpanjang di Indonesia yang mengalir membelah Kalimantan Barat ke Laut Natuna bernama Sungai apa?",
+    "answers": [
+      "kapuas",
+      "sungai kapuas"
+    ]
+  },
+  {
+    "prompt": "Vitamin apa yang diproduksi tubuh manusia secara alami ketika kulit terpapar sinar matahari pagi?",
+    "answers": [
+      "vitamin d",
+      "d"
+    ]
+  },
+  {
+    "prompt": "Tarian perang tradisional berapi-api dari Sulawesi Utara yang dibawakan penari dengan perisai dan pedang disebut?",
+    "answers": [
+      "cakalele",
+      "tari cakalele"
+    ]
+  },
+  {
+    "prompt": "Kota suci tempat berdirinya Kakbah sekaligus tujuan utama ibadah haji umat Islam terletak di mana?",
+    "answers": [
+      "mekkah",
+      "makkah",
+      "mekah"
+    ]
+  },
+  {
+    "prompt": "Jenis burung terbesar di dunia yang tidak bisa terbang tapi bisa berlari sangat kencang bernama burung apa?",
+    "answers": [
+      "burung unta",
+      "unta"
+    ]
+  },
+  {
+    "prompt": "Siapa pencipta tokoh komik legendaris Gundala Putra Petir asal Indonesia?",
+    "answers": [
+      "hasmi",
+      "haryadi sunaryo",
+      "harya suryaminata"
+    ]
+  },
+  {
+    "prompt": "Gurun pasir panas terbesar di dunia yang membentang di bagian utara benua Afrika bernama apa?",
+    "answers": [
+      "sahara",
+      "gurun sahara"
+    ]
+  },
+  {
+    "prompt": "Satelit alami terbesar milik Planet Saturnus yang memiliki atmosfer tebal sendiri bernama apa?",
+    "answers": [
+      "titan"
+    ]
+  },
+  {
+    "prompt": "Komponen darah manusia yang bertugas membekukan darah saat terjadi luka disebut?",
+    "answers": [
+      "trombosit",
+      "keping darah"
+    ]
+  },
+  {
+    "prompt": "Negara tetangga di Asia Tenggara yang tidak pernah dijajah bangsa Eropa sama sekali adalah?",
+    "answers": [
+      "thailand",
+      "muangthai"
+    ]
+  },
+  {
+    "prompt": "Pendiri kerajaan Majapahit pada abad ke-13 yang menggantikan kekuasaan Singasari bernama siapa?",
+    "answers": [
+      "raden wijaya"
+    ]
+  },
+  {
+    "prompt": "Bentuk geometri datar dengan enam sisi dan enam sudut sama panjang disebut apa?",
+    "answers": [
+      "heksagon",
+      "segi enam",
+      "segienam"
+    ]
+  },
+  {
+    "prompt": "Alat musik pukul khas Minahasa yang disusun dari bilah kayu berderet bernada disebut apa?",
+    "answers": [
+      "kolintang",
+      "kulintang"
+    ]
+  },
+  {
+    "prompt": "Hewan berkantung ikon Australia yang membawa anaknya di kantong perut bernama apa?",
+    "answers": [
+      "kanguru",
+      "kangguru"
+    ]
+  },
+  {
+    "prompt": "Kota pelabuhan di Belanda yang namanya identik dengan bendungan di Sungai Rotte?",
+    "answers": [
+      "rotterdam"
+    ]
+  },
+  {
+    "prompt": "Olahraga raket dengan kok berbulu angsa di mana Indonesia sangat berjaya di Olimpiade disebut apa?",
+    "answers": [
+      "bulu tangkis",
+      "bulutangkis",
+      "badminton"
+    ]
+  },
+  {
+    "prompt": "Rumus kimia garam dapur sehari-hari yang terdiri atas natrium dan klorida ditulis bagaimana?",
+    "answers": [
+      "nacl"
+    ]
+  },
+  {
+    "prompt": "Nama kerajaan Islam pertama di Nusantara yang berdiri di pesisir utara Aceh?",
+    "answers": [
+      "samudera pasai",
+      "pasai"
+    ]
+  },
+  {
+    "prompt": "Alat optik yang biasa dipakai kapal selam untuk melihat kondisi di atas permukaan laut disebut apa?",
+    "answers": [
+      "periskop"
+    ]
+  },
+  {
+    "prompt": "Benua terdingin di Bumi yang hampir seluruh daratannya tertutup lapisan es abadi bernama?",
+    "answers": [
+      "antartika",
+      "benua antartika"
+    ]
+  },
+  {
+    "prompt": "Siapa nama wakil presiden perempuan pertama sekaligus presiden kelima Republik Indonesia?",
+    "answers": [
+      "megawati",
+      "megawati soekarnoputri"
+    ]
+  },
+  {
+    "prompt": "Dalam permainan catur internasional, buah catur mana yang langkahnya membentuk huruf L?",
+    "answers": [
+      "kuda",
+      "knight"
+    ]
+  },
+  {
+    "prompt": "Kuliner berkuah hitam pekat asal Makassar yang biasanya berisi daging sapi dengan kluwek disebut?",
+    "answers": [
+      "coto makassar",
+      "konro",
+      "sup konro",
+      "pallubasa"
+    ]
+  },
+  {
+    "prompt": "Negara mana yang wilayahnya terbentang di dua benua sekaligus yaitu Asia dan Eropa dengan Istanbul sebagai kota terbesar?",
+    "answers": [
+      "turki",
+      "turkiye"
+    ]
+  },
+  {
+    "prompt": "Bunga raksasa berbau menyengat yang menjadi flora endemik Bengkulu dan ditemukan tahun 1818 dinamakan apa?",
+    "answers": [
+      "rafflesia arnoldii",
+      "raflesia arnoldi",
+      "padma raksasa",
+      "rafflesia"
+    ]
+  },
+  {
+    "prompt": "Bahan utama pembuat kaca bening berasal dari jenis pasir apa?",
+    "answers": [
+      "pasir silika",
+      "silika",
+      "pasir kuarsa",
+      "kuarsa"
+    ]
+  },
+  {
+    "prompt": "Bahasa resmi yang digunakan masyarakat di negara Brasil di Amerika Selatan ialah bahasa apa?",
+    "answers": [
+      "portugis",
+      "bahasa portugis"
+    ]
+  },
+  {
+    "prompt": "Satuan dasar untuk mengukur kuat arus listrik dalam Sistem Internasional (SI) dinamakan apa?",
+    "answers": [
+      "ampere",
+      "ampera"
+    ]
+  },
+  {
+    "prompt": "Gunung berapi ikonik di Selat Sunda yang letusan dahsyatnya pada 1883 menggegerkan dunia bernama apa?",
+    "answers": [
+      "krakatau",
+      "gunung krakatau"
+    ]
+  },
+  {
+    "prompt": "Tokoh pahlawan nasional asal Maluku yang memimpin perlawanan benteng Duurstede di Saparua tahun 1817?",
+    "answers": [
+      "pattimura",
+      "kapitan pattimura",
+      "thomas matulessy"
+    ]
+  },
+  {
+    "prompt": "Pelabuhan laut utama sekaligus tersibuk di Kota Surabaya yang melayani jalur timur Indonesia bernama?",
+    "answers": [
+      "tanjung perak"
+    ]
+  },
+  {
+    "prompt": "Tumbuhan yang menangkap serangga dengan daun berbentuk kantong berpintu di hutan tropis Kalimantan disebut?",
+    "answers": [
+      "kantong semar"
+    ]
+  },
+  {
+    "prompt": "Lapisan atmosfer terendah tempat terjadinya cuaca, awan, hujan, dan petir disebut lapisan apa?",
+    "answers": [
+      "troposfer"
+    ]
+  },
+  {
+    "prompt": "Olahraga bela diri asli Indonesia yang sudah diakui UNESCO sebagai warisan budaya takbenda dunia?",
+    "answers": [
+      "pencak silat",
+      "silat"
+    ]
+  },
+  {
+    "prompt": "Di kalender Masehi, bulan apa yang hanya memiliki 29 hari setiap empat tahun sekali pada tahun kabisat?",
+    "answers": [
+      "februari"
+    ]
+  },
+  {
+    "prompt": "Pemimpin ekspedisi laut Tiongkok legendaris yang singgah di Semarang dan dikenal lewat Klenteng Sam Poo Kong?",
+    "answers": [
+      "cheng ho",
+      "laksamana cheng ho",
+      "zheng he"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Kalimantan Timur sebelum maupun di dekat area Ibu Kota Nusantara ialah kota apa?",
+    "answers": [
+      "samarinda"
+    ]
+  },
+  {
+    "prompt": "Hewan laut bertubuh lunak berujung delapan tentakel yang cerdas dan pintar berkamuflase ialah?",
+    "answers": [
+      "gurita"
+    ]
+  },
+  {
+    "prompt": "Proses perubahan wujud zat padat langsung menjadi gas tanpa mencair dulu, seperti pada kapur barus, disebut apa?",
+    "answers": [
+      "menyublim",
+      "sublimasi"
+    ]
+  },
+  {
+    "prompt": "Komposer klasik asal Austria yang tetap menciptakan simfoni agung meski mengalami ketulian di akhir hayatnya?",
+    "answers": [
+      "beethoven",
+      "ludwig van beethoven"
+    ]
+  },
+  {
+    "prompt": "Jembatan ikonik kebanggaan warga Palembang yang membentang di atas Sungai Musi bernama Jembatan apa?",
+    "answers": [
+      "ampera",
+      "jembatan ampera"
+    ]
+  },
+  {
+    "prompt": "Kertas lakmus merah jika dicelupkan ke dalam larutan basa kuat seperti air sabun akan berubah menjadi warna apa?",
+    "answers": [
+      "biru"
+    ]
+  },
+  {
+    "prompt": "Nama samaran pengarang novel klasik Siti Nurbaya yang terbit tahun 1922?",
+    "answers": [
+      "marah rusli",
+      "marah roesli"
+    ]
+  },
+  {
+    "prompt": "Penghargaan tertinggi di bidang perfilman Amerika Serikat yang berupa patung berlapis emas disebut?",
+    "answers": [
+      "oscar",
+      "piala oscar",
+      "academy awards"
+    ]
+  },
+  {
+    "prompt": "Negara kecil di Eropa yang beribu kota Bern dan terkenal netral serta memproduksi jam tangan mewah?",
+    "answers": [
+      "swiss",
+      "switzerland"
+    ]
+  },
+  {
+    "prompt": "Organ manusia tempat sel darah merah tua dipecah dan tempat sistem imun limfa bekerja ialah?",
+    "answers": [
+      "limpa"
+    ]
+  },
+  {
+    "prompt": "Benda langit berekor terang bercahaya yang terlihat melintas ketika orbitnya mendekati Matahari disebut apa?",
+    "answers": [
+      "komet",
+      "bintang berekor"
+    ]
+  },
+  {
+    "prompt": "Kue berlapis seribu asal Medan yang legit dengan harum rempah spekuk dan kuning telur melimpah ialah?",
+    "answers": [
+      "bika ambon",
+      "lapis legit"
+    ]
+  },
+  {
+    "prompt": "Penulis buku Habis Gelap Terbitlah Terang yang juga pahlawan emansipasi perempuan asal Jepara bernama?",
+    "answers": [
+      "kartini",
+      "r.a. kartini",
+      "raden ajeng kartini"
+    ]
+  },
+  {
+    "prompt": "Sel darah apa di dalam tubuh yang fungsinya melawan infeksi bakteri, virus, dan kuman?",
+    "answers": [
+      "leukosit",
+      "sel darah putih"
+    ]
+  },
+  {
+    "prompt": "Terusan buatan terkenal di Mesir yang menghubungkan Laut Mediterania dan Laut Merah bernama Terusan apa?",
+    "answers": [
+      "suez",
+      "terusan suez"
+    ]
+  },
+  {
+    "prompt": "Danau vulkanik terbesar di Indonesia sekaligus di Asia Tenggara yang terletak di Sumatra Utara bernama?",
+    "answers": [
+      "danau toba",
+      "toba"
+    ]
+  },
+  {
+    "prompt": "Siapa pencipta bahasa pemrograman Python pada akhir 1980-an yang namanya terinspirasi dari grup komedi Monty Python?",
+    "answers": [
+      "guido van rossum",
+      "rossum"
+    ]
+  },
+  {
+    "prompt": "Tulang terpanjang sekaligus terkuat di tubuh manusia yang berada di bagian paha disebut tulang apa?",
+    "answers": [
+      "femur",
+      "tulang paha"
+    ]
+  },
+  {
+    "prompt": "Alat tradisional untuk mengukur gempa bumi beserta kekuatan getaran tanahnya disebut apa?",
+    "answers": [
+      "seismograf",
+      "seismometer"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Selandia Baru yang sering dianggap kota paling berangin di dunia terletak di kota mana?",
+    "answers": [
+      "wellington"
+    ]
+  },
+  {
+    "prompt": "Lagu daerah Maluku yang liriknya menceritakan kerinduan perantau terhadap pulau rempah dan bernuansa riang?",
+    "answers": [
+      "rasa sayange",
+      "burung kakak tua",
+      "ayo mama"
+    ]
+  },
+  {
+    "prompt": "Bandara internasional tersibuk yang melayani Jakarta dan sekitarnya di Tangerang bernama apa?",
+    "answers": [
+      "soekarno hatta",
+      "soetta",
+      "soekarno-hatta"
+    ]
+  },
+  {
+    "prompt": "Senyawa hijau pada daun tumbuhan yang berperan penting menyerap cahaya matahari untuk fotosintesis disebut apa?",
+    "answers": [
+      "klorofil",
+      "zat hijau daun"
+    ]
+  },
+  {
+    "prompt": "Dalam mitologi Yunani, siapa dewa penguasa lautan yang selalu digambarkan membawa trisula?",
+    "answers": [
+      "poseidon",
+      "neptunus"
+    ]
+  },
+  {
+    "prompt": "Satuan ukur kecepatan angin dan kapal di laut yang setara dengan satu mil laut per jam disebut apa?",
+    "answers": [
+      "knot"
+    ]
+  },
+  {
+    "prompt": "Tari tradisional Saman yang mengandalkan tepukan dada dan tangan cepat secara kompak berasal dari provinsi mana?",
+    "answers": [
+      "aceh",
+      "nanggroe aceh darussalam"
+    ]
+  },
+  {
+    "prompt": "Planet terjauh kedelapan dari Matahari yang warnanya biru tua pekat karena kandungan metana bernama?",
+    "answers": [
+      "neptunus"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Bali yang menjadi pusat pemerintahan sekaligus budaya sebelum area wisata Kuta?",
+    "answers": [
+      "denpasar"
+    ]
+  },
+  {
+    "prompt": "Dalam fotografi maupun mata manusia, lubang bulat yang mengatur masuknya intensitas cahaya di tengah iris disebut?",
+    "answers": [
+      "pupil"
+    ]
+  },
+  {
+    "prompt": "Bentuk pemerintahan negara seperti Inggris, Jepang, dan Thailand yang dipimpin oleh raja/ratu namun kekuasaan diatur konstitusi disebut?",
+    "answers": [
+      "monarki konstitusional",
+      "monarki",
+      "kerajaan"
+    ]
+  },
+  {
+    "prompt": "Olahraga bela diri asal Korea Selatan yang terkenal dominan memakai teknik tendangan tinggi dan cepat ialah?",
+    "answers": [
+      "taekwondo"
+    ]
+  },
+  {
+    "prompt": "Saus cokelat manis kental hasil fermentasi kedelai hitam dengan gula kelapa yang wajib ada di nasi goreng Nusantara?",
+    "answers": [
+      "kecap manis",
+      "kecap"
+    ]
+  },
+  {
+    "prompt": "Penemu mesin uap modern yang mendorong lahirnya Revolusi Industri abad ke-18 dan namanya jadi satuan daya?",
+    "answers": [
+      "james watt",
+      "watt"
+    ]
+  },
+  {
+    "prompt": "Kain tradisional khas Sumatra Utara yang ditenun manual dan disematkan pada upacara adat Batak disebut?",
+    "answers": [
+      "ulos",
+      "kain ulos"
+    ]
+  },
+  {
+    "prompt": "Pegunungan tertinggi di Indonesia yang diselimuti salju abadi di puncak Cartenz berada di pulau mana?",
+    "answers": [
+      "papua"
+    ]
+  },
+  {
+    "prompt": "Simbol huruf Romawi untuk bilangan seribu (1000) ditulis menggunakan huruf kapital apa?",
+    "answers": [
+      "m"
+    ]
+  },
+  {
+    "prompt": "Jembatan penghubung Pulau Jawa dan Pulau Madura yang melintasi Selat Madura bernama Jembatan apa?",
+    "answers": [
+      "suramadu",
+      "jembatan suramadu"
+    ]
+  },
+  {
+    "prompt": "Istilah biologi untuk hewan yang aktif mencari makan terutama pada malam hari seperti burung hantu dan kelelawar disebut?",
+    "answers": [
+      "nokturnal"
+    ]
+  },
+  {
+    "prompt": "Siapakah pebulutangkis legendaris Indonesia peraih medali emas tunggal putra pertama di Olimpiade Barcelona 1992?",
+    "answers": [
+      "alan budikusuma"
+    ]
+  },
+  {
+    "prompt": "Candi Buddha terbesar di dunia yang dibangun dinasti Syailendra di Magelang bernama apa?",
+    "answers": [
+      "borobudur",
+      "candi borobudur"
+    ]
+  },
+  {
+    "prompt": "Kota di Italia yang memiliki ratusan kanal air sebagai pengganti jalan raya aspal dan terkenal dengan gondola ialah?",
+    "answers": [
+      "venesia",
+      "venice",
+      "venezia"
+    ]
+  },
+  {
+    "prompt": "Satuan berat berlian dan emas permata (0,2 gram per satu satuan) dalam dunia perhiasan dikenal sebagai?",
+    "answers": [
+      "karat"
+    ]
+  },
+  {
+    "prompt": "Jenis energi terbarukan yang memanfaatkan panas alami dari dalam perut bumi untuk pembangkit listrik disebut?",
+    "answers": [
+      "panas bumi",
+      "geotermal",
+      "geothermal"
+    ]
+  },
+  {
+    "prompt": "Buah berwarna merah berdaging putih berbiji hitam kecil yang berasal dari famili kaktus namun segar disantap di Indonesia?",
+    "answers": [
+      "buah naga"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Kanada yang menjadi pusat pemerintahan federalnya adalah kota apa?",
+    "answers": [
+      "ottawa"
+    ]
+  },
+  {
+    "prompt": "Alat musik tradisional Sunda berbentuk tabung bambu yang dimainkan dengan cara digoyangkan bersama-sama?",
+    "answers": [
+      "angklung"
+    ]
+  },
+  {
+    "prompt": "Tokoh penjelajah asal Italia yang pertama kali mendarat di Benua Amerika tahun 1492 untuk mencari rute rempah?",
+    "answers": [
+      "christopher columbus",
+      "columbus"
+    ]
+  },
+  {
+    "prompt": "Bagian bunga yang berfungsi sebagai alat kelamin jantan penghasil serbuk sari disebut apa?",
+    "answers": [
+      "benang sari"
+    ]
+  },
+  {
+    "prompt": "Nama pelabuhan udara internasional kebanggaan warga Makassar yang memakai nama pahlawan sultan Gowa?",
+    "answers": [
+      "sultan hasanuddin",
+      "hasanuddin"
+    ]
+  },
+  {
+    "prompt": "Masakan kuah kuning segar khas Papua yang menggunakan sagu sebagai bahan utama disebut apa?",
+    "answers": [
+      "papeda"
+    ]
+  },
+  {
+    "prompt": "Negara di Eropa Utara yang dijuluki Negeri Seribu Danau serta asal merek ponsel legendaris Nokia adalah?",
+    "answers": [
+      "finlandia"
+    ]
+  },
+  {
+    "prompt": "Siapa pencipta tokoh kartun tikus paling ikonik dunia bernama Mickey Mouse?",
+    "answers": [
+      "walt disney",
+      "disney"
+    ]
+  },
+  {
+    "prompt": "Dalam tabel periodik kimia, simbol unsur Fe melambangkan logam kuat yang sering berkarat yaitu apa?",
+    "answers": [
+      "besi"
+    ]
+  },
+  {
+    "prompt": "Candi Hindu termegah di Indonesia yang berlokasi di perbatasan Sleman dan Klaten dengan legenda Roro Jonggrang?",
+    "answers": [
+      "prambanan",
+      "candi prambanan"
+    ]
+  },
+  {
+    "prompt": "Bandara internasional yang terletak di Kabupaten Kulon Progo, Daerah Istimewa Yogyakarta disingkat sebagai apa?",
+    "answers": [
+      "yia",
+      "yogyakarta international airport"
+    ]
+  },
+  {
+    "prompt": "Kera besar cerdas berkulit rambut kemerahan endemik Sumatra dan Kalimantan yang terancam punah dinamakan?",
+    "answers": [
+      "orangutan",
+      "orang utan"
+    ]
+  },
+  {
+    "prompt": "Ilmuwan Inggris yang merumuskan hukum gravitasi setelah konon mengamati apel jatuh dari pohonnya?",
+    "answers": [
+      "isaac newton",
+      "newton",
+      "sir isaac newton"
+    ]
+  },
+  {
+    "prompt": "Dalam sejarah kemerdekaan RI, kota di Jawa Timur mana yang dikenang lewat pertempuran heroik 10 November 1945?",
+    "answers": [
+      "surabaya"
+    ]
+  },
+  {
+    "prompt": "Alat kesehatan yang dipakai dokter untuk mendengarkan detak jantung dan suara paru-paru pasien ialah?",
+    "answers": [
+      "stetoskop"
+    ]
+  },
+  {
+    "prompt": "Ikan predator air tawar raksasa asli Sungai Amazon yang sisiknya sangat keras disebut ikan apa?",
+    "answers": [
+      "arapaima",
+      "piranha"
+    ]
+  },
+  {
+    "prompt": "Kota mana yang dijuluki Kota Pempek di Provinsi Sumatra Selatan?",
+    "answers": [
+      "palembang"
+    ]
+  },
+  {
+    "prompt": "Batu mulia berwarna hijau pekat bernilai tinggi yang sering disematkan pada cincin permata dinamakan batu apa?",
+    "answers": [
+      "zamrud",
+      "emerald"
+    ]
+  },
+  {
+    "prompt": "Dalam dunia perkopian, istilah metode penyeduhan kopi panas menggunakan kertas saring berbentuk kerucut bernama V berapa?",
+    "answers": [
+      "v60"
+    ]
+  },
+  {
+    "prompt": "Alat hitung tradisional kuno asal Tiongkok yang menggunakan manik-manik geser di dalam bingkai kayu disebut?",
+    "answers": [
+      "sempoa",
+      "abakus"
+    ]
+  },
+  {
+    "prompt": "Garis khayal di bola Bumi yang membagi belahan Bumi utara dan selatan serta melewati Kota Pontianak?",
+    "answers": [
+      "khatulistiwa",
+      "ekuator",
+      "garis khatulistiwa"
+    ]
+  },
+  {
+    "prompt": "Suku di Sulawesi Selatan yang terkenal sejak dulu sebagai pelaut ulung pembuat kapal Phinisi adalah suku apa?",
+    "answers": [
+      "bugis",
+      "makassar",
+      "bugis makassar"
+    ]
+  },
+  {
+    "prompt": "Negara kecil berdaulat di Asia Tenggara yang berbentuk negara kota kepulauan modern dan terkenal dengan pelabuhan bebasnya?",
+    "answers": [
+      "singapura",
+      "singapore"
+    ]
+  },
+  {
+    "prompt": "Vitamin yang paling terkenal untuk menjaga kesehatan retina mata dan banyak terdapat di wortel ialah?",
+    "answers": [
+      "vitamin a",
+      "a"
+    ]
+  },
+  {
+    "prompt": "Kapal layar tradisional bermotor khas Indonesia dari Sulawesi Selatan yang diakui UNESCO karena kehebatan konstruksi kayunya?",
+    "answers": [
+      "phinisi",
+      "pinisi",
+      "kapal pinisi"
+    ]
+  },
+  {
+    "prompt": "Lagu daerah Papua yang berirama ceria dan sering dinyanyikan di perpisahan dengan lirik sampai berjumpa pulang?",
+    "answers": [
+      "sajojo",
+      "yamko rambe yamko",
+      "apuse"
+    ]
+  },
+  {
+    "prompt": "Kota di Jawa Tengah yang dijuluki Kota Lumpia sekaligus memiliki bangunan bersejarah Lawang Sewu ialah?",
+    "answers": [
+      "semarang"
+    ]
+  },
+  {
+    "prompt": "Hewan reptil terbesar di dunia yang hanya hidup liar di beberapa pulau di Nusa Tenggara Timur?",
+    "answers": [
+      "komodo"
+    ]
+  },
+  {
+    "prompt": "Bahan penyedap masakan berwarna kuning cerah yang sering jadi pewarna alami nasi tumpeng maupun jamu?",
+    "answers": [
+      "kunyit",
+      "kunir"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Korea Selatan yang terbelah oleh Sungai Han bernama kota apa?",
+    "answers": [
+      "seoul"
+    ]
+  },
+  {
+    "prompt": "Jenis awan tinggi menyerupai bulu tipis putih di langit biru disebut awan apa?",
+    "answers": [
+      "sirus",
+      "cirrus"
+    ]
+  },
+  {
+    "prompt": "Di dunia komputer, singkatan RAM merujuk pada memori jangka pendek komputer. Apa kepanjangannya dalam bahasa Inggris?",
+    "answers": [
+      "random access memory"
+    ]
+  },
+  {
+    "prompt": "Penulis terkenal drama tragedi Romeo and Juliet serta Hamlet dari Inggris bernama siapa?",
+    "answers": [
+      "william shakespeare",
+      "shakespeare"
+    ]
+  },
+  {
+    "prompt": "Senjata tradisional khas Jawa yang bilahnya sering berlekuk-lekuk dan memakai pamor besi berlapis?",
+    "answers": [
+      "keris"
+    ]
+  },
+  {
+    "prompt": "Kota pelajar sekaligus bekas ibu kota perjuangan Indonesia pada tahun 1946 hingga 1949 terletak di mana?",
+    "answers": [
+      "yogyakarta",
+      "jogja",
+      "jogjakarta"
+    ]
+  },
+  {
+    "prompt": "Bagian keras luar gigi manusia yang melapisi mahkota gigi agar tahan asam makanan disebut?",
+    "answers": [
+      "email",
+      "enamel"
+    ]
+  },
+  {
+    "prompt": "Gunung tertinggi di dunia dengan ketinggian sekitar 8.848 meter di pegunungan Himalaya bernama?",
+    "answers": [
+      "everest",
+      "mount everest",
+      "gunung everest"
+    ]
+  },
+  {
+    "prompt": "Negara mana yang menciptakan olahraga bela diri Judo dan Sumo?",
+    "answers": [
+      "jepang"
+    ]
+  },
+  {
+    "prompt": "Suhu 0 derajat Celcius jika dikonversi ke skala Kelvin sama dengan berapa Kelvin?",
+    "answers": [
+      "273",
+      "273.15",
+      "273 kelvin"
+    ]
+  },
+  {
+    "prompt": "Makanan fermentasi singkong manis asal Jawa Barat yang sering dibungkus daun pisang disebut apa?",
+    "answers": [
+      "peuyeum",
+      "tape",
+      "tape singkong"
+    ]
+  },
+  {
+    "prompt": "Siapa pahlawan nasional dari Aceh yang terkenal garang memimpin perang gerilya setelah suaminya Teuku Umar gugur?",
+    "answers": [
+      "cut nyak dien",
+      "tjut nyak dhien"
+    ]
+  },
+  {
+    "prompt": "Olahraga bola yang memakai lima pemain inti per tim di dalam lapangan indoor dan bertujuan memasukkan bola ke ring?",
+    "answers": [
+      "basket",
+      "bola basket"
+    ]
+  },
+  {
+    "prompt": "Alat musik ditiup asal Sumatra Barat yang terbuat dari bambu berdengung mirip seruling tradisional Minang?",
+    "answers": [
+      "saluang",
+      "bansi"
+    ]
+  },
+  {
+    "prompt": "Dalam tata surya, planet mana yang terkenal memiliki cincin besar sangat jelas dari es dan debu batuan?",
+    "answers": [
+      "saturnus"
+    ]
+  },
+  {
+    "prompt": "Jenis batuan cair panas pijar yang masih berada di dalam perut gunung berapi sebelum keluar ke permukaan?",
+    "answers": [
+      "magma"
+    ]
+  },
+  {
+    "prompt": "Kuliner berbahan mi kuning tebal bersiram kuah kental udang/kepiting yang sangat populer di Aceh bernama?",
+    "answers": [
+      "mie aceh",
+      "mi aceh"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Jerman saat ini tempat berdirinya Gerbang Brandenburg terkenal bernama?",
+    "answers": [
+      "berlin"
+    ]
+  },
+  {
+    "prompt": "Penemu pesawat terbang bermesin pertama yang berhasil melakukan penerbangan terkendali tahun 1903 adalah dua bersaudara siapa?",
+    "answers": [
+      "wright bersaudara",
+      "wright brothers",
+      "orville dan wilbur wright"
+    ]
+  },
+  {
+    "prompt": "Unsur kimia dengan simbol Au yang nilainya selalu diburu investor dan dijadikan perhiasan mahal?",
+    "answers": [
+      "emas"
+    ]
+  },
+  {
+    "prompt": "Kota di Jawa Timur yang terkenal dengan julukan Kota Apel sekaligus wisata sejuk pegunungannya?",
+    "answers": [
+      "malang",
+      "batu",
+      "kota batu"
+    ]
+  },
+  {
+    "prompt": "Organ tumbuhan tempat berlangsungnya penyerapan air dan mineral dari dalam tanah ialah?",
+    "answers": [
+      "akar"
+    ]
+  },
+  {
+    "prompt": "Kejuaraan sepak bola terbesar antarnegara Asia Tenggara yang dulunya dikenal sebagai Piala Tiger disebut Piala apa?",
+    "answers": [
+      "aff",
+      "piala aff",
+      "asean championship"
+    ]
+  },
+  {
+    "prompt": "Siapakah musisi Indonesia penembang lagu legendaris Bento bersama grup SWAMI?",
+    "answers": [
+      "iwan fals"
+    ]
+  },
+  {
+    "prompt": "Hewan amfibi yang memulai hidupnya sebagai berudu di dalam air dengan insang lalu bernapas dengan paru-paru saat dewasa?",
+    "answers": [
+      "katak",
+      "kodok"
+    ]
+  },
+  {
+    "prompt": "Bahasa yang paling banyak penutur ibunya secara jumlah penduduk di seluruh dunia ialah bahasa apa?",
+    "answers": [
+      "mandarin",
+      "tionghoa",
+      "cina"
+    ]
+  },
+  {
+    "prompt": "Patung raksasa berkepala singa dan bertubuh ikan yang jadi maskot ikonik Singapura dinamakan?",
+    "answers": [
+      "merlion"
+    ]
+  },
+  {
+    "prompt": "Telur bebek yang dibungkus adonan abu gosok dan garam berminggu-minggu menjadi kuliner populer apa dari Brebes?",
+    "answers": [
+      "telur asin"
+    ]
+  },
+  {
+    "prompt": "Ilmu yang mempelajari cara kerja planet, bintang, galaksi, dan fenomena luar angkasa disebut?",
+    "answers": [
+      "astronomi"
+    ]
+  },
+  {
+    "prompt": "Tanggal berapa setiap tahunnya masyarakat Indonesia memperingati Hari Sumpah Pemuda?",
+    "answers": [
+      "28 oktober"
+    ]
+  },
+  {
+    "prompt": "Pelari jarak pendek Olimpiade yang memegang rekor dunia lari 100 meter putra asal Jamaika bernama siapa?",
+    "answers": [
+      "usain bolt",
+      "bolt"
+    ]
+  },
+  {
+    "prompt": "Senjata tradisional dari Aceh yang bentuknya melengkung runcing dan diselipkan di pinggang depan?",
+    "answers": [
+      "rencong"
+    ]
+  },
+  {
+    "prompt": "Sistem operasi open-source yang logonya penguin lucu bernama Tux dan sangat dominan dipakai di server web?",
+    "answers": [
+      "linux"
+    ]
+  },
+  {
+    "prompt": "Negara mana yang beribu kota di Hanoi dan terkenal dengan Teluk Ha Long serta kuliner Pho?",
+    "answers": [
+      "vietnam"
+    ]
+  },
+  {
+    "prompt": "Lapisan atmosfer Bumi yang mengandung konsentrasi gas ozon pelindung dari radiasi sinar ultraviolet terletak di mana?",
+    "answers": [
+      "stratosfer"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Yogyakarta berupa nangka muda yang dimasak manis dengan santan dan gula merah hingga berjam-jam?",
+    "answers": [
+      "gudeg"
+    ]
+  },
+  {
+    "prompt": "Pantulan bunyi yang terdengar nyaris bersamaan dengan bunyi asli di ruang sempit tertutup disebut apa?",
+    "answers": [
+      "gaung",
+      "kerdam"
+    ]
+  },
+  {
+    "prompt": "Olahraga air yang memakai papan panjang dan layar untuk meluncur memanfaatkan angin laut?",
+    "answers": [
+      "selancar angin",
+      "windsurfing",
+      "selancar"
+    ]
+  },
+  {
+    "prompt": "Siapa Bapak Pendidikan Nasional Indonesia sekaligus pendiri Taman Siswa yang tanggal lahirnya jadi Hari Pendidikan?",
+    "answers": [
+      "ki hajar dewantara",
+      "ki hadjar dewantara"
+    ]
+  },
+  {
+    "prompt": "Kota di ujung barat Pulau Jawa tempat berdirinya Masjid Agung Banten dan pelabuhan Merak berada di provinsi mana?",
+    "answers": [
+      "banten"
+    ]
+  },
+  {
+    "prompt": "Bumi berputar pada porosnya menyebabkan terjadinya siang dan malam. Proses perputaran pada poros ini disebut?",
+    "answers": [
+      "rotasi",
+      "rotasi bumi"
+    ]
+  },
+  {
+    "prompt": "Tarian klasik asal Bali di mana puluhan penari pria duduk melingkar serempak meneriakkan cak cak cak tanpa iringan gamelan?",
+    "answers": [
+      "kecak",
+      "tari kecak"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Mesir yang berdiri tepat di dekat aliran Sungai Nil dan Piramida Giza ialah?",
+    "answers": [
+      "kairo",
+      "cairo"
+    ]
+  },
+  {
+    "prompt": "Bahan penyusun utama intan berlian dan grafit pensil ternyata unsur kimia yang sama, yaitu apa?",
+    "answers": [
+      "karbon"
+    ]
+  },
+  {
+    "prompt": "Klub sepak bola Italia berjuluk Nyonya Tua atau La Vecchia Signora dari Kota Turin?",
+    "answers": [
+      "juventus"
+    ]
+  },
+  {
+    "prompt": "Makanan berbahan kerupuk aci basah pedas beraroma kencur yang awalnya viral dari Bandung dan Garut ialah?",
+    "answers": [
+      "seblak"
+    ]
+  },
+  {
+    "prompt": "Satuan terkecil penyusun makhluk hidup yang mampu menjalankan fungsi kehidupan dasar disebut?",
+    "answers": [
+      "sel"
+    ]
+  },
+  {
+    "prompt": "Monumen tinggi kebanggaan warga Paris Prancis yang dibangun dari rangka besi oleh Gustave untuk pameran 1889?",
+    "answers": [
+      "menara eiffel",
+      "eiffel"
+    ]
+  },
+  {
+    "prompt": "Hewan kecil bersayap indah yang mengalami metamorfosis sempurna dari ulat dan kepompong ialah?",
+    "answers": [
+      "kupu-kupu",
+      "kupu kupu"
+    ]
+  },
+  {
+    "prompt": "Nama protokol internet standar yang mengatur penulisan alamat web diawali huruf HTTPS, huruf S-nya berarti apa?",
+    "answers": [
+      "secure"
+    ]
+  },
+  {
+    "prompt": "Olahraga bela diri gulat tradisional asal Jepang yang dimainkan di dalam lingkaran tanah liat dohyo?",
+    "answers": [
+      "sumo"
+    ]
+  },
+  {
+    "prompt": "Minuman hangat khas Jawa Barat yang diracik dari jahe, gula aren, dan rempah cengkeh disebut?",
+    "answers": [
+      "bandrek"
+    ]
+  },
+  {
+    "prompt": "Benua mana yang menjadi rumah bagi negara paling banyak sekaligus Sungai Nil dan Sungai Kongo?",
+    "answers": [
+      "afrika",
+      "benua afrika"
+    ]
+  },
+  {
+    "prompt": "Ilmuwan perumus teori relativitas E = mc2 yang sangat ikonik di dunia fisika ialah?",
+    "answers": [
+      "albert einstein",
+      "einstein"
+    ]
+  },
+  {
+    "prompt": "Bumbu dapur berbentuk umbi kecil berwarna putih dengan bau tajam menyengat yang hampir selalu jadi dasar tumisan?",
+    "answers": [
+      "bawang putih"
+    ]
+  },
+  {
+    "prompt": "Danau cantik berbentuk kawah di pucuk Gunung Kelimutu di Nusa Tenggara Timur terkenal karena bisa berubah warna berapa kali? Ada berapa danau di kawahnya?",
+    "answers": [
+      "3",
+      "tiga"
+    ]
+  },
+  {
+    "prompt": "Komponen elektronika yang tugasnya menyimpan muatan listrik sementara di papan sirkuit disebut apa?",
+    "answers": [
+      "kapasitor",
+      "kondensator"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Filipina yang terletak di Teluk Luzon bernama kota apa?",
+    "answers": [
+      "manila"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Jawa Timur berupa irisan lontong, tahu, taoge, lentho, dan cingur disiram petis kacang ialah?",
+    "answers": [
+      "rujak cingur"
+    ]
+  },
+  {
+    "prompt": "Pemain tunggal putri legendaris Indonesia peraih medali emas Olimpiade pertama bagi Tanah Air pada tahun 1992?",
+    "answers": [
+      "susi susanti",
+      "susy susanti"
+    ]
+  },
+  {
+    "prompt": "Alat musik dawai kecil asal Hawaii dan sering dipakai pengamen kreatif di Indonesia yang cuma punya 4 senar?",
+    "answers": [
+      "ukulele",
+      "kentrung"
+    ]
+  },
+  {
+    "prompt": "Jenis energi yang tersimpan pada baterai, bahan bakar minyak, dan makanan manusia sebelum diubah menjadi gerak disebut energi apa?",
+    "answers": [
+      "kimia",
+      "energi kimia"
+    ]
+  },
+  {
+    "prompt": "Gunung api terkenal di Jawa Barat utara Bandung yang bentuk kawahnya melebar dan dikaitkan dengan legenda Sangkuriang?",
+    "answers": [
+      "tangkuban perahu",
+      "gunung tangkuban perahu"
+    ]
+  },
+  {
+    "prompt": "Hewan pemakan segala jenis makanan baik tumbuhan maupun daging di klasifikasi rantai makanan disebut?",
+    "answers": [
+      "omnivora"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Prancis yang dilintasi Sungai Seine sekaligus dijuluki Kota Cahaya bernama?",
+    "answers": [
+      "paris"
+    ]
+  },
+  {
+    "prompt": "Olahraga tim air di mana pemain berenang sambil melempar bola menuju gawang di atas kolam disebut apa?",
+    "answers": [
+      "polo air"
+    ]
+  },
+  {
+    "prompt": "Suku nomaden laut di perairan Sulawesi dan Kalimantan Timur yang piawai menyelam dalam tanpa alat bantu modern?",
+    "answers": [
+      "bajo",
+      "suku bajo"
+    ]
+  },
+  {
+    "prompt": "Organ pernapasan utama ikan untuk menyaring oksigen yang terlarut dalam air ialah?",
+    "answers": [
+      "insang"
+    ]
+  },
+  {
+    "prompt": "Kain batik yang teknik pembuatannya memakai canting berisi malam panas cair agar motif tidak terkena pewarna dinamakan teknik apa?",
+    "answers": [
+      "batik tulis"
+    ]
+  },
+  {
+    "prompt": "Presiden Indonesia ketiga yang dikenal luas sebagai insinyur dirgantara sekaligus pencetus pesawat N250 Gatotkaca?",
+    "answers": [
+      "b.j. habibie",
+      "bj habibie",
+      "habibie",
+      "bacharuddin jusuf habibie"
+    ]
+  },
+  {
+    "prompt": "Bulan keberapa dalam kalender Hijriah di mana umat Islam sedunia melaksanakan ibadah puasa wajib sebulan penuh?",
+    "answers": [
+      "ramadhan",
+      "ramadan"
+    ]
+  },
+  {
+    "prompt": "Logam ringan berwarna keperakan yang tidak berkarat dan sering dibuat badan pesawat serta kaleng minuman?",
+    "answers": [
+      "aluminium",
+      "alumunium"
+    ]
+  },
+  {
+    "prompt": "Tokoh proklamator sekaligus Wakil Presiden RI pertama yang dikenal sebagai Bapak Koperasi Indonesia?",
+    "answers": [
+      "mohammad hatta",
+      "bung hatta",
+      "hatta"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Malaysia yang terkenal dengan Menara Kembar Petronas bernama kota apa?",
+    "answers": [
+      "kuala lumpur"
+    ]
+  },
+  {
+    "prompt": "Buah berkulit kasar bersisik tajam namun aromanya memabukkan dan sangat digemari di Asia Tenggara?",
+    "answers": [
+      "durian"
+    ]
+  },
+  {
+    "prompt": "Pada manusia normal yang sehat, ada berapa jumlah ruas tulang jari di kedua belah tangan digabung?",
+    "answers": [
+      "28",
+      "dua puluh delapan"
+    ]
+  },
+  {
+    "prompt": "Sungai terpanjang di Amerika Selatan yang mengalir melewati hutan hujan tropis terluas dunia bernama?",
+    "answers": [
+      "amazon",
+      "sungai amazon"
+    ]
+  },
+  {
+    "prompt": "Jenis sudut yang besarnya tepat 90 derajat dalam pelajaran matematika dinamakan sudut apa?",
+    "answers": [
+      "siku-siku",
+      "sudut siku-siku"
+    ]
+  },
+  {
+    "prompt": "Makanan tradisional khas Betawi yang terbuat dari beras ketan, telur bebek, ebi, dan serundeng dimasak pakai wajan arang?",
+    "answers": [
+      "kerak telor"
+    ]
+  },
+  {
+    "prompt": "Negara bagian paling luas secara daratan di Amerika Serikat yang letaknya terpisah dekat Rusia dan Kutub Utara?",
+    "answers": [
+      "alaska"
+    ]
+  },
+  {
+    "prompt": "Alat di kendaraan bermotor yang berfungsi mencampur bahan bakar dan udara sebelum era injeksi modern disebut?",
+    "answers": [
+      "karburator"
+    ]
+  },
+  {
+    "prompt": "Hewan pengerat paling besar di dunia asal Amerika Selatan yang terkenal berwajah kalem dan suka berendam?",
+    "answers": [
+      "kapibara",
+      "capybara"
+    ]
+  },
+  {
+    "prompt": "Tanggal berapa setiap tahunnya kita memperingati Hari Pahlawan di Indonesia?",
+    "answers": [
+      "10 november"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Inggris sekaligus pusat klub Arsenal, Chelsea, dan Tottenham ialah?",
+    "answers": [
+      "london"
+    ]
+  },
+  {
+    "prompt": "Garam mineral penting di dalam garam meja untuk mencegah penyakit gondok pada kelenjar tiroid bernama?",
+    "answers": [
+      "yodium",
+      "iodium"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Padang berupa daging sapi empuk yang dimasak berjam-jam dengan santan pekat dan rempah hingga kering cokelat?",
+    "answers": [
+      "rendang"
+    ]
+  },
+  {
+    "prompt": "Proses jatuhnya serbuk sari ke kepala putik bunga pada tumbuhan disebut apa?",
+    "answers": [
+      "penyerbukan",
+      "polinasi"
+    ]
+  },
+  {
+    "prompt": "Teleskop luar angkasa legendaris yang diluncurkan NASA sejak 1990 dan memotret galaksi jauh sebelum James Webb?",
+    "answers": [
+      "hubble",
+      "teleskop hubble"
+    ]
+  },
+  {
+    "prompt": "Alat musik gesek kecil khas Betawi asal Tionghoa-Betawi yang memakai dua senar dan dimainkan pada gambang kromong?",
+    "answers": [
+      "tehyan",
+      "kongahyan"
+    ]
+  },
+  {
+    "prompt": "Berapa jumlah provinsi yang menjadi bagian awal saat Indonesia baru merdeka pada sidang PPKI Agustus 1945?",
+    "answers": [
+      "8",
+      "delapan"
+    ]
+  },
+  {
+    "prompt": "Kelompok hewan bertulang belakang dalam istilah biologi disebut dengan nama apa?",
+    "answers": [
+      "vertebrata"
+    ]
+  },
+  {
+    "prompt": "Kota mana di Sumatera Utara yang menjadi ibu kota provinsi sekaligus terkenal akan kuliner durian Ucok-nya?",
+    "answers": [
+      "medan"
+    ]
+  },
+  {
+    "prompt": "Permainan papan strategi kuno dua orang yang bertujuan menjebak raja lawan hingga tak punya langkah aman disebut?",
+    "answers": [
+      "catur"
+    ]
+  },
+  {
+    "prompt": "Penyakit kekurangan sel darah merah atau kadar hemoglobin rendah yang sering membuat tubuh mudah lemas dan pucat disebut?",
+    "answers": [
+      "anemia",
+      "kurang darah"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Aceh yang di dalamnya berdiri megah Masjid Raya Baiturrahman bernama?",
+    "answers": [
+      "banda aceh"
+    ]
+  },
+  {
+    "prompt": "Benda antariksa dari batuan dan logam yang gagal menjadi planet lalu mengorbit di antara Mars dan Jupiter disebut sabuk apa?",
+    "answers": [
+      "asteroid",
+      "sabuk asteroid"
+    ]
+  },
+  {
+    "prompt": "Susu sapi dipanaskan suhu tertentu sekitar 72 derajat agar bakteri mati tanpa merusak rasa. Metode ini dinamakan apa?",
+    "answers": [
+      "pasteurisasi"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Thailand yang nama resminya tercatat sebagai nama kota terpanjang di dunia?",
+    "answers": [
+      "bangkok"
+    ]
+  },
+  {
+    "prompt": "Kuliner khas Bangka Belitung berupa mi kenyal dengan kuah ikan kental kuning berempah atau varian mi rebus berkuah tauco?",
+    "answers": [
+      "mie bangka",
+      "mie belitung"
+    ]
+  },
+  {
+    "prompt": "Planet kedua dari Matahari yang paling terang di langit malam dan sering disebut Bintang Kejora?",
+    "answers": [
+      "venus"
+    ]
+  },
+  {
+    "prompt": "Nama tari piring tradisional di mana penari menari sambil mengayunkan piring dengan lincah tanpa jatuh berasal dari mana?",
+    "answers": [
+      "minangkabau",
+      "sumatera barat",
+      "padang"
+    ]
+  },
+  {
+    "prompt": "Logam cair yang mudah meledak kalau kena air tapi menjadi bagian garam dapur dengan simbol Na?",
+    "answers": [
+      "natrium",
+      "sodium"
+    ]
+  },
+  {
+    "prompt": "Olahraga ketangkasan yang mengadu refleks mengembalikan bola pingpong kecil di atas meja berjaring rendah disebut?",
+    "answers": [
+      "tenis meja",
+      "pingpong",
+      "ping pong"
+    ]
+  },
+  {
+    "prompt": "Hewan melata berkulit keras bersisik yang bisa memanjat dinding rumah serta memutuskan ekornya saat terancam bahaya?",
+    "answers": [
+      "cicak"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Lampung yang berhadapan langsung dengan ujung barat Selat Sunda bernama?",
+    "answers": [
+      "bandar lampung"
+    ]
+  },
+  {
+    "prompt": "Alat musik perkusi tradisional Sunda dan Jawa yang terdiri dari bilah-bilah logam berjajar di atas bingkai kayu dipukul palu kayu?",
+    "answers": [
+      "saron",
+      "gamelan",
+      "gender"
+    ]
+  },
+  {
+    "prompt": "Tanggal berapa setiap tahun bangsa Indonesia memperingati Hari Kemerdekaan?",
+    "answers": [
+      "17 agustus"
+    ]
+  },
+  {
+    "prompt": "Kertas uang paling awal dalam sejarah peradaban manusia tercatat pertama kali digunakan oleh kekaisaran dinasti di negara mana?",
+    "answers": [
+      "tiongkok",
+      "cina",
+      "china"
+    ]
+  },
+  {
+    "prompt": "Bagian mata berwarna cokelat, biru, atau hijau yang tugasnya mengatur besar kecilnya pupil saat gelap dan terang?",
+    "answers": [
+      "iris"
+    ]
+  },
+  {
+    "prompt": "Makanan laut cangkang bertubuh lunak pembuat mutiara alami ketika ada butiran pasir masuk ke tubuhnya ialah?",
+    "answers": [
+      "tiram",
+      "kerang mutiara",
+      "kerang"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Sulawesi Utara yang populer dengan wisata bahari Taman Laut Bunaken bernama?",
+    "answers": [
+      "manado"
+    ]
+  },
+  {
+    "prompt": "Rumus mencari luas lingkaran bila jari-jarinya r dinyatakan sebagai pi kali apa?",
+    "answers": [
+      "r kuadrat",
+      "r2",
+      "r pangkat 2"
+    ]
+  },
+  {
+    "prompt": "Olahraga ekstrem melompat dari tempat tinggi seperti jembatan atau menara dengan tali elastis terikat di kaki disebut?",
+    "answers": [
+      "bungee jumping"
+    ]
+  },
+  {
+    "prompt": "Tumbuhan gurun berduri tajam yang batangnya menyimpan banyak cadangan air meski hujan jarang turun?",
+    "answers": [
+      "kaktus"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Rusia yang menjadi lokasi Istana Kremlin dan Lapangan Merah terkenal bernama?",
+    "answers": [
+      "moskow",
+      "moscow"
+    ]
+  },
+  {
+    "prompt": "Burung pengicau berukuran sangat kecil yang sanggup mengepakkan sayap sangat cepat hingga bisa terbang mundur?",
+    "answers": [
+      "kolibri",
+      "burung kolibri"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Solo berupa nasi pulen disiram sayur labu siam pedas gurih, areh santan, suwiran ayam, dan telur pindang?",
+    "answers": [
+      "nasi liwet",
+      "liwet"
+    ]
+  },
+  {
+    "prompt": "Nama penulis buku populer Filosofi Teras yang memperkenalkan filsafat Stoikisme kepada pembaca Indonesia?",
+    "answers": [
+      "henry manampiring"
+    ]
+  },
+  {
+    "prompt": "Gas yang dikeluarkan tumbuhan pada siang hari sebagai produk sampingan proses fotosintesis ialah?",
+    "answers": [
+      "oksigen"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Sumatera Barat yang terkenal akan Pantai Air Manis dan legenda Malin Kundang?",
+    "answers": [
+      "padang"
+    ]
+  },
+  {
+    "prompt": "Klub sepak bola asal Inggris yang bermarkas di Stadion Anfield dan berseragam merah menyala ialah?",
+    "answers": [
+      "liverpool"
+    ]
+  },
+  {
+    "prompt": "Hewan berkaki sepuluh yang berjalan menyamping serta punya dua capit besar tajam?",
+    "answers": [
+      "kepiting",
+      "rajungan"
+    ]
+  },
+  {
+    "prompt": "Alat musik petik berdawai khas Sunda yang sering mengiringi tembang Cianjuran disebut?",
+    "answers": [
+      "kacapi",
+      "kecapi"
+    ]
+  },
+  {
+    "prompt": "Istilah geografi untuk dataran rendah berbentuk segitiga subur yang terbentuk di muara sungai akibat endapan lumpur disebut?",
+    "answers": [
+      "delta"
+    ]
+  },
+  {
+    "prompt": "Vitamin yang berfungsi membantu proses pembekuan darah saat luka selain peran trombosit adalah Vitamin apa?",
+    "answers": [
+      "vitamin k",
+      "k"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Bali berupa daging cincang berbumbu basa genep yang dililitkan pada batang serai lalu dibakar?",
+    "answers": [
+      "sate lilit"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara India yang terletak di bagian utara negara tersebut bernama?",
+    "answers": [
+      "new delhi",
+      "delhi"
+    ]
+  },
+  {
+    "prompt": "Bentuk jamak atau sistem jaringan komputer global yang saling terhubung melalui protokol TCP/IP biasa kita sebut apa?",
+    "answers": [
+      "internet"
+    ]
+  },
+  {
+    "prompt": "Gunung berapi ikonik dengan kawah hijau kebiruan sekaligus api biru alami yang langka di ujung timur Jawa?",
+    "answers": [
+      "ijen",
+      "kawah ijen",
+      "gunung ijen"
+    ]
+  },
+  {
+    "prompt": "Siapakah tokoh penemu vaksin cacar pertama di dunia dari Inggris pada akhir abad ke-18?",
+    "answers": [
+      "edward jenner",
+      "jenner"
+    ]
+  },
+  {
+    "prompt": "Bahan penyedap rasa gurih alami yang terkandung melimpah dalam tomat matang, keju parmesan, jamur, dan kaldu daging disebut rasa apa?",
+    "answers": [
+      "umami",
+      "gurih"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Nusa Tenggara Barat yang berada di Pulau Lombok bernama kota apa?",
+    "answers": [
+      "mataram"
+    ]
+  },
+  {
+    "prompt": "Pelari estafet tim nasional dalam perlombaan lari beregu menyerahkan benda berbentuk silinder apa kepada pelari berikutnya?",
+    "answers": [
+      "tongkat",
+      "tongkat estafet"
+    ]
+  },
+  {
+    "prompt": "Benua terkecil berdasarkan luas wilayah daratan sekaligus paling sedikit jumlah negaranya di Bumi ialah?",
+    "answers": [
+      "australia",
+      "oseania"
+    ]
+  },
+  {
+    "prompt": "Cairan manis kental hasil olahan nektar bunga oleh lebah pekerja di dalam sarangnya adalah?",
+    "answers": [
+      "madu"
+    ]
+  },
+  {
+    "prompt": "Kabupaten di Jawa Barat yang berbatasan dengan Cirebon dan terkenal sebagai sentra mangga gedong gincu ialah?",
+    "answers": [
+      "indramayu",
+      "majalengka"
+    ]
+  },
+  {
+    "prompt": "Hewan laut yang menyemprotkan awan tinta hitam pekat saat merasa terancam pemangsa sebelum melesat kabur?",
+    "answers": [
+      "cumi-cumi",
+      "cumi",
+      "gurita"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Turki yang resmi menggantikan Istanbul sejak tahun 1923 ialah kota apa?",
+    "answers": [
+      "ankara"
+    ]
+  },
+  {
+    "prompt": "Jenis batuan beku yang terbentuk di permukaan bumi setelah lava gunung berapi mendingin sangat cepat dan berpori sehingga bisa mengapung?",
+    "answers": [
+      "batu apung",
+      "pumis"
+    ]
+  },
+  {
+    "prompt": "Organisasi negara-negara Asia Tenggara yang berdiri pada 8 Agustus 1967 di Bangkok disingkat apa?",
+    "answers": [
+      "asean"
+    ]
+  },
+  {
+    "prompt": "Siapakah sutradara film animasi legendaris Jepang Spirited Away dan My Neighbor Totoro dari Studio Ghibli?",
+    "answers": [
+      "hayao miyazaki",
+      "miyazaki"
+    ]
+  },
+  {
+    "prompt": "Minuman khas Betawi berwarna merah menyala dari rempah secang, jahe, serai, dan daun pandan yang diseduh meski namanya mirip minuman beralkohol?",
+    "answers": [
+      "bir pletok"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Riau adalah Pekanbaru, lalu kota pelabuhan terkenal sekaligus ibu kota Provinsi Kepulauan Riau berada di mana?",
+    "answers": [
+      "tanjung pinang",
+      "tanjungpinang"
+    ]
+  },
+  {
+    "prompt": "Serangga kecil penghasil cahaya berkelap-kelip dari reaksi bioluminesensi di perutnya saat malam di pedesaan disebut?",
+    "answers": [
+      "kunang-kunang",
+      "kunang kunang"
+    ]
+  },
+  {
+    "prompt": "Bentuk permukaan bulan saat berada tepat di antara Bumi dan Matahari hingga hampir tidak tampak bercahaya disebut fase bulan apa?",
+    "answers": [
+      "bulan baru",
+      "bulan mati"
+    ]
+  },
+  {
+    "prompt": "Klub sepak bola kebanggaan masyarakat Jawa Barat berjuluk Maung Bandung bernama apa?",
+    "answers": [
+      "persib",
+      "persib bandung"
+    ]
+  },
+  {
+    "prompt": "Bagian sel tumbuhan yang kaku dan memberi bentuk kokoh dibanding sel hewan namun tidak dimiliki sel manusia?",
+    "answers": [
+      "dinding sel"
+    ]
+  },
+  {
+    "prompt": "Nama penulis buku fenomenal Atomic Habits yang membahas cara membangun kebiasaan baik sedikit demi sedikit?",
+    "answers": [
+      "james clear",
+      "clear"
+    ]
+  },
+  {
+    "prompt": "Jalur pelayaran paling sibuk di dunia yang diapit Pulau Sumatra di Indonesia dan Semenanjung Malaya disebut?",
+    "answers": [
+      "selat malaka",
+      "malaka"
+    ]
+  },
+  {
+    "prompt": "Nama alat yang dipakai dokter gigi untuk melihat bagian belakang gigi yang sulit terlihat langsung?",
+    "answers": [
+      "kaca mulut",
+      "cermin gigi"
+    ]
+  },
+  {
+    "prompt": "Lagu daerah dari Jakarta yang sangat ceria tentang gadis Betawi berwajah manis dengan pantun berirama gambang kromong?",
+    "answers": [
+      "kicir-kicir",
+      "sirih kuning",
+      "jalele",
+      "ondel-ondel"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Gorontalo yang terletak di bagian utara Pulau Sulawesi bernama?",
+    "answers": [
+      "gorontalo",
+      "kota gorontalo"
+    ]
+  },
+  {
+    "prompt": "Dalam sains, titik di mana air murni mendidih pada tekanan udara standar 1 atmosfer adalah berapa derajat Celcius?",
+    "answers": [
+      "100",
+      "100 derajat",
+      "100 c"
+    ]
+  },
+  {
+    "prompt": "Hewan endemik Sulawesi bermoncong panjang bertaring melengkung ke atas yang tampilannya unik seperti babi bertanduk disebut?",
+    "answers": [
+      "babirusa",
+      "babi rusa"
+    ]
+  },
+  {
+    "prompt": "Kertas uang maupun logam kita dicetak dan diedarkan secara resmi hanya oleh bank sentral negara kita bernama?",
+    "answers": [
+      "bank indonesia",
+      "bi"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Vietnam ialah Hanoi, sementara kota terbesar sekaligus pusat ekonominya di selatan yang dulu bernama Saigon ialah?",
+    "answers": [
+      "ho chi minh",
+      "ho chi minh city"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Jawa Barat berupa tepung aci bulat kenyal yang digoreng mekar kopong di dalamnya dan ditaburi bumbu pedas gurih?",
+    "answers": [
+      "cimol"
+    ]
+  },
+  {
+    "prompt": "Planet ketujuh dalam tata surya yang sumbu rotasinya miring hampir menyamping seperti bola menggelinding ialah?",
+    "answers": [
+      "uranus"
+    ]
+  },
+  {
+    "prompt": "Nama ilmuwan wanita peraih dua Hadiah Nobel berbeda bidang yaitu Fisika dan Kimia lewat penelitian radioaktivitas?",
+    "answers": [
+      "marie curie",
+      "curie"
+    ]
+  },
+  {
+    "prompt": "Taman Nasional tertua sekaligus habitat badak bercula satu terakhir di ujung paling barat Pulau Jawa bernama?",
+    "answers": [
+      "ujung kulon",
+      "taman nasional ujung kulon"
+    ]
+  },
+  {
+    "prompt": "Olahraga bela diri tradisional Thailand yang dikenal sebagai seni delapan tungkai karena memakai tinju, siku, lutut, dan tendangan?",
+    "answers": [
+      "muay thai",
+      "muaythai"
+    ]
+  },
+  {
+    "prompt": "Dalam bahasa Indonesia, imbuhan yang diletakkan di tengah kata dasar seperti -el- pada 'telunjuk' atau -em- pada 'gemetar' disebut?",
+    "answers": [
+      "sisipan",
+      "infiks"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Kalimantan Barat yang tepat dilewati garis khatulistiwa 0 derajat ialah?",
+    "answers": [
+      "pontianak"
+    ]
+  },
+  {
+    "prompt": "Kue lebaran klasik berbentuk bulan sabit yang ditaburi gula halus lembut dan lumer di mulut berbahan dasar kacang mete/tanah?",
+    "answers": [
+      "putri salju"
+    ]
+  },
+  {
+    "prompt": "Penyakit infeksi tropis berbahaya yang ditularkan melalui gigitan nyamuk betina Aedes aegypti biasa disebut?",
+    "answers": [
+      "demam berdarah",
+      "dbd"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Italia tempat berdirinya Colosseum dan Kota Vatikan berada di dalamnya ialah?",
+    "answers": [
+      "roma",
+      "rome"
+    ]
+  },
+  {
+    "prompt": "Alat di kapal maupun pesawat terbang yang memakai jarum magnet untuk menunjukkan arah utara geografis bumi?",
+    "answers": [
+      "kompas"
+    ]
+  },
+  {
+    "prompt": "Tumbuhan merambat yang buah polongnya dikeringkan dan menghasilkan aroma vanila harum mahal untuk bahan kue bernama?",
+    "answers": [
+      "panili",
+      "vanili",
+      "vanila"
+    ]
+  },
+  {
+    "prompt": "Klub sepak bola Spanyol asal Madrid yang memegang rekor trofi Liga Champions Eropa terbanyak sepanjang masa?",
+    "answers": [
+      "real madrid",
+      "madrid"
+    ]
+  },
+  {
+    "prompt": "Gunung api tertinggi di Indonesia sekaligus gunung tertinggi di Pulau Sumatra bernama?",
+    "answers": [
+      "kerinci",
+      "gunung kerinci"
+    ]
+  },
+  {
+    "prompt": "Nama proses ketika uap air di langit mendingin lalu berubah menjadi titik-titik air membentuk awan disebut apa?",
+    "answers": [
+      "kondensasi",
+      "pengembunan"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Kalimantan Selatan saat ini yang sudah menggantikan Banjarmasin secara resmi ialah kota apa?",
+    "answers": [
+      "banjarbaru"
+    ]
+  },
+  {
+    "prompt": "Minuman es segar khas Makassar dari campuran pisang hijau yang dibalut adonan tepung hijau pandan, bubur sumsum, dan sirup merah?",
+    "answers": [
+      "es pisang ijo",
+      "pisang ijo"
+    ]
+  },
+  {
+    "prompt": "Organ manusia yang menghasilkan hormon insulin untuk mengatur kadar gula darah disebut?",
+    "answers": [
+      "pankreas"
+    ]
+  },
+  {
+    "prompt": "Satuan jarak astronomi untuk mengukur jarak antarplanet berdasarkan rata-rata jarak Bumi ke Matahari disingkat sebagai apa?",
+    "answers": [
+      "au",
+      "sa",
+      "satuan astronomi"
+    ]
+  },
+  {
+    "prompt": "Bahasa pemrograman utama yang berjalan langsung di sisi browser web modern untuk membuat tampilan halaman menjadi interaktif?",
+    "answers": [
+      "javascript",
+      "js"
+    ]
+  },
+  {
+    "prompt": "Siapa pahlawan nasional dari Sumatera Barat yang memimpin Perang Padri hingga wafat dalam pengasingan di Manado?",
+    "answers": [
+      "tuanku imam bonjol",
+      "imam bonjol"
+    ]
+  },
+  {
+    "prompt": "Hewan laut yang melahirkan anak serta menyusui meski hidup penuh di lautan lepas termasuk kelompok mamalia laut besar bernama?",
+    "answers": [
+      "paus",
+      "lumba-lumba",
+      "dugong"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Filipina ialah Manila, lalu mata uang resmi negara Filipina dinamakan apa?",
+    "answers": [
+      "peso"
+    ]
+  },
+  {
+    "prompt": "Hidangan khas Cirebon berupa nasi pulen dibungkus daun jati dengan beragam pilihan lauk disebut?",
+    "answers": [
+      "nasi jamblang",
+      "sega jamblang"
+    ]
+  },
+  {
+    "prompt": "Nama jembatan ikonik berwarna merah menyala di San Francisco Amerika Serikat yang melintasi selat menuju Samudra Pasifik?",
+    "answers": [
+      "golden gate",
+      "golden gate bridge"
+    ]
+  },
+  {
+    "prompt": "Dalam musik, istilah tempo yang menunjukkan lagu harus dinyanyikan dengan sangat lambat dan khidmat adalah?",
+    "answers": [
+      "largo",
+      "adagio",
+      "lento"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Sumatera Selatan adalah Palembang, lalu Provinsi Kepulauan Bangka Belitung beribu kota di mana?",
+    "answers": [
+      "pangkal pinang",
+      "pangkalpinang"
+    ]
+  },
+  {
+    "prompt": "Burung malam yang kepalanya dapat berputar hingga sekitar 270 derajat untuk mengintai mangsa dalam gelap?",
+    "answers": [
+      "burung hantu"
+    ]
+  },
+  {
+    "prompt": "Bumbu dapur berwarna merah menyala yang rasa pedasnya berasal dari senyawa kimia capsaicin?",
+    "answers": [
+      "cabai",
+      "cabe"
+    ]
+  },
+  {
+    "prompt": "Kelainan penglihatan rabun jauh yang membuat penderitanya sulit melihat benda jauh dengan jelas membutuhkan kacamata lensa apa?",
+    "answers": [
+      "cekung",
+      "lensa cekung",
+      "negatif",
+      "minus"
+    ]
+  },
+  {
+    "prompt": "Kue tradisional berkuah santan manis hangat dengan isian sagu mutiara, roti tawar, kacang hijau, dan jahe khas Jawa Tengah?",
+    "answers": [
+      "wedang ronde",
+      "angslè",
+      "angsle",
+      "sekoteng"
+    ]
+  },
+  {
+    "prompt": "Siapa astronaut pertama di dunia yang berhasil menjejakkan kaki di permukaan Bulan pada tahun 1969?",
+    "answers": [
+      "neil armstrong",
+      "armstrong"
+    ]
+  },
+  {
+    "prompt": "Pahlawan nasional asal Bali yang memimpin perang puputan Margarana tahun 1946 bernama siapa?",
+    "answers": [
+      "i gusti ngurah rai",
+      "ngurah rai"
+    ]
+  },
+  {
+    "prompt": "Dalam tubuh manusia, pembuluh darah yang membawa darah kaya oksigen mengalir KELUAR dari jantung disebut?",
+    "answers": [
+      "arteri",
+      "pembuluh nadi",
+      "nadi"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Yunani tempat berdirinya kuil kuno Parthenon di bukit Acropolis bernama?",
+    "answers": [
+      "athena",
+      "athens"
+    ]
+  },
+  {
+    "prompt": "Jenis ikan bertulang unik di mana pejantannya yang mengerami telur di kantong perutnya ialah?",
+    "answers": [
+      "kuda laut"
+    ]
+  },
+  {
+    "prompt": "Alat musik tradisional Papua berukuran panjang menyerupai gendang ramping dengan membran kulit biawak yang dipukul satu sisi?",
+    "answers": [
+      "tifa"
+    ]
+  },
+  {
+    "prompt": "Dalam matematika, bilangan prima paling kecil sekaligus satu-satunya bilangan prima yang berangka genap adalah angka berapa?",
+    "answers": [
+      "2",
+      "dua"
+    ]
+  },
+  {
+    "prompt": "Negara tetangga yang beribu kota di Dili dan berbatasan langsung dengan Provinsi Nusa Tenggara Timur di Pulau Timor?",
+    "answers": [
+      "timor leste"
+    ]
+  },
+  {
+    "prompt": "Istilah untuk gerak tumbuhan membelok mengikuti arah datangnya cahaya matahari disebut?",
+    "answers": [
+      "fototropisme"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Nusa Tenggara Timur yang berada di ujung barat Pulau Timor bernama kota apa?",
+    "answers": [
+      "kupang"
+    ]
+  },
+  {
+    "prompt": "Kopi khas Aceh yang dikenal dunia dengan kepekatan rasa dan tingkat keasaman rendah ditanam di dataran tinggi mana?",
+    "answers": [
+      "gayo",
+      "dataran tinggi gayo",
+      "aceh tengah"
+    ]
+  },
+  {
+    "prompt": "Siapakah tokoh penemu telepon yang pertama kali mematenkan perangkat transmisi suara melalui kabel tahun 1876?",
+    "answers": [
+      "alexander graham bell",
+      "bell"
+    ]
+  },
+  {
+    "prompt": "Olahraga bola basket menggunakan bola oranye, lalu dalam olahraga snooker warna bola poin paling kecil nilainya selain putih ialah warna apa?",
+    "answers": [
+      "merah"
+    ]
+  },
+  {
+    "prompt": "Penyakit tulang rapuh dan keropos akibat berkurangnya kepadatan mineral tulang dan kalsium pada usia lanjut disebut?",
+    "answers": [
+      "osteoporosis"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Mesir Kairo dialiri satu sungai terpanjang di Afrika. Apa nama sungai tersebut?",
+    "answers": [
+      "sungai nil",
+      "nil"
+    ]
+  },
+  {
+    "prompt": "Kuliner berkuah santan kuning gurih lengkap dengan daging sapi empuk, emping, dan tomat khas Ibu Kota Jakarta?",
+    "answers": [
+      "soto betawi"
+    ]
+  },
+  {
+    "prompt": "Unsur kimia gas ringan tak berwarna berlabel He yang biasa diisikan ke dalam balon ulang tahun agar melayang ke atas?",
+    "answers": [
+      "helium"
+    ]
+  },
+  {
+    "prompt": "Kerajaan maritim bercorak Buddha terbesar di Nusantara yang berpusat di Sumatra dan berjaya abad ke-7 hingga ke-11?",
+    "answers": [
+      "sriwijaya"
+    ]
+  },
+  {
+    "prompt": "Pemimpin band rock legendaris Inggris Queen yang suara tenor khasnya melantunkan Bohemian Rhapsody?",
+    "answers": [
+      "freddie mercury",
+      "mercury"
+    ]
+  },
+  {
+    "prompt": "Bencana gelombang laut dahsyat akibat gempa bumi tektonik atau letusan gunung di bawah dasar laut disebut apa?",
+    "answers": [
+      "tsunami"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Jambi yang juga dilalui sungai terpanjang di Sumatra bernama Sungai Batanghari?",
+    "answers": [
+      "jambi",
+      "kota jambi"
+    ]
+  },
+  {
+    "prompt": "Organ manusia tempat utama pertukaran gas oksigen dan karbon dioksida berlangsung pada gelembung halus alveolus?",
+    "answers": [
+      "paru-paru",
+      "paru paru"
+    ]
+  },
+  {
+    "prompt": "Permainan tradisional anak Indonesia memakai papan kayu berlubang berhadapan berisi puluhan biji kerang atau batu kecil?",
+    "answers": [
+      "congklak",
+      "dakon"
+    ]
+  },
+  {
+    "prompt": "Negara mana yang beribu kota di Lisbon di ujung barat Semenanjung Iberia?",
+    "answers": [
+      "portugal"
+    ]
+  },
+  {
+    "prompt": "Tarian penyambutan sakral lemah gemulai dari Bali yang biasa dibawakan sambil menabur kelopak bunga?",
+    "answers": [
+      "tari pendet",
+      "pendet"
+    ]
+  },
+  {
+    "prompt": "Alat optik di laboratorium yang mempermudah peneliti melihat bakteri dan sel mikroskopis yang tak tampak mata telanjang?",
+    "answers": [
+      "mikroskop"
+    ]
+  },
+  {
+    "prompt": "Kota di Jawa Barat yang terkenal sebagai kota wisata kuliner batik Trusmi dan empal gentong?",
+    "answers": [
+      "cirebon"
+    ]
+  },
+  {
+    "prompt": "Nama penulis novel horor fenomenal asal Indonesia yang menciptakan seri Danur dan kisah nyata rumah sakit?",
+    "answers": [
+      "risa saraswati"
+    ]
+  },
+  {
+    "prompt": "Hewan serangga bersayap keras mencolok berwarna merah berbintik hitam yang membantu petani membasmi hama kutu daun?",
+    "answers": [
+      "kepik",
+      "kumbang koksi",
+      "ladybug"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Argentina yang namanya dalam bahasa Spanyol berarti Angin Baik bernama?",
+    "answers": [
+      "buenos aires"
+    ]
+  },
+  {
+    "prompt": "Senyawa pembentuk rasa asam alami di dalam buah jeruk nipis dan lemon bernama asam apa?",
+    "answers": [
+      "asam sitrat",
+      "sitrat"
+    ]
+  },
+  {
+    "prompt": "Kuliner legendaris Bandung dari potongan siomay ikan tenggiri, tahu, pare, telur, kentang, dan kol disiram saus kacang?",
+    "answers": [
+      "siomay",
+      "siomay bandung"
+    ]
+  },
+  {
+    "prompt": "Sistem kalender resmi yang penentuan awalnya mengikuti peredaran bulan mengitari Bumi seperti kalender Hijriah disebut kalender apa?",
+    "answers": [
+      "komariah",
+      "kamariah",
+      "lunar"
+    ]
+  },
+  {
+    "prompt": "Nama pahlawan revolusi sekaligus Panglima Besar TNI pertama yang gigih memimpin perang gerilya meski paru-parunya tinggal satu?",
+    "answers": [
+      "jenderal sudirman",
+      "soedirman",
+      "sudirman"
+    ]
+  },
+  {
+    "prompt": "Kota di Kalimantan Timur yang dijuluki Kota Minyak sebelum dibangunnya fasilitas kilang modern terbesar di sana?",
+    "answers": [
+      "balikpapan"
+    ]
+  },
+  {
+    "prompt": "Olahraga lari jarak sangat jauh resmi di Olimpiade yang panjang lintasannya tepat 42,195 kilometer dinamakan apa?",
+    "answers": [
+      "maraton",
+      "marathon"
+    ]
+  },
+  {
+    "prompt": "Bumbu rempah berbentuk bintang delapan sudut yang memberikan aroma harum khas pada kuah bakso sapi dan semur?",
+    "answers": [
+      "bunga lawang",
+      "pekak"
+    ]
+  },
+  {
+    "prompt": "Negara di Eropa Barat yang dijuluki Negeri Kincir Angin serta terkenal dengan bunga tulip aneka warna?",
+    "answers": [
+      "belanda",
+      "netherlands"
+    ]
+  },
+  {
+    "prompt": "Zat cair bening di dalam buah kelapa muda yang kaya elektrolit alami penawar dehidrasi?",
+    "answers": [
+      "air kelapa"
+    ]
+  },
+  {
+    "prompt": "Tokoh komik maupun kartun asal Belgia berupa reporter muda berjambul pirang ditemani anjing putih Snowy bernama siapa?",
+    "answers": [
+      "tintin"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Bengkulu yang terletak tepat di pesisir barat Samudra Hindia bernama?",
+    "answers": [
+      "bengkulu",
+      "kota bengkulu"
+    ]
+  },
+  {
+    "prompt": "Tulang rusuk melengkung di bagian dada manusia berjumlah berapa pasang pada tubuh orang dewasa normal?",
+    "answers": [
+      "12",
+      "dua belas"
+    ]
+  },
+  {
+    "prompt": "Nama kapal pesiar termewah zaman awal abad ke-20 yang tenggelam menabrak gunung es pada pelayaran perdananya di Atlantik tahun 1912?",
+    "answers": [
+      "titanic",
+      "rms titanic"
+    ]
+  },
+  {
+    "prompt": "Makanan gorengan tradisional Indonesia dari tempe kedelai diiris tipis berbalut adonan tepung bumbu kunyit daun bawang yang digoreng setengah matang?",
+    "answers": [
+      "mendoan",
+      "tempe mendoan"
+    ]
+  },
+  {
+    "prompt": "Ilmu yang secara khusus mempelajari struktur jaringan, fungsi, serta keanekaragaman hewan di alam disebut?",
+    "answers": [
+      "zoologi"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Swiss ialah Bern, lalu kota besar Swiss yang jadi markas besar badan sepak bola dunia FIFA bernama?",
+    "answers": [
+      "zurich"
+    ]
+  },
+  {
+    "prompt": "Pelabuhan laut utama sekaligus gerbang penyeberangan feri di ujung selatan Pulau Sumatra menuju Merak?",
+    "answers": [
+      "bakauheni"
+    ]
+  },
+  {
+    "prompt": "Planet pertama paling dekat dengan Matahari sekaligus yang terkecil di antara delapan planet utama tata surya?",
+    "answers": [
+      "merkurius",
+      "mercury"
+    ]
+  },
+  {
+    "prompt": "Tari tradisional Betawi diiringi gamelan kromong di mana penari mengenakan mahkota hias warna mencolok dan selendang?",
+    "answers": [
+      "tari topeng",
+      "cokek",
+      "yapong",
+      "lenggang nyai"
+    ]
+  },
+  {
+    "prompt": "Satuan dasar ukuran tekanan udara maupun tekanan ban kendaraan? Untuk SI, satuan tekanan dinamakan apa sesuai nama fisikawan Prancis?",
+    "answers": [
+      "pascal",
+      "bar",
+      "psi",
+      "atmosfer"
+    ]
+  },
+  {
+    "prompt": "Buah berwarna kuning asam segar dengan daging buah serabut yang paling populer dijadikan bahan rujak dan isian nastar?",
+    "answers": [
+      "nanas"
+    ]
+  },
+  {
+    "prompt": "Tokoh pewayangan Jawa yang dikenal bijaksana dari kalangan punakawan dengan perut buncit dan jambul putih?",
+    "answers": [
+      "semar"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Maluku yang terkenal sebagai Kota Musik Dunia UNESCO bernama kota apa?",
+    "answers": [
+      "ambon"
+    ]
+  },
+  {
+    "prompt": "Hewan berkaki enam di sekitar rumah yang terkenal punya kecerdasan kolektif, mengangkat beban berkali lipat berat tubuhnya, dan hidup berkoloni?",
+    "answers": [
+      "semut"
+    ]
+  },
+  {
+    "prompt": "Jenis vitamin larut air yang banyak terdapat dalam jambu biji merah, jeruk, dan stroberi untuk daya tahan tubuh dan sariawan?",
+    "answers": [
+      "vitamin c",
+      "c"
+    ]
+  },
+  {
+    "prompt": "Makanan tradisional khas Jawa Tengah berupa bubur tepung beras putih lembut disajikan bersama kuah santan kental gula jawa?",
+    "answers": [
+      "bubur sumsum"
+    ]
+  },
+  {
+    "prompt": "Negara tetangga di Eropa yang wilayahnya paling kecil di dunia sekaligus menjadi pusat Gereja Katolik Roma?",
+    "answers": [
+      "vatikan",
+      "kota vatikan"
+    ]
+  },
+  {
+    "prompt": "Pada peta geografis Indonesia, zona waktu apa yang berlaku untuk wilayah Pulau Bali, Kalimantan Selatan, dan Sulawesi?",
+    "answers": [
+      "wita",
+      "waktu indonesia tengah"
+    ]
+  },
+  {
+    "prompt": "Penemu radio wireless dan telegrafi nirkabel jarak jauh asal Italia peraih Nobel Fisika tahun 1909 bernama siapa?",
+    "answers": [
+      "guglielmo marconi",
+      "marconi"
+    ]
+  },
+  {
+    "prompt": "Olahraga bela diri gulat bantingan berasal dari Jepang yang seragamnya putih tebal serta mengandalkan kuncian dan bantingan?",
+    "answers": [
+      "judo"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Palembang berbahan ikan giling dan sagu selain pempek yang berbentuk bulat bakso berkuah udang segar ialah?",
+    "answers": [
+      "tekwan",
+      "model"
+    ]
+  },
+  {
+    "prompt": "Nama gunung tertinggi di benua Afrika dengan puncak bersalju di negara Tanzania bernama?",
+    "answers": [
+      "kilimanjaro",
+      "gunung kilimanjaro"
+    ]
+  },
+  {
+    "prompt": "Proses masuknya udara oksigen dari hidung menuju paru-paru pada siklus pernapasan manusia disebut fase apa?",
+    "answers": [
+      "inspirasi",
+      "inhalasi"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Vietnam ialah Hanoi, lalu kota tua warisan UNESCO di Vietnam Tengah yang penuh lentera warna-warni bernama?",
+    "answers": [
+      "hoi an"
+    ]
+  },
+  {
+    "prompt": "Hewan pengerat lucu penghuni bendungan sungai yang punya gigi seri kuat penebang kayu dan ekor pipih lebar seperti dayung?",
+    "answers": [
+      "berang-berang",
+      "beaver"
+    ]
+  },
+  {
+    "prompt": "Komponis pencipta lagu kebangsaan Indonesia Raya yang juga memainkan biolanya di Sumpah Pemuda 1928?",
+    "answers": [
+      "w.r. supratman",
+      "wr supratman",
+      "wage rudolf supratman"
+    ]
+  },
+  {
+    "prompt": "Kertas yang dicelupkan untuk mengukur tingkat keasaman pH dengan perubahan warna spesifik selain lakmus ialah kertas apa?",
+    "answers": [
+      "indikator universal"
+    ]
+  },
+  {
+    "prompt": "Minuman tradisional hangat khas Solo berisi irisan roti tawar, kolang-kaling, kacang hijau, dan kuah santan manis?",
+    "answers": [
+      "wedang angsle",
+      "angsle"
+    ]
+  },
+  {
+    "prompt": "Satuan ukur frekuensi gelombang bunyi dan frekuensi CPU komputer dalam satu detik dinamakan apa?",
+    "answers": [
+      "hertz",
+      "hz"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Papua saat ini yang berada di ujung timur Teluk Yos Sudarso bernama kota apa?",
+    "answers": [
+      "jayapura"
+    ]
+  },
+  {
+    "prompt": "Jenis mamalia pemakan serangga bersisik keras asal Indonesia yang menggulung badannya seperti bola saat terancam bahaya?",
+    "answers": [
+      "trenggiling"
+    ]
+  },
+  {
+    "prompt": "Saus cuka hitam pedas manis dengan irisan timun yang wajib mendampingi pempek Palembang biasa disebut apa?",
+    "answers": [
+      "cuko",
+      "kuah cuko"
+    ]
+  },
+  {
+    "prompt": "Penghargaan olahraga sepak bola paling prestisius untuk pemain terbaik dunia tahunan yang berbentuk bola emas dari Prancis?",
+    "answers": [
+      "ballon dor",
+      "ballon d'or"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Korea Utara bernama kota apa?",
+    "answers": [
+      "pyongyang"
+    ]
+  },
+  {
+    "prompt": "Hewan berdarah dingin seperti ular, kadal, buaya, dan kura-kura termasuk dalam kelas hewan bertulang belakang apa?",
+    "answers": [
+      "reptil",
+      "reptilia"
+    ]
+  },
+  {
+    "prompt": "Gunung berapi aktif di Jawa Tengah dan Yogyakarta yang sering mengeluarkan wedhus gembel atau awan panas?",
+    "answers": [
+      "merapi",
+      "gunung merapi"
+    ]
+  },
+  {
+    "prompt": "Atlet renang peraih 23 medali emas Olimpiade terbanyak sepanjang masa asal Amerika Serikat bernama?",
+    "answers": [
+      "michael phelps",
+      "phelps"
+    ]
+  },
+  {
+    "prompt": "Dalam permainan kartu remi standar, tanpa menghitung kartu Joker, ada berapa total jumlah kartu dalam satu dek?",
+    "answers": [
+      "52",
+      "lima puluh dua"
+    ]
+  },
+  {
+    "prompt": "Kuah hitam rawon mendapatkan warna gelap sekaligus rasa gurih khasnya dari biji buah apa?",
+    "answers": [
+      "kluwek",
+      "keluak",
+      "kluak"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Spanyol yang menjadi markas klub Atletico Madrid dan Real Madrid bernama?",
+    "answers": [
+      "madrid"
+    ]
+  },
+  {
+    "prompt": "Hewan pemakan daging sejati seperti harimau, elang, dan hiu dalam klasifikasi rantai makanan dinamakan?",
+    "answers": [
+      "karnivora"
+    ]
+  },
+  {
+    "prompt": "Danau terkenal di antara Kabupaten Tanah Datar dan Solok Sumatra Barat selain Danau Maninjau bernama?",
+    "answers": [
+      "singkarak",
+      "danau singkarak"
+    ]
+  },
+  {
+    "prompt": "Jenis energi terbarukan yang memanfaatkan panel silikon di atap rumah untuk mengubah cahaya matahari langsung menjadi listrik?",
+    "answers": [
+      "panel surya",
+      "energi surya",
+      "tenaga surya",
+      "surya"
+    ]
+  },
+  {
+    "prompt": "Pelopor pendidikan perempuan sekaligus pendiri Sakola Istri di Bandung Jawa Barat ialah?",
+    "answers": [
+      "dewi sartika",
+      "raden dewi sartika"
+    ]
+  },
+  {
+    "prompt": "Oleh-oleh legit kenyal warna cokelat khas Garut yang dibuat dari ketan, santan, dan gula merah ialah?",
+    "answers": [
+      "dodol garut",
+      "dodol"
+    ]
+  },
+  {
+    "prompt": "Dalam fisika, gaya tarik bumi yang membuat semua benda jatuh ke bawah dan menjaga bulan tetap mengorbit Bumi disebut?",
+    "answers": [
+      "gravitasi",
+      "gaya gravitasi"
+    ]
+  },
+  {
+    "prompt": "Ibu kota negara Norwegia yang juga menjadi kota penganugerahan Hadiah Nobel Perdamaian setiap tahun?",
+    "answers": [
+      "oslo"
+    ]
+  },
+  {
+    "prompt": "Jenis hutan yang pepohonannya tumbuh di kawasan pasang surut air laut berawa dan akarnya kuat menahan abrasi pantai?",
+    "answers": [
+      "mangrove",
+      "hutan bakau",
+      "bakau"
+    ]
+  },
+  {
+    "prompt": "Nama asli penyanyi legendaris Indonesia berjuluk Raja Dangdut pelantun lagu Begadang dan Judi?",
+    "answers": [
+      "rhoma irama"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Sulawesi Tengah yang terletak di ujung teluk dan dilewati Sungai Palu bernama kota apa?",
+    "answers": [
+      "palu"
+    ]
+  },
+  {
+    "prompt": "Satuan dasar ukuran besarnya hambatan listrik dalam sebuah rangkaian listrik dinamakan sesuai nama fisikawan Jerman?",
+    "answers": [
+      "ohm"
+    ]
+  },
+  {
+    "prompt": "Makanan tradisional khas Yogyakarta atau Solo berupa daging ayam kampung dibumbu rempah kuning kemiri dan kelapa parut goreng serundeng?",
+    "answers": [
+      "ayam kremes",
+      "ayam kalasan",
+      "ayam goreng kalasan"
+    ]
+  },
+  {
+    "prompt": "Pulau mana di Nusa Tenggara Timur yang menjadi lokasi utama habitat liar asli satwa purba komodo bersama Pulau Rinca?",
+    "answers": [
+      "pulau komodo",
+      "komodo"
+    ]
+  },
+  {
+    "prompt": "Bentuk jamak dari sudut dalam segitiga sama sisi memiliki besar masing-masing sudut tepat berapa derajat?",
+    "answers": [
+      "60",
+      "60 derajat"
+    ]
+  },
+  {
+    "prompt": "Penemu pertama mesin cetak huruf bergerak modern di Eropa abad ke-15 asal Jerman bernama siapa?",
+    "answers": [
+      "johannes gutenberg",
+      "gutenberg"
+    ]
+  },
+  {
+    "prompt": "Ibu kota Provinsi Sulawesi Selatan yang populer lewat Pantai Losari dan Benteng Rotterdam bernama kota apa?",
+    "answers": [
+      "makassar"
+    ]
+  },
+  {
+    "prompt": "Olahraga bela diri asli negara Brasil yang fokus pada teknik pertarungan bawah tanah, bantingan, dan kuncian?",
+    "answers": [
+      "brazilian jiu jitsu",
+      "bjj",
+      "jiu jitsu"
+    ]
+  },
+  {
+    "prompt": "Tanaman rempah paling mahal di dunia yang dipanen langsung dari kepala putik bunga Crocus sativus berwarna merah keemasan?",
+    "answers": [
+      "safron",
+      "saffron"
+    ]
+  },
+  {
+    "prompt": "Negara tetangga di semenanjung selatan yang ibu kotanya Bandar Seri Begawan serta kaya cadangan minyak bumi bernama?",
+    "answers": [
+      "brunei",
+      "brunei darussalam"
+    ]
+  },
+  {
+    "prompt": "Bagian komputer berwujud papan sirkuit utama yang menyatukan prosesor, RAM, dan kartu grafis agar saling terhubung disebut?",
+    "answers": [
+      "motherboard",
+      "mainboard"
+    ]
+  },
+  {
+    "prompt": "Jajanan bulat renyah asal Sunda dari parutan singkong berisi tumisan oncom pedas dinamakan apa?",
+    "answers": [
+      "combro"
+    ]
+  },
+  {
+    "prompt": "Nama asli ilmuwan muslim penemu dasar aljabar yang namanya mengilhami istilah algoritma dalam ilmu komputer?",
+    "answers": [
+      "al khawarizmi",
+      "al-khwarizmi",
+      "khawarizmi"
+    ]
+  },
+  {
+    "prompt": "Zona waktu resmi yang dipakai di Pulau Jawa, Sumatra, Kalimantan Barat, dan Kalimantan Tengah disingkat apa?",
+    "answers": [
+      "wib",
+      "waktu indonesia barat"
+    ]
+  },
+  {
+    "prompt": "Ibu kota resmi negara Maroko di Afrika Utara bukan Casablanca, melainkan kota apa?",
+    "answers": [
+      "rabat"
+    ]
+  },
+  {
+    "prompt": "Burung nasional sekaligus simbol lambang negara Indonesia yang terinspirasi dari mitologi elang perkasa?",
+    "answers": [
+      "garuda",
+      "burung garuda",
+      "elang jawa"
+    ]
+  }
+]

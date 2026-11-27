@@ -1,0 +1,47 @@
+import { env } from "../../../config/env";
+import { logger } from "../../../config/logger";
+import { activityBufferService } from "../../../services/stats/activityBuffer.service";
+import {
+  extractMessageKeyAltJids,
+  getMessageSenderJid,
+  getPreferredUserJid,
+} from "../../../utils/jid";
+import { extractTextFromMessageContent } from "../../../utils/messageText";
+import type { IncomingPipelineContext, InterceptorOutput, MessageInterceptor } from "../types";
+
+export class ActivityTrackerInterceptor implements MessageInterceptor {
+  readonly name = "ActivityTrackerInterceptor";
+  readonly priority = 35;
+
+  intercept(context: IncomingPipelineContext): Promise<InterceptorOutput> {
+    const chatJid = context.remoteJid;
+    if (!chatJid || !context.isGroup || context.message.key.fromMe) {
+      return Promise.resolve(null);
+    }
+
+    const participant = context.message.key.participant;
+    if (!participant) {
+      return Promise.resolve(null);
+    }
+
+    const text = extractTextFromMessageContent(context.message.message).trim();
+    if (text.startsWith(env.COMMAND_PREFIX)) {
+      return Promise.resolve(null);
+    }
+
+    try {
+      const senderJid = getMessageSenderJid(chatJid, participant);
+      const senderAltJids = extractMessageKeyAltJids(context.message.key);
+      const senderUserJid = getPreferredUserJid(
+        senderAltJids.includes(senderJid) ? senderAltJids : [senderJid, ...senderAltJids],
+      );
+
+      // In-memory write-behind batching (PERF-01: 0 DB calls per chat message)
+      activityBufferService.recordMessage(chatJid, senderUserJid);
+    } catch (error: unknown) {
+      logger.warn({ error, chatJid }, "Error resolving sender JID in ActivityTrackerInterceptor");
+    }
+
+    return Promise.resolve(null);
+  }
+}

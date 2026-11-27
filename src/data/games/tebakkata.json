@@ -1,0 +1,2486 @@
+[
+  {
+    "prompt": "Punya banyak jarum di wajahnya tapi selamanya gak bakal bisa menjahit satu benang pun. Benda apakah aku?",
+    "answers": [
+      "jam",
+      "jam dinding",
+      "jam tangan",
+      "arloji"
+    ]
+  },
+  {
+    "prompt": "Semakin sering kamu potong tubuhku, ukuranku malah makin panjang di atas talenan dapur.",
+    "answers": [
+      "kacang panjang"
+    ]
+  },
+  {
+    "prompt": "Makin banyak kuisi perutku sampai buncit, beratku bukannya bertambah malah bisa melayang ke langit.",
+    "answers": [
+      "balon",
+      "balon gas",
+      "balon udara"
+    ]
+  },
+  {
+    "prompt": "Selalu setia mengikutimu di bawah cahaya matahari, tapi langsung menghilang begitu kamu masuk ruangan gelap gulita.",
+    "answers": [
+      "bayangan"
+    ]
+  },
+  {
+    "prompt": "Saat kubeli warnanya hitam legam, saat dipakai menyala merah membara, lalu selesai tugas kubuang jadi abu kelabu.",
+    "answers": [
+      "arang"
+    ]
+  },
+  {
+    "prompt": "Tubuhku penuh daun tipis bertumpuk, namun aku tidak punya batang kayu, ranting, ataupun akar. Apakah aku?",
+    "answers": [
+      "buku"
+    ]
+  },
+  {
+    "prompt": "Punya puluhan gigi tersusun rapi, tapi seumur hidup kerjanya cuma menata rambutmu tanpa pernah mengunyah.",
+    "answers": [
+      "sisir"
+    ]
+  },
+  {
+    "prompt": "Aku punya leher ramping tanpa kepala, punya badan tanpa kaki maupun tangan, dan biasanya jadi wadah air.",
+    "answers": [
+      "botol"
+    ]
+  },
+  {
+    "prompt": "Empat kakiku kokoh menempel di lantai tapi aku tak pernah berjalan selangkah pun, cuma diam buat diduduki.",
+    "answers": [
+      "kursi"
+    ]
+  },
+  {
+    "prompt": "Setiap tahun angkaku pasti naik bertambah satu, tapi sekuat apa pun mencoba tidak akan pernah bisa turun lagi.",
+    "answers": [
+      "umur",
+      "usia"
+    ]
+  },
+  {
+    "prompt": "Kalau badanku ditutup rapi bentukku seperti tongkat, tapi begitu dibuka lebar aku jadi atap mini pelindung hujan.",
+    "answers": [
+      "payung"
+    ]
+  },
+  {
+    "prompt": "Semakin rajin aku mengeringkan tubuh orang lain, diriku sendiri malah makin basah kuyup.",
+    "answers": [
+      "handuk"
+    ]
+  },
+  {
+    "prompt": "Bisa pecah berkeping-keping cuma gara-gara satu kalimat, padahal sama sekali tidak pernah disentuh atau dijatuhkan.",
+    "answers": [
+      "janji",
+      "hati",
+      "kepercayaan"
+    ]
+  },
+  {
+    "prompt": "Dihisap ujungku perlahan sambil mengeluarkan asap, makin dinikmati malah makin pendek sampai akhirnya tinggal puntung.",
+    "answers": [
+      "rokok"
+    ]
+  },
+  {
+    "prompt": "Tubuhku punya puluhan mata cokelat di sekujur kulit bersisik, tapi tak satu pun bisa melihat warna dunia.",
+    "answers": [
+      "nanas"
+    ]
+  },
+  {
+    "prompt": "Aku punya enam sisi dengan puluhan mata hitam, sering dikocok dan dilempar di permainan papan tanpa pernah berkedip.",
+    "answers": [
+      "dadu"
+    ]
+  },
+  {
+    "prompt": "Punya kota tanpa satu pun rumah, punya gunung tanpa sebatang pohon, punya sungai tanpa setetes air. Benda apakah itu?",
+    "answers": [
+      "peta"
+    ]
+  },
+  {
+    "prompt": "Bila aku dilempar ke udara kulitku hijau bergaris, tapi begitu jatuh terbanting di lantai isiku merah menyala penuh air.",
+    "answers": [
+      "semangka"
+    ]
+  },
+  {
+    "prompt": "Setiap hari diinjak kaki ke mana-mana sampai berdebu tapi aku tetap tenang memeluk telapak kakimu.",
+    "answers": [
+      "sandal",
+      "sepatu"
+    ]
+  },
+  {
+    "prompt": "Aku bisa menembus jendela kaca tebal ruang tamu dalam sekejap tanpa memecahkannya sedikit pun.",
+    "answers": [
+      "cahaya",
+      "sinar"
+    ]
+  },
+  {
+    "prompt": "Aku punya kepala bergambar pahlawan dan ekor bertuliskan angka di sisi satunya, tapi gak punya badan sama sekali.",
+    "answers": [
+      "koin",
+      "uang koin"
+    ]
+  },
+  {
+    "prompt": "Saat mentah cair licin berwarna bening kekuningan, makin dipanaskan di wajan malah makin memadat beku putih kuning.",
+    "answers": [
+      "telur"
+    ]
+  },
+  {
+    "prompt": "Saat diputar kepalaku sekali ke kiri langsung mengucurkan air dingin ke bak, diputar lagi langsung berhenti.",
+    "answers": [
+      "keran",
+      "kran",
+      "keran air"
+    ]
+  },
+  {
+    "prompt": "Anak sekolah membeliku untuk menghapus kesalahan pensil, makin sering kupakai makin kecil tubuhku.",
+    "answers": [
+      "penghapus"
+    ]
+  },
+  {
+    "prompt": "Badanku berpori ribuan lubang kecil; ringan kering sebelum menyentuh air, lalu jadi berat berlipat saat diperas.",
+    "answers": [
+      "spons",
+      "busa"
+    ]
+  },
+  {
+    "prompt": "Aku digantung di gerbang besi untuk menjaga rumah aman, tidak akan mau membuka mulutku tanpa sahabat kecil bergerigi.",
+    "answers": [
+      "gembok"
+    ]
+  },
+  {
+    "prompt": "Suaraku melengking nyaring tiap pagi demi membangunkanmu dari mimpi indah, tapi sering kali langsung kau matikan kesal.",
+    "answers": [
+      "alarm",
+      "jam beker"
+    ]
+  },
+  {
+    "prompt": "Bentukku di langit malam terus berubah dari sabit tipis hingga bundar purnama lalu mengecil lagi tiap bulan.",
+    "answers": [
+      "bulan"
+    ]
+  },
+  {
+    "prompt": "Punya dua bingkai kaca gelap untuk menempel di daun telinga dan jembatan hidung demi menahan silau terik matahari.",
+    "answers": [
+      "kacamata",
+      "kacamata hitam"
+    ]
+  },
+  {
+    "prompt": "Benda logam bulat kecil yang sering melingkar di jari manis pasangan sebagai tanda ikatan janji sehidup semati.",
+    "answers": [
+      "cincin"
+    ]
+  },
+  {
+    "prompt": "Aku tergantung diam di dinding ruang tamu, tapi setiap kali kau menatapku aku langsung memantulkan wajahmu persis sama.",
+    "answers": [
+      "cermin",
+      "kaca"
+    ]
+  },
+  {
+    "prompt": "Baling-balingku berputar kencang di kamar supaya udara terasa sejuk tanpa perlu mendinginkan mesin pendingin freon.",
+    "answers": [
+      "kipas angin",
+      "kipas"
+    ]
+  },
+  {
+    "prompt": "Bila bagian bawahku memanas pakai listrik dan kusentuhkan ke baju kusutmu, bajumu seketika licin rapi lagi.",
+    "answers": [
+      "setrika"
+    ]
+  },
+  {
+    "prompt": "Aku memutar pakaian kotor di dalam tabung dengan air dan sabun sampai bersih lalu memerasnya otomatis.",
+    "answers": [
+      "mesin cuci"
+    ]
+  },
+  {
+    "prompt": "Di sinilah pesawat terbang beristirahat rapi di bandara saat menjalani perbaikan mesin atau menunggu jadwal terbang.",
+    "answers": [
+      "hanggar"
+    ]
+  },
+  {
+    "prompt": "Gedung luas berpanggung gelap dengan layar raksasa dan kursi empuk tempat kita makan popcorn sambil menonton film.",
+    "answers": [
+      "bioskop"
+    ]
+  },
+  {
+    "prompt": "Tempat hening penuh rak tinggi berisi ribuan buku yang bisa dibaca dan dipinjam pulang gratis pakai kartu anggota.",
+    "answers": [
+      "perpustakaan"
+    ]
+  },
+  {
+    "prompt": "Serangga kecil kuning hitam penyengat yang hidup berkoloni membuat madu manis dari nektar bunga.",
+    "answers": [
+      "lebah"
+    ]
+  },
+  {
+    "prompt": "Serangga malam kecil bersayap tipis yang suka berdengung di telinga dan meninggalkan bentol gatal setelah menghisap darah.",
+    "answers": [
+      "nyamuk"
+    ]
+  },
+  {
+    "prompt": "Hewan berkaki delapan yang tekun menenun benang sutra membentuk jaring indah di sudut plafon rumah.",
+    "answers": [
+      "laba-laba",
+      "labalaba"
+    ]
+  },
+  {
+    "prompt": "Reptil unik yang mampu mengubah warna kulitnya menyerupai daun hijau atau ranting cokelat tempatnya bertengger.",
+    "answers": [
+      "bunglon"
+    ]
+  },
+  {
+    "prompt": "Hewan laut cerdas tanpa tulang yang menyemprotkan tinta hitam pekat untuk kabur saat dikejar pemangsa.",
+    "answers": [
+      "cumi-cumi",
+      "cumi",
+      "gurita"
+    ]
+  },
+  {
+    "prompt": "Tumbuhan padang pasir berduri lebat yang mampu bertahan berbulan-bulan menyimpan air di dalam batang hijaunya.",
+    "answers": [
+      "kaktus"
+    ]
+  },
+  {
+    "prompt": "Bunga air cantik yang mekar anggun mengapung di atas permukaan kolam atau danau berlumpur.",
+    "answers": [
+      "teratai"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah segar: A G G N A M. Susun jadi satu kata tepat.",
+    "answers": [
+      "mangga"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah raja berduri: I R A D N U. Susun jadi satu kata tepat.",
+    "answers": [
+      "durian"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kucing besar loreng: H A M R I U A. Susun jadi satu kata tepat.",
+    "answers": [
+      "harimau"
+    ]
+  },
+  {
+    "prompt": "Huruf acak perabot penyimpan baju: L M E I R A. Susun jadi satu kata tepat.",
+    "answers": [
+      "lemari"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat penerangan ruangan: U P M A L. Susun jadi satu kata tepat.",
+    "answers": [
+      "lampu"
+    ]
+  },
+  {
+    "prompt": "Huruf acak tempat menimba ilmu siswa: S K E O A H L. Susun jadi satu kata tepat.",
+    "answers": [
+      "sekolah"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bumbu dapur penyedap asin: M A R A G. Susun jadi satu kata tepat.",
+    "answers": [
+      "garam"
+    ]
+  },
+  {
+    "prompt": "Huruf acak minuman penyemangat pagi pahit hitam: P O I K. Susun jadi satu kata tepat.",
+    "answers": [
+      "kopi"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat tulis bertinta untuk siswa: N P U E L P. Susun jadi satu kata tepat.",
+    "answers": [
+      "pulpen"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alas kaki santai rumahan: L N A D A S. Susun jadi satu kata tepat.",
+    "answers": [
+      "sandal"
+    ]
+  },
+  {
+    "prompt": "Huruf acak anabul lucu berbulu halus suka mengeong: G C N K U I. Susun jadi satu kata tepat.",
+    "answers": [
+      "kucing"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kendaraan roda empat ber-AC: L I O B M. Susun jadi satu kata tepat.",
+    "answers": [
+      "mobil"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kendaraan roda dua bermesin: T M O R O. Susun jadi satu kata tepat.",
+    "answers": [
+      "motor"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan bulat berkuah daging: O S B A K. Susun jadi satu kata tepat.",
+    "answers": [
+      "bakso"
+    ]
+  },
+  {
+    "prompt": "Huruf acak olahan kedelai fermentasi khas Indonesia: E T P M E. Susun jadi satu kata tepat.",
+    "answers": [
+      "tempe"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah oranye sumber vitamin C: K U R E J. Susun jadi satu kata tepat.",
+    "answers": [
+      "jeruk"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah merah berair banyak biji hitam: G N A S A M E K. Susun jadi satu kata tepat.",
+    "answers": [
+      "semangka"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah kuning panjang favorit monyet: G N S A P I. Susun jadi satu kata tepat.",
+    "answers": [
+      "pisang"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bumbu umbi dapur beraroma kuat: W A B G A N. Susun jadi satu kata tepat.",
+    "answers": [
+      "bawang"
+    ]
+  },
+  {
+    "prompt": "Huruf acak organ vital pemompa darah manusia: N J A T U G N. Susun jadi satu kata tepat.",
+    "answers": [
+      "jantung"
+    ]
+  },
+  {
+    "prompt": "Huruf acak indra penciuman di tengah wajah: D N U I G H. Susun jadi satu kata tepat.",
+    "answers": [
+      "hidung"
+    ]
+  },
+  {
+    "prompt": "Huruf acak indra pendengaran di kanan kiri kepala: G N A I L T E. Susun jadi satu kata tepat.",
+    "answers": [
+      "telinga"
+    ]
+  },
+  {
+    "prompt": "Huruf acak sayuran oranye kesukaan kelinci: T E R L O W. Susun jadi satu kata tepat.",
+    "answers": [
+      "wortel"
+    ]
+  },
+  {
+    "prompt": "Huruf acak sayuran hijau kaya zat besi: M Y B A A. Susun jadi satu kata tepat.",
+    "answers": [
+      "bayam"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah ungu manis bercangkang tebal: S G I M G A N. Susun jadi satu kata tepat.",
+    "answers": [
+      "manggis"
+    ]
+  },
+  {
+    "prompt": "Huruf acak hewan berleher sangat panjang: H A J A R E P. Susun jadi satu kata tepat.",
+    "answers": [
+      "jerapah"
+    ]
+  },
+  {
+    "prompt": "Huruf acak hewan bertubuh besar punya belalai: H J A G A. Susun jadi satu kata tepat.",
+    "answers": [
+      "gajah"
+    ]
+  },
+  {
+    "prompt": "Huruf acak mamalia besar bercula satu: D A B K A. Susun jadi satu kata tepat.",
+    "answers": [
+      "badak"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah berkulit sisik cokelat tajam khas Jawa: K L A S A. Susun jadi satu kata tepat.",
+    "answers": [
+      "salak"
+    ]
+  },
+  {
+    "prompt": "Huruf acak rasa es krim atau buah merah berbiji luar: I R O T B S E R. Susun jadi satu kata tepat.",
+    "answers": [
+      "stroberi"
+    ]
+  },
+  {
+    "prompt": "Aku selalu dipakai di pergelangan tangan agar kamu tak terlambat datang rapat atau kencan.",
+    "answers": [
+      "jam tangan",
+      "arloji",
+      "smartwatch"
+    ]
+  },
+  {
+    "prompt": "Punya engsel di tepi tapi bukan buku, selalu dibuka tutup untuk keluar masuk menjaga privasi ruang.",
+    "answers": [
+      "pintu"
+    ]
+  },
+  {
+    "prompt": "Aku tidak punya lidah dan suara, namun saat tombol-tombolku ditekan jarimu di layar, aku merangkai seluruh kalimat chatmu.",
+    "answers": [
+      "keyboard",
+      "papan ketik"
+    ]
+  },
+  {
+    "prompt": "Badanku ramping dari kayu atau plastik, kepalaku penuh bulu sintetis lembut, dan aku berdansa dengan pasta dingin tiap pagi di mulutmu.",
+    "answers": [
+      "sikat gigi"
+    ]
+  },
+  {
+    "prompt": "Dagingku cokelat lembut tersembunyi di balik kulit hijau kaku, sering dibikin jus kental pakai susu cokelat.",
+    "answers": [
+      "alpukat"
+    ]
+  },
+  {
+    "prompt": "Bentukku kotak atau bulat berisi air sangat panas sepanjang hari tanpa perlu dicolok listrik terus-menerus.",
+    "answers": [
+      "termos"
+    ]
+  },
+  {
+    "prompt": "Aku lahir di puncak gunung sebagai tetesan kecil, mengalir membelah lembah dan desa, hingga akhirnya menyatu dengan lautan.",
+    "answers": [
+      "sungai"
+    ]
+  },
+  {
+    "prompt": "Benda tipis persegi yang hampir setiap hari keluar dari dompetmu pas bayar belanja, dan isinya bisa bertambah atau habis dalam sekejap.",
+    "answers": [
+      "uang",
+      "kartu atm"
+    ]
+  },
+  {
+    "prompt": "Aku memutar jarum kecil di punggung kompas hanya untuk satu tujuan: menuntunmu menemukan arah utara sejati di tengah hutan.",
+    "answers": [
+      "kompas",
+      "magnet"
+    ]
+  },
+  {
+    "prompt": "Aku terbuat dari lilin dan sumbu pendek; aku merelakan tubuhku meleleh sedikit demi sedikit supaya ruangan gelapmu tetap terang.",
+    "answers": [
+      "lilin"
+    ]
+  },
+  {
+    "prompt": "Punya banyak tombol angka serta tanda tambah kali bagi untuk menghitung belanjaan tanpa pusing.",
+    "answers": [
+      "kalkulator"
+    ]
+  },
+  {
+    "prompt": "Kalau aku penuh dengan angin aku bulat keras siap ditendang ke gawang, tapi kalau kempis aku cuma lemas tergeletak.",
+    "answers": [
+      "bola",
+      "bola sepak"
+    ]
+  },
+  {
+    "prompt": "Aku menempel diam di langit-langit atau meja belajar, hanya bersinar cemerlang ketika saklarmu dinyalakan.",
+    "answers": [
+      "lampu"
+    ]
+  },
+  {
+    "prompt": "Setiap malam kau peluk erat dan jadi saksi mimpimu, sering kali terasa empuk dingin begitu dibalik sisinya.",
+    "answers": [
+      "bantal",
+      "guling"
+    ]
+  },
+  {
+    "prompt": "Aku membantu penglihatanmu membaca huruf kecil maupun melihat jalan jelas ketika lensa matamu mulai rabun jauh atau dekat.",
+    "answers": [
+      "kacamata"
+    ]
+  },
+  {
+    "prompt": "Saat panas menyengat aku mencair pelan-pelan di dalam gelas es teh, hingga akhirnya lenyap menyatu jadi air dingin.",
+    "answers": [
+      "es batu"
+    ]
+  },
+  {
+    "prompt": "Aku bergigi tajam namun bukan hewan; kupakai menebang atau memotong kayu tebal menjadi papan rapi.",
+    "answers": [
+      "gergaji"
+    ]
+  },
+  {
+    "prompt": "Bila kamu meniupku kencang aku mengeluarkan nada nyaring untuk mengatur jalannya pertandingan bola atau peluit parkir.",
+    "answers": [
+      "peluit"
+    ]
+  },
+  {
+    "prompt": "Bentukku seperti sendok raksasa berlubang atau datar tipis, diandalkan tiap hari membalik telur dadar dan gorengan di penggorengan.",
+    "answers": [
+      "spatula",
+      "sutil"
+    ]
+  },
+  {
+    "prompt": "Badanku penuh lubang halus untuk memisahkan ampas teh, santan, atau mie matang dari air rebusannya.",
+    "answers": [
+      "saringan"
+    ]
+  },
+  {
+    "prompt": "Aku adalah kain lebar lembut penutup kasur biar tidurmu tidak langsung menyentuh busa ranjang.",
+    "answers": [
+      "sprei"
+    ]
+  },
+  {
+    "prompt": "Aku selalu dibawa keluar kalau hujan mulai turun saat naik motor, bentukku dua bagian mirip baju celana anti tembus air.",
+    "answers": [
+      "jas hujan"
+    ]
+  },
+  {
+    "prompt": "Aku tidak berdarah dan tidak punya otak, tapi kalau bateraiku habis aku langsung mati total tak bisa menerima chat maupun teleponmu.",
+    "answers": [
+      "hp",
+      "smartphone",
+      "handphone",
+      "ponsel"
+    ]
+  },
+  {
+    "prompt": "Aku benda kecil di pintu depan; bila jari menekanku, seisi rumah langsung tahu ada tamu datang lewat bunyi ting-tong.",
+    "answers": [
+      "bel",
+      "bel rumah"
+    ]
+  },
+  {
+    "prompt": "Kulit luarnya tipis cokelat garing dan bisa dimakan, di dalamnya berisi lembaran adonan pisang cokelat atau kacang hijau padat manis.",
+    "answers": [
+      "martabak",
+      "bakpia",
+      "pisang molen"
+    ]
+  },
+  {
+    "prompt": "Bila aku diseduh air mendidih bersama rempah atau bubuk gelap, aku mengeluarkan uap wangi penahan kantuk.",
+    "answers": [
+      "kopi",
+      "teh"
+    ]
+  },
+  {
+    "prompt": "Hewan lambat ini selalu membawa rumahnya sendiri di punggung ke mana pun ia merayap meninggalkan jejak mengkilap.",
+    "answers": [
+      "siput",
+      "keong"
+    ]
+  },
+  {
+    "prompt": "Mamalia malam bersayap kulit yang tidur bergelantungan terbalik di dalam gua dan memburu serangga dengan gema suara.",
+    "answers": [
+      "kelelawar"
+    ]
+  },
+  {
+    "prompt": "Besar di darat dengan kulit tebal abu-abu, punya sepasang gading putih dan hidung panjang lincah pengambil buah.",
+    "answers": [
+      "gajah"
+    ]
+  },
+  {
+    "prompt": "Burung hitam putih yang memakai jas alami rapi, tidak bisa terbang di langit tapi lincah berenang di perairan es kutub selatan.",
+    "answers": [
+      "penguin"
+    ]
+  },
+  {
+    "prompt": "Hewan ini melompat-lompat gesit pakai dua kaki belakang kuat sambil menggendong bayinya aman di dalam kantong perut.",
+    "answers": [
+      "kanguru",
+      "kangguru"
+    ]
+  },
+  {
+    "prompt": "Aku berbentuk huruf U atau batang, punya kekuatan tak kasatmata menarik paku besi, klip kertas, dan jarum tanpa menyentuhnya.",
+    "answers": [
+      "magnet"
+    ]
+  },
+  {
+    "prompt": "Di dalam rumah aku terpasang di tembok sebagai sumber tenaga; jangan pernah menusukkan benda logam basah ke dalam dua lubangku.",
+    "answers": [
+      "stop kontak",
+      "colokan"
+    ]
+  },
+  {
+    "prompt": "Aku berputar kencang di atas rel baja panjang menghubungkan antarkota sambil membawa ratusan penumpang sekaligus di gerbongku.",
+    "answers": [
+      "kereta",
+      "kereta api"
+    ]
+  },
+  {
+    "prompt": "Besar di langit seperti burung besi berisik dengan dua sayap panjang kaku, membawamu menyeberangi lautan dalam hitungan jam.",
+    "answers": [
+      "pesawat",
+      "pesawat terbang"
+    ]
+  },
+  {
+    "prompt": "Aku memiliki dua mata tajam yang saling bersilang; kau gerakkan dengan ibu jari dan telunjuk untuk memotong kertas atau kain.",
+    "answers": [
+      "gunting"
+    ]
+  },
+  {
+    "prompt": "Setiap bulan lembaranku dirobek atau dibalik untuk mencari tahu tanggal merah libur nasional dan hari ulang tahun.",
+    "answers": [
+      "kalender"
+    ]
+  },
+  {
+    "prompt": "Punya layar bening yang bisa menampilkan wajah orang jauh secara real-time sekaligus jadi mesin ketik, kamera, dan dompet digitalmu.",
+    "answers": [
+      "smartphone",
+      "hp"
+    ]
+  },
+  {
+    "prompt": "Bentukku bulat penuh lubang di tengahnya dan sering disiram cokelat leleh atau meses warna-warni kesukaan anak-anak.",
+    "answers": [
+      "donat"
+    ]
+  },
+  {
+    "prompt": "Aku dibuat dari benang rajut atau kulit untuk mengikat pinggang celana longgar agar tetap pas dan tidak melorot.",
+    "answers": [
+      "ikat pinggang",
+      "sabuk",
+      "gesper"
+    ]
+  },
+  {
+    "prompt": "Saat matahari tenggelam aku menutup kelopakku; tapi saat kau menarikku kuat dari bawah ke atas, aku menahan terang luar masuk ke kamar.",
+    "answers": [
+      "gorden",
+      "tirai"
+    ]
+  },
+  {
+    "prompt": "Aku tempat berlindungnya mobil dari terik matahari dan air hujan di bagian samping atau depan rumah.",
+    "answers": [
+      "garasi",
+      "carport"
+    ]
+  },
+  {
+    "prompt": "Bungaku selalu tumbuh mekar besar kuning cerah dan terkenal menoleh mengikuti pergerakan matahari dari timur ke barat.",
+    "answers": [
+      "bunga matahari"
+    ]
+  },
+  {
+    "prompt": "Aku tumbuh di dalam tanah sebagai umbi kecil berlapis merah keunguan; setiap kali kamu mengirisku tipis, matamu ikut menangis perih.",
+    "answers": [
+      "bawang merah"
+    ]
+  },
+  {
+    "prompt": "Bentukku seperti tabung gelas bertutup rapat; jika ditaburi biji jagung kering dan dipanaskan, isinya meledak mekar jadi camilan bioskop.",
+    "answers": [
+      "popcorn",
+      "panci"
+    ]
+  },
+  {
+    "prompt": "Aku berwarna putih bersih atau bening kristal, rasanya manis sempurna untuk teh pagi tapi bisa memicu diabetes jika kebanyakan.",
+    "answers": [
+      "gula",
+      "gula pasir"
+    ]
+  },
+  {
+    "prompt": "Aku berasal dari lautan luas yang dikeringkan matahari, rasanya bikin masakan hambar langsung hidup gurih seketika.",
+    "answers": [
+      "garam"
+    ]
+  },
+  {
+    "prompt": "Setiap kali hujan dan panas matahari muncul bersamaan di langit siang, aku melengkung megah dengan tujuh warna indah.",
+    "answers": [
+      "pelangi"
+    ]
+  },
+  {
+    "prompt": "Suaraku menggelegar keras beberapa detik setelah kilatan cahaya putih menyambar membelah awan mendung gelap.",
+    "answers": [
+      "guntur",
+      "petir",
+      "guruh"
+    ]
+  },
+  {
+    "prompt": "Aku muncul tipis membasahi permukaan dedaunan rumput di pagi buta sebelum matahari terbit meski semalam tak turun hujan.",
+    "answers": [
+      "embun"
+    ]
+  },
+  {
+    "prompt": "Aku tak terlihat mata telanjang, tapi bisa menggoyangkan pepohonan, menerbangkan layang-layang, dan menyejukkan pipi di sore hari.",
+    "answers": [
+      "angin"
+    ]
+  },
+  {
+    "prompt": "Aku berbentuk bundar tipis mengilap atau kayu polos sebagai alas hangat di meja makan tempat menaruh lauk dan nasi.",
+    "answers": [
+      "piring"
+    ]
+  },
+  {
+    "prompt": "Benda panjang berkepala pipih cekung ini pasangannya garpu, wajib dipegang saat menyantap soto atau bubur ayam panas.",
+    "answers": [
+      "sendok"
+    ]
+  },
+  {
+    "prompt": "Aku tajam di satu sisi bermata besi baja dan diandalkan juru masak mengiris bawang, daging, maupun buah di dapur.",
+    "answers": [
+      "pisau"
+    ]
+  },
+  {
+    "prompt": "Aku lempengan kayu atau plastik tebal datar yang setia menerima ratusan tebasan pisau tiap hari biar meja dapur tidak tergores.",
+    "answers": [
+      "talenan"
+    ]
+  },
+  {
+    "prompt": "Aku mangkuk batu kasar berat dengan pasangan batu penumbuk di atasnya, senjata rahasia menghasilkan sambal terasi paling nikmat.",
+    "answers": [
+      "cobek",
+      "ulekan"
+    ]
+  },
+  {
+    "prompt": "Punya tutup kaca bening di atas bodi bulat atau kotak, colokannya terus menyala agar nasi hangatmu siap dimakan kapan saja.",
+    "answers": [
+      "rice cooker",
+      "magic com"
+    ]
+  },
+  {
+    "prompt": "Aku punya dua pintu atau satu pintu besar yang bagian dalamnya sedingin salju agar sayur, daging, dan minumanmu awet segar.",
+    "answers": [
+      "kulkas",
+      "lemari es"
+    ]
+  },
+  {
+    "prompt": "Saat panas menyengat ruangan dan kipas angin tak lagi mempan, alat putih di dinding ini meniupkan udara dingin teratur lewat freon.",
+    "answers": [
+      "ac",
+      "pendingin ruangan"
+    ]
+  },
+  {
+    "prompt": "Aku kotak kecil di ruang tamu pengirim sinyal tak kasat mata; begitu lampuku merah berkedip, seluruh penghuni rumah langsung ribut.",
+    "answers": [
+      "router",
+      "modem",
+      "wifi"
+    ]
+  },
+  {
+    "prompt": "Aku adalah benda bulat kecil warna-warni dari plastik atau kulit, dijepit di balik saku celana tapi sering copot benangnya.",
+    "answers": [
+      "kancing",
+      "kancing baju"
+    ]
+  },
+  {
+    "prompt": "Aku bergerigi logam atau nilon memanjang vertikal di jaket, tas ransel, dan celana, bisa dibuka tutup ditarik satu tangan.",
+    "answers": [
+      "resleting",
+      "ritsleting",
+      "zipper"
+    ]
+  },
+  {
+    "prompt": "Punyaku dua pasang tali panjang berujung kaku yang harus kau ikat simpul kupu-kupu di punggung kaki sebelum lari pagi.",
+    "answers": [
+      "tali sepatu"
+    ]
+  },
+  {
+    "prompt": "Aku kotak penyimpan kecil yang di dalamnya berbaris obat merah, plester luka, kasa steril, dan kapas untuk pertolongan pertama.",
+    "answers": [
+      "p3k",
+      "kotak p3k"
+    ]
+  },
+  {
+    "prompt": "Setiap malam hari aku menyala tinggi di sisi jalan raya guna menuntun pengemudi melihat trotoar, lubang, dan tikungan gelap.",
+    "answers": [
+      "lampu jalan"
+    ]
+  },
+  {
+    "prompt": "Tiga lampuku bergantian menyala merah, kuning, dan hijau di persimpangan sibuk untuk menjaga pengendara tetap tertib bergantian.",
+    "answers": [
+      "lampu lalu lintas",
+      "lampu merah",
+      "bangjo"
+    ]
+  },
+  {
+    "prompt": "Garis belang-belang cat putih di atas aspal hitam yang bukan tempat parkir, melainkan jalur aman pejalan kaki menyeberang jalan.",
+    "answers": [
+      "zebra cross"
+    ]
+  },
+  {
+    "prompt": "Aku bangunan memanjang di atas aliran sungai atau selat laut yang menyambungkan dua tepian terpisah agar mobil bisa lewat.",
+    "answers": [
+      "jembatan"
+    ]
+  },
+  {
+    "prompt": "Aku diandalkan pengendara motor sebagai pelindung kepala keras bervisor bening saat melaju di jalan raya.",
+    "answers": [
+      "helm"
+    ]
+  },
+  {
+    "prompt": "Punya dua lensa kaca melengkung di bagian kanan dan kiri setang motor atau mobil, fungsinya mengintip kendaraan yang datang dari belakang.",
+    "answers": [
+      "spion",
+      "kaca spion"
+    ]
+  },
+  {
+    "prompt": "Aku berputar hitam tebal menggenggam pelek logam roda; semakin kempis tekananku semakin berat tarikan kendaraan.",
+    "answers": [
+      "ban"
+    ]
+  },
+  {
+    "prompt": "Cairan hitam mengental atau cokelat jernih yang diisap dan dituang ke mesin kendaraan untuk melumasi gesekan antarlogam.",
+    "answers": [
+      "oli"
+    ]
+  },
+  {
+    "prompt": "Di SPBU aku mengalir dari selang pompa ke tangki kendaraan dengan angka oktan tertentu agar mesin pembakaran mau menyala.",
+    "answers": [
+      "bensin",
+      "bbm",
+      "solar"
+    ]
+  },
+  {
+    "prompt": "Bentukku kotak logam penuh sambungan sel yang menyimpan listrik darurat agar HP tetap hidup ketika jauh dari colokan tembok.",
+    "answers": [
+      "powerbank",
+      "baterai"
+    ]
+  },
+  {
+    "prompt": "Aku dua buah speaker mungil yang masuk ke lubang telinga, bikin kamu asyik dengar lagu dan telepon tanpa mengganggu orang sebelah.",
+    "answers": [
+      "earphone",
+      "headset",
+      "tws"
+    ]
+  },
+  {
+    "prompt": "Aku berbentuk huruf L kecil atau garis miring dengan karet lentur yang menyapu bersih air hujan dari kaca depan mobil.",
+    "answers": [
+      "wiper"
+    ]
+  },
+  {
+    "prompt": "Saat kulit wajah mulai berminyak atau berjerawat di siang hari, lembaran tipis lembut ini menyerap sebum maupun mengusap ingus.",
+    "answers": [
+      "tisu",
+      "kertas minyak"
+    ]
+  },
+  {
+    "prompt": "Aku berbentuk cair atau gel harum dalam botol pencet, digosokkan merata ke seluruh kulit agar kuman mati sebelum makan.",
+    "answers": [
+      "sabun",
+      "hand sanitizer"
+    ]
+  },
+  {
+    "prompt": "Busaku melimpah saat digosokkan ke rambut basah kepala untuk membersihkan kotoran, ketombe, dan minyak seharian.",
+    "answers": [
+      "sampo",
+      "shampo"
+    ]
+  },
+  {
+    "prompt": "Aku berisi cairan harum manis dari sari bunga atau kayu, disemprotkan sekali dua kali di pergelangan dan leher sebelum pergi.",
+    "answers": [
+      "parfum",
+      "minyak wangi"
+    ]
+  },
+  {
+    "prompt": "Aku gulungan benang sangat halus di ujung jarum baja tajam; kugunakan menambal robekan baju atau menjahit kain baru.",
+    "answers": [
+      "benang",
+      "jarum jahit"
+    ]
+  },
+  {
+    "prompt": "Kotak di depan pagar rumah tempat tukang pos memasukkan surat resmi maupun kartu pos.",
+    "answers": [
+      "kotak pos",
+      "kotak surat"
+    ]
+  },
+  {
+    "prompt": "Hewan serangga bersayap berwarna cantik yang lahir dari ulat rakus setelah bertapa diam di dalam kepompong tertutup.",
+    "answers": [
+      "kupu-kupu",
+      "kupu kupu"
+    ]
+  },
+  {
+    "prompt": "Serangga kecil suka bergotong royong baris rapi di dapur saat ada remahan kue manis terjatuh di lantai.",
+    "answers": [
+      "semut"
+    ]
+  },
+  {
+    "prompt": "Aku hewan berkaki enam pelari cepat warna cokelat mengkilap di saluran air; orang paling tenang pun suka langsung lompat kalau aku mulai terbang.",
+    "answers": [
+      "kecoa",
+      "kecoak"
+    ]
+  },
+  {
+    "prompt": "Hewan mamalia kecil bermoncong runcing pemakan segala yang suka mencuri keju atau mengerat kabel di plafon.",
+    "answers": [
+      "tikus"
+    ]
+  },
+  {
+    "prompt": "Hewan berkaki empat setia bermuka polos yang menggonggong menyambut kepulangan majikannya sambil mengibas ekor.",
+    "answers": [
+      "anjing"
+    ]
+  },
+  {
+    "prompt": "Hewan berbulu lembut bermata tajam dalam gelap yang hobi tidur siang di kardus bekas dan mendengkur pelan saat dielus.",
+    "answers": [
+      "kucing"
+    ]
+  },
+  {
+    "prompt": "Mamalia bertelinga panjang tegak ini bergerak dengan melompat kecil dan suka sekali mengunyah daun wortel segar.",
+    "answers": [
+      "kelinci"
+    ]
+  },
+  {
+    "prompt": "Hewan herbivora besar berbulu lebat atau bertanduk melengkung penghasil susu segar untuk bahan keju dan mentega.",
+    "answers": [
+      "sapi"
+    ]
+  },
+  {
+    "prompt": "Hewan ternak berjenggot tipis pemakan rumput yang dagingnya paling sering dibuat sate dan gulai saat hari raya kurban.",
+    "answers": [
+      "kambing",
+      "domba"
+    ]
+  },
+  {
+    "prompt": "Unggas berkaki dua berselaput yang hobi berbaris berjalan goyang di pematang sawah sambil menghasilkan telur asin.",
+    "answers": [
+      "bebek",
+      "itik"
+    ]
+  },
+  {
+    "prompt": "Burung malam bermata besar menghadap depan yang kepalanya bisa memutar nyaris penuh ke belakang mengintai mangsa di gelapnya hutan.",
+    "answers": [
+      "burung hantu"
+    ]
+  },
+  {
+    "prompt": "Reptil panjang tak berkaki ini merayap melata dengan otot perut dan mendesis sambil menjulurkan lidah bercabang.",
+    "answers": [
+      "ular"
+    ]
+  },
+  {
+    "prompt": "Reptil berzirah cangkang keras yang sangat aman bersembunyi saat terancam hanya dengan menarik kepala dan keempat kakinya ke dalam.",
+    "answers": [
+      "kura-kura",
+      "penyu"
+    ]
+  },
+  {
+    "prompt": "Ikan predator bertulang rawan raksasa dengan sirip punggung tajam membelah permukaan laut dan deretan gigi segitiga tajam.",
+    "answers": [
+      "hiu",
+      "ikan hiu"
+    ]
+  },
+  {
+    "prompt": "Mamalia laut sangat cerdas yang berenang berkelompok di ombak laut terbuka sambil berkomunikasi dengan siulan sonar.",
+    "answers": [
+      "lumba-lumba",
+      "lumba lumba"
+    ]
+  },
+  {
+    "prompt": "Besar di samudra dan bernapas menyemburkan air dari lubang di atas kepalanya, meski hidup di laut ia menyusui anaknya.",
+    "answers": [
+      "paus",
+      "ikan paus"
+    ]
+  },
+  {
+    "prompt": "Aku bunga kecil harum putih bersih simbol kesucian yang sering dirangkai menjadi kalung pengantin adat Jawa maupun Sunda.",
+    "answers": [
+      "melati"
+    ]
+  },
+  {
+    "prompt": "Bungaku berwarna merah merona melambangkan cinta, namun batangku penuh duri tajam bagi siapa saja yang memetikku terburu-buru.",
+    "answers": [
+      "mawar"
+    ]
+  },
+  {
+    "prompt": "Aku buah tropis kuning kemerahan berkulit halus agak asam manis, sering dihaluskan menjadi saus pelengkap salad atau dimakan dengan garam cabai.",
+    "answers": [
+      "mangga"
+    ]
+  },
+  {
+    "prompt": "Daging buahku merah cerah lembut bertabur biji hitam kecil seperti pasir; kaya vitamin C dan terkenal menaikkan trombosit saat demam berdarah.",
+    "answers": [
+      "jambu biji",
+      "jambu merah",
+      "jambu"
+    ]
+  },
+  {
+    "prompt": "Buah tropis bundar berkulit keras cokelat bersabut kasar; di dalamnya tersembunyi daging putih manis dan air bening pelepas dahaga.",
+    "answers": [
+      "kelapa"
+    ]
+  },
+  {
+    "prompt": "Biji kecilku harus dijemur dan disangrai hingga cokelat tua wangi, lalu dihaluskan dan dicampur gula serta susu menjadi permen manis favorit dunia.",
+    "answers": [
+      "kakao",
+      "cokelat",
+      "coklat"
+    ]
+  },
+  {
+    "prompt": "Aku biji-bijian mungil yang ditanam di sawah tergenang air; setelah digiling menjadi beras lalu ditanak pulen di dapur Indonesia.",
+    "answers": [
+      "padi"
+    ]
+  },
+  {
+    "prompt": "Tongkolku penuh biji kuning manis tersusun rapi berbaris dan terbungkus kelobot daun hijau serta rambut cokelat halus.",
+    "answers": [
+      "jagung"
+    ]
+  },
+  {
+    "prompt": "Tanaman merambat penghasil umbi cokelat kasar memanjang, menjadi bahan baku getuk, tape, tiwul, hingga keripik renyah.",
+    "answers": [
+      "singkong",
+      "ubi kayu"
+    ]
+  },
+  {
+    "prompt": "Sayuran berumbi bulat oranye keemasan di bawah tanah; penuh vitamin A dan populer jadi isian wajib sayur sop.",
+    "answers": [
+      "wortel"
+    ]
+  },
+  {
+    "prompt": "Buah sayur merah mengilap agak asam segar; sering dianggap sayuran di dapur padahal secara botani adalah buah kaya likopen.",
+    "answers": [
+      "tomat"
+    ]
+  },
+  {
+    "prompt": "Aku terbungkus kelopak tebal berwarna hijau muda penuh bulir kecil putih kekuningan dan bisa membuat air kencing berbau khas setelah dimakan.",
+    "answers": [
+      "petai",
+      "pete"
+    ]
+  },
+  {
+    "prompt": "Aku saudara kandung petai yang bentuk bijinya pipih bundar seperti koin, lezat dimasak rendang pedas atau semur pekat khas Betawi.",
+    "answers": [
+      "jengkol"
+    ]
+  },
+  {
+    "prompt": "Aku sayuran berwarna putih gading melengkung mungil hasil kecambah kacang hijau yang renyah di rawon maupun soto.",
+    "answers": [
+      "taoge",
+      "toge",
+      "tauge"
+    ]
+  },
+  {
+    "prompt": "Huruf acak minuman fermentasi susu asam menyehatkan pencernaan: T U R G O Y. Susun jadi satu kata tepat.",
+    "answers": [
+      "yogurt"
+    ]
+  },
+  {
+    "prompt": "Huruf acak batu permata keras tak tertandingi kilauannya: N I B R E A L. Susun jadi satu kata tepat.",
+    "answers": [
+      "berlian"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat penunjuk arah mata angin di peta: S K O P A M. Susun jadi satu kata tepat.",
+    "answers": [
+      "kompas"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alas duduk nyaman di ruang tamu: F A O S. Susun jadi satu kata tepat.",
+    "answers": [
+      "sofa"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan manis dingin dari susu: M I S K R E. Susun jadi dua kata tepat.",
+    "answers": [
+      "es krim"
+    ]
+  },
+  {
+    "prompt": "Huruf acak benda langit bersinar panas di siang hari: H A R I M A T A. Susun jadi satu kata tepat.",
+    "answers": [
+      "matahari"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat bantu pernapasan ikan di dalam air: G N A S N I. Susun jadi satu kata tepat.",
+    "answers": [
+      "insang"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah merah berbiji luar sumber vitamin: S O R T I B E R. Susun jadi satu kata tepat.",
+    "answers": [
+      "stroberi"
+    ]
+  },
+  {
+    "prompt": "Huruf acak nama negara tetangga bersimbol Merlion: A R U P A G N I S. Susun jadi satu kata tepat.",
+    "answers": [
+      "singapura"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kain tradisional bercorak Nusantara warisan UNESCO: K I T A B. Susun jadi satu kata tepat.",
+    "answers": [
+      "batik"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kue berbentuk bulan sabit bertabur gula halus: S A L P U T R I J U. Susun jadi dua kata tepat.",
+    "answers": [
+      "putri salju"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan khas Palembang berkuah cuko: P E K M E P. Susun jadi satu kata tepat.",
+    "answers": [
+      "pempek"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah kecil berbulu cokelat berdaging hijau asam manis: I K W I. Susun jadi satu kata tepat.",
+    "answers": [
+      "kiwi"
+    ]
+  },
+  {
+    "prompt": "Huruf acak pulau wisata terkenal dengan julukan Pulau Dewata: I B A L. Susun jadi satu kata tepat.",
+    "answers": [
+      "bali"
+    ]
+  },
+  {
+    "prompt": "Huruf acak hewan peliharaan kecil berlari di roda putar kandang: R A M H E T S. Susun jadi satu kata tepat.",
+    "answers": [
+      "hamster"
+    ]
+  },
+  {
+    "prompt": "Huruf acak profesi pengendara burung besi di kokpit: T O L I P. Susun jadi satu kata tepat.",
+    "answers": [
+      "pilot"
+    ]
+  },
+  {
+    "prompt": "Huruf acak benda panjang kayu berujung grafit hitam untuk menggambar: L I S N E P. Susun jadi satu kata tepat.",
+    "answers": [
+      "pensil"
+    ]
+  },
+  {
+    "prompt": "Huruf acak cairan manis yang dihasilkan lebah dari nektar: U D A M. Susun jadi satu kata tepat.",
+    "answers": [
+      "madu"
+    ]
+  },
+  {
+    "prompt": "Huruf acak gunung api tertinggi di Jawa: U R E M E S. Susun jadi satu kata tepat.",
+    "answers": [
+      "semeru"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan Italia berbentuk bundar dipotong segitiga: A Z P I Z. Susun jadi satu kata tepat.",
+    "answers": [
+      "pizza"
+    ]
+  },
+  {
+    "prompt": "Huruf acak nama planet bercincin indah di tata surya: S U N R U T A S. Susun jadi satu kata tepat.",
+    "answers": [
+      "saturnus"
+    ]
+  },
+  {
+    "prompt": "Huruf acak olahraga papan strategi dua pemain berisi raja dan benteng: R U T A C. Susun jadi satu kata tepat.",
+    "answers": [
+      "catur"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat musik tiup bambu dari Jawa Barat dimainkan dengan digoyang: G N U L K G N A. Susun jadi satu kata tepat.",
+    "answers": [
+      "angklung"
+    ]
+  },
+  {
+    "prompt": "Huruf acak senjata pusaka bilah berlekuk khas Jawa: S I R E K. Susun jadi satu kata tepat.",
+    "answers": [
+      "keris"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan Jepang berisi nasi gulung rumput laut dan ikan: I H S U S. Susun jadi satu kata tepat.",
+    "answers": [
+      "sushi"
+    ]
+  },
+  {
+    "prompt": "Huruf acak minuman hangat pedas merah khas Sunda berjahe dan gula aren: K E R D N A B. Susun jadi satu kata tepat.",
+    "answers": [
+      "bandrek"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah manis lembut berduri di luar berwarna hijau: A K I R S S. Susun jadi satu kata tepat.",
+    "answers": [
+      "sirsak"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bumbu rempah kuning pewarna alami nasi tumpeng: T I Y N U K. Susun jadi satu kata tepat.",
+    "answers": [
+      "kunyit"
+    ]
+  },
+  {
+    "prompt": "Huruf acak tempat mendaratnya pesawat terbang komersial: A R A D N A B. Susun jadi satu kata tepat.",
+    "answers": [
+      "bandara"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bangunan tinggi menjulang ikon Jakarta di tengah lapangan Merdeka: S A N O M. Susun jadi satu kata tepat.",
+    "answers": [
+      "monas"
+    ]
+  },
+  {
+    "prompt": "Bila kuisi air panas aku bisa menyeduhkan teh, bila aku ditekan dengan pelan di pegangan aku menuang kopi. Aku wadah berhidung panjang di meja.",
+    "answers": [
+      "teko"
+    ]
+  },
+  {
+    "prompt": "Bentukku kotak berlapis kaca dan jaring tipis kaku, berbunyi ting saat roti berubah warna cokelat keemasan dan langsung melompat naik.",
+    "answers": [
+      "pemanggang roti",
+      "toaster"
+    ]
+  },
+  {
+    "prompt": "Pisauku berputar ribuan kali dalam wadah kaca tebal setiap kali tombol ditekan, menghancurkan buah dan es batu menjadi minuman halus.",
+    "answers": [
+      "blender"
+    ]
+  },
+  {
+    "prompt": "Aku gulungan kertas putih panjang yang selalu siap sedia digantung di samping kloset kamar mandi atau restoran.",
+    "answers": [
+      "tisu",
+      "tisu toilet"
+    ]
+  },
+  {
+    "prompt": "Setiap malam hari aku diaktifkan memutar suara bising halus atau mengeluarkan aroma lembut yang bikin nyamuk pingsan tak berkutik.",
+    "answers": [
+      "obat nyamuk",
+      "raket nyamuk"
+    ]
+  },
+  {
+    "prompt": "Aku kantong udara besar warna-warni atau karet ringan yang diikat tali supaya tetap menempel dan melayang di acara pesta ulang tahun.",
+    "answers": [
+      "balon"
+    ]
+  },
+  {
+    "prompt": "Tubuhku ramping memanjang berisi cairan lengket bening atau putih, dipakai anak sekolah menyatukan dua potongan kertas prakarya.",
+    "answers": [
+      "lem",
+      "lem kertas"
+    ]
+  },
+  {
+    "prompt": "Pita bening tipis bersisi lengket di satu bagian yang sering digigit ujungnya kalau tak ketemu gunting pas membungkus paket.",
+    "answers": [
+      "selotip",
+      "lakban"
+    ]
+  },
+  {
+    "prompt": "Aku terbuat dari kertas karton kokoh persegi panjang, jadi tempat tidur favorit semua kucing padahal awalnya wadah pengiriman paket.",
+    "answers": [
+      "kardus"
+    ]
+  },
+  {
+    "prompt": "Bila kau gosokkan punggung logamku di permukaan papan bergerigi kecilku di sisi kotak, percikan api seketika menyala.",
+    "answers": [
+      "korek api",
+      "korek kayu"
+    ]
+  },
+  {
+    "prompt": "Aku pipa plastik kecil berlubang yang hampir selalu muncul di gelas es teh manis supaya kamu minum tanpa mengaduk es batu dengan bibir.",
+    "answers": [
+      "sedotan"
+    ]
+  },
+  {
+    "prompt": "Aku alas tipis di atas lantai depan pintu kamar mandi untuk mengeringkan telapak kaki basah supaya lantai ruang lain tidak licin.",
+    "answers": [
+      "keset"
+    ]
+  },
+  {
+    "prompt": "Benda bundar pipih berbahan kayu, keramik, atau anyaman ini menahan panas gelas kopi supaya tidak meninggalkan bercak noda di meja.",
+    "answers": [
+      "tatakan gelas",
+      "tatakan"
+    ]
+  },
+  {
+    "prompt": "Aku pengait plastik atau kawat dengan bahu melengkung yang menggantung rapi baju kemeja di lemari agar tidak kusut terlipat.",
+    "answers": [
+      "hanger",
+      "gantungan baju"
+    ]
+  },
+  {
+    "prompt": "Aku benda kecil bertenaga baterai yang menyembunyikan tombol panah dan angka untuk memerintah televisi dari jauh tanpa beranjak dari kasur.",
+    "answers": [
+      "remote",
+      "remot"
+    ]
+  },
+  {
+    "prompt": "Bila kamu ingin mengecek seberapa berat tubuhmu setelah libur lebaran, berdirilah di atas permukaanku yang datar dan lihat jarum angkanya.",
+    "answers": [
+      "timbangan",
+      "timbangan badan"
+    ]
+  },
+  {
+    "prompt": "Aku alat ukur suhu kecil berujung logam atau sensor inframerah yang ditempel ke ketiak atau diarahkan ke dahi saat badan terasa demam.",
+    "answers": [
+      "termometer"
+    ]
+  },
+  {
+    "prompt": "Bentukku tas punggung kokoh bertali dua pundak untuk memikul buku sekolah, laptop, hingga pakaian liburan agar tangan tetap bebas.",
+    "answers": [
+      "ransel",
+      "tas punggung"
+    ]
+  },
+  {
+    "prompt": "Aku tas beroda kecil berpegangan tarik tinggi yang setia menemani perjalanan naik pesawat maupun kereta luar kota.",
+    "answers": [
+      "koper"
+    ]
+  },
+  {
+    "prompt": "Punya layar luas bertinta sentuh lebih besar dari HP tapi lebih ringan tanpa kipas keyboard tetap dari laptop konvensional.",
+    "answers": [
+      "tablet",
+      "ipad"
+    ]
+  },
+  {
+    "prompt": "Benda plastik kecil persegi yang tertanam chip emas; tanpa kehadiranku di dalam HP kamu takkan bisa mendaftar sinyal operator seluler.",
+    "answers": [
+      "kartu sim",
+      "sim card",
+      "simcard"
+    ]
+  },
+  {
+    "prompt": "Kertas tipis berperekat kecil di pojok belakang yang sering ditempeli catatan pengingat warna kuning terang di tepi monitor komputer.",
+    "answers": [
+      "sticky note",
+      "post it",
+      "catatan tempel"
+    ]
+  },
+  {
+    "prompt": "Aku wadah silinder plastik berpenutup rapat; tanpa menyaring air di dalamnya lebih dulu, air mentah tidak boleh diminum langsung, tapi di dispenser aku tinggal dibalik.",
+    "answers": [
+      "galon"
+    ]
+  },
+  {
+    "prompt": "Aku alat pembersih lantai bertangkai panjang dengan ujung serabut katun atau spons yang dicelupkan ke dalam ember pembersih.",
+    "answers": [
+      "pel",
+      "kain pel",
+      "alat pel"
+    ]
+  },
+  {
+    "prompt": "Tangkai panjangku berujung ikatan sabut kelapa, ijuk, atau nilon yang digesekkan di permukaan lantai kering mengusir debu.",
+    "answers": [
+      "sapu"
+    ]
+  },
+  {
+    "prompt": "Aku penampung debu bersisi miring bergagang panjang tempat semua kotoran hasil sapuan masuk sebelum dituang ke tong sampah.",
+    "answers": [
+      "pengki",
+      "serokan",
+      "cikrak"
+    ]
+  },
+  {
+    "prompt": "Aku kain kecil pengikat atau lap bersih penuh serat mikro penyerap air tanpa goresan untuk mengeringkan bodi motor setelah dicuci.",
+    "answers": [
+      "kanebo",
+      "lap",
+      "microfiber"
+    ]
+  },
+  {
+    "prompt": "Aku sarung tangan plastik atau kain tebal anti panas yang dipakai tangan kiri kanan saat mengeluarkan loyang kue panas dari dalam oven.",
+    "answers": [
+      "cempal",
+      "sarung tangan oven"
+    ]
+  },
+  {
+    "prompt": "Hewan amfibi bersuara nyaring kwek-kwek atau brek-brek sehabis hujan lebat dan suka melompat dengan kaki belakang panjang.",
+    "answers": [
+      "katak",
+      "kodok"
+    ]
+  },
+  {
+    "prompt": "Reptil raksasa berkerabat jauh dari zaman purba yang berdiam di perairan payau atau sungai dengan rahang sangat kuat berderet gigi tajam.",
+    "answers": [
+      "buaya"
+    ]
+  },
+  {
+    "prompt": "Mamalia bertubuh besar kulit abu-abu agak pemarah yang punya satu atau dua cula tanduk kokoh di atas hidungnya.",
+    "answers": [
+      "badak"
+    ]
+  },
+  {
+    "prompt": "Mamalia sungai bermuka santai asal Afrika yang menghabiskan siang berendam di lumpur sungai dan keluar merumput di malam hari.",
+    "answers": [
+      "kuda nil",
+      "kudanil"
+    ]
+  },
+  {
+    "prompt": "Kuda liar asal Afrika yang bulunya bergaris hitam dan putih unik seperti barcode berjalan di padang savana.",
+    "answers": [
+      "zebra"
+    ]
+  },
+  {
+    "prompt": "Mamalia bertubuh tinggi menjulang yang makan dedaunan pucuk pohon tinggi berkat leher panjang serta lidah birunya.",
+    "answers": [
+      "jerapah"
+    ]
+  },
+  {
+    "prompt": "Hewan padang pasir bertubuh kekar berpunuk satu atau dua yang mampu berjalan berminggu-minggu tanpa minum air segar.",
+    "answers": [
+      "unta",
+      "onta"
+    ]
+  },
+  {
+    "prompt": "Beruang gemuk hitam putih asal Tiongkok yang makanan utamanya nyaris 99 persen cuma batang dan tunas daun bambu muda.",
+    "answers": [
+      "panda"
+    ]
+  },
+  {
+    "prompt": "Hewan kecil pemanjat ulung berbulu halus berekor lebat melengkung yang paling doyan memakan biji kenari dan buah pohon tinggi.",
+    "answers": [
+      "tupai",
+      "bajing"
+    ]
+  },
+  {
+    "prompt": "Pengerat terbesar di dunia dengan muka kalem datar yang jadi favorit meme internet karena suka berendam damai bareng buaya.",
+    "answers": [
+      "kapibara",
+      "capybara"
+    ]
+  },
+  {
+    "prompt": "Hewan bertubuh bulat penuh duri tajam di punggung yang langsung menggulung tubuh seperti bola duri jika diserang predator.",
+    "answers": [
+      "landak"
+    ]
+  },
+  {
+    "prompt": "Aku burung pemakan daging dengan mata tajam jarak jauh yang suka melayang tinggi di langit mencari mangsa kecil di tanah.",
+    "answers": [
+      "elang",
+      "rajawali"
+    ]
+  },
+  {
+    "prompt": "Burung paruh melengkung warna-warni yang pintar menirukan suara ucapan manusia jika sering diajari di sangkar.",
+    "answers": [
+      "beo",
+      "kakak tua",
+      "kakatua",
+      "nuri"
+    ]
+  },
+  {
+    "prompt": "Hewan melata berkaki empat kecil di langit-langit rumah yang terkenal sering memutuskan ekornya saat nyawanya terancam kucing.",
+    "answers": [
+      "cicak"
+    ]
+  },
+  {
+    "prompt": "Saudara jauh cicak yang berukuran lebih besar, bersuara keras berulang 'tokek-tokek', dan suka tinggal di balik lemari kayu tua.",
+    "answers": [
+      "tokek"
+    ]
+  },
+  {
+    "prompt": "Serangga pelompat padang rumput berwarna hijau atau cokelat dengan kaki belakang kokoh dan bisa terbang pendek mengejutkan orang.",
+    "answers": [
+      "belalang"
+    ]
+  },
+  {
+    "prompt": "Serangga kecil malam yang menggosokkan sayapnya di balik semak menghasilkan bunyi nyaring berirama sepanjang malam.",
+    "answers": [
+      "jangkrik"
+    ]
+  },
+  {
+    "prompt": "Serangga bersayap keras transparan bermata besar yang lincah bermanuver diam di udara dekat kolam.",
+    "answers": [
+      "capung"
+    ]
+  },
+  {
+    "prompt": "Hewan kecil tanpa kaki yang hidup diam di dalam tanah lembap sambil membantu menggemburkan tanah kebun untuk petani.",
+    "answers": [
+      "cacing",
+      "cacing tanah"
+    ]
+  },
+  {
+    "prompt": "Aku makanan khas Betawi dibuat di atas wajan panas pakai arang kayu dari beras ketan, telur bebek, ebi, bawang goreng, dan kelapa sangrai.",
+    "answers": [
+      "kerak telor"
+    ]
+  },
+  {
+    "prompt": "Makanan berkuah hitam khas Jawa Timur dengan potongan daging empuk yang memakai biji keluak sebagai bumbu rahasianya.",
+    "answers": [
+      "rawon"
+    ]
+  },
+  {
+    "prompt": "Kuliner khas Yogyakarta terbuat dari daging buah nangka muda dimasak berjam-jam dengan santan dan gula merah lalu disantap pakai krecek.",
+    "answers": [
+      "gudeg"
+    ]
+  },
+  {
+    "prompt": "Makanan berbahan aci dan kerupuk basah pedas khas Sunda yang selalu memakai aroma kencur segar sebagai kunci rasanya.",
+    "answers": [
+      "seblak"
+    ]
+  },
+  {
+    "prompt": "Makanan khas Bandung berbahan daging ikan tenggiri kukus berbentuk bulat dengan tahu, kentang, kubis, dan telur disiram sambal kacang.",
+    "answers": [
+      "siomay",
+      "siomay bandung"
+    ]
+  },
+  {
+    "prompt": "Saudara sekampung siomay yang digoreng renyah krispi dengan adonan tahu dan pangsit lalu disajikan bersama bumbu kacang manis pedas.",
+    "answers": [
+      "batagor"
+    ]
+  },
+  {
+    "prompt": "Masakan khas Padang berbahan daging sapi empuk yang dimasak lama bersama santan dan rempah hingga berubah gelap berminyak.",
+    "answers": [
+      "rendang"
+    ]
+  },
+  {
+    "prompt": "Hidangan daging tusuk bambu yang dibakar di atas bara arang berlumur bumbu kacang atau kecap dan irisan bawang merah.",
+    "answers": [
+      "sate"
+    ]
+  },
+  {
+    "prompt": "Kuliner kuah kaldu gurih khas Indonesia dengan suwiran daging ayam atau irisan daging sapi, soun, taoge, telur rebus, serta taburan koya.",
+    "answers": [
+      "soto"
+    ]
+  },
+  {
+    "prompt": "Makanan berkuah daging cincang dan tepung tapioka kenyal berbentuk bola yang hampir selalu ditemani mie kuning, bihun, dan saos sambal.",
+    "answers": [
+      "bakso"
+    ]
+  },
+  {
+    "prompt": "Nasi gurih khas Jakarta yang dimasak bersama santan, daun salam, dan serai lalu dimakan dengan bihun goreng, telur balado, orek tempe, serta semur.",
+    "answers": [
+      "nasi uduk"
+    ]
+  },
+  {
+    "prompt": "Bubur nasi putih lembut disiram kuah kuning gurih bertabur suwiran ayam, cakwe, kacang kedelai goreng, seledri, dan kerupuk di pagi hari.",
+    "answers": [
+      "bubur ayam"
+    ]
+  },
+  {
+    "prompt": "Sayuran rebus tradisional Betawi dan Jawa berisi kentang, tahu, tempe, telur rebus, dan sayuran segar yang diguyur bumbu kacang ulek.",
+    "answers": [
+      "gado-gado",
+      "gado gado"
+    ]
+  },
+  {
+    "prompt": "Campuran irisan ketupat, taoge pendek, bihun, tahu goreng, dan kerupuk yang disiram bumbu kacang kental beraroma bawang putih mentah.",
+    "answers": [
+      "ketoprak"
+    ]
+  },
+  {
+    "prompt": "Kue basah bulat kecil berwarna hijau pandan berbalut parutan kelapa yang langsung menyemburkan gula merah cair saat digigit di mulut.",
+    "answers": [
+      "klepon"
+    ]
+  },
+  {
+    "prompt": "Kue pasar tradisional bundar berisi kacang hijau manis lembut, kulit luarnya dari tepung ketan berlapis wijen yang digoreng renyah.",
+    "answers": [
+      "onde-onde",
+      "onde onde"
+    ]
+  },
+  {
+    "prompt": "Adonan kue manis tebal beraroma wangi yang dipanggang dua sisi lalu dilipat tebal berisi cokelat meses, keju parut, kacang, dan susu kental manis.",
+    "answers": [
+      "martabak manis",
+      "terang bulan"
+    ]
+  },
+  {
+    "prompt": "Minuman penyegar hijau dari tepung hunkwe atau beras disajikan dengan kuah santan gurih, es serut, dan sirup gula merah aren.",
+    "answers": [
+      "cendol",
+      "es cendol",
+      "dawet"
+    ]
+  },
+  {
+    "prompt": "Minuman khas Makassar berisi pisang kukus terbalut adonan kulit hijau pandan di atas bubur sumsum putih lembut bersiram sirup merah coco pandan.",
+    "answers": [
+      "es pisang ijo",
+      "pisang ijo"
+    ]
+  },
+  {
+    "prompt": "Bumbu dapur berbentuk buliran putih kecil mirip merica tetapi berbau segar penambah wangi soto dan gulai.",
+    "answers": [
+      "ketumbar"
+    ]
+  },
+  {
+    "prompt": "Rempah kulit kayu cokelat kering beraroma manis hangat yang sering dicemplungkan utuh ke dalam rebusan semur maupun kolak pisang.",
+    "answers": [
+      "kayu manis"
+    ]
+  },
+  {
+    "prompt": "Bumbu dapur umbi berbuku-buku warna kuning oranye cerah di dalamnya; kalau diparut bisa langsung mewarnai jari tangan menjadi kuning tahan lama.",
+    "answers": [
+      "kunyit"
+    ]
+  },
+  {
+    "prompt": "Umbi rimpang berwarna cokelat muda berasa pedas hangat; jika digeprek dan diseduh air mendidih dengan gula merah ampuh mengusir masuk angin.",
+    "answers": [
+      "jahe"
+    ]
+  },
+  {
+    "prompt": "Batang rumput dapur beraroma wangi segar keputihan di bagian pangkal; biasanya dimemarkan sebelum ditumis bersama daun salam di opor atau nasi uduk.",
+    "answers": [
+      "serai",
+      "sereh"
+    ]
+  },
+  {
+    "prompt": "Daun hijau lonjong kering yang wajib dicemplungkan supaya aroma kuah soto, sup, dan gulai makin harum.",
+    "answers": [
+      "daun salam",
+      "daun jeruk"
+    ]
+  },
+  {
+    "prompt": "Aku buah kecil bulat lonjong berwarna cokelat berkerut sangat manis; di bulan Ramadhan selalu jadi menu pembuka puasa paling dicari.",
+    "answers": [
+      "kurma"
+    ]
+  },
+  {
+    "prompt": "Aku berasal dari biji tanaman tropis yang dijemur lalu digiling dan disangrai hingga berwarna hitam pekat; sering diseduh panas atau dingin pakai susu gula aren.",
+    "answers": [
+      "kopi"
+    ]
+  },
+  {
+    "prompt": "Aku daun teh hijau atau hitam kering yang diseduh menghasilkan minuman cokelat kemerahan favorit warung makan Indonesia saat dipadukan es batu dan gula.",
+    "answers": [
+      "teh"
+    ]
+  },
+  {
+    "prompt": "Aku terbuat dari kristal manis tebu; bentukku bisa padat putih, cair kental cokelat gelap, atau batu kecokelatan.",
+    "answers": [
+      "gula",
+      "gula jawa",
+      "gula merah"
+    ]
+  },
+  {
+    "prompt": "Punya layar raksasa bercahaya tapi bukan bioskop, tergantung atau berdiri di ruang keluarga untuk menonton berita, bola, dan acara hiburan.",
+    "answers": [
+      "televisi",
+      "tv"
+    ]
+  },
+  {
+    "prompt": "Kotak logam dapur yang memanfaatkan gas LPG untuk menyalakan api biru di bawah wajan.",
+    "answers": [
+      "kompor",
+      "kompor gas"
+    ]
+  },
+  {
+    "prompt": "Aku adalah cairan pembersih bening tanpa warna yang disemprotkan di lantai atau tangan demi membunuh bakteri dan kuman penyakit tanpa air dibilas.",
+    "answers": [
+      "alkohol",
+      "hand sanitizer",
+      "disinfektan"
+    ]
+  },
+  {
+    "prompt": "Aku benda panjang berbulu lembut tempat kepala bersandar di sofa maupun ranjang; kembaranku berbentuk silinder panjang yang suka dipeluk kaki.",
+    "answers": [
+      "bantal"
+    ]
+  },
+  {
+    "prompt": "Punya banyak kolom angka tanggal satu sampai tiga puluh satu, menempel di dinding atau meja untuk menandai jadwal gajian dan hari libur.",
+    "answers": [
+      "kalender"
+    ]
+  },
+  {
+    "prompt": "Aku adalah tanda titik kecil bercahaya hijau atau merah pada perangkat modem atau TV yang menunjukkan apakah listrik dan sinyal sedang aktif.",
+    "answers": [
+      "lampu indikator",
+      "led"
+    ]
+  },
+  {
+    "prompt": "Aku cairan bening di rumah yang keluar dari filter dispenser dengan dua pilihan tombol: panas untuk bikin kopi dan dingin menyegarkan siang hari.",
+    "answers": [
+      "air minum",
+      "air mineral"
+    ]
+  },
+  {
+    "prompt": "Benda logam pipih bertulisan angka nominal yang selalu berbunyi gemerincing di dalam kantong celana atau kotak parkir.",
+    "answers": [
+      "uang koin",
+      "koin",
+      "receh"
+    ]
+  },
+  {
+    "prompt": "Aku tali lentur kecil warna-warni yang fungsinya mengikat rambut panjang supaya tidak berantakan, tapi misterius selalu menghilang dari meja.",
+    "answers": [
+      "ikat rambut",
+      "kuncir rambut",
+      "karet rambut"
+    ]
+  },
+  {
+    "prompt": "Bentukku kotak berisi ratusan lembar kertas putih panjang tersusun bertumpuk, wajib ada di meja kantor untuk mencatat hal mendadak.",
+    "answers": [
+      "kertas catatan",
+      "memo",
+      "notes"
+    ]
+  },
+  {
+    "prompt": "Benda plastik atau logam penjepit kertas tanpa harus melubangi halamannya, bentuknya kecil melingkar oval di sudut berkas tugas.",
+    "answers": [
+      "klip kertas",
+      "paper clip"
+    ]
+  },
+  {
+    "prompt": "Alat besi kecil bersuara cetak ketika ditekan kuat pakai telapak tangan untuk menyatukan puluhan lembar kertas dengan kawat kecil.",
+    "answers": [
+      "stapler",
+      "hekters",
+      "stepler"
+    ]
+  },
+  {
+    "prompt": "Saat kuku jari tangan maupun kaki sudah mulai memanjang dan mengganggu, benda logam berengsel kecil inilah yang memotongnya rapi.",
+    "answers": [
+      "gunting kuku",
+      "pemotong kuku"
+    ]
+  },
+  {
+    "prompt": "Aku alat pemutar baut dan sekrup di rumah; ada ujungku yang berbentuk pipih minus dan ada juga yang berbentuk bintang plus.",
+    "answers": [
+      "obeng"
+    ]
+  },
+  {
+    "prompt": "Aku perkakas besi berkepala berat menancap di gagang kayu untuk memukul paku hingga tertancap kuat ke tembok atau kayu.",
+    "answers": [
+      "palu",
+      "martil"
+    ]
+  },
+  {
+    "prompt": "Aku pita logam lentur bergulung di kotak kecil dengan angka sentimeter dan inci; tukang bangunan memakainya mengukur panjang kayu maupun tembok.",
+    "answers": [
+      "meteran"
+    ]
+  },
+  {
+    "prompt": "Aku ember plastik tinggi dilengkapi tuas pemeras di satu sisi agar kain pel tidak terlalu basah menggenangi lantai.",
+    "answers": [
+      "ember pel",
+      "ember"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat penunjuk waktu melingkar di pergelangan: M A J N A G A T N. Susun jadi dua kata tepat.",
+    "answers": [
+      "jam tangan"
+    ]
+  },
+  {
+    "prompt": "Huruf acak camilan manis goreng bertabur gula pasir tengahnya bolong: T A N O D. Susun jadi satu kata tepat.",
+    "answers": [
+      "donat"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat elektronik penanak nasi listrik andalan anak kos: O R I C C E K E O R. Susun jadi dua kata tepat.",
+    "answers": [
+      "rice cooker"
+    ]
+  },
+  {
+    "prompt": "Huruf acak pakaian pelindung saat hujan naik motor: H U J A N S A J. Susun jadi dua kata tepat.",
+    "answers": [
+      "jas hujan"
+    ]
+  },
+  {
+    "prompt": "Huruf acak ruangan khusus membaca dan meminjam koleksi buku gratis: S U P T E R A K A A N P. Susun jadi satu kata tepat.",
+    "answers": [
+      "perpustakaan"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan tradisional ketan isi ayam suwir dibungkus daun: R E P M E L. Susun jadi satu kata tepat.",
+    "answers": [
+      "lemper"
+    ]
+  },
+  {
+    "prompt": "Huruf acak lauk tahu tempe kecokelatan yang digoreng setelah direbus air gula kelapa: M E C A B. Susun jadi satu kata tepat.",
+    "answers": [
+      "bacem"
+    ]
+  },
+  {
+    "prompt": "Huruf acak hewan malam bersayap kulit yang tidur tergantung terbalik: R A W A L E L E K. Susun jadi satu kata tepat.",
+    "answers": [
+      "kelelawar"
+    ]
+  },
+  {
+    "prompt": "Huruf acak minuman dingin manis berisi kelapa serut, alpukat, nangka, dan susu: T E L E R E S. Susun jadi dua kata tepat.",
+    "answers": [
+      "es teler"
+    ]
+  },
+  {
+    "prompt": "Huruf acak sayuran berbulir putih hasil kecambah kacang hijau: A G E O T. Susun jadi satu kata tepat.",
+    "answers": [
+      "taoge"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat komunikasi nirkabel berisi sinyal kartu operator: P O N H A N D H E. Susun jadi satu kata tepat.",
+    "answers": [
+      "handphone"
+    ]
+  },
+  {
+    "prompt": "Huruf acak hewan melata lambat dengan cangkang spiral di punggungnya: T U P I S. Susun jadi satu kata tepat.",
+    "answers": [
+      "siput"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kue pasar manis hijau berisi lelehan gula jawa cair: N O P E L K. Susun jadi satu kata tepat.",
+    "answers": [
+      "klepon"
+    ]
+  },
+  {
+    "prompt": "Huruf acak benda optik pembesar objek mikroskopis di laboratorium: P O K S O R K I M. Susun jadi satu kata tepat.",
+    "answers": [
+      "mikroskop"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan daging bersantan khas Padang yang dimasak kering: G N A D N E R. Susun jadi satu kata tepat.",
+    "answers": [
+      "rendang"
+    ]
+  },
+  {
+    "prompt": "Huruf acak wadah cekung berisi kuah bakso hangat: K U K M A N G. Susun jadi satu kata tepat.",
+    "answers": [
+      "mangkuk"
+    ]
+  },
+  {
+    "prompt": "Huruf acak benda tempat tidur nyaman di kamar: R U S A K. Susun jadi satu kata tepat.",
+    "answers": [
+      "kasur"
+    ]
+  },
+  {
+    "prompt": "Huruf acak pelindung kepala berkendara motor: M L E H. Susun jadi satu kata tepat.",
+    "answers": [
+      "helm"
+    ]
+  },
+  {
+    "prompt": "Huruf acak penunjuk arah mata angin di peta: S A P M O K. Susun jadi satu kata tepat.",
+    "answers": [
+      "kompas"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah merah berair banyak biji hitam di tengahnya: A K G N A M E S. Susun jadi satu kata tepat.",
+    "answers": [
+      "semangka"
+    ]
+  },
+  {
+    "prompt": "Huruf acak warna pelangi di ujung atas yang menyala berani: H A R E M. Susun jadi satu kata tepat.",
+    "answers": [
+      "merah"
+    ]
+  },
+  {
+    "prompt": "Huruf acak burung hitam putih yang pandai menyelam di kutub selatan: N I U G N E P. Susun jadi satu kata tepat.",
+    "answers": [
+      "penguin"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bunga putih kecil beraroma wangi untuk kalung adat: I T A L E M. Susun jadi satu kata tepat.",
+    "answers": [
+      "melati"
+    ]
+  },
+  {
+    "prompt": "Huruf acak nama hewan laut cerdas berenang berkelompok di ombak: A B U M L A B U M L. Susun jadi dua kata tepat.",
+    "answers": [
+      "lumba lumba"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bumbu pembuat rasa pedas merah: I A B A C. Susun jadi satu kata tepat.",
+    "answers": [
+      "cabai"
+    ]
+  },
+  {
+    "prompt": "Huruf acak camilan bundar garing berlapis wijen isi kacang hijau: O N E D O N E D. Susun jadi dua kata tepat.",
+    "answers": [
+      "onde onde"
+    ]
+  },
+  {
+    "prompt": "Huruf acak hidangan telur goreng berbentuk bundar rata dibalut bumbu: R A D A D R U L E T. Susun jadi dua kata tepat.",
+    "answers": [
+      "telur dadar"
+    ]
+  },
+  {
+    "prompt": "Huruf acak minuman hangat pedas merah khas Sunda berisi jahe dan kayu manis: K E R D A N B. Susun jadi satu kata tepat.",
+    "answers": [
+      "bandrek"
+    ]
+  },
+  {
+    "prompt": "Huruf acak benda langit bersinar terang di malam bulan purnama: N U B A L. Susun jadi satu kata tepat.",
+    "answers": [
+      "bulan"
+    ]
+  },
+  {
+    "prompt": "Huruf acak tempat pemberhentian resmi kereta api antar kota: N U I S A T S. Susun jadi satu kata tepat.",
+    "answers": [
+      "stasiun"
+    ]
+  },
+  {
+    "prompt": "Huruf acak transportasi umum rel panjang penghubung antarkota: P I K E R E T A A. Susun jadi dua kata tepat.",
+    "answers": [
+      "kereta api"
+    ]
+  },
+  {
+    "prompt": "Huruf acak profesi penunjuk arah pesawat terbang dari udara ke bandara: T O L I P. Susun jadi satu kata tepat.",
+    "answers": [
+      "pilot"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bangunan bersejarah peninggalan dinasti Syailendra di Magelang: R U B U D O R O B. Susun jadi satu kata tepat.",
+    "answers": [
+      "borobudur"
+    ]
+  },
+  {
+    "prompt": "Huruf acak hewan laut bersirip tajam yang terkenal di film Jaws: U I H. Susun jadi satu kata tepat.",
+    "answers": [
+      "hiu"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kue lebaran lembut bertabur keju parut gurih renyah: L E G N E T S A K. Susun jadi satu kata tepat.",
+    "answers": [
+      "kastengel"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bumbu dapur bening manis hasil olahan tebu: A L U G. Susun jadi satu kata tepat.",
+    "answers": [
+      "gula"
+    ]
+  },
+  {
+    "prompt": "Huruf acak benda kaca tempat ikan hias hidup di ruang tamu: M U I R A U K A. Susun jadi satu kata tepat.",
+    "answers": [
+      "akuarium"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan berbahan singkong goreng gurih atau pedas khas Bandung: G N E R I C. Susun jadi satu kata tepat.",
+    "answers": [
+      "cireng"
+    ]
+  },
+  {
+    "prompt": "Huruf acak tas bertali sabuk untuk menyimpan dompet dan HP saat riding: S A T P I N G G A N G. Susun jadi dua kata tepat.",
+    "answers": [
+      "tas pinggang"
+    ]
+  },
+  {
+    "prompt": "Huruf acak tempat membeli obat resmi beserta resep dokter: K E T O P A. Susun jadi satu kata tepat.",
+    "answers": [
+      "apotek"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alas meja makan atau belajar dari kayu berkaki empat: A J E M. Susun jadi satu kata tepat.",
+    "answers": [
+      "meja"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bagian tubuh tempat berdetaknya denyut nadi paling terasa di leher atau pergelangan: I D A N. Susun jadi satu kata tepat.",
+    "answers": [
+      "nadi"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kain rajut lembut pasangan sepatu sebelum berangkat: I K A K S U A K. Susun jadi dua kata tepat.",
+    "answers": [
+      "kaus kaki",
+      "kaos kaki"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan laut kenyal berkaki delapan dengan tintanya hitam: A T I R U G. Susun jadi satu kata tepat.",
+    "answers": [
+      "gurita"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kota pelabuhan di tepi sungai Musi dengan jembatan Ampera: G N A B M E L A P. Susun jadi satu kata tepat.",
+    "answers": [
+      "palembang"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah berwarna oranye manis segar penuh serat: A Y A P E P. Susun jadi satu kata tepat.",
+    "answers": [
+      "pepaya"
+    ]
+  },
+  {
+    "prompt": "Huruf acak sayuran hijau berbentuk pohon mini kaya serat di tumisan: I L O K O R B. Susun jadi satu kata tepat.",
+    "answers": [
+      "brokoli"
+    ]
+  },
+  {
+    "prompt": "Huruf acak jajanan pasar isi daging sapi atau ayam dibungkus kulit dadar lalu digoreng tepung roti: S E L O S I R. Susun jadi satu kata tepat.",
+    "answers": [
+      "risoles"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bagian laptop atau PC yang memancarkan gambar di depan matamu: R O T I N O M. Susun jadi satu kata tepat.",
+    "answers": [
+      "monitor"
+    ]
+  },
+  {
+    "prompt": "Huruf acak perangkat keras kecil penggerak kursor panah di layar komputer: E S U O M. Susun jadi satu kata tepat.",
+    "answers": [
+      "mouse"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan Korea populer berbahan sawi putih fermentasi pedas asam: I H C M I K. Susun jadi satu kata tepat.",
+    "answers": [
+      "kimchi"
+    ]
+  },
+  {
+    "prompt": "Huruf acak dataran tinggi puncak alami tujuan para pendaki memasang tenda: N U G U N G. Susun jadi satu kata tepat.",
+    "answers": [
+      "gunung"
+    ]
+  },
+  {
+    "prompt": "Huruf acak hewan pengerat terbesar bertampang kalem doyan berendam: A R A B I P A K. Susun jadi satu kata tepat.",
+    "answers": [
+      "kapibara"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat transportasi laut raksasa pengangkut barang atau penumpang antarpulau: L A P A K. Susun jadi satu kata tepat.",
+    "answers": [
+      "kapal"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kain segi empat panjang yang dililitkan di pinggang saat sholat atau santai di rumah: G N U R A S. Susun jadi satu kata tepat.",
+    "answers": [
+      "sarung"
+    ]
+  },
+  {
+    "prompt": "Huruf acak penyakit mata yang membuat benda jauh tampak buram kabur: S U N I M. Susun jadi satu kata tepat.",
+    "answers": [
+      "minus",
+      "rabun jauh"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kota yang terkenal sebagai Kota Hujan dan Kebun Raya: R O G O B. Susun jadi satu kata tepat.",
+    "answers": [
+      "bogor"
+    ]
+  },
+  {
+    "prompt": "Huruf acak hewan serangga penghasil madu: H A B E L. Susun jadi satu kata tepat.",
+    "answers": [
+      "lebah"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat ukur panjang sekolah terbuat dari plastik atau kayu bergaris milimeter: S I R A G G N E P. Susun jadi satu kata tepat.",
+    "answers": [
+      "penggaris"
+    ]
+  },
+  {
+    "prompt": "Huruf acak tempat penyimpanan uang resmi masyarakat maupun pencairan ATM: K N A B. Susun jadi satu kata tepat.",
+    "answers": [
+      "bank"
+    ]
+  },
+  {
+    "prompt": "Huruf acak sayuran merah pedas bahan utama sambal goreng dan geprek: T I W A R I A B A C. Susun jadi dua kata tepat.",
+    "answers": [
+      "cabai rawit",
+      "cabe rawit"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bumbu rempah berbentuk bintik-bintik kecil bundar pedas menghangatkan sop ayam: A C I R E M. Susun jadi satu kata tepat.",
+    "answers": [
+      "merica"
+    ]
+  },
+  {
+    "prompt": "Huruf acak jajanan bola daging dengan mi di dalam mangkuk kuah gurih: O S K A B. Susun jadi satu kata tepat.",
+    "answers": [
+      "bakso"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan tradisional berupa nasi kuning kerucut pada acara syukuran: G N E P M U T. Susun jadi satu kata tepat.",
+    "answers": [
+      "tumpeng"
+    ]
+  },
+  {
+    "prompt": "Huruf acak camilan pedas kriuk gurih khas Bandung dari irisan bakso goreng: G N E R S A B. Susun jadi satu kata tepat.",
+    "answers": [
+      "basreng"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat tulis berwarna-warni untuk menggambar langit di buku gambar anak: N O Y A R K. Susun jadi satu kata tepat.",
+    "answers": [
+      "krayon"
+    ]
+  },
+  {
+    "prompt": "Huruf acak perabot kamar untuk menyimpan pakaian lipat dan gantung: I R A M E L. Susun jadi satu kata tepat.",
+    "answers": [
+      "lemari"
+    ]
+  },
+  {
+    "prompt": "Huruf acak tempat berobat dokter umum tingkat kecamatan milik pemerintah: S A M S E K S U P. Susun jadi satu kata tepat.",
+    "answers": [
+      "puskesmas"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alat musik petik bersenar empat berbadan mungil asal Hawaii: E L E L U K U. Susun jadi satu kata tepat.",
+    "answers": [
+      "ukulele"
+    ]
+  },
+  {
+    "prompt": "Huruf acak makanan tradisional khas Cirebon berlauk lengkap dalam daun jati: G N A L B M A J. Susun jadi satu kata tepat.",
+    "answers": [
+      "jamblang",
+      "nasi jamblang"
+    ]
+  },
+  {
+    "prompt": "Huruf acak minuman hangat susu cokelat jahe telur madu penambah stamina: J M T S. Susun jadi satu kata tepat.",
+    "answers": [
+      "stmj"
+    ]
+  },
+  {
+    "prompt": "Huruf acak kue pasar manis rebus berisi kelapa parut dan irisan pisang dibungkus daun pisang: I R A S A G A N. Susun jadi satu kata tepat.",
+    "answers": [
+      "nagasari"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah berduri lembut manis wangi asam khas tropis berbentuk hati berduri tumpul: K A S R I S. Susun jadi satu kata tepat.",
+    "answers": [
+      "sirsak"
+    ]
+  },
+  {
+    "prompt": "Huruf acak buah merah gelap kecil manis berasa segar untuk kue ulang tahun: I R E C. Susun jadi satu kata tepat.",
+    "answers": [
+      "ceri"
+    ]
+  },
+  {
+    "prompt": "Huruf acak bahan pelapis roti bertekstur kental manis seperti stroberi atau nanas: I A L E S. Susun jadi satu kata tepat.",
+    "answers": [
+      "selai"
+    ]
+  },
+  {
+    "prompt": "Huruf acak tempat penyimpanan data digital kecil berukuran jempol yang dicolok ke port USB laptop: K S I D H S A L F. Susun jadi satu kata tepat.",
+    "answers": [
+      "flashdisk"
+    ]
+  },
+  {
+    "prompt": "Huruf acak alas kepala yang memanjang lembut untuk tidur nyenyak setiap malam: L A T N A B. Susun jadi satu kata tepat.",
+    "answers": [
+      "bantal"
+    ]
+  },
+  {
+    "prompt": "Huruf acak pakaian tebal bertutup kepala favorit anak muda buat hujan atau nongkrong malam: E I D O O H. Susun jadi satu kata tepat.",
+    "answers": [
+      "hoodie"
+    ]
+  },
+  {
+    "prompt": "Huruf acak benda yang menampung air dingin bersih supaya gampang dituang lewat keran kecil di kantor atau kos: R E S N E P S I D. Susun jadi satu kata tepat.",
+    "answers": [
+      "dispenser"
+    ]
+  }
+]

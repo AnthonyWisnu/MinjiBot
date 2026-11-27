@@ -1,0 +1,51 @@
+name: Deploy MinjiBot
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps-minjibot
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, vps-minji]
+
+    steps:
+      - name: Deploy Local MinjiBot Instance
+        run: |
+          (
+            flock -x -w 300 200 || { echo "ERROR: Another deployment is active in server"; exit 1; }
+
+            set -e
+            export PATH="/usr/local/bin:/usr/bin:$PATH"
+
+            cd /home/anthony/MinjiBot
+
+            rm -f .git/index.lock
+
+            echo "=== 1. Fetching latest main ==="
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "=== 2. Installing NPM dependencies ==="
+            npm ci || npm install
+
+            echo "=== 3. Prisma Database Synchronization ==="
+            npx prisma generate
+            npx prisma db push --skip-generate --accept-data-loss
+
+            echo "=== 4. Compiling TypeScript ==="
+            nice -n 10 npm run build
+
+            echo "=== 5. Reloading MinjiBot in PM2 ==="
+            pm2 describe minjibot > /dev/null \
+              && pm2 restart minjibot --update-env \
+              || pm2 start dist/index.js --name minjibot
+
+            pm2 save
+            echo "=== Deployment MinjiBot Completed Successfully ==="
+          ) 200>/tmp/minjibot_deploy.lock

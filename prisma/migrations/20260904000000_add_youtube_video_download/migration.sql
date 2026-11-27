@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "HeavyFeatureType" ADD VALUE 'YOUTUBE_VIDEO_DOWNLOAD';

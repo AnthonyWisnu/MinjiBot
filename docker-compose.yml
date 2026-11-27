@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-minjibot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-minjibot_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-minjibot}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-minjibot} -d ${POSTGRES_DB:-minjibot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-minjibot}:${POSTGRES_PASSWORD:-minjibot_secret}@db:5432/${POSTGRES_DB:-minjibot}?schema=public
+    volumes:
+      - ./sessions:/app/sessions
+      - ./tmp:/app/tmp
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/index.js"
+
+volumes:
+  pgdata:

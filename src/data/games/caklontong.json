@@ -1,0 +1,1254 @@
+[
+  {
+    "prompt": "Ada bebek 10 ekor sedang menyeberang jalan, eh 2 ekor masuk got. Sisa bebek di jalan tinggal berapa?",
+    "answers": [
+      "10",
+      "sepuluh"
+    ],
+    "reason": "Tetap 10, kan bebek yang masuk got tadi cuma nyebur terus ikut naik lagi!"
+  },
+  {
+    "prompt": "Binatang apa yang paling hening kalau lagi di dalam rumah?",
+    "answers": [
+      "semut"
+    ],
+    "reason": "Semut... soalnya diam-diam dia jalan di dinding tanpa berisik."
+  },
+  {
+    "prompt": "Kota di Indonesia yang isinya bapak-bapak semua namanya kota apa?",
+    "answers": [
+      "purwodadi"
+    ],
+    "reason": "Purwo-DADI, soalnya kalau bapak-bapak dipanggilnya Dadi!"
+  },
+  {
+    "prompt": "Presiden Indonesia pertama yang punya kumis sekaligus jenggot?",
+    "answers": [
+      "gak ada",
+      "tidak ada"
+    ],
+    "reason": "Ya nggak ada lah, kan Presiden Soekarno klimis, yang punya jenggot kumis kan kakek kamu."
+  },
+  {
+    "prompt": "Kalau ada lampu merah menyala di perempatan jalan, kita wajib berhenti di mana?",
+    "answers": [
+      "tempat",
+      "belakang garis"
+    ],
+    "reason": "Berhenti di tempat dong, masa berhenti di atap rumah warga!"
+  },
+  {
+    "prompt": "Benda apa yang dibeli mahal-mahal tapi malah diinjak-injak terus sama pemiliknya?",
+    "answers": [
+      "sepatu",
+      "sandal"
+    ],
+    "reason": "Sepatu atau sandal! Masa udah beli mahal mau ditaruh di atas kepala."
+  },
+  {
+    "prompt": "Kenapa matahari tenggelam di sebelah barat setiap sore?",
+    "answers": [
+      "takut gelap",
+      "sudah sore"
+    ],
+    "reason": "Karena kalau sudah sore dia capek, mau pulang istirahat biar besok terbit lagi."
+  },
+  {
+    "prompt": "Huruf apakah yang paling sering kedinginan di kulkas?",
+    "answers": [
+      "b"
+    ],
+    "reason": "Huruf B, soalnya kalau ditaruh di tengah-tengah jadi A-B-C, eh berada di tengah AC!"
+  },
+  {
+    "prompt": "Hewan apa yang paling kaya raya di Indonesia sampai masuk tabloid?",
+    "answers": [
+      "beruang"
+    ],
+    "reason": "Ber-UANG, namanya aja udah bawa uang dari lahir!"
+  },
+  {
+    "prompt": "Apa persamaan antara tukang soto dengan tukang bakso lewat malam-malam?",
+    "answers": [
+      "sama sama lewat",
+      "tidak jual sate"
+    ],
+    "reason": "Sama-sama nggak jualan pulsa atau paket data!"
+  },
+  {
+    "prompt": "Orang yang kerjanya tiap hari selalu memandang rendah orang lain tapi digaji pemerintah?",
+    "answers": [
+      "pemanjat tiang",
+      "penerjun",
+      "tukang atap"
+    ],
+    "reason": "Tukang benerin atap atau pemanjat menara, soalnya kerjanya selalu dari atas lihat orang di bawah!"
+  },
+  {
+    "prompt": "Pintu apa yang didorong 10 orang berbadan kekar pun tetap nggak akan kebuka?",
+    "answers": [
+      "pintu geser",
+      "ada tulisannya tarik"
+    ],
+    "reason": "Pintu bertulisan TARIK! Didorong ya makin seret lah!"
+  },
+  {
+    "prompt": "Benda apa yang keluar pas malam hari, tapi kalau dicari pas siang nggak kelihatan?",
+    "answers": [
+      "bintang",
+      "lampu tidur"
+    ],
+    "reason": "Bintang di langit! Siang hari ketutup terangnya matahari."
+  },
+  {
+    "prompt": "Makanan yang paling sopan pas lagi di meja makan namanya apa?",
+    "answers": [
+      "tahu"
+    ],
+    "reason": "TAHU diri dong sebelum nambah nasi tiga piring!"
+  },
+  {
+    "prompt": "Kenapa anak kucing selalu mengikuti induknya dari belakang?",
+    "answers": [
+      "masih kecil",
+      "belum punya sim"
+    ],
+    "reason": "Karena masih kecil dan nggak tahu arah jalan pulang."
+  },
+  {
+    "prompt": "Buah apa yang selalu membawa masalah dan bikin orang pusing tujuh keliling?",
+    "answers": [
+      "buahan",
+      "buah simalakama"
+    ],
+    "reason": "Buah simalakama, dimakan salah nggak dimakan juga serba salah!"
+  },
+  {
+    "prompt": "Ikan apa yang matanya paling banyak se-pasar tradisional?",
+    "answers": [
+      "ikan teri sekilo"
+    ],
+    "reason": "Ikan teri satu kilo! Isinya ratusan ekor, matanya ya ratusan pasang."
+  },
+  {
+    "prompt": "Sayur apa yang paling jujur dan kelihatan semua isinya?",
+    "answers": [
+      "sayur bening",
+      "bening"
+    ],
+    "reason": "Sayur bening! Kelihatan jelas dari kuahnya tanpa ada yang disembunyikan."
+  },
+  {
+    "prompt": "Kuda apa yang paling bikin capek kalau dinaiki?",
+    "answers": [
+      "kudaki gunung"
+    ],
+    "reason": "Kudaki gunung sambil bawa ransel 15 kilo!"
+  },
+  {
+    "prompt": "Kenapa di kalender tanggal merah selalu muncul pas hari Minggu?",
+    "answers": [
+      "libur"
+    ],
+    "reason": "Karena kalau hari Senin namanya masuk kerja dan banyak yang ngeluh."
+  },
+  {
+    "prompt": "Benda apa yang kalau kita potong justru makin panjang ukurannya?",
+    "answers": [
+      "kacang panjang",
+      "celana"
+    ],
+    "reason": "Kacang panjang... dipotong tetap namanya kacang panjang, kalau celana malah jadi pendek!"
+  },
+  {
+    "prompt": "Apa bedanya aksi demo dengan aksi sulap di TV?",
+    "answers": [
+      "orasi",
+      "sulap pakai tongkat"
+    ],
+    "reason": "Kalau sulap orangnya hilang beneran, kalau demo spanduknya yang banyak."
+  },
+  {
+    "prompt": "Sepatu apa yang cocok dipakai memasak di dapur?",
+    "answers": [
+      "sepatula"
+    ],
+    "reason": "Sepatula! Buat balik telur mata sapi biar nggak gosong."
+  },
+  {
+    "prompt": "Kambing apa yang paling enak dimakan pas malam minggu?",
+    "answers": [
+      "guling",
+      "sate kambing"
+    ],
+    "reason": "Kambing guling! Jangan makan bantal guling nanti keselek kapas."
+  },
+  {
+    "prompt": "Kenapa ayam kalau berkokok matanya selalu merem?",
+    "answers": [
+      "hafal liriknya",
+      "sudah hafal"
+    ],
+    "reason": "Karena lirik kukuruyuknya udah hafal di luar kepala!"
+  },
+  {
+    "prompt": "Benda apa yang kalau dipegang langsung hilang?",
+    "answers": [
+      "pegangan",
+      "janji"
+    ],
+    "reason": "Janji manis mantan, sekali dipegang besoknya langsung ngilang."
+  },
+  {
+    "prompt": "Burung apa yang paling hobi nongkrong di kantor pos?",
+    "answers": [
+      "merpati"
+    ],
+    "reason": "Merpati pos! Tapi sekarang kalah saing sama kurir paket oren."
+  },
+  {
+    "prompt": "Kenapa nyamuk kalau menggigit bunyinya nguuung di kuping?",
+    "answers": [
+      "nyari alamat",
+      "minta izin"
+    ],
+    "reason": "Dia permisi dulu sambil ngecek golongan darah cocok apa nggak."
+  },
+  {
+    "prompt": "Negara apa yang paling sering turun hujan es campur?",
+    "answers": [
+      "tidak ada",
+      "gak ada"
+    ],
+    "reason": "Mana ada hujan es campur, yang ada juga hujan es batu kalau lagi badai!"
+  },
+  {
+    "prompt": "Orang yang sering kena tilang polisi biasanya lagi naik apa?",
+    "answers": [
+      "kendaraan",
+      "naik darah"
+    ],
+    "reason": "Naik kendaraan tanpa bawa STNK, habis itu langsung naik darah!"
+  },
+  {
+    "prompt": "Telur apa yang paling ditakuti anak sekolah pas bagi rapor?",
+    "answers": [
+      "telur asin",
+      "nilai nol"
+    ],
+    "reason": "Nilai bulat mirip telur di kertas ulangan matematika!"
+  },
+  {
+    "prompt": "Kopi apa yang paling pahit seumur hidup manusia?",
+    "answers": [
+      "kopilih dia"
+    ],
+    "reason": "Kopi-lih dia daripada aku, rasanya langsung nyesek ke lambung!"
+  },
+  {
+    "prompt": "Sapi apa yang bisa nempel di tembok ruang tamu?",
+    "answers": [
+      "sapiderman"
+    ],
+    "reason": "Sapiderman! Nyemprot jaring dari tanduknya."
+  },
+  {
+    "prompt": "Kenapa sepeda motor punya dua roda bukan empat?",
+    "answers": [
+      "biar hemat",
+      "kalau empat mobil"
+    ],
+    "reason": "Kalau empat rodanya nanti namanya jadi mobil dong."
+  },
+  {
+    "prompt": "Benda apa yang pas baru dibeli langsung masuk saluran got?",
+    "answers": [
+      "saringan got",
+      "tutup got"
+    ],
+    "reason": "Saringan atau tutup got! Kalau nggak dipasang nanti saluran airnya mampet pas hujan!"
+  },
+  {
+    "prompt": "Jus apa yang paling nggak enak buat pengendara mobil?",
+    "answers": [
+      "justru macet"
+    ],
+    "reason": "Jus-tru macet di tol Cikampek pas jam pulang kantor!"
+  },
+  {
+    "prompt": "Hewan apa yang bersaudara paling kompak di kampung?",
+    "answers": [
+      "katak beradik"
+    ],
+    "reason": "Katak beradik! Mirip kayak kakak beradik."
+  },
+  {
+    "prompt": "Daun apa yang nggak pernah gugur meski musim kemarau parah?",
+    "answers": [
+      "daun telinga"
+    ],
+    "reason": "Daun telinga! Kalau sampai gugur nanti susah nyantolin kacamata."
+  },
+  {
+    "prompt": "Orang botak kalau mau sisiran pakainya alat apa?",
+    "answers": [
+      "handuk",
+      "lap"
+    ],
+    "reason": "Pakai handuk aja biar mengkilap, sisir mah nganggur."
+  },
+  {
+    "prompt": "Kenapa kereta api jalannya cuma lurus dan nggak bisa belok seenaknya?",
+    "answers": [
+      "ikut rel",
+      "di atas rel"
+    ],
+    "reason": "Karena kalau belok ke warung makan nanti penumpang pada kaget!"
+  },
+  {
+    "prompt": "Apa bahasa Inggrisnya nasi goreng spesial pakai dua telur?",
+    "answers": [
+      "special fried rice"
+    ],
+    "reason": "Laper kan bacanya? Sama, admin juga belum makan malam nih."
+  },
+  {
+    "prompt": "Benda apa yang kalau dibuka bunyinya kresek-kresek?",
+    "answers": [
+      "kantong plastik",
+      "kresek"
+    ],
+    "reason": "Kantong plastik belanjaan emak dari pasar subuh!"
+  },
+  {
+    "prompt": "Truk apa yang nggak perlu isi bensin atau solar seumur hidup?",
+    "answers": [
+      "truk mainan"
+    ],
+    "reason": "Truk mainan plastik punya anak kecil, tinggal ditarik pakai tali rafia."
+  },
+  {
+    "prompt": "Kenapa bebek kakinya cuma dua pas jalan berbaris?",
+    "answers": [
+      "memang dua"
+    ],
+    "reason": "Semua bebek ya memang punya dua kaki, kalau empat jadi kambing!"
+  },
+  {
+    "prompt": "Buah apa yang rasanya paling nyesek kalau dipikirin?",
+    "answers": [
+      "buah dada",
+      "buah bibir"
+    ],
+    "reason": "Buah bibir warga komplek! Kena gosip padahal nggak ngapa-ngapain."
+  },
+  {
+    "prompt": "Minuman apa yang selalu bikin orang kaget setiap kali dibeli?",
+    "answers": [
+      "teh kaget",
+      "es kaget",
+      "air mancur"
+    ],
+    "reason": "Air terjun atau es kejut yang dikagetin dari belakang!"
+  },
+  {
+    "prompt": "Uang apa yang bikin kantong celana cepat robek?",
+    "answers": [
+      "uang koin"
+    ],
+    "reason": "Uang koin seribuan dikumpulin sekilo di saku celana!"
+  },
+  {
+    "prompt": "Kenapa kalau tidur lampu kamar sering dimatikan?",
+    "answers": [
+      "hemat listrik",
+      "biar nyenyak"
+    ],
+    "reason": "Biar bisa hemat token listrik PLN sekaligus nggak silau."
+  },
+  {
+    "prompt": "Rumah apa yang selalu berpindah-pindah tempat setiap hari?",
+    "answers": [
+      "siput",
+      "keong"
+    ],
+    "reason": "Rumah keong! Ke mana dia pergi, rumahnya ikut nempel terus."
+  },
+  {
+    "prompt": "Awan apa yang bikin suasana tongkrongan jadi garing?",
+    "answers": [
+      "awan mendung",
+      "lawakan garing"
+    ],
+    "reason": "Awan mendung... habis itu hujan terus semua bubar pulang."
+  },
+  {
+    "prompt": "Kapan waktu paling tepat buat nyalain senter di siang bolong?",
+    "answers": [
+      "mati lampu",
+      "masuk gua"
+    ],
+    "reason": "Pas lagi mati lampu di ruangan tanpa jendela atau masuk goa gelap!"
+  },
+  {
+    "prompt": "Benda apa yang umurnya paling pendek begitu dinyalakan?",
+    "answers": [
+      "lilin",
+      "korekapik",
+      "korek api"
+    ],
+    "reason": "Batang korek api kayu, nyala lima detik langsung jadi arang."
+  },
+  {
+    "prompt": "Sayur apa yang rasanya paling pedas di dunia maya?",
+    "answers": [
+      "sayur komen",
+      "netizen"
+    ],
+    "reason": "Sayur komen netizen... pedasnya lebih nampol dari cabai rawit!"
+  },
+  {
+    "prompt": "Apa yang bikin seseorang bangun kesiangan di hari Senin?",
+    "answers": [
+      "begadang",
+      "tidur kemalaman"
+    ],
+    "reason": "Niatnya cuma scroll video 5 menit sebelum tidur, tahu-tahu udah subuh."
+  },
+  {
+    "prompt": "Kenapa ban mobil warnanya hampir selalu hitam?",
+    "answers": [
+      "karet",
+      "biar gak kotor"
+    ],
+    "reason": "Kalau warna putih nanti habis lewat jalan becek dikira donat gula!"
+  },
+  {
+    "prompt": "Bola apa yang nggak bisa ditendang meski bentuknya bulat?",
+    "answers": [
+      "bola mata"
+    ],
+    "reason": "Bola mata! Jangan coba-coba ditendang ya, bahaya."
+  },
+  {
+    "prompt": "Kenapa air laut rasanya asin?",
+    "answers": [
+      "banyak garam",
+      "ikannya keringetan"
+    ],
+    "reason": "Karena ikannya pada olahraga terus keringetan nggak pernah mandi pakai sabun."
+  },
+  {
+    "prompt": "Gajah apa yang paling ringan seberat kapas?",
+    "answers": [
+      "gajah plastik",
+      "mainan gajah"
+    ],
+    "reason": "Gajah balon atau gambar gajah di buku tulis anak SD!"
+  },
+  {
+    "prompt": "Kunci apa yang paling disukai anak kos akhir bulan?",
+    "answers": [
+      "kunci jawaban",
+      "kunci motor"
+    ],
+    "reason": "Kunci jawaban ujian biar IPK aman dan tetap dikasih uang saku."
+  },
+  {
+    "prompt": "Binatang apa yang kakinya ada di kepala, matanya di kepala, badannya di kepala?",
+    "answers": [
+      "kutu rambut",
+      "kutu"
+    ],
+    "reason": "Kutu di atas kepala! Semua hidupnya nempel di sana terus."
+  },
+  {
+    "prompt": "Kenapa tukang becak kalau ngerem sering pakai kaki?",
+    "answers": [
+      "gak punya rem cakram",
+      "susah"
+    ],
+    "reason": "Biar sekalian olahraga paha dan hemat kampas rem."
+  },
+  {
+    "prompt": "Batu apa yang nggak akan pernah tenggelam kalau dilempar ke kolam?",
+    "answers": [
+      "batu apung"
+    ],
+    "reason": "Batu apung, namanya aja sudah apung kok disuruh tenggelam."
+  },
+  {
+    "prompt": "Makanan apa yang paling enak pas lagi kelaparan tengah malam?",
+    "answers": [
+      "mie instan",
+      "indomie"
+    ],
+    "reason": "Mie instan rebus pakai telur! Bau bumbunya aja bikin satu kos bangun."
+  },
+  {
+    "prompt": "Apa bedanya tukang parkir sama dokter bedah?",
+    "answers": [
+      "komando"
+    ],
+    "reason": "Tukang parkir teriak terus mundur-mundur, dokter bedah nyuruh pasien tenang tidur."
+  },
+  {
+    "prompt": "Benda apa yang makin sering dipakai makin pendek?",
+    "answers": [
+      "pensil",
+      "penghapus",
+      "sabun"
+    ],
+    "reason": "Pensil kayu atau sabun batang! Dipakai terus lama-lama habis tinggal secuil."
+  },
+  {
+    "prompt": "Kenapa helm wajib dipakai pas naik motor?",
+    "answers": [
+      "melindungi kepala",
+      "aman"
+    ],
+    "reason": "Biar aman dari polisi lalu lintas sekaligus melindungi kepala kalau jatuh."
+  },
+  {
+    "prompt": "Pohon apa yang buahnya paling ditunggu tanggal muda?",
+    "answers": [
+      "pohon duit",
+      "atm"
+    ],
+    "reason": "Pohon duit memang nggak ada, tapi mesin ATM di minimarket selalu dicari!"
+  },
+  {
+    "prompt": "Kenapa pesawat terbang pas mendarat roda belakang duluan yang nyentuh aspal?",
+    "answers": [
+      "biar aman",
+      "desain"
+    ],
+    "reason": "Kalau atap duluan nanti penumpangnya pada pusing kebalik!"
+  },
+  {
+    "prompt": "Apa nama binatang yang paling sering bikin orang ngantuk?",
+    "answers": [
+      "domba"
+    ],
+    "reason": "Domba... karena sering dihitung satu, dua, tiga pas lagi insomnia!"
+  },
+  {
+    "prompt": "Orang mana yang tiap hari ketemu bule tapi jarang ngobrol?",
+    "answers": [
+      "bule juga",
+      "penjaga pantai",
+      "supir taksi"
+    ],
+    "reason": "Penjual es kelapa muda di Pantai Kuta pas lagi kehabisan stok."
+  },
+  {
+    "prompt": "Kaca apa yang paling berat dan bikin emosi pas dibersihin?",
+    "answers": [
+      "kaca spion",
+      "kacau"
+    ],
+    "reason": "Kaca-u balau hidupnya!"
+  },
+  {
+    "prompt": "Kenapa kulkas bagian dalamnya dingin padahal listriknya pakai kabel panas?",
+    "answers": [
+      "freon",
+      "memang kulkas"
+    ],
+    "reason": "Kalau isinya panas nanti namanya jadi oven, bukan kulkas."
+  },
+  {
+    "prompt": "Tebak, siapa orang yang paling sering ngomong tapi nggak pernah didengar?",
+    "answers": [
+      "pengumuman",
+      "mc"
+    ],
+    "reason": "Notifikasi grup kerja pas lagi hari libur tanggal merah!"
+  },
+  {
+    "prompt": "Apa persamaan antara mantan dengan nyamuk?",
+    "answers": [
+      "nyesek",
+      "bikin gatal"
+    ],
+    "reason": "Dua-duanya suka datang tiba-tiba terus pergi ninggalin bekas."
+  },
+  {
+    "prompt": "Kenapa semangka dalemnya warna merah kalau dibelah?",
+    "answers": [
+      "sudah matang"
+    ],
+    "reason": "Karena kalau dalamnya warna biru nanti disangka kelereng raksasa."
+  },
+  {
+    "prompt": "Huruf apa yang paling santai di abjad?",
+    "answers": [
+      "q"
+    ],
+    "reason": "Q, soalnya sering dibaca 'kiu' alias santai dulu gak sih."
+  },
+  {
+    "prompt": "Benda apa yang kelihatan kecil pas jauh, eh pas deket tetap kecil?",
+    "answers": [
+      "semut",
+      "upil"
+    ],
+    "reason": "Semut merah di ujung meja makan, mau dideketin tetep mungil!"
+  },
+  {
+    "prompt": "Kalau ada kebakaran di hutan, hewan apa yang lari paling dulu?",
+    "answers": [
+      "tidak ada",
+      "burung"
+    ],
+    "reason": "Monyet sama rusa duluan... kalau kura-kura mah ketinggalan di belakang."
+  },
+  {
+    "prompt": "Kenapa es batu bentuknya sering kotak-kotak?",
+    "answers": [
+      "cetakannya kotak"
+    ],
+    "reason": "Soalnya cetakan di freezernya kotak, kalau cetakannya segitiga jadi piramida."
+  },
+  {
+    "prompt": "Jam apa yang jarumnya jalan mundur ke belakang terus?",
+    "answers": [
+      "jam rusak"
+    ],
+    "reason": "Jam yang baterainya udah sekarat kebalik atau rusak parah!"
+  },
+  {
+    "prompt": "Benda apa yang kalau diisi air malah langsung bocor ke bawah?",
+    "answers": [
+      "saringan",
+      "ayakan",
+      "ember bolong"
+    ],
+    "reason": "Saringan mie atau ember bolong di kamar mandi kosan."
+  },
+  {
+    "prompt": "Apa yang bikin orang rela antre panjang di depan toko pagi-pagi?",
+    "answers": [
+      "diskon",
+      "promo"
+    ],
+    "reason": "Tulisan diskon 70 persen plus beli satu gratis satu!"
+  },
+  {
+    "prompt": "Kenapa keyboard hurufnya nggak urut A B C D?",
+    "answers": [
+      "qwerty"
+    ],
+    "reason": "Karena kalau urut ABCD nanti pas ngetik cepat tuas mesin ketik jaman dulu nyangkut semua."
+  },
+  {
+    "prompt": "Minuman apa yang selalu dipakai buat alasan ngajak kumpul teman?",
+    "answers": [
+      "kopi",
+      "ngopi"
+    ],
+    "reason": "Ayo ngopi dulu, padahal ujung-ujungnya cuma ghibah tiga jam sampai lupa pulang!"
+  },
+  {
+    "prompt": "Hewan apa yang kalau jalan selalu nunduk malu?",
+    "answers": [
+      "udang"
+    ],
+    "reason": "Udang! Dari lahir badannya selalu bungkuk ke depan."
+  },
+  {
+    "prompt": "Kertas apa yang paling bikin hati tenang di awal bulan?",
+    "answers": [
+      "uang kertas",
+      "slip gaji"
+    ],
+    "reason": "Uang kertas merah bergambar pahlawan atau struk gaji sudah masuk!"
+  },
+  {
+    "prompt": "Kenapa kalau hujan deras banyak orang cari tukang bakso?",
+    "answers": [
+      "biar hangat"
+    ],
+    "reason": "Kuah panas plus sambal dua sendok pas gerimis itu nikmat hakiki!"
+  },
+  {
+    "prompt": "Apa bedanya tukang cukur dengan tukang sate?",
+    "answers": [
+      "gunting",
+      "tusuk"
+    ],
+    "reason": "Tukang cukur pegang gunting motong rambut, tukang sate pegang kipas ngipasin arang."
+  },
+  {
+    "prompt": "Lubang apa yang makin diisi makin kelihatan penuh?",
+    "answers": [
+      "lubang kantong",
+      "lubang celengan"
+    ],
+    "reason": "Lubang celengan ayam jago, makin rajin nabung makin berat!"
+  },
+  {
+    "prompt": "Benda apa yang selalu ikut kalau kita lagi foto selfie di cermin?",
+    "answers": [
+      "hp",
+      "ponsel"
+    ],
+    "reason": "HP kamu lah! Masa foto di cermin nggak kelihatan kameranya."
+  },
+  {
+    "prompt": "Kenapa tukang tambal ban sering mangkal di pinggir jalan bukan di tengah laut?",
+    "answers": [
+      "gak ada motor lewat"
+    ],
+    "reason": "Karena ikan di laut bannya nggak pernah bocor kena paku!"
+  },
+  {
+    "prompt": "Buah apa yang selalu jujur mengatakan siapa dirinya?",
+    "answers": [
+      "jambu",
+      "buah duku"
+    ],
+    "reason": "Duku... dulu aku, sekarang ya tetap duku!"
+  },
+  {
+    "prompt": "Kenapa pelangi warnanya melengkung seperti setengah lingkaran?",
+    "answers": [
+      "pembiasan cahaya"
+    ],
+    "reason": "Karena kalau bentuknya lurus nanti dikira zebra cross di langit."
+  },
+  {
+    "prompt": "Makanan apa yang paling setia menemani saat dompet tipis tanggal tua?",
+    "answers": [
+      "nasi kecap",
+      "telur dadar",
+      "promag"
+    ],
+    "reason": "Nasi hangat plus telur dadar atau kerupuk, sederhana tapi menyelamatkan hidup."
+  },
+  {
+    "prompt": "Kenapa jam dinding selalu dipasang di atas tembok tinggi?",
+    "answers": [
+      "biar kelihatan"
+    ],
+    "reason": "Supaya kelihatan satu ruangan sekaligus nggak kesenggol kucing lewat."
+  },
+  {
+    "prompt": "Sayur apa yang suaranya merdu dan bisa bernyanyi?",
+    "answers": [
+      "kol",
+      "sayur kol"
+    ],
+    "reason": "Makan daging anjing dengan sayur kooool!"
+  },
+  {
+    "prompt": "Apa yang bikin seseorang langsung pura-pura sibuk saat bos lewat di kantor?",
+    "answers": [
+      "buka excel",
+      "ngetik"
+    ],
+    "reason": "Langsung buka spreadsheet Excel padahal dari tadi lagi baca berita gosip."
+  },
+  {
+    "prompt": "Kenapa sandal jepit sering hilang sebelah pas pulang dari masjid?",
+    "answers": [
+      "ketuker"
+    ],
+    "reason": "Karena model dan warnanya mirip semua, jadi nggak sengaja ketuker."
+  },
+  {
+    "prompt": "Buku apa yang paling males dibaca tapi paling penting?",
+    "answers": [
+      "buku nikah",
+      "buku panduan"
+    ],
+    "reason": "Buku manual elektronik! Baru dibaca setelah barangnya nggak mau nyala."
+  },
+  {
+    "prompt": "Kenapa sinyal HP selalu mendadak hilang pas kita lagi darurat?",
+    "answers": [
+      "hukum murphy",
+      "lokasi susah"
+    ],
+    "reason": "Pas lagi santai 5G penuh, pas lagi mau transfer penting mendadak loading terus."
+  },
+  {
+    "prompt": "Benda apa yang kalau dipecahin malah bikin orang senyum-senyum?",
+    "answers": [
+      "celengan"
+    ],
+    "reason": "Celengan yang udah penuh sesak pakai uang lembaran biru dan merah!"
+  },
+  {
+    "prompt": "Gelas apa yang meskipun diisi air terus tapi tetap nggak bakal penuh?",
+    "answers": [
+      "gelas bocor",
+      "gelas retak"
+    ],
+    "reason": "Gelas bolong bagian bawahnya! Airnya langsung numpang lewat doang."
+  },
+  {
+    "prompt": "Kenapa kura-kura jalannya lambat tapi umurnya sangat panjang?",
+    "answers": [
+      "santai",
+      "metabolisme lambat"
+    ],
+    "reason": "Karena dia nggak pernah stres mikirin deadline kerjaan tiap hari."
+  },
+  {
+    "prompt": "Orang yang kerjanya tiap hari selalu memutarbalikkan fakta secara halal?",
+    "answers": [
+      "tukang gorengan"
+    ],
+    "reason": "Tukang gorengan! Tempe dan bakwan di wajan harus dibolak-balik terus biar nggak gosong."
+  },
+  {
+    "prompt": "Pekerjaan apa yang gajinya tergantung angin bertiup atau tidak?",
+    "answers": [
+      "nelayan",
+      "layang-layang"
+    ],
+    "reason": "Pelaut perahu layar tradisional, atau penjual kipas kertas di konser!"
+  },
+  {
+    "prompt": "Hewan apa yang paling tegas menuntut hak kalau sarangnya diganggu?",
+    "answers": [
+      "lebah",
+      "tawon"
+    ],
+    "reason": "Lebah! Sekali sarangnya disentuh langsung kena somasi sengatan satu koloni!"
+  },
+  {
+    "prompt": "Benda apa yang paling dicari saat baru bangun tidur pagi?",
+    "answers": [
+      "hp",
+      "bantal",
+      "jam"
+    ],
+    "reason": "HP! Padahal niatnya cuma ngecek jam, eh malah scroll chat sejam."
+  },
+  {
+    "prompt": "Apa yang membuat satu grup WhatsApp langsung ramai mendadak tengah malam?",
+    "answers": [
+      "gosip",
+      "sahur",
+      "gempa"
+    ],
+    "reason": "Antara info gempa barusan atau ada yang nge-spill berita panas!"
+  },
+  {
+    "prompt": "Kue apa yang rasanya manis tapi bikin jarum timbangan langsung melonjak?",
+    "answers": [
+      "kue lapis",
+      "martabak"
+    ],
+    "reason": "Kue lapis! Lapis demi lapis rasanya enak, tahu-tahu celana udah nggak muat!"
+  },
+  {
+    "prompt": "Kenapa kucing sering tidur meringkuk persis di atas laptop yang lagi dipakai?",
+    "answers": [
+      "hangat"
+    ],
+    "reason": "Laptop kamu hangat kayak kasur elektrik gratis buat dia!"
+  },
+  {
+    "prompt": "Apa yang membuat rambut seseorang bisa berdiri tegak tanpa minyak rambut?",
+    "answers": [
+      "kaget",
+      "kesetrum ringan"
+    ],
+    "reason": "Listrik statis pas nempelin balon di kepala, atau kaget lihat saldo rekening!"
+  },
+  {
+    "prompt": "Makanan apa yang paling nggak bisa diajak buru-buru pas dimakan?",
+    "answers": [
+      "bakso panas",
+      "bubur panas"
+    ],
+    "reason": "Bubur ayam panas atau kuah bakso baru diangkat, kalau nekat nanti lidah melepuh."
+  },
+  {
+    "prompt": "Kenapa tombol lift selalu ditekan berkali-kali padahal lampunya udah nyala?",
+    "answers": [
+      "tidak sabar"
+    ],
+    "reason": "Mitos anak kota: makin sering ditekan, liftnya dipercaya datang lebih cepat."
+  },
+  {
+    "prompt": "Benda apa yang paling sering lupa di mana ditaruhnya padahal barusan dipegang?",
+    "answers": [
+      "kunci",
+      "kacamata",
+      "pulpen"
+    ],
+    "reason": "Kacamata! Sering nangkring di atas kepala sendiri tapi dicari ke seluruh kamar."
+  },
+  {
+    "prompt": "Apa persamaan antara nasi padang dibungkus dengan nasi padang makan di tempat?",
+    "answers": [
+      "porsi bungkus lebih banyak"
+    ],
+    "reason": "Kalau dibungkus nasinya dapat porsi ekstra gunung biar kenyang sampai malam!"
+  },
+  {
+    "prompt": "Kenapa orang yang lagi diet selalu gagal setiap lewat jam 9 malam?",
+    "answers": [
+      "lapar",
+      "godaan"
+    ],
+    "reason": "Tiba-tiba keingat abang nasi goreng lewat depan rumah bunyi ting-ting-ting."
+  },
+  {
+    "prompt": "Minuman apa yang selalu muncul di warung makan tapi jarang ada nama aslinya di botol?",
+    "answers": [
+      "air putih",
+      "es teh"
+    ],
+    "reason": "Es teh tawar hangat manis pakai gelas plastik jumbo!"
+  },
+  {
+    "prompt": "Kenapa lampu sein motor di jalanan kadang nyala kanan tapi beloknya ke kiri?",
+    "answers": [
+      "lupa matiin"
+    ],
+    "reason": "Kebanyakan mikirin cicilan atau lupa matiin sein dari tikungan sebelumnya."
+  },
+  {
+    "prompt": "Tebak, siapa orang yang paling dicari saat Wi-Fi rumah mendadak mati?",
+    "answers": [
+      "teknisi",
+      "yang pegang modem"
+    ],
+    "reason": "Teknisi provider atau orang yang cabut colokan router buat ngecas HP!"
+  },
+  {
+    "prompt": "Apa yang selalu turun tapi tidak pernah naik kembali?",
+    "answers": [
+      "hujan",
+      "umur"
+    ],
+    "reason": "Hujan turun dari langit... kalau umur mah makin tahun angkanya justru makin naik."
+  },
+  {
+    "prompt": "Kenapa uang receh kembalian sering berakhir di dalam mesin cuci?",
+    "answers": [
+      "lupa di saku"
+    ],
+    "reason": "Karena lupa keluarin isi saku celana sebelum dicemplungin ke ember cucian!"
+  },
+  {
+    "prompt": "Benda apa yang paling ditakuti saat sedang presentasi di depan kelas?",
+    "answers": [
+      "proyektor mati",
+      "ppt"
+    ],
+    "reason": "Kabel HDMI nggak kedeteksi dan file presentasinya lupa disave!"
+  },
+  {
+    "prompt": "Apa bedanya tidur siang 15 menit sama tidur siang 3 jam?",
+    "answers": [
+      "pusing"
+    ],
+    "reason": "Tidur 3 jam pas bangun malah bingung ini jam 5 sore apa jam 5 pagi!"
+  },
+  {
+    "prompt": "Makanan apa yang paling enak kalau dicocol tapi paling bikin baju kotor?",
+    "answers": [
+      "cilok",
+      "batagor",
+      "saus kacang"
+    ],
+    "reason": "Cilok saus kacang atau bakso kuah kecap pas pakai baju seragam warna putih!"
+  },
+  {
+    "prompt": "Kenapa baterai HP tinggal 1 persen itu terasa paling awet dibanding 100 ke 90 persen?",
+    "answers": [
+      "mode hemat"
+    ],
+    "reason": "Di titik 1 persen itulah nyawa cadangan HP berjuang mati-matian menyelamatkan chat terakhir!"
+  },
+  {
+    "prompt": "Hewan apa yang kelihatan kalem tapi paling cepat ngambil gorengan di atas meja?",
+    "answers": [
+      "kucing"
+    ],
+    "reason": "Kucing oren! Noleh dua detik aja, ikan asinnya udah hilang tak berbekas."
+  },
+  {
+    "prompt": "Kenapa banyak orang tetap bilang 'otw' padahal baru selesai mandi?",
+    "answers": [
+      "kebiasaan",
+      "biar aman"
+    ],
+    "reason": "Definisi 'otw' di tongkrongan artinya: baru bangun, lagi nyari baju yang pas."
+  },
+  {
+    "prompt": "Apa yang paling cepat habis pas kumpul bareng teman satu grup?",
+    "answers": [
+      "gorengan",
+      "kuota",
+      "baterai"
+    ],
+    "reason": "Sepiring gorengan bakwan dan tahu isi! Ludes dalam 3 menit pertama."
+  },
+  {
+    "prompt": "Benda apa yang cuma dipakai setahun sekali tapi nyarinya susahnya setengah mati di lemari?",
+    "answers": [
+      "baju lebaran",
+      "jas hujan",
+      "koper"
+    ],
+    "reason": "Baju adat atau koper! Ditumpuk paling belakang di lemari sampai lupa."
+  },
+  {
+    "prompt": "Kenapa tukang parkir munculnya selalu pas motor udah siap jalan keluar, bukan pas baru parkir?",
+    "answers": [
+      "teleportasi"
+    ],
+    "reason": "Mereka punya jurus sembunyi pas motor masuk, lalu muncul instan pas lampu belakang nyala."
+  },
+  {
+    "prompt": "Apa persamaan antara hujan gerimis dan chat gebetan lama dibalas?",
+    "answers": [
+      "bikin galau"
+    ],
+    "reason": "Dua-duanya dingin dan bikin kita nungguin kepastian kapan reda."
+  },
+  {
+    "prompt": "Minuman apa yang selalu terasa lebih dingin dari es batu?",
+    "answers": [
+      "tatapan mantan",
+      "es teh kulkas"
+    ],
+    "reason": "Balasan chat satu huruf 'Y' atau 'Ok' tanpa emotikon!"
+  },
+  {
+    "prompt": "Kenapa kalau mau makan mie instan dua bungkus kebanyakan, tapi satu bungkus selalu kurang?",
+    "answers": [
+      "kutukan mie"
+    ],
+    "reason": "Misteri abadi kuliner Indonesia yang sampai sekarang belum terpecahkan!"
+  },
+  {
+    "prompt": "Alat apa yang selalu dibutuhkan pas baru aja selesai makan ikan lele goreng?",
+    "answers": [
+      "kobokan",
+      "tisu"
+    ],
+    "reason": "Air kobokan plus irisan jeruk nipis biar jari nggak bau amis!"
+  },
+  {
+    "prompt": "Apa yang bikin seseorang tiba-tiba jadi atlet lari sprint 100 meter?",
+    "answers": [
+      "dikejar anjing",
+      "hujan jemuran"
+    ],
+    "reason": "Hujan turun deras sementara jemuran pakaian di luar rumah masih penuh!"
+  },
+  {
+    "prompt": "Kenapa kasur terasa jauh lebih empuk tepat 5 menit sebelum jam berangkat kerja?",
+    "answers": [
+      "godaan pagi"
+    ],
+    "reason": "Gravitasi di kasur mendadak naik sepuluh kali lipat pas alarm berbunyi."
+  },
+  {
+    "prompt": "Apa yang selalu bertambah tanpa pernah dikurangi, namun tetap bisa bikin lupa?",
+    "answers": [
+      "tab browser",
+      "usia"
+    ],
+    "reason": "Tab Chrome yang dibuka 47 biji sekaligus dan nggak pernah ditutup sampai RAM sesak."
+  },
+  {
+    "prompt": "Kenapa banyak orang bilang 'cuma lihat-lihat doang' pas masuk minimarket tapi keluar bawa kantong penuh?",
+    "answers": [
+      "khilaf",
+      "lapar mata"
+    ],
+    "reason": "Niat awal cuma beli air mineral, ujungnya bawa keripik, cokelat, dan es krim!"
+  },
+  {
+    "prompt": "Benda apa yang kalau jatuh dari lantai satu nggak rusak, tapi jatuh dari meja langsung pecah?",
+    "answers": [
+      "telur",
+      "gelas"
+    ],
+    "reason": "Gelas kaca atau telur! Tapi intinya semua benda rapuh kalau jatuhnya pas apes ya pecah."
+  },
+  {
+    "prompt": "Siapa orang yang paling berani tidur nyenyak tepat di depan boss?",
+    "answers": [
+      "bayi",
+      "kucing kantor"
+    ],
+    "reason": "Kucing liar yang diangkat jadi manajer keamanan teras kantor."
+  },
+  {
+    "prompt": "Kenapa sandal yang basah habis kehujanan bunyinya nyaring banget pas dipakai jalan di lantai keramik?",
+    "answers": [
+      "cit cit cit",
+      "air"
+    ],
+    "reason": "Setiap langkah ngeluarin suara cit-cit-cit sampai seisi ruangan noleh!"
+  },
+  {
+    "prompt": "Apa nama acara keluarga yang pertanyaan wajibnya cuma 'kapan nikah' atau 'kapan lulus'?",
+    "answers": [
+      "lebaran",
+      "halal bihalal",
+      "kondangan"
+    ],
+    "reason": "Kumpul keluarga besar! Harus siapin jawaban template biar tetap senyum ramah."
+  },
+  {
+    "prompt": "Kenapa helm pinjaman dari ojol sering bau atau kurang pas ukurannya?",
+    "answers": [
+      "dipakai banyak orang"
+    ],
+    "reason": "Namanya juga helm sejuta umat, ukuran kepalanya rata-rata nasional."
+  },
+  {
+    "prompt": "Minuman manis hangat yang selalu tersedia di acara rapat RT jam 9 malam ialah?",
+    "answers": [
+      "teh manis",
+      "kopi hitam"
+    ],
+    "reason": "Teh panas manis dalam gelas belimbing ditemani pisang goreng hangat!"
+  },
+  {
+    "prompt": "Benda apa yang dibeli pakai uang tapi langsung dibuang begitu isinya habis?",
+    "answers": [
+      "kemasan",
+      "plastik",
+      "bungkus"
+    ],
+    "reason": "Bungkus makanan! Masa kantong keripiknya ikut dimakan juga."
+  },
+  {
+    "prompt": "Kenapa pintu kamar mandi sering nggak dikunci pas lagi buru-buru?",
+    "answers": [
+      "lupa",
+      "kebelet"
+    ],
+    "reason": "Kalau udah darurat banget, refleks nahan pintu pakai kaki lebih cepat daripada muter grendel."
+  },
+  {
+    "prompt": "Apa yang bikin seseorang tiba-tiba lancar berbahasa asing?",
+    "answers": [
+      "lirik lagu",
+      "nonton anime"
+    ],
+    "reason": "Pas nyanyiin lagu favorit padahal artinya nggak tahu sama sekali!"
+  },
+  {
+    "prompt": "Kenapa banyak orang lebih suka ngobrol di grup WA daripada angkat telepon suara?",
+    "answers": [
+      "malas ngomong",
+      "sibuk"
+    ],
+    "reason": "Biar bisa sambil rebahan dan mikirin balasan yang paling santai."
+  },
+  {
+    "prompt": "Benda apa yang cuma berguna kalau lagi gelap, tapi kalau terlalu terang malah nggak kepakai?",
+    "answers": [
+      "senter",
+      "lilin"
+    ],
+    "reason": "Senter HP! Siang bolong di luar rumah sinarnya kalah sama matahari."
+  },
+  {
+    "prompt": "Apa makanan penutup yang bisa bikin semua anggota grup langsung kompak berdebat?",
+    "answers": [
+      "bubur diaduk",
+      "es campur",
+      "martabak"
+    ],
+    "reason": "Sekedar nanya: makan bubur ayam itu tim diaduk atau nggak diaduk!"
+  },
+  {
+    "prompt": "Kenapa kaca depan mobil ukurannya lebih besar dari kaca spion?",
+    "answers": [
+      "lihat depan"
+    ],
+    "reason": "Karena kita harus fokus menatap masa depan ke depan, bukan terus menengok masa lalu!"
+  },
+  {
+    "prompt": "Apa yang selalu naik tapi nggak pernah turun walaupun pakai lift?",
+    "answers": [
+      "harga barang",
+      "umur"
+    ],
+    "reason": "Umur kita setiap ulang tahun! Nggak bisa di-downgrade ke umur belasan lagi."
+  },
+  {
+    "prompt": "Kenapa bantal yang dingin di balikannya terasa jauh lebih nyaman di pipi?",
+    "answers": [
+      "sejuk"
+    ],
+    "reason": "Momen balik bantal di malam panas itu kenikmatan sederhana tiada tanding!"
+  },
+  {
+    "prompt": "Makanan apa yang paling cepat berubah wujud jadi cuma sisa tulang sebelum sempat difoto?",
+    "answers": [
+      "ayam goreng",
+      "iga bakar"
+    ],
+    "reason": "Ayam goreng panas pas lagi lapar-laparnya habis pulang kerja."
+  },
+  {
+    "prompt": "Apa yang bikin seseorang otomatis bilang 'aduh' walaupun sebenarnya nggak sakit?",
+    "answers": [
+      "kaget",
+      "kesenggol"
+    ],
+    "reason": "Refleks wajib warga Indonesia kalau barang jatuh atau kaget dikit!"
+  },
+  {
+    "prompt": "Kenapa kucing kalau lagi dipanggil namanya malah pura-pura nggak denger?",
+    "answers": [
+      "cuek",
+      "merasa majikan"
+    ],
+    "reason": "Karena menurut kucing, dia bukan peliharaan kamu melainkan pemilik rumah sesungguhnya!"
+  },
+  {
+    "prompt": "Apa yang selalu diucapkan saat baru saja ketiban cicilan akhir bulan?",
+    "answers": [
+      "astagfirullah",
+      "sabar"
+    ],
+    "reason": "Ucapannya tetap sabar, padahal saldo rekening tinggal angka cantik dua digit!"
+  },
+  {
+    "prompt": "Kenapa pintu warung makan selalu ada tulisan BUKA dan TUTUP?",
+    "answers": [
+      "penanda",
+      "biar jelas"
+    ],
+    "reason": "Biar kamu nggak kebentur kaca pas mau pesen es teh manis di jam istirahat!"
+  },
+  {
+    "prompt": "Makanan apa yang namanya berbunyi seperti benda langit di malam hari?",
+    "answers": [
+      "terang bulan"
+    ],
+    "reason": "Terang bulan alias martabak manis! Bedanya kalau dimakan tengah malam bikin pipi ikut bulat kayak purnama!"
+  },
+  {
+    "prompt": "Kenapa tukang bakso dorong gerobaknya di depan badan bukan ditarik dari belakang?",
+    "answers": [
+      "biar kelihatan",
+      "ringan"
+    ],
+    "reason": "Kalau ditarik dari belakang, nanti kuah panasnya nggak kelihatan pas ada lubang jalan!"
+  },
+  {
+    "prompt": "Apa yang membuat kopi hitam pagi terasa lebih manis padahal gulanya cuma sedikit?",
+    "answers": [
+      "senyuman",
+      "gajian"
+    ],
+    "reason": "Notifikasi transfer gaji masuk tepat pas tegukan kopi pertama!"
+  }
+]

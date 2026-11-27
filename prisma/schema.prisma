@@ -1,0 +1,349 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  BLOCKED
+  REMOVED
+}
+
+enum HeavyFeatureType {
+  TIKTOK_DOWNLOAD
+  INSTAGRAM_REELS_DOWNLOAD
+  INSTAGRAM_STORY_DOWNLOAD
+  HD_AI_PHOTO
+  HD_AI_PHOTO_DOCUMENT
+  PLAY_SONG
+  SONG_LYRICS
+  YOUTUBE_VIDEO_DOWNLOAD
+  TWITTER_DOWNLOAD
+  PINTEREST_DOWNLOAD
+}
+
+enum TenantAuditAction {
+  TENANT_REGISTERED
+  TENANT_ACTIVATED
+  TENANT_EXTENDED
+  TENANT_EXPIRED
+  TENANT_BLOCKED
+  TENANT_UNBLOCKED
+  TENANT_REMOVED
+  TENANT_OWNER_CHANGED
+  TENANT_ADMIN_ADDED
+  TENANT_ADMIN_REMOVED
+  FEATURE_UPDATED
+  WELCOME_UPDATED
+  MODERATION_UPDATED
+  REMINDER_CREATED
+  REMINDER_DELETED
+  QUOTA_ADDED
+  QUOTA_SET
+  QUOTA_RESERVED
+  QUOTA_CONSUMED
+  QUOTA_REFUNDED
+}
+
+enum AntiSpamMode {
+  NORMAL
+  SOFT
+  STRICT
+}
+
+enum MemberTransactionAsset {
+  POINT
+  LIMIT
+  EXPERIENCE
+  MONEY
+  BANK
+}
+
+enum MemberTransactionType {
+  INITIAL_BALANCE
+  DAILY_REWARD
+  WEEKLY_REWARD
+  MONTHLY_REWARD
+  LEVEL_UP_REWARD
+  DEFAULT_LIMIT_TOPUP
+  GAME_REWARD
+  LIMIT_PURCHASE_POINT_DEBIT
+  LIMIT_PURCHASE_LIMIT_CREDIT
+  GIFT_SENT
+  GIFT_RECEIVED
+  BANK_DEPOSIT
+  BANK_WITHDRAW
+  EXCHANGE_DEBIT
+  EXCHANGE_CREDIT
+  RPG_EARN
+  RPG_LOSS
+  TAX_DEBIT
+  TAX_CREDIT
+  ROB_DEBIT
+  ROB_CREDIT
+  BANSOS_REWARD
+  CRYPTO_BUY
+  CRYPTO_SELL
+  DUEL_STAKE
+  DUEL_WIN
+  FEATURE_RESERVE
+  FEATURE_CONSUME
+  FEATURE_REFUND
+  SUPER_OWNER_ADD
+  SUPER_OWNER_SET
+  CORRECTION
+}
+
+model TenantGroup {
+  id          String       @id @default(cuid())
+  groupJid    String       @unique
+  tenantCode  String       @unique
+  name        String?
+  status          TenantStatus @default(PENDING)
+  ownerJid        String?
+  expiresAt       DateTime?
+  isBlocked       Boolean      @default(false)
+  treasuryBalance Int          @default(500000)
+  approvedAt      DateTime?
+  activatedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  featureSetting  TenantFeatureSetting?
+  groupSetting    TenantGroupSetting?
+  admins          TenantAdmin[]
+  reminders       Reminder[]
+  afkStatuses     AfkStatus[]
+  auditLogs       TenantAuditLog[]
+  memberProfiles  GroupMemberProfile[]
+  warnings        GroupMemberWarning[]
+  privateSessions TenantPrivateSession[]
+  notes           GroupNote[]
+
+  @@index([ownerJid])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model TenantAdmin {
+  id        String   @id @default(cuid())
+  groupJid  String
+  userJid   String
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@unique([groupJid, userJid])
+  @@index([groupJid])
+  @@index([userJid])
+}
+
+model TenantFeatureSetting {
+  id                  String   @id @default(cuid())
+  groupJid            String   @unique
+  downloaderEnabled   Boolean  @default(true)
+  hdEnabled           Boolean  @default(true)
+  gameEnabled         Boolean  @default(true)
+  welcomeEnabled      Boolean  @default(true)
+  antiLinkEnabled     Boolean  @default(true)
+  antiSpamEnabled     Boolean  @default(true)
+  reminderEnabled     Boolean  @default(true)
+  tagAllEnabled       Boolean  @default(true)
+  antiDeleteEnabled   Boolean  @default(true)
+  goodbyeEnabled      Boolean  @default(true)
+  antiRaidEnabled     Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+}
+
+model TenantGroupSetting {
+  id                   String       @id @default(cuid())
+  groupJid             String       @unique
+  welcomeMessage       String?
+  goodbyeMessage       String?
+  antiLinkAutoKick     Boolean      @default(false)
+  antiSpamMode         AntiSpamMode @default(NORMAL)
+  tagAllCooldownSec    Int          @default(600)
+  remindAllCooldownSec Int          @default(600)
+  warnThreshold        Int          @default(3)
+  warnAction           String       @default("KICK")
+  antiRaidThreshold    Int          @default(4)
+  antiRaidWindowSec    Int          @default(10)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+}
+
+
+model TenantPrivateSession {
+  id        String    @id @default(cuid())
+  userJid   String    @unique
+  groupJid  String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@index([groupJid])
+  @@index([expiresAt])
+}
+
+model Reminder {
+  id         String    @id @default(cuid())
+  groupJid   String
+  message    String
+  remindAt   DateTime
+  createdBy  String
+  mentionAll Boolean   @default(false)
+  isSent     Boolean   @default(false)
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@index([groupJid, remindAt])
+  @@index([isSent, remindAt])
+  @@index([createdBy, groupJid])
+}
+
+model AfkStatus {
+  id        String   @id @default(cuid())
+  groupJid  String
+  userJid   String
+  reason    String
+  startedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@unique([groupJid, userJid])
+  @@index([groupJid])
+  @@index([userJid])
+}
+
+model TenantAuditLog {
+  id        String            @id @default(cuid())
+  groupJid  String?
+  actorJid  String?
+  action    TenantAuditAction
+  metadata  Json?
+  createdAt DateTime          @default(now())
+
+  tenantGroup TenantGroup? @relation(fields: [groupJid], references: [groupJid], onDelete: SetNull)
+
+  @@index([groupJid])
+  @@index([actorJid])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model GroupMemberProfile {
+  id                 String    @id @default(cuid())
+  groupJid           String
+  userJid            String
+  pointsBalance      Int       @default(0)
+  limitBalance       Int       @default(100)
+  reservedLimit      Int       @default(0)
+  experience         Int       @default(0)
+  moneyBalance       Int       @default(25000)
+  bankBalance        Int       @default(0)
+  totalMoneyEarned   Int       @default(25000)
+  level              Int       @default(1)
+  totalPointsEarned  Int       @default(0)
+  totalLimitsEarned  Int       @default(100)
+  totalGamesPlayed   Int       @default(0)
+  totalGamesWon      Int       @default(0)
+  currentStreak      Int       @default(0)
+  longestStreak      Int       @default(0)
+  lastDailyClaimAt   DateTime?
+  lastWeeklyClaimAt  DateTime?
+  lastMonthlyClaimAt DateTime?
+  rpgState           Json?
+  partnerJid         String?
+  partnerSince       DateTime?
+  messageCount       Int       @default(0)
+  lastActiveAt       DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tenantGroup  TenantGroup              @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+  transactions GroupMemberTransaction[]
+
+  @@unique([groupJid, userJid])
+  @@index([groupJid, experience])
+  @@index([groupJid, pointsBalance])
+  @@index([groupJid, moneyBalance])
+  @@index([groupJid, level])
+  @@index([groupJid, messageCount])
+  @@index([groupJid, lastActiveAt])
+  @@index([userJid])
+}
+
+model GroupMemberTransaction {
+  id             String                 @id @default(cuid())
+  profileId      String
+  groupJid       String
+  userJid        String
+  actorJid       String?
+  targetUserJid  String?
+  asset          MemberTransactionAsset
+  type           MemberTransactionType
+  amount         Int
+  balanceBefore  Int?
+  balanceAfter   Int?
+  feature        HeavyFeatureType?
+  correlationId  String?
+  idempotencyKey String?                @unique
+  note           String?
+  metadata       Json?
+  createdAt      DateTime               @default(now())
+
+  profile GroupMemberProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([groupJid, userJid])
+  @@index([profileId, createdAt])
+  @@index([correlationId])
+  @@index([createdAt])
+}
+
+model GroupMemberWarning {
+  id        String   @id @default(cuid())
+  groupJid  String
+  userJid   String
+  issuerJid String
+  reason    String
+  createdAt DateTime @default(now())
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@index([groupJid, userJid])
+  @@index([groupJid, createdAt])
+}
+
+model GroupNote {
+  id        String   @id @default(cuid())
+  groupJid  String
+  title     String
+  content   String
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@unique([groupJid, title])
+  @@index([groupJid])
+}

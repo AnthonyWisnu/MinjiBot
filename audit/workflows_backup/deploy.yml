@@ -1,0 +1,60 @@
+name: Deploy MinjiBot Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+    if: github.repository == 'AnthonyWisnu/MinjiBot' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            flock -w 120 /tmp/minjibot_deploy.lock bash -c '
+              set -euo pipefail
+              export PATH="/usr/local/bin:/usr/bin:$PATH"
+
+              APP_DIR="${{ secrets.DEPLOY_APP_DIR || \"/home/anthony/MinjiBot\" }}"
+              cd "$APP_DIR"
+
+              echo "=== 1. Checking stale git locks ==="
+              if ! pgrep -u "$(whoami)" git >/dev/null 2>&1; then
+                rm -f .git/index.lock
+              fi
+
+              echo "=== 2. Pulling latest main ==="
+              git fetch origin main
+              git reset --hard origin/main
+
+              echo "=== 3. Clean dependency installation ==="
+              npm ci
+
+              echo "=== 4. Prisma database migration ==="
+              npm run prisma:generate
+              npm run prisma:deploy
+
+              echo "=== 5. Building TypeScript ==="
+              npm run build
+
+              echo "=== 6. PM2 Reload ==="
+              pm2 startOrReload ecosystem.config.cjs --update-env
+              pm2 save
+
+              echo "=== Deployment Completed Successfully ==="
+            '
