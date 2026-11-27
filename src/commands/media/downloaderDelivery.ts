@@ -223,3 +223,32 @@ export function formatPinterestError(error: unknown): string {
   }
   return "Media Pinterest gagal diambil. Pastikan kata kunci atau link masih aktif.";
 }
+
+export function formatFacebookError(error: unknown): string {
+  if (error instanceof AppUserError) {
+    return error.message;
+  }
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  if (message.includes("max-filesize") || message.includes("maksimal")) {
+    return `Maaf, ukuran video Facebook ini terlalu besar (lebih dari ${String(env.MAX_DOWNLOAD_FILE_MB)} MB), jadi belum bisa dikirim lewat WhatsApp. Coba pilih video yang lebih pendek ya!`;
+  }
+  return "Video Facebook gagal diambil. Pastikan postingan bersifat publik dan link masih aktif.";
+}
+
+export function formatThreadsError(error: unknown): string {
+  if (error instanceof AppUserError) {
+    return error.message;
+  }
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  if (message.includes("max-filesize") || message.includes("maksimal")) {
+    return `Maaf, ukuran media Threads ini terlalu besar (lebih dari ${String(env.MAX_DOWNLOAD_FILE_MB)} MB), jadi belum bisa dikirim lewat WhatsApp. Coba pilih postingan yang lebih ringan ya!`;
+  }
+  return "Media Threads gagal diambil. Pastikan link valid dan postingan bersifat publik.";
+}
+
+export function formatGitCloneError(error: unknown): string {
+  if (error instanceof AppUserError) {
+    return error.message;
+  }
+  return "Repository GitHub gagal diunduh. Pastikan link valid dan repository bersifat publik.";
+}

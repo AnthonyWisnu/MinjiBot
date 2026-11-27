@@ -109,6 +109,8 @@ test("menuRegistryConsistency - all commands declared in menuService must exist 
     await menu.buildMenu(createMockContext("MEMBER", true, ["game"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["fun"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["media"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["islami"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["info"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["grup"])),
   ];
 

@@ -9,6 +9,8 @@ import { gameCommands } from "./game/game.command";
 import { teamWarCommands } from "./game/teamWar.command";
 import { werewolfCommands } from "./game/werewolf.command";
 import { createCustomStickerCommands } from "./group/customStickerCommand.command";
+import { publicInfoCommands } from "./info/publicInfo.command";
+import { islamiCommands } from "./islami/islami.command";
 import { dailyCommand } from "./member/daily.command";
 import { giftCommands } from "./member/gift.command";
 import { leaderboardCommands } from "./member/leaderboard.command";
@@ -20,6 +22,7 @@ import { walletCommands } from "./member/wallet.command";
 import { downloaderCommands } from "./media/downloader.command";
 import { groupStatusCommands } from "./media/groupStatus.command";
 import { hdCommands } from "./media/hd.command";
+import { lightMakerCommands } from "./media/lightMaker.command";
 import { lyricsCommands } from "./media/lyrics.command";
 import { playCommands } from "./media/play.command";
 import { stickerCommands } from "./media/sticker.command";
@@ -122,6 +125,7 @@ export const commandRouter = new CommandRouter([
   ...aiCommands,
   ...hdCommands,
   ...stickerCommands,
+  ...lightMakerCommands,
   ...groupStatusCommands,
   ...videoNoteCommands,
   ...quoteCardCommands,
@@ -155,6 +159,8 @@ export const commandRouter = new CommandRouter([
   ...leaderboardCommands,
   ...groupStatsCommands,
   ...groupToolCommands,
+  ...islamiCommands,
+  ...publicInfoCommands,
   ...createCustomStickerCommands((cmd) => routerRef.current?.has(cmd) ?? false),
 ]);
 

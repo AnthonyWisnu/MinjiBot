@@ -12,6 +12,12 @@ import {
   type TikTokDownloadResult,
 } from "./downloaders/downloader.types";
 import { extractAudioFromVideoBuffer } from "./downloaders/downloader.utils";
+import {
+  executeFacebookDownload,
+  executeGitCloneDownload,
+  executeThreadsDownload,
+  type GitCloneResult,
+} from "./downloaders/extra.downloader";
 import { executeInstagramDownload } from "./downloaders/instagram.downloader";
 import { executePinterestDownload } from "./downloaders/pinterest.downloader";
 import { executePinterestSearch } from "./downloaders/pinterestSearch";
@@ -27,6 +33,7 @@ export {
   type DownloaderKind,
   type DownloadResult,
   type ExtractedAudio,
+  type GitCloneResult,
   type MediaType,
   type TikTokDownloadResult,
 };
@@ -91,6 +98,30 @@ export class DownloaderService {
   ): Promise<DownloadedMediaItem[]> {
     return mediaQueueService.heavySubprocessQueue.run(
       () => executePinterestSearch(query, count),
+      queueOptions,
+    );
+  }
+
+  async downloadFacebook(
+    url: string,
+    queueOptions?: QueueRunOptions,
+  ): Promise<DownloadedMediaItem> {
+    return mediaQueueService.heavySubprocessQueue.run(
+      () => executeFacebookDownload(url),
+      queueOptions,
+    );
+  }
+
+  async downloadThreads(url: string, queueOptions?: QueueRunOptions): Promise<DownloadResult> {
+    return mediaQueueService.heavySubprocessQueue.run(
+      () => executeThreadsDownload(url),
+      queueOptions,
+    );
+  }
+
+  async downloadGitClone(url: string, queueOptions?: QueueRunOptions): Promise<GitCloneResult> {
+    return mediaQueueService.heavySubprocessQueue.run(
+      () => executeGitCloneDownload(url),
       queueOptions,
     );
   }

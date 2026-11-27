@@ -4,8 +4,11 @@ import { downloaderService } from "../../services/media/downloader.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { extractFirstHttpUrl, parseAllowedDownloaderUrl } from "../../utils/urlValidator";
 import {
+  formatFacebookError,
+  formatGitCloneError,
   formatInstagramError,
   formatPinterestError,
+  formatThreadsError,
   formatTikTokError,
   formatTwitterError,
   formatYoutubeError,
@@ -43,6 +46,19 @@ export const downloaderCommands: CommandDefinition[] = [
     name: "pin",
     aliases: ["pinterest"],
     execute: handlePinterestDownloader,
+  },
+  {
+    name: "facebook",
+    aliases: ["fb"],
+    execute: handleFacebookDownloader,
+  },
+  {
+    name: "threads",
+    execute: handleThreadsDownloader,
+  },
+  {
+    name: "gitclone",
+    execute: handleGitCloneDownloader,
   },
 ];
 
@@ -358,6 +374,156 @@ async function handlePinterestDownloader(context: CommandContext): Promise<void>
       reserved,
       reservation,
       formatError: formatPinterestError,
+    });
+  }
+}
+
+async function handleFacebookDownloader(context: CommandContext): Promise<void> {
+  const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
+  const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "facebook");
+  if (!parsedUrl) {
+    await context.reply("Format command salah.\nGunakan: .facebook <link Facebook / fb.watch>");
+    return;
+  }
+  const url = parsedUrl.toString();
+
+  const access = await resolveFeatureAccess(context, HeavyFeatureType.FACEBOOK_DOWNLOAD);
+  if (access === null) return;
+
+  const reservation = access.skip ? null : access.reservation;
+  let reserved = false;
+
+  try {
+    if (reservation !== null) {
+      const ok = await reserveFeatureLimit(context, reservation);
+      if (!ok) return;
+      reserved = true;
+    }
+
+    await notifyProcessingOrQueued(context, "video Facebook");
+    const result = await downloaderService.downloadFacebook(url);
+    await sendMediaItem(context, result);
+
+    if (reserved && reservation !== null) {
+      await consumeFeatureLimit(reservation);
+    }
+  } catch (error: unknown) {
+    await handleDownloaderFailure({
+      context,
+      commandName: "facebook",
+      label: "Facebook",
+      url,
+      error,
+      reserved,
+      reservation,
+      formatError: formatFacebookError,
+    });
+  }
+}
+
+async function handleThreadsDownloader(context: CommandContext): Promise<void> {
+  const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
+  const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "threads");
+  if (!parsedUrl) {
+    await context.reply("Format command salah.\nGunakan: .threads <link Threads>");
+    return;
+  }
+  const url = parsedUrl.toString();
+
+  const access = await resolveFeatureAccess(context, HeavyFeatureType.THREADS_DOWNLOAD);
+  if (access === null) return;
+
+  const reservation = access.skip ? null : access.reservation;
+  let reserved = false;
+
+  try {
+    if (reservation !== null) {
+      const ok = await reserveFeatureLimit(context, reservation);
+      if (!ok) return;
+      reserved = true;
+    }
+
+    await notifyProcessingOrQueued(context, "media Threads");
+    const result = await downloaderService.downloadThreads(url);
+    if (result.type === "single") {
+      await sendMediaItem(context, result.item);
+    } else {
+      await context.reply(
+        `Terdeteksi ${String(result.items.length)} media Threads. Mengirim satu per satu...`,
+      );
+      for (const item of result.items) {
+        await sendMediaItem(context, item);
+        await sleep(300);
+      }
+    }
+
+    if (reserved && reservation !== null) {
+      await consumeFeatureLimit(reservation);
+    }
+  } catch (error: unknown) {
+    await handleDownloaderFailure({
+      context,
+      commandName: "threads",
+      label: "Threads",
+      url,
+      error,
+      reserved,
+      reservation,
+      formatError: formatThreadsError,
+    });
+  }
+}
+
+async function handleGitCloneDownloader(context: CommandContext): Promise<void> {
+  const rawUrl = extractFirstHttpUrl(context.argsText) ?? context.args[0];
+  const parsedUrl = parseAllowedDownloaderUrl(rawUrl, "github");
+  if (!parsedUrl) {
+    await context.reply("Format command salah.\nGunakan: .gitclone <link repository GitHub>");
+    return;
+  }
+  const url = parsedUrl.toString();
+
+  const access = await resolveFeatureAccess(context, HeavyFeatureType.GITCLONE_DOWNLOAD);
+  if (access === null) return;
+
+  const reservation = access.skip ? null : access.reservation;
+  let reserved = false;
+
+  try {
+    if (reservation !== null) {
+      const ok = await reserveFeatureLimit(context, reservation);
+      if (!ok) return;
+      reserved = true;
+    }
+
+    await notifyProcessingOrQueued(context, "arsip ZIP repository GitHub");
+    const result = await downloaderService.downloadGitClone(url);
+    const sizeMb = (result.buffer.byteLength / (1024 * 1024)).toFixed(2);
+
+    await context.socket.sendMessage(
+      context.chatJid,
+      {
+        document: result.buffer,
+        mimetype: result.mimetype,
+        fileName: result.fileName,
+        caption: `Repository: *${result.repoFullName}* (${result.branch})\nUkuran: ${sizeMb} MB`,
+      },
+      { quoted: context.message },
+    );
+
+    if (reserved && reservation !== null) {
+      await consumeFeatureLimit(reservation);
+    }
+  } catch (error: unknown) {
+    await handleDownloaderFailure({
+      context,
+      commandName: "gitclone",
+      label: "GitClone",
+      url,
+      error,
+      reserved,
+      reservation,
+      formatError: formatGitCloneError,
     });
   }
 }

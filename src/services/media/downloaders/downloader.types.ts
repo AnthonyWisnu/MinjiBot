@@ -75,7 +75,15 @@ export const YT_VIDEO_FORMAT_SMART =
 export const IMAGE_EXTS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 export const VIDEO_EXTS = new Set([".mp4", ".webm", ".mkv", ".mov", ".avi"]);
 
-export type DownloaderKind = "tiktok" | "instagram" | "youtube" | "twitter" | "pinterest";
+export type DownloaderKind =
+  | "tiktok"
+  | "instagram"
+  | "youtube"
+  | "twitter"
+  | "pinterest"
+  | "facebook"
+  | "threads"
+  | "github";
 export type MediaType = "video" | "image";
 
 export interface DownloadedMediaItem {

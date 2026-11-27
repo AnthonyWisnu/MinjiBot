@@ -141,25 +141,21 @@ export class MenuService {
     }
 
     if (category === "islami") {
-      return [
+      return this.renderCategoryPage(
         "*── [ SUB-MENU: ISLAMI ] ──*",
         groupHeader,
-        "",
-        "Kategori Islami (.alquran, .jadwalshalat, .asmaulhusna, .ayatkursi) sedang disiapkan untuk update berikutnya.",
-        "",
+        [this.buildIslamiSection()],
         footer,
-      ].join("\n");
+      );
     }
 
     if (category === "info") {
-      return [
+      return this.renderCategoryPage(
         "*── [ SUB-MENU: INFO ] ──*",
         groupHeader,
-        "",
-        "Kategori Info Publik (.infogempa, .infocuaca, .wikipedia, .translate, .kbbi, dll) sedang disiapkan untuk update berikutnya.",
-        "",
+        [this.buildPublicInfoSection()],
         footer,
-      ].join("\n");
+      );
     }
 
     const sections: MenuSection[] = [this.buildInteractiveToolsSection()];
@@ -330,6 +326,8 @@ export class MenuService {
       this.buildMediaCreativeSection(),
       this.buildAudioToolsSection(),
       this.buildDownloaderSection(),
+      this.buildIslamiSection(),
+      this.buildPublicInfoSection(),
       this.buildInteractiveToolsSection(),
     );
 
@@ -691,6 +689,14 @@ export class MenuService {
         ".smeme <atas|bawah>",
         ".brat <teks>",
         ".ttp <teks>",
+        ".emojimix <e1>+<e2>",
+        ".tahta <teks>",
+        ".carbon <kode>",
+        ".wm <pack>|<author>",
+        ".style <teks>",
+        ".cekreso",
+        ".resize <w> <h>",
+        ".getfoto [detik]",
         ".quote [-s] [teks]",
         ".tweet [@user] <teks>",
         ".toimg",
@@ -734,9 +740,42 @@ export class MenuService {
         ".yt <url> (L)",
         ".x <url> (L)",
         ".pin <kata/url> (L)",
+        ".facebook / .fb <url> (L)",
+        ".threads <url> (L)",
+        ".gitclone <url> (L)",
         ".play <judul> (L)",
         ".lirik [doc] <judul> (L)",
         ".hd [doc] (L)",
+      ],
+    };
+  }
+
+  private buildIslamiSection(): MenuSection {
+    return {
+      title: "*── [ ISLAMI ] ──*",
+      items: [
+        ".alquran <surah> [ayat]",
+        ".jadwalshalat <kota>",
+        ".asmaulhusna [1-99]",
+        ".ayatkursi",
+      ],
+    };
+  }
+
+  private buildPublicInfoSection(): MenuSection {
+    return {
+      title: "*── [ INFO PUBLIK ] ──*",
+      items: [
+        ".infogempa",
+        ".infocuaca <kota>",
+        ".wikipedia <topik>",
+        ".translate <bhs> <teks>",
+        ".kbbi <kata>",
+        ".jarak <kota1>|<kota2>",
+        ".githubstalk <user>",
+        ".npmsearch <paket>",
+        ".whois <domain>",
+        ".tinyurl <url>",
       ],
     };
   }

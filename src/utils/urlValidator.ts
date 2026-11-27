@@ -3,7 +3,15 @@ import net from "node:net";
 
 import { AppUserError } from "../errors/appUserError";
 
-export type DownloaderPlatform = "tiktok" | "instagram" | "youtube" | "twitter" | "pinterest";
+export type DownloaderPlatform =
+  | "tiktok"
+  | "instagram"
+  | "youtube"
+  | "twitter"
+  | "pinterest"
+  | "facebook"
+  | "threads"
+  | "github";
 
 export const ALLOWED_DOWNLOADER_DOMAINS: Record<DownloaderPlatform, readonly string[]> = {
   tiktok: [
@@ -42,6 +50,16 @@ export const ALLOWED_DOWNLOADER_DOMAINS: Record<DownloaderPlatform, readonly str
     "pinterest.ph",
     "pinterest.co.kr",
   ],
+  facebook: [
+    "facebook.com",
+    "www.facebook.com",
+    "m.facebook.com",
+    "web.facebook.com",
+    "fb.watch",
+    "fb.com",
+  ],
+  threads: ["threads.net", "www.threads.net", "threads.com", "www.threads.com"],
+  github: ["github.com", "www.github.com"],
 };
 
 export interface DnsAddressRecord {

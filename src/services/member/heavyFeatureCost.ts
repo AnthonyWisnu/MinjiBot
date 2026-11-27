@@ -15,6 +15,9 @@ export const HEAVY_FEATURE_COST: Record<HeavyFeatureType, number> = {
   [HeavyFeatureType.SONG_LYRICS]: 1,
   [HeavyFeatureType.TWITTER_DOWNLOAD]: 1,
   [HeavyFeatureType.PINTEREST_DOWNLOAD]: 1,
+  [HeavyFeatureType.FACEBOOK_DOWNLOAD]: 1,
+  [HeavyFeatureType.THREADS_DOWNLOAD]: 1,
+  [HeavyFeatureType.GITCLONE_DOWNLOAD]: 1,
   [HeavyFeatureType.AI_CHAT]: 1,
 };
 

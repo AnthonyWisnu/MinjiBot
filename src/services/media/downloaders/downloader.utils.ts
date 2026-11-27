@@ -167,6 +167,15 @@ export function parseSupportedUrl(url: string, kind: DownloaderKind): URL {
     if (kind === "twitter") {
       throw new AppUserError("Command .x hanya menerima link resmi X (Twitter).");
     }
+    if (kind === "facebook") {
+      throw new AppUserError("Command .facebook hanya menerima link resmi Facebook / fb.watch.");
+    }
+    if (kind === "threads") {
+      throw new AppUserError("Command .threads hanya menerima link resmi Threads.");
+    }
+    if (kind === "github") {
+      throw new AppUserError("Command .gitclone hanya menerima link repository resmi GitHub.");
+    }
     throw new AppUserError("Command .pin hanya menerima link resmi Pinterest.");
   }
 
