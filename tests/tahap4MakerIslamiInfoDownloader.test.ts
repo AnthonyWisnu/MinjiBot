@@ -346,6 +346,28 @@ test("PublicInfoService - Haversine, BMKG, Open-Meteo, Wikipedia, Translate, KBB
 
   // SSRF protection on tinyurl
   await assert.rejects(() => svc.shortenUrl("http://127.0.0.1:8080/secret"), /tidak diizinkan|privat/i);
+
+  // Nominatim fallback when Open-Meteo geocoding times out
+  const fallbackSvc = new PublicInfoService((async (url: string) => {
+    if (url.includes("geocoding-api.open-meteo.com")) {
+      throw new Error("ETIMEDOUT");
+    }
+    if (url.includes("nominatim.openstreetmap.org")) {
+      return Response.json([
+        { display_name: "Bandung, Jawa Barat, Indonesia", lat: "-6.9175", lon: "107.6191" },
+      ]);
+    }
+    if (url.includes("api.open-meteo.com")) {
+      return Response.json({
+        timezone: "Asia/Jakarta",
+        current: { temperature_2m: 24.5, apparent_temperature: 25, relative_humidity_2m: 80, wind_speed_10m: 8, weather_code: 1 },
+      });
+    }
+    return new Response("Not Found", { status: 404 });
+  }) as never);
+  const bdgCuaca = await fallbackSvc.getInfoCuaca("Bandung");
+  assert.equal(bdgCuaca.temperatureC, 24.5);
+  assert.match(bdgCuaca.cityName, /Bandung/);
 });
 
 test("Extra Downloaders - domain allowlist, GitHub repo parser, and 300 MB friendly cap", async () => {

@@ -73,6 +73,9 @@ export interface WhoisDomainInfo {
   nameservers: string[];
 }
 
+const PUBLIC_INFO_USER_AGENT =
+  "MinjiBot/2.0 (https://github.com/AnthonyWisnu/MinjiBot; non-commercial WhatsApp bot)";
+
 const WMO_WEATHER_ID: Record<number, string> = {
   0: "Cerah",
   1: "Cerah Berawan",
@@ -129,7 +132,7 @@ export class PublicInfoService {
 
     const resp = await this.fetchFn("https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json", {
       allowedDomains: ["data.bmkg.go.id"],
-      headers: { Accept: "application/json", "User-Agent": "MinjiBot-V2" },
+      headers: { Accept: "application/json", "User-Agent": PUBLIC_INFO_USER_AGENT },
       signal: AbortSignal.timeout(10_000),
     });
     if (!resp.ok) {
@@ -164,7 +167,7 @@ export class PublicInfoService {
           `https://data.bmkg.go.id/DataMKG/TEWS/${g.Shakemap}`,
           {
             allowedDomains: ["data.bmkg.go.id"],
-            headers: { "User-Agent": "MinjiBot-V2" },
+            headers: { "User-Agent": PUBLIC_INFO_USER_AGENT },
             signal: AbortSignal.timeout(8_000),
           },
         );
@@ -198,38 +201,77 @@ export class PublicInfoService {
     latitude: number;
     longitude: number;
   }> {
-    const resp = await this.fetchFn(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=id&format=json`,
+    try {
+      const resp = await this.fetchFn(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=id&format=json`,
+        {
+          allowedDomains: ["geocoding-api.open-meteo.com"],
+          headers: { Accept: "application/json", "User-Agent": PUBLIC_INFO_USER_AGENT },
+          signal: AbortSignal.timeout(4_000),
+        },
+      );
+      if (resp.ok) {
+        const json = (await resp.json()) as {
+          results?: {
+            name: string;
+            country?: string;
+            admin1?: string;
+            latitude: number;
+            longitude: number;
+          }[];
+        };
+        const first = json.results?.[0];
+        if (first) {
+          return {
+            name: first.admin1 ? `${first.name}, ${first.admin1}` : first.name,
+            country: first.country ?? "-",
+            latitude: first.latitude,
+            longitude: first.longitude,
+          };
+        }
+      }
+    } catch {
+      // Lanjut fallback Nominatim OpenStreetMap jika Open-Meteo geocoding tidak terjangkau dari VPS
+    }
+
+    const nomResp = await this.fetchFn(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1&accept-language=id`,
       {
-        allowedDomains: ["geocoding-api.open-meteo.com"],
-        headers: { Accept: "application/json", "User-Agent": "MinjiBot-V2" },
-        signal: AbortSignal.timeout(10_000),
+        allowedDomains: ["nominatim.openstreetmap.org"],
+        headers: { Accept: "application/json", "User-Agent": PUBLIC_INFO_USER_AGENT },
+        signal: AbortSignal.timeout(8_000),
       },
     );
-    if (!resp.ok) {
+    if (!nomResp.ok) {
       throw new AppUserError("Layanan peta/cuaca sedang sibuk. Coba lagi sebentar ya.");
     }
 
-    const json = (await resp.json()) as {
-      results?: {
-        name: string;
-        country?: string;
-        admin1?: string;
-        latitude: number;
-        longitude: number;
-      }[];
-    };
-
-    const first = json.results?.[0];
-    if (!first) {
+    const nomResults = (await nomResp.json()) as {
+      display_name?: string;
+      name?: string;
+      lat?: string;
+      lon?: string;
+    }[];
+    const hit = nomResults[0];
+    const lat = hit?.lat ? Number.parseFloat(hit.lat) : Number.NaN;
+    const lon = hit?.lon ? Number.parseFloat(hit.lon) : Number.NaN;
+    if (!hit || Number.isNaN(lat) || Number.isNaN(lon)) {
       throw new AppUserError(`Lokasi *${city}* tidak ditemukan.`);
     }
 
+    const parts = (hit.display_name ?? city)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const joined = parts.slice(0, 2).join(", ");
+    const shortName = joined.length > 0 ? joined : (hit.name ?? city);
+    const country = parts[parts.length - 1] ?? "-";
+
     return {
-      name: first.admin1 ? `${first.name}, ${first.admin1}` : first.name,
-      country: first.country ?? "-",
-      latitude: first.latitude,
-      longitude: first.longitude,
+      name: shortName,
+      country,
+      latitude: lat,
+      longitude: lon,
     };
   }
 
@@ -248,7 +290,7 @@ export class PublicInfoService {
       `https://api.open-meteo.com/v1/forecast?latitude=${String(loc.latitude)}&longitude=${String(loc.longitude)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto`,
       {
         allowedDomains: ["api.open-meteo.com"],
-        headers: { Accept: "application/json", "User-Agent": "MinjiBot-V2" },
+        headers: { Accept: "application/json", "User-Agent": PUBLIC_INFO_USER_AGENT },
         signal: AbortSignal.timeout(10_000),
       },
     );
@@ -324,7 +366,7 @@ export class PublicInfoService {
         `https://${domain}/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=1&format=json`,
         {
           allowedDomains: [domain],
-          headers: { Accept: "application/json", "User-Agent": "MinjiBot-V2" },
+          headers: { Accept: "application/json", "User-Agent": PUBLIC_INFO_USER_AGENT },
           signal: AbortSignal.timeout(8_000),
         },
       );
@@ -338,7 +380,7 @@ export class PublicInfoService {
         `https://${domain}/api/rest_v1/page/summary/${encodeURIComponent(topTitle.replace(/\s+/g, "_"))}`,
         {
           allowedDomains: [domain],
-          headers: { Accept: "application/json", "User-Agent": "MinjiBot-V2" },
+          headers: { Accept: "application/json", "User-Agent": PUBLIC_INFO_USER_AGENT },
           signal: AbortSignal.timeout(8_000),
         },
       );
@@ -390,7 +432,7 @@ export class PublicInfoService {
         `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(lang)}&dt=t&q=${encodeURIComponent(text)}`,
         {
           allowedDomains: ["translate.googleapis.com"],
-          headers: { "User-Agent": "MinjiBot-V2" },
+          headers: { "User-Agent": PUBLIC_INFO_USER_AGENT },
           signal: AbortSignal.timeout(8_000),
         },
       );
@@ -416,7 +458,7 @@ export class PublicInfoService {
       `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=autodetect|${encodeURIComponent(lang)}`,
       {
         allowedDomains: ["api.mymemory.translated.net"],
-        headers: { "User-Agent": "MinjiBot-V2" },
+        headers: { "User-Agent": PUBLIC_INFO_USER_AGENT },
         signal: AbortSignal.timeout(8_000),
       },
     );
@@ -447,7 +489,7 @@ export class PublicInfoService {
       `https://id.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&titles=${encodeURIComponent(word)}&format=json`,
       {
         allowedDomains: ["id.wiktionary.org"],
-        headers: { Accept: "application/json", "User-Agent": "MinjiBot-V2" },
+        headers: { Accept: "application/json", "User-Agent": PUBLIC_INFO_USER_AGENT },
         signal: AbortSignal.timeout(8_000),
       },
     );
@@ -485,7 +527,7 @@ export class PublicInfoService {
 
     const resp = await this.fetchFn(`https://api.github.com/users/${encodeURIComponent(username)}`, {
       allowedDomains: ["api.github.com"],
-      headers: { Accept: "application/vnd.github+json", "User-Agent": "MinjiBot-V2" },
+      headers: { Accept: "application/vnd.github+json", "User-Agent": PUBLIC_INFO_USER_AGENT },
       signal: AbortSignal.timeout(8_000),
     });
 
@@ -542,7 +584,7 @@ export class PublicInfoService {
       `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(query)}&size=5`,
       {
         allowedDomains: ["registry.npmjs.org"],
-        headers: { Accept: "application/json", "User-Agent": "MinjiBot-V2" },
+        headers: { Accept: "application/json", "User-Agent": PUBLIC_INFO_USER_AGENT },
         signal: AbortSignal.timeout(8_000),
       },
     );
@@ -599,7 +641,7 @@ export class PublicInfoService {
     const resp = await this.fetchFn(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
       allowedDomains: ["rdap.org"],
       maxRedirects: 4,
-      headers: { Accept: "application/rdap+json, application/json", "User-Agent": "MinjiBot-V2" },
+      headers: { Accept: "application/rdap+json, application/json", "User-Agent": PUBLIC_INFO_USER_AGENT },
       signal: AbortSignal.timeout(10_000),
     });
 
@@ -659,7 +701,7 @@ export class PublicInfoService {
         `https://tinyurl.com/api-create.php?url=${encodeURIComponent(targetUrl)}`,
         {
           allowedDomains: ["tinyurl.com"],
-          headers: { "User-Agent": "MinjiBot-V2" },
+          headers: { "User-Agent": PUBLIC_INFO_USER_AGENT },
           signal: AbortSignal.timeout(8_000),
         },
       );
@@ -677,7 +719,7 @@ export class PublicInfoService {
       `https://is.gd/create.php?format=simple&url=${encodeURIComponent(targetUrl)}`,
       {
         allowedDomains: ["is.gd"],
-        headers: { "User-Agent": "MinjiBot-V2" },
+        headers: { "User-Agent": PUBLIC_INFO_USER_AGENT },
         signal: AbortSignal.timeout(8_000),
       },
     );
