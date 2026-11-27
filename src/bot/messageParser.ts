@@ -82,6 +82,80 @@ export function parseCommandMessage(socket: WASocket, message: WAMessage): Comma
   };
 }
 
+export function parseSyntheticCommandMessage(
+  socket: WASocket,
+  message: WAMessage,
+  syntheticText: string,
+): CommandContext | null {
+  if (message.key.fromMe) {
+    return null;
+  }
+
+  const chatJid = message.key.remoteJid;
+  if (!chatJid || isStatusBroadcastJid(chatJid)) {
+    return null;
+  }
+
+  const content = unwrapMessageContent(message.message);
+  if (!content) {
+    return null;
+  }
+
+  const text = syntheticText.trim();
+  if (!text.startsWith(env.COMMAND_PREFIX)) {
+    return null;
+  }
+
+  const commandText = text.slice(env.COMMAND_PREFIX.length).trim();
+  if (commandText.length === 0) {
+    return null;
+  }
+
+  const [commandName, ...args] = commandText.split(/\s+/);
+  if (!commandName) {
+    return null;
+  }
+
+  const argsText = commandText.slice(commandName.length).trim();
+  const senderJid = getMessageSenderJid(chatJid, message.key.participant);
+  const senderAltJids = getMessageSenderAltJids(message);
+  const senderUserJid = getPreferredUserJid(
+    senderAltJids.includes(senderJid) ? senderAltJids : [senderJid, ...senderAltJids],
+  );
+
+  const mentionedJids = extractMentionedJids(content);
+  const knownJids = [...new Set([...mentionedJids, ...senderAltJids, senderJid, senderUserJid])];
+
+  return {
+    socket,
+    message,
+    chatJid,
+    senderJid,
+    senderUserJid,
+    senderAltJids,
+    isGroup: isGroupJid(chatJid),
+    commandName: commandName.toLowerCase(),
+    args,
+    argsText,
+    text,
+    mentionedJids,
+    role: "MEMBER",
+    quoted: extractQuotedMessage(content),
+    reply: async (replyText: string, options?: { mentions?: string[] }) => {
+      await socket.sendMessage(
+        chatJid,
+        {
+          text: replyText,
+          mentions: resolveReplyMentions(replyText, options?.mentions, knownJids),
+        },
+        {
+          quoted: message,
+        },
+      );
+    },
+  };
+}
+
 export function parseRawMessageContext(
   socket: WASocket,
   message: WAMessage,

@@ -6,10 +6,14 @@ import { featureGuard } from "../guards/featureGuard";
 import { rateLimitGuard } from "../guards/rateLimitGuard";
 import { roleGuard } from "../guards/roleGuard";
 import { tenantGuard } from "../guards/tenantGuard";
+import {
+  customStickerCommandService,
+  extractStickerFileSha256,
+} from "../services/group/customStickerCommand.service";
 import { isGroupJid } from "../utils/jid";
 import { extractSoundStickerMetadata } from "../utils/mediaTarget";
 import { formatUserSafeError } from "../utils/userSafeError";
-import { parseCommandMessage } from "./messageParser";
+import { parseCommandMessage, parseSyntheticCommandMessage } from "./messageParser";
 import { defaultMessagePipeline } from "./pipeline";
 
 type MessagesUpsertEvent = BaileysEventMap["messages.upsert"];
@@ -94,8 +98,24 @@ async function handleIncomingMessage(
     return;
   }
 
-  // 2. Parse apakah pesan merupakan command
-  const context = parseCommandMessage(socket, message);
+  // 2. Parse apakah pesan merupakan command (atau Custom Sticker Command di grup)
+  let context = parseCommandMessage(socket, message);
+  if (!context && !message.key.fromMe && isGroup && remoteJid) {
+    const stickerHash = extractStickerFileSha256(message.message);
+    if (stickerHash) {
+      try {
+        const mappedCommand = await customStickerCommandService.resolveMappedCommand(
+          remoteJid,
+          stickerHash,
+        );
+        if (mappedCommand) {
+          context = parseSyntheticCommandMessage(socket, message, mappedCommand);
+        }
+      } catch (error: unknown) {
+        logger.warn({ err: error, chatJid: remoteJid }, "Gagal membaca mapping stiker command");
+      }
+    }
+  }
   if (!context) {
     return;
   }

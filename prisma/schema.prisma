@@ -126,6 +126,7 @@ model TenantGroup {
   warnings        GroupMemberWarning[]
   privateSessions TenantPrivateSession[]
   notes           GroupNote[]
+  stickerCommands GroupStickerCommand[]
 
   @@index([ownerJid])
   @@index([status])
@@ -346,5 +347,20 @@ model GroupNote {
   tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
 
   @@unique([groupJid, title])
+  @@index([groupJid])
+}
+
+model GroupStickerCommand {
+  id          String   @id @default(cuid())
+  groupJid    String
+  stickerHash String
+  commandText String
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@unique([groupJid, stickerHash])
   @@index([groupJid])
 }

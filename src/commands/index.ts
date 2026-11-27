@@ -4,7 +4,11 @@ import type { CommandContext, CommandDefinition } from "../types/command";
 import { afkCommands } from "./afk/afk.command";
 import { aiCommands } from "./ai/ai.command";
 import { funCommands } from "./fun/fun.command";
+import { menfessCommands } from "./fun/menfess.command";
 import { gameCommands } from "./game/game.command";
+import { teamWarCommands } from "./game/teamWar.command";
+import { werewolfCommands } from "./game/werewolf.command";
+import { createCustomStickerCommands } from "./group/customStickerCommand.command";
 import { dailyCommand } from "./member/daily.command";
 import { giftCommands } from "./member/gift.command";
 import { leaderboardCommands } from "./member/leaderboard.command";
@@ -104,6 +108,8 @@ export class CommandRouter {
   }
 }
 
+const routerRef: { current?: CommandRouter } = {};
+
 export const commandRouter = new CommandRouter([
   ...menuCommands,
   ...superOwnerTenantCommands,
@@ -133,7 +139,10 @@ export const commandRouter = new CommandRouter([
   ...reminderCommands,
   ...tagAllCommands,
   ...gameCommands,
+  ...werewolfCommands,
+  ...teamWarCommands,
   ...funCommands,
+  ...menfessCommands,
   ...rpgCommands,
   ...rpgInfiniteCommands,
   dailyCommand,
@@ -146,4 +155,7 @@ export const commandRouter = new CommandRouter([
   ...leaderboardCommands,
   ...groupStatsCommands,
   ...groupToolCommands,
+  ...createCustomStickerCommands((cmd) => routerRef.current?.has(cmd) ?? false),
 ]);
+
+routerRef.current = commandRouter;

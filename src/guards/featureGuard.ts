@@ -99,6 +99,10 @@ const COMMAND_FEATURE_MAP = new Map<string, TenantFeatureKey>([
   ["dungeon", "game"],
   ["serang", "game"],
   ["membunuh", "game"],
+  ["werewolf", "game"],
+  ["ww", "game"],
+  ["war", "game"],
+  ["attack", "game"],
 ]);
 
 export type FeatureGuardResult =

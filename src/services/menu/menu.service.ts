@@ -287,6 +287,8 @@ export class MenuService {
       "1. .menu",
       "2. .ai <pertanyaan> (L)",
       "3. .simi <pesan> (L)",
+      "4. .menfess <kode> <pesan>",
+      "5. .ww <aksi> <nomor>",
     ].join("\n");
   }
 
@@ -634,6 +636,9 @@ export class MenuService {
         ".bom",
         ".slot [taruhan|allin]",
         ".tictactoe @user",
+        ".werewolf / .ww",
+        ".war [buat|join|mulai]",
+        ".attack @user",
         ".clue",
         ".nyerah",
       ],
@@ -672,6 +677,7 @@ export class MenuService {
         ".namaninja <nama>",
         ".readmore <a|b>",
         ".artinama <nama>",
+        ".menfess <kode> <pesan>",
       ],
     };
   }
@@ -757,6 +763,9 @@ export class MenuService {
         ".listadmin",
         ".tagme",
         ".link",
+        ".setcmd <perintah> (Admin)",
+        ".delcmd (Admin)",
+        ".listcmd",
       ],
     };
   }
