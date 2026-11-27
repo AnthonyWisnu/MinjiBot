@@ -31,6 +31,7 @@ import { warnCommands } from "./moderation/warn.command";
 import { antiRaidCommands } from "./moderation/antiRaid.command";
 import { reminderCommands } from "./reminder/reminder.command";
 import { rpgCommands } from "./rpg/rpg.command";
+import { rpgInfiniteCommands } from "./rpg/rpgInfinite.command";
 import { tagAllCommands } from "./tagall/tagAll.command";
 import { tenantAdminCommands } from "./tenant/tenantAdmin.command";
 import { tenantFeatureCommands } from "./tenant/tenantFeature.command";
@@ -134,6 +135,7 @@ export const commandRouter = new CommandRouter([
   ...gameCommands,
   ...funCommands,
   ...rpgCommands,
+  ...rpgInfiniteCommands,
   dailyCommand,
   ...limitPurchaseCommands,
   ...walletCommands,

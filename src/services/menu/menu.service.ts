@@ -107,7 +107,9 @@ export class MenuService {
     if (category === "rpg") {
       const sections: MenuSection[] = [];
       const rpg = this.buildRpgSection(featureSetting);
+      const rpgInf = this.buildRpgInfiniteSection(featureSetting);
       if (rpg) sections.push(rpg);
+      if (rpgInf) sections.push(rpgInf);
       sections.push(this.buildEconomySection());
       return this.renderCategoryPage("*── [ SUB-MENU: RPG ] ──*", groupHeader, sections, footer);
     }
@@ -314,6 +316,9 @@ export class MenuService {
 
     const rpg = this.buildRpgSection(featureSetting);
     if (rpg) sections.push(rpg);
+
+    const rpgInf = this.buildRpgInfiniteSection(featureSetting);
+    if (rpgInf) sections.push(rpgInf);
 
     const games = this.buildPureGameSection(featureSetting);
     if (games) sections.push(games);
@@ -572,6 +577,40 @@ export class MenuService {
         ".tolakduel",
         ".crypto market",
         ".cooldown",
+      ],
+    };
+  }
+
+  private buildRpgInfiniteSection(featureSetting: TenantFeatureSetting | null): MenuSection | null {
+    if (featureSetting && !featureSetting.gameEnabled) {
+      return null;
+    }
+
+    return {
+      title: "*── [ RPG INFINITE ] ──*",
+      items: [
+        ".inventory / .inv",
+        ".kandang",
+        ".heal [jumlah]",
+        ".adventure",
+        ".nebang",
+        ".berkebon",
+        ".masak <resep>",
+        ".shop <list|buy|sell>",
+        ".craft <alat>",
+        ".upgrade <alat>",
+        ".open <crate>",
+        ".feed <pet>",
+        ".ramuan <pet>",
+        ".fightkucing",
+        ".fightkyubi",
+        ".fightcentaur",
+        ".fightgriffin",
+        ".fightnaga",
+        ".fightphonix",
+        ".berbisnis @user",
+        ".dungeon [join|mulai]",
+        ".serang @user",
       ],
     };
   }

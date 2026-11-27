@@ -133,7 +133,11 @@ function createInMemoryRpgHarness(
 
 void test("rpgState helpers parse, cooldown, jail, and update crypto holdings safely", () => {
   const empty = parseRpgState(null);
-  assert.deepEqual(empty, { cooldowns: {}, jailedUntil: 0, crypto: {} });
+  assert.deepEqual(empty.cooldowns, {});
+  assert.equal(empty.jailedUntil, 0);
+  assert.equal(empty.ugdUntil, 0);
+  assert.equal(empty.hp, 100);
+  assert.deepEqual(empty.crypto, {});
 
   const now = 1_000_000;
   const cd = withUpdatedCooldown(empty, "kerja", now);
