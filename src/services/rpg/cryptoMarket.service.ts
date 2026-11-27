@@ -8,8 +8,8 @@ import { AppUserError } from "../../errors/appUserError";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../../repositories/groupMemberTransaction.repository";
 import { prisma } from "../../repositories/prismaClient";
-import { formatRupiah } from "../../utils/currency";
-import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "../member/memberEconomy.service";
+import { clampMoneyCredit, formatRupiah, MAX_SAFE_MONEY_BIGINT } from "../../utils/currency";
+import { generateCorrelationId } from "../member/memberEconomy.service";
 import { parseRpgState, serializeRpgState, withUpdatedCryptoHolding } from "./rpgState";
 
 const PRICE_EPOCH_MS = 5 * 60 * 1000;
@@ -18,24 +18,24 @@ const MAX_CRYPTO_UNITS_PER_TX = 10_000;
 export interface CryptoCoinSpec {
   symbol: string;
   name: string;
-  basePrice: number;
+  basePrice: bigint;
   volatility: number;
   seedOffset: number;
 }
 
 export const CRYPTO_COINS: readonly CryptoCoinSpec[] = [
-  { symbol: "BTC", name: "Bitcoin", basePrice: 120_000, volatility: 0.25, seedOffset: 101 },
-  { symbol: "ETH", name: "Ethereum", basePrice: 45_000, volatility: 0.28, seedOffset: 211 },
-  { symbol: "SOL", name: "Solana", basePrice: 20_000, volatility: 0.35, seedOffset: 307 },
-  { symbol: "DOGE", name: "Dogecoin", basePrice: 3_500, volatility: 0.45, seedOffset: 409 },
-  { symbol: "MINJI", name: "MinjiCoin", basePrice: 12_000, volatility: 0.48, seedOffset: 503 },
+  { symbol: "BTC", name: "Bitcoin", basePrice: 120_000_000n, volatility: 0.25, seedOffset: 101 },
+  { symbol: "ETH", name: "Ethereum", basePrice: 45_000_000n, volatility: 0.28, seedOffset: 211 },
+  { symbol: "SOL", name: "Solana", basePrice: 15_000_000n, volatility: 0.35, seedOffset: 307 },
+  { symbol: "DOGE", name: "Dogecoin", basePrice: 1_500_000n, volatility: 0.45, seedOffset: 409 },
+  { symbol: "MINJI", name: "MinjiCoin", basePrice: 8_000_000n, volatility: 0.48, seedOffset: 503 },
 ] as const;
 
 export interface CryptoQuote {
   symbol: string;
   name: string;
-  price: number;
-  previousPrice: number;
+  price: bigint;
+  previousPrice: bigint;
   changePercent: number;
 }
 
@@ -44,25 +44,25 @@ export interface CryptoTradeResult {
   symbol: string;
   coinName: string;
   units: number;
-  unitPrice: number;
-  totalMoney: number;
+  unitPrice: bigint;
+  totalMoney: bigint;
   newHolding: number;
-  currentMoney: number;
+  currentMoney: bigint;
 }
 
 export interface CryptoPortfolioItem {
   symbol: string;
   name: string;
   units: number;
-  unitPrice: number;
-  marketValue: number;
+  unitPrice: bigint;
+  marketValue: bigint;
   changePercent: number;
 }
 
 export interface CryptoPortfolioSummary {
   items: CryptoPortfolioItem[];
-  totalValue: number;
-  moneyBalance: number;
+  totalValue: bigint;
+  moneyBalance: bigint;
 }
 
 interface CryptoProfileStore {
@@ -77,9 +77,9 @@ interface CryptoTxStore {
       userJid: string;
       asset: MemberTransactionAsset;
       type: MemberTransactionType;
-      amount: number;
-      balanceBefore?: number;
-      balanceAfter?: number;
+      amount: number | bigint;
+      balanceBefore?: number | bigint;
+      balanceAfter?: number | bigint;
       correlationId?: string;
       note?: string;
     },
@@ -112,10 +112,14 @@ function deterministicUnitWave(epoch: number, seedOffset: number): number {
   return (frac * 2 - 1) * 0.5 + slowWave; // roughly [-1, 1]
 }
 
-export function computeCoinPriceAtEpoch(spec: CryptoCoinSpec, epoch: number): number {
+export function computeCoinPriceAtEpoch(spec: CryptoCoinSpec, epoch: number): bigint {
   const wave = deterministicUnitWave(epoch, spec.seedOffset);
   const multiplier = Math.max(0.35, 1 + wave * spec.volatility);
-  return Math.max(500, Math.round((spec.basePrice * multiplier) / 100) * 100);
+  const basisPoints = BigInt(Math.round(multiplier * 10_000));
+  const rawPrice = (spec.basePrice * basisPoints) / 10_000n;
+  // Bulatkan ke kelipatan Rp 10.000 agar harga kripto rapi
+  const rounded = ((rawPrice + 5_000n) / 10_000n) * 10_000n;
+  return rounded < 100_000n ? 100_000n : rounded;
 }
 
 export class CryptoMarketService {
@@ -131,8 +135,8 @@ export class CryptoMarketService {
       const price = computeCoinPriceAtEpoch(spec, epoch);
       const previousPrice = computeCoinPriceAtEpoch(spec, epoch - 1);
       const changePercent =
-        previousPrice > 0
-          ? Math.round(((price - previousPrice) / previousPrice) * 1000) / 10
+        previousPrice > 0n
+          ? Number(((price - previousPrice) * 1000n) / previousPrice) / 10
           : 0;
       return {
         symbol: spec.symbol,
@@ -168,8 +172,8 @@ export class CryptoMarketService {
     }
 
     const quote = this.getQuote(rawSymbol, now);
-    const totalCost = quote.price * units;
-    if (!Number.isSafeInteger(totalCost) || totalCost > MAX_SAFE_ECONOMY_INT) {
+    const totalCost = quote.price * BigInt(units);
+    if (totalCost <= 0n || totalCost > MAX_SAFE_MONEY_BIGINT) {
       throw new AppUserError("Nominal pembelian terlalu besar.");
     }
 
@@ -214,7 +218,7 @@ export class CryptoMarketService {
           balanceBefore: profile.moneyBalance,
           balanceAfter: updated.moneyBalance,
           correlationId,
-          note: `buy ${String(units)} ${quote.symbol} @ ${String(quote.price)}`,
+          note: `buy ${String(units)} ${quote.symbol} @ ${quote.price.toString()}`,
         },
         tx,
       );
@@ -261,8 +265,8 @@ export class CryptoMarketService {
         );
       }
 
-      const rawProceeds = quote.price * unitsToSell;
-      const proceeds = Math.max(0, Math.min(rawProceeds, MAX_SAFE_ECONOMY_INT - profile.moneyBalance));
+      const rawProceeds = quote.price * BigInt(unitsToSell);
+      const proceeds = clampMoneyCredit(profile.moneyBalance, rawProceeds);
       const newHolding = currentHolding - unitsToSell;
       const nextState = withUpdatedCryptoHolding(state, quote.symbol, newHolding);
 
@@ -287,7 +291,7 @@ export class CryptoMarketService {
           balanceBefore: profile.moneyBalance,
           balanceAfter: updated.moneyBalance,
           correlationId,
-          note: `sell ${String(unitsToSell)} ${quote.symbol} @ ${String(quote.price)}`,
+          note: `sell ${String(unitsToSell)} ${quote.symbol} @ ${quote.price.toString()}`,
         },
         tx,
       );
@@ -314,12 +318,12 @@ export class CryptoMarketService {
     const state = parseRpgState(profile.rpgState);
     const quotes = this.getMarketSnapshot(now);
     const items: CryptoPortfolioItem[] = [];
-    let totalValue = 0;
+    let totalValue = 0n;
 
     for (const quote of quotes) {
       const units = state.crypto[quote.symbol] ?? 0;
       if (units > 0) {
-        const marketValue = units * quote.price;
+        const marketValue = BigInt(units) * quote.price;
         totalValue += marketValue;
         items.push({
           symbol: quote.symbol,

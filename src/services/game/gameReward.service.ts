@@ -37,6 +37,16 @@ interface EconomyService {
     correlationId?: string;
     note?: string;
   }): Promise<unknown>;
+  creditMoney?(input: {
+    groupJid: string;
+    userJid: string;
+    amount: bigint;
+    type: "GAME_REWARD";
+    scaleByLevel?: boolean;
+    idempotencyKey?: string;
+    correlationId?: string;
+    note?: string;
+  }): Promise<{ amountCredited: bigint; levelMultiplier?: number } | null | undefined>;
   recordGameResult(input: {
     groupJid: string;
     userJid: string;
@@ -49,6 +59,8 @@ interface EconomyService {
 export interface GameRewardResult {
   points: number;
   xp: number;
+  money: bigint;
+  levelMultiplier?: number;
   capped?: boolean;
 }
 
@@ -71,6 +83,7 @@ export class GameRewardService {
       `game:kuis:${roundId}:${userJid}:correct`,
       points,
       KUIS_REWARD.CORRECT_XP,
+      KUIS_REWARD.CORRECT_MONEY,
       correlationId,
       "kuis-correct",
     );
@@ -106,6 +119,7 @@ export class GameRewardService {
       `game:mtk:${roundId}:${userJid}:correct`,
       MTK_REWARD.CORRECT_POINTS,
       MTK_REWARD.CORRECT_XP,
+      MTK_REWARD.CORRECT_MONEY,
       correlationId,
       "mtk-correct",
     );
@@ -143,6 +157,7 @@ export class GameRewardService {
       `game:tebakkata:${roundId}:${userJid}:correct`,
       points,
       TEBAKKATA_REWARD.CORRECT_XP,
+      TEBAKKATA_REWARD.CORRECT_MONEY,
       correlationId,
       "tebakkata-correct",
     );
@@ -180,6 +195,7 @@ export class GameRewardService {
       `game:tebakemoji:${roundId}:${userJid}:correct`,
       points,
       TEBAKEMOJI_REWARD.CORRECT_XP,
+      TEBAKEMOJI_REWARD.CORRECT_MONEY,
       correlationId,
       "tebakemoji-correct",
     );
@@ -219,6 +235,7 @@ export class GameRewardService {
       `game:katla:${roundId}:${userJid}:win`,
       points,
       base.xp,
+      base.money,
       correlationId,
       "katla-win",
     );
@@ -259,6 +276,7 @@ export class GameRewardService {
       `game:caklontong:${roundId}:${userJid}:correct`,
       points,
       CAKLONTONG_REWARD.CORRECT_XP,
+      CAKLONTONG_REWARD.CORRECT_MONEY,
       correlationId,
       "caklontong-correct",
     );
@@ -290,11 +308,24 @@ export class GameRewardService {
     step: number,
     correlationId: string,
   ): Promise<GameRewardResult> {
-    const { points, xp } = getBomSafeStepReward(step);
+    const { points, xp, money } = getBomSafeStepReward(step);
     const key = `game:bom:${roundId}:${userJid}:cell:${String(cellNumber)}`;
     await this.creditSafe(groupJid, userJid, points, key, correlationId, "bom-safe-points");
     await this.creditXpSafe(groupJid, userJid, xp, `${key}:xp`, correlationId, "bom-safe-xp");
-    return { points, xp };
+    const moneyRes = await this.creditMoneySafe(
+      groupJid,
+      userJid,
+      money,
+      `${key}:money`,
+      correlationId,
+      "bom-safe-money",
+    );
+    return {
+      points,
+      xp,
+      money: moneyRes.amountCredited,
+      levelMultiplier: moneyRes.levelMultiplier,
+    };
   }
 
   async awardBomCleanSweepBonus(
@@ -309,6 +340,7 @@ export class GameRewardService {
       `game:bom:${roundId}:${userJid}:clean-sweep`,
       BOM_REWARD.CLEAN_SWEEP_BONUS_POINTS,
       BOM_REWARD.CLEAN_SWEEP_BONUS_XP,
+      BOM_REWARD.CLEAN_SWEEP_BONUS_MONEY,
       correlationId,
       "bom-clean-sweep",
     );
@@ -355,6 +387,7 @@ export class GameRewardService {
       `game:tebakangka:${roundId}:${userJid}:correct`,
       points,
       base.xp,
+      base.money,
       correlationId,
       "tebakangka-correct",
     );
@@ -395,7 +428,7 @@ export class GameRewardService {
     const remainingXp = cap.CAP_XP - currentUserXp;
 
     if (remainingPoints <= 0 && remainingXp <= 0) {
-      return { points: 0, xp: 0, capped: true };
+      return { points: 0, xp: 0, money: 0n, capped: true };
     }
 
     const awardPoints = Math.min(cap.ANSWER_POINTS, remainingPoints);
@@ -422,8 +455,22 @@ export class GameRewardService {
         "family100-answer-xp",
       );
     }
+    const moneyRes = await this.creditMoneySafe(
+      groupJid,
+      userJid,
+      cap.ANSWER_MONEY,
+      `${key}:money`,
+      correlationId,
+      "family100-answer-money",
+    );
 
-    return { points: awardPoints, xp: awardXp, capped: false };
+    return {
+      points: awardPoints,
+      xp: awardXp,
+      money: moneyRes.amountCredited,
+      levelMultiplier: moneyRes.levelMultiplier,
+      capped: false,
+    };
   }
 
   async awardFamily100FinalBonus(
@@ -439,7 +486,7 @@ export class GameRewardService {
     const remainingXp = cap.CAP_XP - currentUserXp;
 
     if (remainingPoints <= 0 && remainingXp <= 0) {
-      return { points: 0, xp: 0, capped: true };
+      return { points: 0, xp: 0, money: 0n, capped: true };
     }
 
     const awardPoints = Math.min(cap.FINAL_BONUS_POINTS, remainingPoints);
@@ -466,8 +513,22 @@ export class GameRewardService {
         "family100-final-xp",
       );
     }
+    const moneyRes = await this.creditMoneySafe(
+      groupJid,
+      userJid,
+      cap.FINAL_BONUS_MONEY,
+      `${key}:money`,
+      correlationId,
+      "family100-final-money",
+    );
 
-    return { points: awardPoints, xp: awardXp, capped: false };
+    return {
+      points: awardPoints,
+      xp: awardXp,
+      money: moneyRes.amountCredited,
+      levelMultiplier: moneyRes.levelMultiplier,
+      capped: false,
+    };
   }
 
   async recordFamily100GamePlayed(
@@ -494,6 +555,7 @@ export class GameRewardService {
       `game:tictactoe:${roundId}:${userJid}:win`,
       TICTACTOE_REWARD.WIN_POINTS,
       TICTACTOE_REWARD.WIN_XP,
+      TICTACTOE_REWARD.WIN_MONEY,
       correlationId,
       "tictactoe-win",
     );
@@ -522,8 +584,21 @@ export class GameRewardService {
       correlationId,
       "tictactoe-loss-xp",
     );
+    const moneyRes = await this.creditMoneySafe(
+      groupJid,
+      userJid,
+      TICTACTOE_REWARD.LOSS_MONEY,
+      `${key}:money`,
+      correlationId,
+      "tictactoe-loss-money",
+    );
     await this.recordGameSafe(groupJid, userJid, false, `${key}:stat`, correlationId);
-    return { points: TICTACTOE_REWARD.LOSS_POINTS, xp: TICTACTOE_REWARD.LOSS_XP };
+    return {
+      points: TICTACTOE_REWARD.LOSS_POINTS,
+      xp: TICTACTOE_REWARD.LOSS_XP,
+      money: moneyRes.amountCredited,
+      levelMultiplier: moneyRes.levelMultiplier,
+    };
   }
 
   async awardTicTacToeDraw(
@@ -549,8 +624,21 @@ export class GameRewardService {
       correlationId,
       "tictactoe-draw-xp",
     );
+    const moneyRes = await this.creditMoneySafe(
+      groupJid,
+      userJid,
+      TICTACTOE_REWARD.DRAW_MONEY,
+      `${key}:money`,
+      correlationId,
+      "tictactoe-draw-money",
+    );
     await this.recordGameSafe(groupJid, userJid, false, `${key}:stat`, correlationId);
-    return { points: TICTACTOE_REWARD.DRAW_POINTS, xp: TICTACTOE_REWARD.DRAW_XP };
+    return {
+      points: TICTACTOE_REWARD.DRAW_POINTS,
+      xp: TICTACTOE_REWARD.DRAW_XP,
+      money: moneyRes.amountCredited,
+      levelMultiplier: moneyRes.levelMultiplier,
+    };
   }
 
   async recordTicTacToeTimeout(
@@ -571,6 +659,7 @@ export class GameRewardService {
     baseKey: string,
     points: number,
     xp: number,
+    baseMoney: bigint,
     correlationId: string,
     notePrefix: string,
   ): Promise<GameRewardResult> {
@@ -590,8 +679,21 @@ export class GameRewardService {
       correlationId,
       `${notePrefix}-xp`,
     );
+    const moneyRes = await this.creditMoneySafe(
+      groupJid,
+      userJid,
+      baseMoney,
+      `${baseKey}:money`,
+      correlationId,
+      `${notePrefix}-money`,
+    );
     await this.recordGameSafe(groupJid, userJid, true, `${baseKey}:stat`, correlationId);
-    return { points, xp };
+    return {
+      points,
+      xp,
+      money: moneyRes.amountCredited,
+      levelMultiplier: moneyRes.levelMultiplier,
+    };
   }
 
   private async creditSafe(
@@ -640,6 +742,45 @@ export class GameRewardService {
       return true;
     } catch (error: unknown) {
       if (error instanceof DuplicateOperationError) return false;
+      throw error;
+    }
+  }
+
+  private async creditMoneySafe(
+    groupJid: string,
+    userJid: string,
+    baseAmount: bigint,
+    idempotencyKey: string,
+    correlationId: string,
+    note: string,
+  ): Promise<{ amountCredited: bigint; levelMultiplier: number }> {
+    if (baseAmount <= 0n || typeof this.economy.creditMoney !== "function") {
+      return { amountCredited: baseAmount, levelMultiplier: 1 };
+    }
+
+    try {
+      const result = await this.economy.creditMoney({
+        groupJid,
+        userJid,
+        amount: baseAmount,
+        type: "GAME_REWARD",
+        scaleByLevel: true,
+        idempotencyKey,
+        correlationId,
+        note,
+      });
+
+      if (result) {
+        return {
+          amountCredited: result.amountCredited,
+          levelMultiplier: result.levelMultiplier ?? 1,
+        };
+      }
+      return { amountCredited: baseAmount, levelMultiplier: 1 };
+    } catch (error: unknown) {
+      if (error instanceof DuplicateOperationError) {
+        return { amountCredited: 0n, levelMultiplier: 1 };
+      }
       throw error;
     }
   }

@@ -4,6 +4,12 @@ import { roleGuard } from "../../guards/roleGuard";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { prisma } from "../../repositories/prismaClient";
 import type { CommandContext } from "../../types/command";
+import {
+  clampMoneyCredit,
+  formatRupiah,
+  scaleMoneyByLevel,
+  toBigIntSafe,
+} from "../../utils/currency";
 import { levelUpNotifierService } from "../member/levelUpNotifier.service";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { resolveRank } from "../member/rank.service";
@@ -20,6 +26,7 @@ export interface SlotPlayResult {
   status: "super_jackpot" | "jackpot" | "match_two" | "loss";
   betPoints: number;
   rewardPoints: number;
+  rewardMoney: bigint;
   rewardXp: number;
   balancePoints: number;
   won: boolean;
@@ -101,10 +108,6 @@ export class SlotGameService {
     }
 
     // --- Educational Weighted RNG (The Reality Trap) ---
-    // 1. All-in: tiny win rate (~6%) - high risk punishment
-    // 2. Beginner (1-3 games): ~65% win rate ("Dikasih senang")
-    // 3. Casual (4-10 games): ~35% win rate
-    // 4. Veteran (11+ games): ~20% win rate (The House Edge)
     let winRate: number;
     if (isAllIn) {
       winRate = 0.06;
@@ -123,7 +126,10 @@ export class SlotGameService {
     let status: SlotPlayResult["status"] = "loss";
     let won = false;
     let rewardPoints = 0;
+    let baseRewardMoney = 0n;
     let rewardXp: number = SLOT_CONFIG.LOSS_XP;
+
+    const betTierScale = BigInt(Math.min(5, Math.max(1, Math.floor(bet / minBet))));
 
     if (isWin) {
       won = true;
@@ -133,6 +139,7 @@ export class SlotGameService {
         reels = ["7️⃣", "7️⃣", "7️⃣"];
         status = "super_jackpot";
         rewardPoints = Math.round(bet * 10);
+        baseRewardMoney = SLOT_CONFIG.SUPER_JACKPOT_MONEY * betTierScale;
         rewardXp = SLOT_CONFIG.SUPER_JACKPOT_XP;
       } else if (winTier < 0.28) {
         // Jackpot: 3 identical fruit symbols
@@ -141,6 +148,7 @@ export class SlotGameService {
         reels = [fruit, fruit, fruit];
         status = "jackpot";
         rewardPoints = Math.round(bet * 5);
+        baseRewardMoney = SLOT_CONFIG.JACKPOT_MONEY * betTierScale;
         rewardXp = SLOT_CONFIG.JACKPOT_XP;
       } else {
         // Match Two
@@ -153,6 +161,7 @@ export class SlotGameService {
         reels = [temp[0] ?? pair, temp[1] ?? pair, temp[2] ?? pair];
         status = "match_two";
         rewardPoints = Math.max(1, Math.round(bet * 1.5));
+        baseRewardMoney = SLOT_CONFIG.MATCH_TWO_MONEY * betTierScale;
         rewardXp = SLOT_CONFIG.MATCH_TWO_XP;
       }
     } else {
@@ -162,8 +171,16 @@ export class SlotGameService {
       const shuffled = [...SLOT_SYMBOLS].sort(() => Math.random() - 0.5);
       reels = [shuffled[0] ?? "🍒", shuffled[1] ?? "🍇", shuffled[2] ?? "🍉"];
       rewardPoints = 0;
+      baseRewardMoney = 0n;
       rewardXp = SLOT_CONFIG.LOSS_XP;
     }
+
+    const currentMoney = toBigIntSafe(profile.moneyBalance);
+    const level = Math.max(1, Number.isFinite(profile.level) ? profile.level : 1);
+    const rewardMoney =
+      baseRewardMoney > 0n
+        ? clampMoneyCredit(currentMoney, scaleMoneyByLevel(baseRewardMoney, level))
+        : 0n;
 
     // Net point change:
     const netPoints =
@@ -183,6 +200,8 @@ export class SlotGameService {
             pointsBalance: { increment: netPoints },
             experience: { increment: rewardXp },
             totalPointsEarned: rewardPoints > 0 ? { increment: rewardPoints } : undefined,
+            moneyBalance: rewardMoney > 0n ? { increment: rewardMoney } : undefined,
+            totalMoneyEarned: rewardMoney > 0n ? { increment: rewardMoney } : undefined,
             totalGamesPlayed: { increment: 1 },
             totalGamesWon: won ? { increment: 1 } : undefined,
           },
@@ -204,6 +223,8 @@ export class SlotGameService {
             pointsBalance: { increment: rewardPoints },
             experience: { increment: rewardXp },
             totalPointsEarned: rewardPoints > 0 ? { increment: rewardPoints } : undefined,
+            moneyBalance: rewardMoney > 0n ? { increment: rewardMoney } : undefined,
+            totalMoneyEarned: rewardMoney > 0n ? { increment: rewardMoney } : undefined,
             totalGamesPlayed: { increment: 1 },
             totalGamesWon: won ? { increment: 1 } : undefined,
           },
@@ -230,6 +251,25 @@ export class SlotGameService {
           correlationId,
         },
       });
+
+      // Ledger row for Sultan Money bonus
+      if (rewardMoney > 0n) {
+        const updatedMoney = toBigIntSafe(updated.moneyBalance);
+        await tx.groupMemberTransaction.create({
+          data: {
+            profileId: profile.id,
+            groupJid,
+            userJid,
+            asset: MemberTransactionAsset.MONEY,
+            type: MemberTransactionType.GAME_REWARD,
+            amount: rewardMoney,
+            balanceBefore: currentMoney,
+            balanceAfter: updatedMoney,
+            correlationId,
+            note: `slot_${status}`,
+          },
+        });
+      }
 
       // Ledger row for XP
       if (rewardXp > 0) {
@@ -266,6 +306,7 @@ export class SlotGameService {
         status,
         betPoints: bet,
         rewardPoints,
+        rewardMoney,
         rewardXp,
         balancePoints: updated.pointsBalance,
         won,
@@ -318,6 +359,7 @@ export class SlotGameService {
       title,
       `• Taruhan  : ${result.betPoints.toLocaleString("id-ID")} Poin${result.isSuperOwner ? " (Free)" : ""}`,
       `• Hadiah   : ${result.rewardPoints > 0 ? `+${result.rewardPoints.toLocaleString("id-ID")}` : "0"} Poin`,
+      ...(result.rewardMoney > 0n ? [`• Bonus Rp : +${formatRupiah(result.rewardMoney)}`] : []),
       `• XP       : +${String(result.rewardXp)} XP`,
       `• Sisa Poin: ${sisaPoin}`,
     ];

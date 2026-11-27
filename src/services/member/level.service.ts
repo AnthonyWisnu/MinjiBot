@@ -6,12 +6,14 @@ import {
 
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { prisma } from "../../repositories/prismaClient";
+import { clampMoneyCredit, minBigInt } from "../../utils/currency";
 import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "./memberEconomy.service";
 
 const MAX_MEMBER_LEVEL = 500;
 const LEVEL_UP_POINTS_PER_LEVEL = 30;
 const LEVEL_UP_LIMIT_PER_LEVEL = 2;
-const MAX_LEVEL_UP_MONEY_PER_LEVEL = 250_000;
+const LEVEL_UP_MONEY_PER_LEVEL_UNIT = 1_500_000n;
+const MAX_LEVEL_UP_MONEY_PER_LEVEL = 50_000_000n;
 
 /**
  * Total kumulatif XP yang dibutuhkan untuk mencapai level tertentu.
@@ -37,13 +39,16 @@ export function calculateReachableLevel(experience: number): number {
 export function computeLevelUpRewards(
   fromLevel: number,
   toLevel: number,
-): { moneyGained: number; pointsGained: number; limitGained: number } {
-  let moneyGained = 0;
+): { moneyGained: bigint; pointsGained: number; limitGained: number } {
+  let moneyGained = 0n;
   let pointsGained = 0;
   let limitGained = 0;
 
   for (let lvl = fromLevel + 1; lvl <= toLevel; lvl += 1) {
-    moneyGained += Math.min(MAX_LEVEL_UP_MONEY_PER_LEVEL, lvl * 10_000);
+    moneyGained += minBigInt(
+      MAX_LEVEL_UP_MONEY_PER_LEVEL,
+      BigInt(lvl) * LEVEL_UP_MONEY_PER_LEVEL_UNIT,
+    );
     pointsGained += LEVEL_UP_POINTS_PER_LEVEL;
     limitGained += LEVEL_UP_LIMIT_PER_LEVEL;
   }
@@ -56,12 +61,12 @@ export interface LevelUpResult {
   oldLevel: number;
   newLevel: number;
   levelsGained: number;
-  moneyGained: number;
+  moneyGained: bigint;
   pointsGained: number;
   limitGained: number;
   currentXp: number;
   nextLevelXp: number;
-  currentMoney: number;
+  currentMoney: bigint;
   currentPoints: number;
   currentLimit: number;
 }
@@ -86,9 +91,9 @@ interface LevelTx {
         userJid: string;
         asset: MemberTransactionAsset;
         type: MemberTransactionType;
-        amount: number;
-        balanceBefore: number;
-        balanceAfter: number;
+        amount: number | bigint;
+        balanceBefore: number | bigint;
+        balanceAfter: number | bigint;
         correlationId: string;
       }[];
     }): Promise<{ count: number }>;
@@ -119,7 +124,7 @@ export class LevelService {
           oldLevel: currentLevel,
           newLevel: currentLevel,
           levelsGained: 0,
-          moneyGained: 0,
+          moneyGained: 0n,
           pointsGained: 0,
           limitGained: 0,
           currentXp: profile.experience,
@@ -131,10 +136,7 @@ export class LevelService {
       }
 
       const rawRewards = computeLevelUpRewards(currentLevel, reachableLevel);
-      const safeMoneyGain = Math.min(
-        rawRewards.moneyGained,
-        Math.max(0, MAX_SAFE_ECONOMY_INT - profile.moneyBalance),
-      );
+      const safeMoneyGain = clampMoneyCredit(profile.moneyBalance, rawRewards.moneyGained);
       const safePointsGain = Math.min(
         rawRewards.pointsGained,
         Math.max(0, MAX_SAFE_ECONOMY_INT - profile.pointsBalance),
@@ -166,7 +168,7 @@ export class LevelService {
           oldLevel: refreshed.level,
           newLevel: refreshed.level,
           levelsGained: 0,
-          moneyGained: 0,
+          moneyGained: 0n,
           pointsGained: 0,
           limitGained: 0,
           currentXp: refreshed.experience,

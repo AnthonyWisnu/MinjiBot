@@ -2,6 +2,7 @@ import { logger } from "../config/logger";
 import { formatUserSafeError } from "../utils/userSafeError";
 import type { CommandContext, CommandDefinition } from "../types/command";
 import { afkCommands } from "./afk/afk.command";
+import { aiCommands } from "./ai/ai.command";
 import { funCommands } from "./fun/fun.command";
 import { gameCommands } from "./game/game.command";
 import { dailyCommand } from "./member/daily.command";
@@ -111,6 +112,7 @@ export const commandRouter = new CommandRouter([
   ...tenantAdminCommands,
   ...tenantFeatureCommands,
   ...afkCommands,
+  ...aiCommands,
   ...hdCommands,
   ...stickerCommands,
   ...groupStatusCommands,

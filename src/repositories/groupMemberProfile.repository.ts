@@ -5,7 +5,7 @@ import { prisma, type PrismaTransactionClient } from "./prismaClient";
 type Client = typeof prisma | PrismaTransactionClient;
 
 export const INITIAL_LIMIT_BALANCE = 100;
-export const INITIAL_MONEY_BALANCE = 25_000;
+export const INITIAL_MONEY_BALANCE = 500_000n;
 
 export class GroupMemberProfileRepository {
   constructor(private readonly client: Client = prisma) {}
@@ -97,7 +97,12 @@ export class GroupMemberProfileRepository {
     });
 
     return profiles
-      .sort((a, b) => b.moneyBalance + b.bankBalance - (a.moneyBalance + a.bankBalance))
+      .sort((a, b) => {
+        const diff = b.moneyBalance + b.bankBalance - (a.moneyBalance + a.bankBalance);
+        if (diff > 0n) return 1;
+        if (diff < 0n) return -1;
+        return 0;
+      })
       .slice(0, limit);
   }
 

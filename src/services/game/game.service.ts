@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { CommandContext } from "../../types/command";
+import { formatRupiah } from "../../utils/currency";
 import { getBotCanonicalJids, normalizeUserJid } from "../../utils/jid";
 import { identityResolverService } from "../identity/identityResolver.service";
 import { generateCorrelationId } from "../member/memberEconomy.service";
@@ -487,7 +488,7 @@ export class GameService {
       const loserJid = isPlayer1 ? tictactoe.player1Jid : tictactoe.player2Jid;
       const winnerJid = isPlayer1 ? tictactoe.player2Jid : tictactoe.player1Jid;
 
-      await Promise.allSettled([
+      const [, winReward] = await Promise.allSettled([
         this.rewardService.awardTicTacToeLoss(
           context.chatJid,
           loserJid,
@@ -502,12 +503,14 @@ export class GameService {
         ),
       ]);
 
+      const winMoney =
+        winReward.status === "fulfilled" ? winReward.value.money : TICTACTOE_REWARD.WIN_MONEY;
       const winnerMention = formatMention(winnerJid);
       return {
         text: [
           "Menyerah. Game selesai.",
           `Pemenang: ${winnerMention.tag}`,
-          `Poin menang: ${String(TICTACTOE_REWARD.WIN_POINTS)} | XP: ${String(TICTACTOE_REWARD.WIN_XP)}`,
+          `Poin menang: ${String(TICTACTOE_REWARD.WIN_POINTS)} | XP: ${String(TICTACTOE_REWARD.WIN_XP)} | Uang: +${formatRupiah(winMoney)}`,
         ].join("\n"),
         mentions: [winnerMention.jid],
       };
@@ -695,7 +698,7 @@ export class GameService {
       const winnerJid = session.currentTurn === "X" ? session.player1Jid : session.player2Jid;
       const loserJid = session.currentTurn === "X" ? session.player2Jid : session.player1Jid;
 
-      await Promise.allSettled([
+      const [winReward] = await Promise.allSettled([
         this.rewardService.awardTicTacToeWin(
           context.chatJid,
           winnerJid,
@@ -710,6 +713,8 @@ export class GameService {
         ),
       ]);
 
+      const winMoney =
+        winReward.status === "fulfilled" ? winReward.value.money : TICTACTOE_REWARD.WIN_MONEY;
       const winM = formatMention(winnerJid);
       const loseM = formatMention(loserJid);
 
@@ -717,7 +722,7 @@ export class GameService {
         text: [
           `Pemenang: ${winM.tag} (${session.currentTurn}) menang!`,
           `Kalah: ${loseM.tag}`,
-          `Hadiah menang: +${String(TICTACTOE_REWARD.WIN_POINTS)} Poin & +${String(TICTACTOE_REWARD.WIN_XP)} XP`,
+          `Hadiah menang: +${String(TICTACTOE_REWARD.WIN_POINTS)} Poin, +${String(TICTACTOE_REWARD.WIN_XP)} XP & +${formatRupiah(winMoney)}`,
           "",
           formatBoard(session.board),
         ].join("\n"),
@@ -728,7 +733,7 @@ export class GameService {
     if (session.board.every((cell) => cell !== null)) {
       this.ticTacToeSessions.delete(context.chatJid);
 
-      await Promise.allSettled([
+      const [draw1] = await Promise.allSettled([
         this.rewardService.awardTicTacToeDraw(
           context.chatJid,
           session.player1Jid,
@@ -743,13 +748,15 @@ export class GameService {
         ),
       ]);
 
+      const drawMoney =
+        draw1.status === "fulfilled" ? draw1.value.money : TICTACTOE_REWARD.DRAW_MONEY;
       const p1M = formatMention(session.player1Jid);
       const p2M = formatMention(session.player2Jid);
 
       return {
         text: [
           "Permainan berakhir seri.",
-          `${p1M.tag} & ${p2M.tag} masing-masing dapat +${String(TICTACTOE_REWARD.DRAW_POINTS)} Poin dan +${String(TICTACTOE_REWARD.DRAW_XP)} XP!`,
+          `${p1M.tag} & ${p2M.tag} masing-masing dapat +${String(TICTACTOE_REWARD.DRAW_POINTS)} Poin, +${String(TICTACTOE_REWARD.DRAW_XP)} XP & +${formatRupiah(drawMoney)}!`,
           "",
           formatBoard(session.board),
         ].join("\n"),
@@ -986,7 +993,7 @@ export class GameService {
 
       session.answered.add(normalizedAnswer);
 
-      let reward: { points: number; xp: number };
+      let reward: { points: number; xp: number; money: bigint; levelMultiplier?: number };
       if (type === "kuis") {
         reward = await this.rewardService.awardKuisCorrect(
           context.chatJid,
@@ -1030,12 +1037,17 @@ export class GameService {
 
       this.quizSessions.delete(context.chatJid);
       const winnerM = formatMention(context.senderUserJid);
+      const bonusTag =
+        reward.levelMultiplier && reward.levelMultiplier > 1
+          ? ` (Bonus Lv x${String(reward.levelMultiplier)})`
+          : "";
 
       const lines = [
         `Benar! Selamat ${winnerM.tag}!`,
         `Jawaban: *${matchedAnswer}*`,
         ...(session.question.reason ? [`Alasan: ${session.question.reason}`] : []),
         `Poin bertambah: +${String(reward.points)} | XP bertambah: +${String(reward.xp)}`,
+        `Uang bertambah: +${formatRupiah(reward.money)}${bonusTag}`,
         "Game selesai.",
       ];
 
@@ -1086,6 +1098,7 @@ export class GameService {
           formatKatlaBoard(katlaState),
           "",
           `Poin bertambah: +${String(reward.points)} | XP bertambah: +${String(reward.xp)}`,
+          `Uang bertambah: +${formatRupiah(reward.money)}`,
           "Game selesai.",
         ].join("\n"),
         mentions: [winM.jid],
@@ -1204,8 +1217,8 @@ export class GameService {
           "",
           formatBomBoard(bomState, true),
           "",
-          `Hadiah kotak: +${String(stepReward.points)} Poin, +${String(stepReward.xp)} XP`,
-          `Bonus sapu bersih: +${String(bonus.points)} Poin, +${String(bonus.xp)} XP`,
+          `Hadiah kotak: +${String(stepReward.points)} Poin, +${String(stepReward.xp)} XP, +${formatRupiah(stepReward.money)}`,
+          `Bonus sapu bersih: +${String(bonus.points)} Poin, +${String(bonus.xp)} XP, +${formatRupiah(bonus.money)}`,
           "Game selesai.",
         ].join("\n"),
         mentions: [actorM.jid],
@@ -1215,7 +1228,7 @@ export class GameService {
     return {
       text: [
         `Aman! ${actorM.tag} membuka kotak *${String(outcome.cell)}*.`,
-        `+${String(stepReward.points)} Poin | +${String(stepReward.xp)} XP`,
+        `+${String(stepReward.points)} Poin | +${String(stepReward.xp)} XP | +${formatRupiah(stepReward.money)}`,
         "",
         formatBomBoard(bomState, false),
         "",
@@ -1306,7 +1319,7 @@ export class GameService {
       const bonusLines = bonusResult.capped
         ? ["• Bonus jawaban terakhir tidak diterima (cap sudah penuh)."]
         : [
-            `• Bonus jawaban terakhir: +${String(bonusResult.points)} Poin, +${String(bonusResult.xp)} XP`,
+            `• Bonus jawaban terakhir: +${String(bonusResult.points)} Poin, +${String(bonusResult.xp)} XP, +${formatRupiah(bonusResult.money)}`,
           ];
 
       return {
@@ -1315,7 +1328,7 @@ export class GameService {
           `Jawaban nomor ${String(answerNumber)}: *${matchedSlot.text}*`,
           result.capped
             ? "Reward tidak diterima (cap sudah penuh)."
-            : `• Poin bertambah: +${String(result.points)}, XP: +${String(result.xp)}`,
+            : `• Poin bertambah: +${String(result.points)}, XP: +${String(result.xp)}, Uang: +${formatRupiah(result.money)}`,
           ...bonusLines,
           "",
           board.text,
@@ -1334,7 +1347,7 @@ export class GameService {
         `Jawaban nomor ${String(answerNumber)}: *${matchedSlot.text}*`,
         result.capped
           ? "Reward tidak diterima (cap sudah penuh)."
-          : `• Poin bertambah: +${String(result.points)}, XP: +${String(result.xp)}`,
+          : `• Poin bertambah: +${String(result.points)}, XP: +${String(result.xp)}, Uang: +${formatRupiah(result.money)}`,
         "",
         board.text,
         "",
@@ -1423,6 +1436,7 @@ export class GameService {
         `Benar! Selamat ${winnerM.tag}, angkanya *${String(target)}*.`,
         `Percobaan ke-${String(attempts)}.`,
         `Poin bertambah: +${String(reward.points)} | XP bertambah: +${String(reward.xp)}`,
+        `Uang bertambah: +${formatRupiah(reward.money)}`,
       ].join("\n"),
       mentions: [winnerM.jid],
     };

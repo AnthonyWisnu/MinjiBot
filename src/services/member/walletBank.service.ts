@@ -12,28 +12,28 @@ import {
   InsufficientMoneyError,
   InvalidAmountError,
 } from "../../types/memberEconomy";
-import { formatRupiah } from "../../utils/currency";
+import { formatRupiah, MAX_SAFE_MONEY_BIGINT } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
 import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "./memberEconomy.service";
 
-export const EXCHANGE_MONEY_PER_POINT = 200;
+export const EXCHANGE_MONEY_PER_POINT = 20_000n;
 
 export interface BankTransferResult {
-  amount: number;
-  moneyBalance: number;
-  bankBalance: number;
+  amount: bigint;
+  moneyBalance: bigint;
+  bankBalance: bigint;
 }
 
 export interface MoneyGiftResult {
-  amount: number;
-  senderMoneyBalance: number;
-  targetMoneyBalance: number;
+  amount: bigint;
+  senderMoneyBalance: bigint;
+  targetMoneyBalance: bigint;
 }
 
 export interface MoneyToPointsResult {
   pointsGained: number;
-  moneySpent: number;
-  moneyBalance: number;
+  moneySpent: bigint;
+  moneyBalance: bigint;
   pointsBalance: number;
 }
 
@@ -51,9 +51,9 @@ interface WalletTxStore {
       targetUserJid?: string;
       asset: MemberTransactionAsset;
       type: MemberTransactionType;
-      amount: number;
-      balanceBefore?: number;
-      balanceAfter?: number;
+      amount: number | bigint;
+      balanceBefore?: number | bigint;
+      balanceAfter?: number | bigint;
       correlationId?: string;
       note?: string;
     },
@@ -89,10 +89,10 @@ export class WalletBankService {
   async depositToBank(
     groupJid: string,
     userJid: string,
-    amountOrAll: number | "all",
+    amountOrAll: bigint | "all",
   ): Promise<BankTransferResult> {
     if (amountOrAll !== "all") {
-      this.assertPositiveSafeInt(amountOrAll);
+      this.assertPositiveSafeBigInt(amountOrAll);
     }
 
     const correlationId = generateCorrelationId();
@@ -101,13 +101,13 @@ export class WalletBankService {
       const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
       const amount = amountOrAll === "all" ? profile.moneyBalance : amountOrAll;
 
-      if (amount <= 0 || profile.moneyBalance < amount) {
+      if (amount <= 0n || profile.moneyBalance < amount) {
         throw new InsufficientMoneyError(
           `Uang di dompet tidak cukup. Saldo dompet saat ini: ${formatRupiah(profile.moneyBalance)}.`,
         );
       }
 
-      if (profile.bankBalance + amount > MAX_SAFE_ECONOMY_INT) {
+      if (profile.bankBalance + amount > MAX_SAFE_MONEY_BIGINT) {
         throw new InvalidAmountError("Saldo Bank/ATM telah mencapai batas maksimal.");
       }
 
@@ -171,10 +171,10 @@ export class WalletBankService {
   async withdrawFromBank(
     groupJid: string,
     userJid: string,
-    amountOrAll: number | "all",
+    amountOrAll: bigint | "all",
   ): Promise<BankTransferResult> {
     if (amountOrAll !== "all") {
-      this.assertPositiveSafeInt(amountOrAll);
+      this.assertPositiveSafeBigInt(amountOrAll);
     }
 
     const correlationId = generateCorrelationId();
@@ -183,13 +183,13 @@ export class WalletBankService {
       const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
       const amount = amountOrAll === "all" ? profile.bankBalance : amountOrAll;
 
-      if (amount <= 0 || profile.bankBalance < amount) {
+      if (amount <= 0n || profile.bankBalance < amount) {
         throw new InsufficientBankError(
           `Saldo di Bank/ATM tidak cukup. Saldo Bank saat ini: ${formatRupiah(profile.bankBalance)}.`,
         );
       }
 
-      if (profile.moneyBalance + amount > MAX_SAFE_ECONOMY_INT) {
+      if (profile.moneyBalance + amount > MAX_SAFE_MONEY_BIGINT) {
         throw new InvalidAmountError("Saldo dompet telah mencapai batas maksimal.");
       }
 
@@ -254,9 +254,9 @@ export class WalletBankService {
     groupJid: string,
     senderJid: string,
     targetJid: string,
-    amount: number,
+    amount: bigint,
   ): Promise<MoneyGiftResult> {
-    this.assertPositiveSafeInt(amount);
+    this.assertPositiveSafeBigInt(amount);
 
     const normalizedSender = normalizeUserJid(senderJid);
     const normalizedTarget = normalizeUserJid(targetJid);
@@ -270,7 +270,7 @@ export class WalletBankService {
       const senderProfile = await this.profileRepo.findOrCreate(groupJid, normalizedSender, tx);
       const targetProfile = await this.profileRepo.findOrCreate(groupJid, normalizedTarget, tx);
 
-      if (targetProfile.moneyBalance + amount > MAX_SAFE_ECONOMY_INT) {
+      if (targetProfile.moneyBalance + amount > MAX_SAFE_MONEY_BIGINT) {
         throw new InvalidAmountError("Dompet penerima sudah mencapai batas maksimal.");
       }
 
@@ -349,10 +349,10 @@ export class WalletBankService {
     userJid: string,
     pointsAmount: number,
   ): Promise<MoneyToPointsResult> {
-    this.assertPositiveSafeInt(pointsAmount);
+    this.assertPositiveSafePoints(pointsAmount);
 
-    const moneyCost = pointsAmount * EXCHANGE_MONEY_PER_POINT;
-    if (!Number.isSafeInteger(moneyCost) || moneyCost > MAX_SAFE_ECONOMY_INT) {
+    const moneyCost = BigInt(pointsAmount) * EXCHANGE_MONEY_PER_POINT;
+    if (moneyCost <= 0n || moneyCost > MAX_SAFE_MONEY_BIGINT) {
       throw new InvalidAmountError("Jumlah poin yang ingin ditukar terlalu besar.");
     }
 
@@ -426,10 +426,16 @@ export class WalletBankService {
     });
   }
 
-  private assertPositiveSafeInt(amount: number): void {
+  private assertPositiveSafeBigInt(amount: bigint): void {
+    if (amount <= 0n || amount > MAX_SAFE_MONEY_BIGINT) {
+      throw new InvalidAmountError("Nominal harus bilangan bulat positif yang valid.");
+    }
+  }
+
+  private assertPositiveSafePoints(amount: number): void {
     if (!Number.isSafeInteger(amount) || amount <= 0 || amount > MAX_SAFE_ECONOMY_INT) {
       throw new InvalidAmountError(
-        `Jumlah harus bilangan bulat positif (maksimal ${MAX_SAFE_ECONOMY_INT.toLocaleString("id-ID")}).`,
+        `Jumlah poin harus bilangan bulat positif (maksimal ${MAX_SAFE_ECONOMY_INT.toLocaleString("id-ID")}).`,
       );
     }
   }

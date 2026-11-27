@@ -6,6 +6,7 @@ import {
 
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { prisma } from "../../repositories/prismaClient";
+import { clampMoneyCredit } from "../../utils/currency";
 import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "./memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "./randomProvider";
 
@@ -13,8 +14,8 @@ const WEEKLY_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 const MONTHLY_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 
 export const WEEKLY_REWARD_CONFIG = {
-  MONEY_MIN: 75_000,
-  MONEY_MAX: 150_000,
+  MONEY_MIN: 12_000_000,
+  MONEY_MAX: 25_000_000,
   POINTS_MIN: 250,
   POINTS_MAX: 500,
   XP: 350,
@@ -22,8 +23,8 @@ export const WEEKLY_REWARD_CONFIG = {
 } as const;
 
 export const MONTHLY_REWARD_CONFIG = {
-  MONEY_MIN: 350_000,
-  MONEY_MAX: 600_000,
+  MONEY_MIN: 75_000_000,
+  MONEY_MAX: 150_000_000,
   POINTS_MIN: 1_000,
   POINTS_MAX: 2_000,
   XP: 1_200,
@@ -42,11 +43,11 @@ export class PeriodicCooldownError extends Error {
 
 export interface PeriodicClaimResult {
   period: "weekly" | "monthly";
-  moneyGained: number;
+  moneyGained: bigint;
   pointsGained: number;
   xpGained: number;
   limitGained: number;
-  currentMoney: number;
+  currentMoney: bigint;
   currentPoints: number;
   currentLimit: number;
   currentXp: number;
@@ -72,9 +73,9 @@ interface PeriodicTx {
         userJid: string;
         asset: MemberTransactionAsset;
         type: MemberTransactionType;
-        amount: number;
-        balanceBefore: number;
-        balanceAfter: number;
+        amount: number | bigint;
+        balanceBefore: number | bigint;
+        balanceAfter: number | bigint;
         correlationId: string;
       }[];
     }): Promise<{ count: number }>;
@@ -122,7 +123,7 @@ export class PeriodicRewardService {
       ? MemberTransactionType.WEEKLY_REWARD
       : MemberTransactionType.MONTHLY_REWARD;
 
-    const moneyRaw = this.random.intBetween(config.MONEY_MIN, config.MONEY_MAX);
+    const moneyRaw = BigInt(this.random.intBetween(config.MONEY_MIN, config.MONEY_MAX));
     const pointsRaw = this.random.intBetween(config.POINTS_MIN, config.POINTS_MAX);
     const xpGained = config.XP;
     const limitGained = config.LIMIT;
@@ -140,7 +141,7 @@ export class PeriodicRewardService {
         }
       }
 
-      const moneyGained = Math.min(moneyRaw, Math.max(0, MAX_SAFE_ECONOMY_INT - profile.moneyBalance));
+      const moneyGained = clampMoneyCredit(profile.moneyBalance, moneyRaw);
       const pointsGained = Math.min(
         pointsRaw,
         Math.max(0, MAX_SAFE_ECONOMY_INT - profile.pointsBalance),

@@ -14,8 +14,15 @@ import { GroupMemberTransactionRepository } from "../../repositories/groupMember
 import { prisma } from "../../repositories/prismaClient";
 import { levelUpNotifierService, type LevelUpNotification } from "./levelUpNotifier.service";
 import { resolveRank } from "./rank.service";
+import {
+  clampMoneyCredit,
+  computeLevelMoneyMultiplier,
+  MAX_SAFE_MONEY_BIGINT,
+  scaleMoneyByLevel,
+} from "../../utils/currency";
 import type {
   CreditLimitInput,
+  CreditMoneyInput,
   CreditPointsInput,
   CreditXpInput,
   ConsumeLimitInput,
@@ -78,9 +85,9 @@ interface TxStore {
       targetUserJid?: string;
       asset: MemberTransactionAsset;
       type: MemberTransactionType;
-      amount: number;
-      balanceBefore?: number;
-      balanceAfter?: number;
+      amount: number | bigint;
+      balanceBefore?: number | bigint;
+      balanceAfter?: number | bigint;
       feature?: HeavyFeatureType;
       correlationId?: string;
       idempotencyKey?: string;
@@ -714,6 +721,65 @@ export class MemberEconomyService {
     return updated;
   }
 
+  // ---- Money (BigInt) ----
+
+  async creditMoney(input: CreditMoneyInput): Promise<{
+    profile: GroupMemberProfile;
+    amountCredited: bigint;
+    levelMultiplier: number;
+  }> {
+    if (input.amount <= 0n || input.amount > MAX_SAFE_MONEY_BIGINT) {
+      throw new InvalidAmountError("Nominal uang harus lebih dari 0.");
+    }
+
+    if (input.idempotencyKey) {
+      const existing = await this.txRepo.findByIdempotencyKey(input.idempotencyKey);
+      if (existing) {
+        throw new DuplicateOperationError();
+      }
+    }
+
+    return this.db.$transaction(async (tx) => {
+      const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
+      const level = Math.max(1, profile.level);
+      const levelMultiplier = input.scaleByLevel ? computeLevelMoneyMultiplier(level) : 1;
+      const rawScaled = input.scaleByLevel ? scaleMoneyByLevel(input.amount, level) : input.amount;
+      const amountCredited = clampMoneyCredit(profile.moneyBalance, rawScaled);
+
+      if (amountCredited <= 0n) {
+        return { profile, amountCredited: 0n, levelMultiplier };
+      }
+
+      const updated = await tx.groupMemberProfile.update({
+        where: { id: profile.id },
+        data: {
+          moneyBalance: { increment: amountCredited },
+          totalMoneyEarned: { increment: amountCredited },
+        },
+      });
+
+      await this.txRepo.create(
+        {
+          profileId: profile.id,
+          groupJid: input.groupJid,
+          userJid: input.userJid,
+          actorJid: input.actorJid,
+          asset: MemberTransactionAsset.MONEY,
+          type: MemberTransactionType[input.type],
+          amount: amountCredited,
+          balanceBefore: profile.moneyBalance,
+          balanceAfter: updated.moneyBalance,
+          correlationId: input.correlationId,
+          idempotencyKey: input.idempotencyKey,
+          note: input.note,
+        },
+        tx,
+      );
+
+      return { profile: updated, amountCredited, levelMultiplier };
+    });
+  }
+
   // ---- Game statistics ----
 
   // Records game outcome without exposing direct profile mutation to game handlers.
@@ -830,12 +896,13 @@ export class MemberEconomyService {
             return;
           }
 
-          const decrementAmount = Math.min(profile.reservedLimit, orphan.amount);
+          const orphanAmount = Number(orphan.amount);
+          const decrementAmount = Math.min(profile.reservedLimit, orphanAmount);
           const updated = await rawTx.groupMemberProfile.update({
             where: { id: profile.id },
             data: {
               reservedLimit: { decrement: decrementAmount },
-              limitBalance: { increment: orphan.amount },
+              limitBalance: { increment: orphanAmount },
             },
           });
 
@@ -846,7 +913,7 @@ export class MemberEconomyService {
               userJid: orphan.userJid,
               asset: MemberTransactionAsset.LIMIT,
               type: MemberTransactionType.FEATURE_REFUND,
-              amount: orphan.amount,
+              amount: orphanAmount,
               balanceBefore: profile.reservedLimit,
               balanceAfter: updated.reservedLimit,
               feature: orphan.feature ?? undefined,

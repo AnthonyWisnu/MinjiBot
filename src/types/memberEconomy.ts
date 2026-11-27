@@ -140,6 +140,15 @@ export interface CreditXpInput extends BaseInput {
   note?: string;
 }
 
+export interface CreditMoneyInput extends BaseInput {
+  amount: bigint;
+  type: "DAILY_REWARD" | "GAME_REWARD" | "RPG_EARN" | "SUPER_OWNER_ADD" | "CORRECTION";
+  scaleByLevel?: boolean;
+  idempotencyKey?: string;
+  correlationId?: string;
+  note?: string;
+}
+
 export interface SetXpInput extends BaseInput {
   amount: number;
   note?: string;

@@ -3,12 +3,11 @@ import { type GroupMemberProfile } from "@prisma/client";
 import { AppUserError } from "../../errors/appUserError";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { prisma } from "../../repositories/prismaClient";
-import { formatRemainingDuration } from "../../utils/currency";
+import { clampMoneyCredit, formatRemainingDuration } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
-import { MAX_SAFE_ECONOMY_INT } from "../member/memberEconomy.service";
 
 const PROPOSAL_TTL_MS = 10 * 60 * 1000;
-const COUPLE_BONUS_MONEY = 15_000;
+const COUPLE_BONUS_MONEY = 2_500_000n;
 const COUPLE_BONUS_XP = 50;
 
 export interface PendingProposal {
@@ -21,7 +20,7 @@ export interface PendingProposal {
 export interface CoupleAcceptResult {
   proposerJid: string;
   targetJid: string;
-  bonusMoney: number;
+  bonusMoney: bigint;
   bonusXp: number;
 }
 
@@ -129,8 +128,8 @@ export class CoupleService {
         throw new AppUserError("Salah satu pihak sudah berpasangan.");
       }
 
-      const bonusP = Math.max(0, Math.min(COUPLE_BONUS_MONEY, MAX_SAFE_ECONOMY_INT - proposer.moneyBalance));
-      const bonusA = Math.max(0, Math.min(COUPLE_BONUS_MONEY, MAX_SAFE_ECONOMY_INT - acceptor.moneyBalance));
+      const bonusP = clampMoneyCredit(proposer.moneyBalance, COUPLE_BONUS_MONEY);
+      const bonusA = clampMoneyCredit(acceptor.moneyBalance, COUPLE_BONUS_MONEY);
 
       await tx.groupMemberProfile.update({
         where: { id: proposer.id },

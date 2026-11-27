@@ -7,6 +7,7 @@ import {
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { prisma } from "../../repositories/prismaClient";
 import { DuplicateOperationError } from "../../types/memberEconomy";
+import { clampMoneyCredit } from "../../utils/currency";
 import { isConsecutiveWibDay, toWibDateKey } from "../../utils/wibDate";
 import { generateCorrelationId } from "./memberEconomy.service";
 import { defaultRandom } from "./randomProvider";
@@ -15,20 +16,20 @@ import type { RandomProvider } from "./randomProvider";
 const DAILY_XP = 100;
 const DAILY_POINTS_MIN = 50;
 const DAILY_POINTS_MAX = 150;
-const DAILY_MONEY_MIN = 15_000;
-const DAILY_MONEY_MAX = 35_000;
-const DAILY_STREAK_MONEY_BONUS = 2_500;
+const DAILY_MONEY_MIN = 1_500_000;
+const DAILY_MONEY_MAX = 3_500_000;
+const DAILY_STREAK_MONEY_BONUS = 300_000n;
 const DAILY_STREAK_BONUS_CAP = 10;
 const DAILY_BONUS_LIMIT_PROBABILITY = 0.25;
 const DAILY_BONUS_LIMIT_AMOUNT = 3;
 
 export interface DailyClaimResult {
   pointsGained: number;
-  moneyGained: number;
+  moneyGained: bigint;
   xpGained: number;
   bonusLimitGained: number;
   currentPoints: number;
-  currentMoney: number;
+  currentMoney: bigint;
   currentLimit: number;
   currentXp: number;
   currentStreak: number;
@@ -90,9 +91,9 @@ interface DailyTx {
         userJid: string;
         asset: MemberTransactionAsset;
         type: MemberTransactionType;
-        amount: number;
-        balanceBefore: number;
-        balanceAfter: number;
+        amount: number | bigint;
+        balanceBefore: number | bigint;
+        balanceAfter: number | bigint;
         correlationId: string;
         idempotencyKey: string;
       }[];
@@ -123,7 +124,7 @@ export class DailyClaimService {
     const correlationId = generateCorrelationId();
 
     const pointsGained = this.random.intBetween(DAILY_POINTS_MIN, DAILY_POINTS_MAX);
-    const baseMoney = this.random.intBetween(DAILY_MONEY_MIN, DAILY_MONEY_MAX);
+    const baseMoney = BigInt(this.random.intBetween(DAILY_MONEY_MIN, DAILY_MONEY_MAX));
     const xpGained = DAILY_XP;
     const bonusLimitGained = this.random.chance(DAILY_BONUS_LIMIT_PROBABILITY)
       ? DAILY_BONUS_LIMIT_AMOUNT
@@ -142,8 +143,9 @@ export class DailyClaimService {
 
       const newStreak = this.calculateStreak(profile.lastDailyClaimAt, now, profile.currentStreak);
       const newLongestStreak = Math.max(newStreak, profile.longestStreak);
-      const streakMoneyBonus = Math.min(newStreak, DAILY_STREAK_BONUS_CAP) * DAILY_STREAK_MONEY_BONUS;
-      const moneyGained = baseMoney + streakMoneyBonus;
+      const streakMoneyBonus =
+        BigInt(Math.min(newStreak, DAILY_STREAK_BONUS_CAP)) * DAILY_STREAK_MONEY_BONUS;
+      const moneyGained = clampMoneyCredit(profile.moneyBalance, baseMoney + streakMoneyBonus);
 
       if (tx.groupMemberProfile?.updateMany) {
         const updateResult = await tx.groupMemberProfile.updateMany({
@@ -187,9 +189,9 @@ export class DailyClaimService {
           userJid: string;
           asset: MemberTransactionAsset;
           type: MemberTransactionType;
-          amount: number;
-          balanceBefore: number;
-          balanceAfter: number;
+          amount: number | bigint;
+          balanceBefore: number | bigint;
+          balanceAfter: number | bigint;
           correlationId: string;
           idempotencyKey: string;
         }[] = [

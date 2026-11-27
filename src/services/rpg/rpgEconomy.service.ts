@@ -9,9 +9,19 @@ import { AppUserError } from "../../errors/appUserError";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../../repositories/groupMemberTransaction.repository";
 import { prisma } from "../../repositories/prismaClient";
-import { formatRemainingDuration, formatRupiah } from "../../utils/currency";
+import {
+  absBigInt,
+  clampMoneyCredit,
+  formatRemainingDuration,
+  formatRupiah,
+  maxBigInt,
+  MAX_SAFE_MONEY_BIGINT,
+  minBigInt,
+  percentOfBigInt,
+  scaleMoneyByLevel,
+} from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
-import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "../member/memberEconomy.service";
+import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
 import {
   getRemainingCooldownMs,
@@ -39,12 +49,15 @@ export const RPG_COOLDOWNS_MS: Record<string, number> = {
   casino: 10 * 1000,
 };
 
-const CASINO_MIN_BET = 1_000;
-const CASINO_MAX_BET = 500_000;
-const MIN_TARGET_WALLET_FOR_ACTION = 10_000;
-const MAX_TAX_PER_ACTION = 150_000;
-const MAX_ROB_PER_ACTION = 200_000;
-const MAX_ROB_FINE = 75_000;
+export const DEFAULT_GROUP_TREASURY = 50_000_000n;
+export const CASINO_MIN_BET = 100_000n;
+export const CASINO_MAX_BET = 100_000_000n;
+export const MIN_TARGET_WALLET_FOR_ACTION = 1_000_000n;
+export const MAX_TAX_PER_ACTION = 25_000_000n;
+export const MAX_ROB_PER_ACTION = 35_000_000n;
+export const MAX_ROB_FINE = 15_000_000n;
+export const BANSOS_POVERTY_THRESHOLD = 5_000_000n;
+export const BANSOS_POVERTY_BONUS = 3_000_000n;
 
 interface JobDefinition {
   title: string;
@@ -62,12 +75,12 @@ interface JobDefinition {
 const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   mulung: {
     title: "MULUNG",
-    minMoney: 4_000,
-    maxMoney: 12_000,
+    minMoney: 400_000,
+    maxMoney: 1_200_000,
     xp: 30,
     rareChance: 0.08,
-    rareMinMoney: 25_000,
-    rareMaxMoney: 45_000,
+    rareMinMoney: 2_500_000,
+    rareMaxMoney: 5_000_000,
     rareXp: 70,
     stories: [
       "Mengumpulkan kardus bekas dan botol plastik di gang belakang",
@@ -82,12 +95,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   kerja: {
     title: "KERJA SERABUTAN",
-    minMoney: 8_000,
-    maxMoney: 25_000,
+    minMoney: 900_000,
+    maxMoney: 2_800_000,
     xp: 55,
     rareChance: 0.1,
-    rareMinMoney: 45_000,
-    rareMaxMoney: 85_000,
+    rareMinMoney: 5_000_000,
+    rareMaxMoney: 10_000_000,
     rareXp: 110,
     stories: [
       "Lembur memperbaiki bug server yang error jam 2 pagi",
@@ -103,12 +116,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   ojek: {
     title: "NGOJEK ONLINE",
-    minMoney: 7_000,
-    maxMoney: 22_000,
+    minMoney: 800_000,
+    maxMoney: 2_400_000,
     xp: 50,
     rareChance: 0.1,
-    rareMinMoney: 40_000,
-    rareMaxMoney: 75_000,
+    rareMinMoney: 4_500_000,
+    rareMaxMoney: 8_500_000,
     rareXp: 100,
     stories: [
       "Mengantar penumpang terburu-buru mengejar kereta pagi",
@@ -123,12 +136,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   nambang: {
     title: "NAMBANG MINERAL",
-    minMoney: 12_000,
-    maxMoney: 45_000,
+    minMoney: 1_500_000,
+    maxMoney: 5_000_000,
     xp: 85,
     rareChance: 0.12,
-    rareMinMoney: 70_000,
-    rareMaxMoney: 130_000,
+    rareMinMoney: 8_000_000,
+    rareMaxMoney: 18_000_000,
     rareXp: 160,
     stories: [
       "Menambang bijih besi dan batu bara dari gua dalam",
@@ -143,12 +156,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   berburu: {
     title: "BERBURU DI HUTAN",
-    minMoney: 12_000,
-    maxMoney: 42_000,
+    minMoney: 1_500_000,
+    maxMoney: 4_800_000,
     xp: 85,
     rareChance: 0.12,
-    rareMinMoney: 65_000,
-    rareMaxMoney: 120_000,
+    rareMinMoney: 7_500_000,
+    rareMaxMoney: 16_000_000,
     rareXp: 155,
     stories: [
       "Berhasil menangkap rusa liar di pinggir lembah",
@@ -163,12 +176,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   mancing: {
     title: "MANCING MANIA",
-    minMoney: 10_000,
-    maxMoney: 40_000,
+    minMoney: 1_200_000,
+    maxMoney: 4_500_000,
     xp: 80,
     rareChance: 0.1,
-    rareMinMoney: 75_000,
-    rareMaxMoney: 140_000,
+    rareMinMoney: 9_000_000,
+    rareMaxMoney: 20_000_000,
     rareXp: 160,
     stories: [
       "Strike ikan kakap merah besar di spot karang tengah",
@@ -201,59 +214,59 @@ export interface JobRunResult {
   title: string;
   story: string;
   isRare: boolean;
-  moneyGained: number;
+  moneyGained: bigint;
   xpGained: number;
-  currentMoney: number;
+  currentMoney: bigint;
 }
 
 export interface CorruptionResult {
   mega: boolean;
   success: boolean;
   story: string;
-  amountDelta: number;
+  amountDelta: bigint;
   xpGained: number;
   jailMinutes: number;
-  currentMoney: number;
-  treasuryBalance: number;
+  currentMoney: bigint;
+  treasuryBalance: bigint;
 }
 
 export interface TaxResult {
   success: boolean;
   story: string;
-  taxCollected: number;
-  collectorShare: number;
-  treasuryShare: number;
-  collectorMoney: number;
-  targetMoney: number;
-  treasuryBalance: number;
+  taxCollected: bigint;
+  collectorShare: bigint;
+  treasuryShare: bigint;
+  collectorMoney: bigint;
+  targetMoney: bigint;
+  treasuryBalance: bigint;
 }
 
 export interface RobResult {
   success: boolean;
   story: string;
-  amountMoved: number;
-  treasuryShare: number;
+  amountMoved: bigint;
+  treasuryShare: bigint;
   jailMinutes: number;
-  thiefMoney: number;
-  victimMoney: number;
+  thiefMoney: bigint;
+  victimMoney: bigint;
 }
 
 export interface BansosResult {
-  moneyGained: number;
+  moneyGained: bigint;
   wasSkimmed: boolean;
   povertyBonus: boolean;
-  currentMoney: number;
-  treasuryBalance: number;
+  currentMoney: bigint;
+  treasuryBalance: bigint;
 }
 
 export interface CasinoResult {
   outcome: "win" | "jackpot" | "draw" | "lose";
-  betAmount: number;
-  netDelta: number;
+  betAmount: bigint;
+  netDelta: bigint;
   playerDice: [number, number];
   dealerDice: [number, number];
   xpGained: number;
-  currentMoney: number;
+  currentMoney: bigint;
 }
 
 export interface CooldownSummary {
@@ -280,9 +293,9 @@ interface RpgTxStore {
       targetUserJid?: string;
       asset: MemberTransactionAsset;
       type: MemberTransactionType;
-      amount: number;
-      balanceBefore?: number;
-      balanceAfter?: number;
+      amount: number | bigint;
+      balanceBefore?: number | bigint;
+      balanceAfter?: number | bigint;
       correlationId?: string;
       note?: string;
     },
@@ -336,9 +349,11 @@ export class RpgEconomyService {
     const cooldownMs = RPG_COOLDOWNS_MS[jobType] ?? 5 * 60 * 1000;
     const nowMs = now.getTime();
     const isRare = this.random.chance(def.rareChance);
-    const rawMoney = isRare
-      ? this.random.intBetween(def.rareMinMoney, def.rareMaxMoney)
-      : this.random.intBetween(def.minMoney, def.maxMoney);
+    const baseMoney = BigInt(
+      isRare
+        ? this.random.intBetween(def.rareMinMoney, def.rareMaxMoney)
+        : this.random.intBetween(def.minMoney, def.maxMoney),
+    );
     const xpGained = isRare ? def.rareXp : def.xp;
     const storyPool = isRare ? def.rareStories : def.stories;
     const story = storyPool[this.random.intBetween(0, storyPool.length - 1)] ?? def.title;
@@ -354,7 +369,8 @@ export class RpgEconomyService {
         );
       }
 
-      const moneyGained = clampCredit(profile.moneyBalance, rawMoney);
+      const scaledMoney = scaleMoneyByLevel(baseMoney, profile.level);
+      const moneyGained = clampMoneyCredit(profile.moneyBalance, scaledMoney);
       const nextState = withUpdatedCooldown(state, jobType, nowMs);
 
       const updated = await tx.groupMemberProfile.update({
@@ -411,7 +427,7 @@ export class RpgEconomyService {
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
       const tenant = await tx.tenantGroup.findUnique({ where: { groupJid } });
-      const currentTreasury = tenant?.treasuryBalance ?? 500_000;
+      const currentTreasury = tenant?.treasuryBalance ?? DEFAULT_GROUP_TREASURY;
       const state = parseRpgState(profile.rpgState);
 
       const jailRemaining = getRemainingJailMs(state, nowMs);
@@ -429,13 +445,16 @@ export class RpgEconomyService {
       }
 
       if (success) {
-        const rawGain = mega
-          ? this.random.intBetween(100_000, 280_000)
-          : this.random.intBetween(20_000, 65_000);
+        const baseGain = BigInt(
+          mega
+            ? this.random.intBetween(25_000_000, 120_000_000)
+            : this.random.intBetween(4_000_000, 15_000_000),
+        );
         const xpGained = mega ? 260 : 90;
-        const moneyGained = clampCredit(profile.moneyBalance, rawGain);
-        const treasuryDeduction = Math.min(currentTreasury, Math.floor(moneyGained * 0.5));
-        const nextTreasury = Math.max(0, currentTreasury - treasuryDeduction);
+        const scaledGain = scaleMoneyByLevel(baseGain, profile.level);
+        const moneyGained = clampMoneyCredit(profile.moneyBalance, scaledGain);
+        const treasuryDeduction = minBigInt(currentTreasury, moneyGained / 2n);
+        const nextTreasury = maxBigInt(0n, currentTreasury - treasuryDeduction);
         const nextState = withUpdatedCooldown(state, actionKey, nowMs);
 
         const updated = await tx.groupMemberProfile.update({
@@ -487,10 +506,10 @@ export class RpgEconomyService {
       }
 
       // Ketangkap OTT KPK
-      const fineRate = mega ? 0.35 : 0.2;
-      const fine = Math.min(profile.moneyBalance, Math.floor(profile.moneyBalance * fineRate));
+      const finePercent = mega ? 35 : 20;
+      const fine = minBigInt(profile.moneyBalance, percentOfBigInt(profile.moneyBalance, finePercent));
       const jailMinutes = mega ? 30 : 10;
-      const nextTreasury = Math.min(MAX_SAFE_ECONOMY_INT, currentTreasury + fine);
+      const nextTreasury = minBigInt(MAX_SAFE_MONEY_BIGINT, currentTreasury + fine);
       const nextState = withJailUntil(
         withUpdatedCooldown(state, actionKey, nowMs),
         nowMs + jailMinutes * 60 * 1000,
@@ -505,14 +524,14 @@ export class RpgEconomyService {
         },
       });
 
-      if (tenant && fine > 0) {
+      if (tenant && fine > 0n) {
         await tx.tenantGroup.update({
           where: { groupJid },
           data: { treasuryBalance: nextTreasury },
         });
       }
 
-      if (fine > 0) {
+      if (fine > 0n) {
         await this.txRepo.create(
           {
             profileId: profile.id,
@@ -545,9 +564,9 @@ export class RpgEconomyService {
     });
   }
 
-  async getGroupTreasury(groupJid: string): Promise<number> {
+  async getGroupTreasury(groupJid: string): Promise<bigint> {
     const tenant = await this.db.tenantGroup.findUnique({ where: { groupJid } });
-    return tenant?.treasuryBalance ?? 500_000;
+    return tenant?.treasuryBalance ?? DEFAULT_GROUP_TREASURY;
   }
 
   async collectTax(
@@ -572,7 +591,7 @@ export class RpgEconomyService {
       const collector = await this.profileRepo.findOrCreate(groupJid, normCollector, tx);
       const target = await this.profileRepo.findByGroupAndUser(groupJid, normTarget, tx);
       const tenant = await tx.tenantGroup.findUnique({ where: { groupJid } });
-      const currentTreasury = tenant?.treasuryBalance ?? 500_000;
+      const currentTreasury = tenant?.treasuryBalance ?? DEFAULT_GROUP_TREASURY;
       const collectorState = parseRpgState(collector.rpgState);
 
       const remaining = getRemainingCooldownMs(collectorState, "pajak", cooldownMs, nowMs);
@@ -597,21 +616,28 @@ export class RpgEconomyService {
         });
         return {
           success: false,
-          story: "Target pura-pura lupa password dompet dan kabur ke luar negeri! Penagihan pajak gagal.",
-          taxCollected: 0,
-          collectorShare: 0,
-          treasuryShare: 0,
+          story:
+            "Target pura-pura lupa password dompet dan kabur ke luar negeri! Penagihan pajak gagal.",
+          taxCollected: 0n,
+          collectorShare: 0n,
+          treasuryShare: 0n,
           collectorMoney: collector.moneyBalance,
           targetMoney: target.moneyBalance,
           treasuryBalance: currentTreasury,
         };
       }
 
-      const rawTax = Math.floor((target.moneyBalance * taxPercent) / 100);
-      const taxCollected = Math.max(1_000, Math.min(MAX_TAX_PER_ACTION, rawTax, target.moneyBalance));
-      const collectorShare = clampCredit(collector.moneyBalance, Math.floor(taxCollected * 0.4));
+      const rawTax = percentOfBigInt(target.moneyBalance, taxPercent);
+      const taxCollected = maxBigInt(
+        100_000n,
+        minBigInt(MAX_TAX_PER_ACTION, rawTax, target.moneyBalance),
+      );
+      const collectorShare = clampMoneyCredit(
+        collector.moneyBalance,
+        percentOfBigInt(taxCollected, 40),
+      );
       const treasuryShare = taxCollected - collectorShare;
-      const nextTreasury = Math.min(MAX_SAFE_ECONOMY_INT, currentTreasury + treasuryShare);
+      const nextTreasury = minBigInt(MAX_SAFE_MONEY_BIGINT, currentTreasury + treasuryShare);
 
       const debitRes = await tx.groupMemberProfile.updateMany({
         where: { id: target.id, moneyBalance: { gte: taxCollected } },
@@ -708,7 +734,7 @@ export class RpgEconomyService {
       const thief = await this.profileRepo.findOrCreate(groupJid, normThief, tx);
       const victim = await this.profileRepo.findByGroupAndUser(groupJid, normVictim, tx);
       const tenant = await tx.tenantGroup.findUnique({ where: { groupJid } });
-      const currentTreasury = tenant?.treasuryBalance ?? 500_000;
+      const currentTreasury = tenant?.treasuryBalance ?? DEFAULT_GROUP_TREASURY;
       const thiefState = parseRpgState(thief.rpgState);
 
       const jailRemaining = getRemainingJailMs(thiefState, nowMs);
@@ -732,12 +758,12 @@ export class RpgEconomyService {
       }
 
       if (success) {
-        const rawSteal = Math.floor((victim.moneyBalance * stealPercent) / 100);
-        const stolen = Math.max(
-          1_000,
-          Math.min(MAX_ROB_PER_ACTION, rawSteal, victim.moneyBalance),
+        const rawSteal = percentOfBigInt(victim.moneyBalance, stealPercent);
+        const stolen = maxBigInt(
+          100_000n,
+          minBigInt(MAX_ROB_PER_ACTION, rawSteal, victim.moneyBalance),
         );
-        const creditToThief = clampCredit(thief.moneyBalance, stolen);
+        const creditToThief = clampMoneyCredit(thief.moneyBalance, stolen);
         const nextThiefState = withUpdatedCooldown(thiefState, "maling", nowMs);
 
         const debitRes = await tx.groupMemberProfile.updateMany({
@@ -797,7 +823,7 @@ export class RpgEconomyService {
           success: true,
           story: `Aksi mulus! Berhasil menyikat ${String(stealPercent)}% isi dompet target tanpa ketahuan ronda!`,
           amountMoved: stolen,
-          treasuryShare: 0,
+          treasuryShare: 0n,
           jailMinutes: 0,
           thiefMoney: updatedThief.moneyBalance,
           victimMoney: updatedVictim.moneyBalance,
@@ -806,8 +832,12 @@ export class RpgEconomyService {
 
       // Gagal & ketangkap ronda warga
       const jailMinutes = 15;
-      const fine = Math.min(thief.moneyBalance, MAX_ROB_FINE, Math.floor(thief.moneyBalance * 0.15));
-      const victimCompensation = clampCredit(victim.moneyBalance, Math.floor(fine * 0.5));
+      const fine = minBigInt(
+        thief.moneyBalance,
+        MAX_ROB_FINE,
+        percentOfBigInt(thief.moneyBalance, 15),
+      );
+      const victimCompensation = clampMoneyCredit(victim.moneyBalance, fine / 2n);
       const treasuryShare = fine - victimCompensation;
       const nextThiefState = withJailUntil(
         withUpdatedCooldown(thiefState, "maling", nowMs),
@@ -823,7 +853,7 @@ export class RpgEconomyService {
       });
 
       let updatedVictimMoney = victim.moneyBalance;
-      if (victimCompensation > 0) {
+      if (victimCompensation > 0n) {
         const updatedVictim = await tx.groupMemberProfile.update({
           where: { id: victim.id },
           data: {
@@ -834,14 +864,14 @@ export class RpgEconomyService {
         updatedVictimMoney = updatedVictim.moneyBalance;
       }
 
-      if (tenant && treasuryShare > 0) {
+      if (tenant && treasuryShare > 0n) {
         await tx.tenantGroup.update({
           where: { groupJid },
-          data: { treasuryBalance: Math.min(MAX_SAFE_ECONOMY_INT, currentTreasury + treasuryShare) },
+          data: { treasuryBalance: minBigInt(MAX_SAFE_MONEY_BIGINT, currentTreasury + treasuryShare) },
         });
       }
 
-      if (fine > 0) {
+      if (fine > 0n) {
         await this.txRepo.create(
           {
             profileId: thief.id,
@@ -862,7 +892,8 @@ export class RpgEconomyService {
 
       return {
         success: false,
-        story: "KETANGKAP RONDA! Sendal ketinggalan di TKP, kamu diamankan hansip grup dan kena denda!",
+        story:
+          "KETANGKAP RONDA! Sendal ketinggalan di TKP, kamu diamankan hansip grup dan kena denda!",
         amountMoved: fine,
         treasuryShare,
         jailMinutes,
@@ -879,14 +910,14 @@ export class RpgEconomyService {
   ): Promise<BansosResult> {
     const cooldownMs = RPG_COOLDOWNS_MS.bansos ?? 6 * 60 * 60 * 1000;
     const nowMs = now.getTime();
-    const baseAid = this.random.intBetween(25_000, 60_000);
+    const baseAid = BigInt(this.random.intBetween(2_500_000, 6_000_000));
     const wasSkimmed = this.random.chance(0.15);
     const correlationId = generateCorrelationId();
 
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
       const tenant = await tx.tenantGroup.findUnique({ where: { groupJid } });
-      const currentTreasury = tenant?.treasuryBalance ?? 500_000;
+      const currentTreasury = tenant?.treasuryBalance ?? DEFAULT_GROUP_TREASURY;
       const state = parseRpgState(profile.rpgState);
 
       const remaining = getRemainingCooldownMs(state, "bansos", cooldownMs, nowMs);
@@ -897,12 +928,12 @@ export class RpgEconomyService {
       }
 
       const totalWealth = profile.moneyBalance + profile.bankBalance;
-      const povertyBonus = totalWealth < 50_000;
-      const grossAid = baseAid + (povertyBonus ? 25_000 : 0);
-      const netAid = wasSkimmed ? Math.floor(grossAid / 2) : grossAid;
-      const moneyGained = clampCredit(profile.moneyBalance, netAid);
-      const treasuryUsed = Math.min(currentTreasury, Math.floor(moneyGained * 0.5));
-      const nextTreasury = Math.max(0, currentTreasury - treasuryUsed);
+      const povertyBonus = totalWealth < BANSOS_POVERTY_THRESHOLD;
+      const grossAid = baseAid + (povertyBonus ? BANSOS_POVERTY_BONUS : 0n);
+      const netAid = wasSkimmed ? grossAid / 2n : grossAid;
+      const moneyGained = clampMoneyCredit(profile.moneyBalance, netAid);
+      const treasuryUsed = minBigInt(currentTreasury, moneyGained / 2n);
+      const nextTreasury = maxBigInt(0n, currentTreasury - treasuryUsed);
       const nextState = withUpdatedCooldown(state, "bansos", nowMs);
 
       const updated = await tx.groupMemberProfile.update({
@@ -915,7 +946,7 @@ export class RpgEconomyService {
         },
       });
 
-      if (tenant && treasuryUsed > 0) {
+      if (tenant && treasuryUsed > 0n) {
         await tx.tenantGroup.update({
           where: { groupJid },
           data: { treasuryBalance: nextTreasury },
@@ -950,7 +981,7 @@ export class RpgEconomyService {
   async playCasino(
     groupJid: string,
     userJid: string,
-    betInput: number | "all",
+    betInput: bigint | "all",
     now: Date = new Date(),
   ): Promise<CasinoResult> {
     const cooldownMs = RPG_COOLDOWNS_MS.casino ?? 10_000;
@@ -977,7 +1008,7 @@ export class RpgEconomyService {
       }
 
       const betAmount =
-        betInput === "all" ? Math.min(profile.moneyBalance, CASINO_MAX_BET) : betInput;
+        betInput === "all" ? minBigInt(profile.moneyBalance, CASINO_MAX_BET) : betInput;
 
       if (betAmount < CASINO_MIN_BET || betAmount > CASINO_MAX_BET) {
         throw new AppUserError(
@@ -993,18 +1024,18 @@ export class RpgEconomyService {
 
       const nextState = withUpdatedCooldown(state, "casino", nowMs);
       let outcome: CasinoResult["outcome"];
-      let netDelta = 0;
+      let netDelta = 0n;
       let xpGained = 10;
 
       if (pTotal > dTotal) {
         const isJackpot = p1 === 6 && p2 === 6;
         outcome = isJackpot ? "jackpot" : "win";
-        const profit = isJackpot ? Math.floor(betAmount * 1.5) : betAmount;
-        netDelta = clampCredit(profile.moneyBalance, profit);
+        const profit = isJackpot ? (betAmount * 3n) / 2n : betAmount;
+        netDelta = clampMoneyCredit(profile.moneyBalance, profit);
         xpGained = isJackpot ? 75 : 35;
       } else if (pTotal === dTotal) {
         outcome = "draw";
-        netDelta = 0;
+        netDelta = 0n;
         xpGained = 10;
       } else {
         outcome = "lose";
@@ -1016,11 +1047,11 @@ export class RpgEconomyService {
         experience: { increment: xpGained },
         rpgState: serializeRpgState(nextState),
       };
-      if (netDelta > 0) {
+      if (netDelta > 0n) {
         updateData.moneyBalance = { increment: netDelta };
         updateData.totalMoneyEarned = { increment: netDelta };
-      } else if (netDelta < 0) {
-        updateData.moneyBalance = { decrement: Math.abs(netDelta) };
+      } else if (netDelta < 0n) {
+        updateData.moneyBalance = { decrement: absBigInt(netDelta) };
       }
 
       const debitCheck = await tx.groupMemberProfile.updateMany({
@@ -1035,24 +1066,24 @@ export class RpgEconomyService {
         where: { id: profile.id },
       });
 
-      if (netDelta < 0 && tenant) {
-        const houseTax = Math.floor(Math.abs(netDelta) * 0.5);
+      if (netDelta < 0n && tenant) {
+        const houseTax = absBigInt(netDelta) / 2n;
         await tx.tenantGroup.update({
           where: { groupJid },
           data: {
-            treasuryBalance: Math.min(MAX_SAFE_ECONOMY_INT, tenant.treasuryBalance + houseTax),
+            treasuryBalance: minBigInt(MAX_SAFE_MONEY_BIGINT, tenant.treasuryBalance + houseTax),
           },
         });
       }
 
-      if (netDelta !== 0) {
+      if (netDelta !== 0n) {
         await this.txRepo.create(
           {
             profileId: profile.id,
             groupJid,
             userJid,
             asset: MemberTransactionAsset.MONEY,
-            type: netDelta > 0 ? MemberTransactionType.RPG_EARN : MemberTransactionType.RPG_LOSS,
+            type: netDelta > 0n ? MemberTransactionType.RPG_EARN : MemberTransactionType.RPG_LOSS,
             amount: netDelta,
             balanceBefore: profile.moneyBalance,
             balanceAfter: updated.moneyBalance,
@@ -1107,10 +1138,6 @@ export class RpgEconomyService {
       })),
     };
   }
-}
-
-function clampCredit(currentBalance: number, rawAmount: number): number {
-  return Math.max(0, Math.min(rawAmount, MAX_SAFE_ECONOMY_INT - currentBalance));
 }
 
 export const rpgEconomyService = new RpgEconomyService();

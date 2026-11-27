@@ -11,7 +11,7 @@ export interface LeaderboardEntry {
   position: number;
   userJid: string;
   displayName: string;
-  value: number;
+  value: number | bigint;
   rank: string;
 }
 
@@ -95,7 +95,11 @@ export class LeaderboardService {
     return { entries, callerPosition };
   }
 
-  private toEntry(position: number, profile: GroupMemberProfile, value: number): LeaderboardEntry {
+  private toEntry(
+    position: number,
+    profile: GroupMemberProfile,
+    value: number | bigint,
+  ): LeaderboardEntry {
     // Display name: extract phone number from JID as fallback.
     const normalized = normalizeUserJid(profile.userJid);
     const displayName = normalized.split("@")[0] ?? normalized;

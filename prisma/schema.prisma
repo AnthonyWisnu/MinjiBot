@@ -26,6 +26,7 @@ enum HeavyFeatureType {
   YOUTUBE_VIDEO_DOWNLOAD
   TWITTER_DOWNLOAD
   PINTEREST_DOWNLOAD
+  AI_CHAT
 }
 
 enum TenantAuditAction {
@@ -109,7 +110,7 @@ model TenantGroup {
   ownerJid        String?
   expiresAt       DateTime?
   isBlocked       Boolean      @default(false)
-  treasuryBalance Int          @default(500000)
+  treasuryBalance BigInt       @default(50000000)
   approvedAt      DateTime?
   activatedAt     DateTime?
   createdAt       DateTime     @default(now())
@@ -258,9 +259,9 @@ model GroupMemberProfile {
   limitBalance       Int       @default(100)
   reservedLimit      Int       @default(0)
   experience         Int       @default(0)
-  moneyBalance       Int       @default(25000)
-  bankBalance        Int       @default(0)
-  totalMoneyEarned   Int       @default(25000)
+  moneyBalance       BigInt    @default(500000)
+  bankBalance        BigInt    @default(0)
+  totalMoneyEarned   BigInt    @default(500000)
   level              Int       @default(1)
   totalPointsEarned  Int       @default(0)
   totalLimitsEarned  Int       @default(100)
@@ -301,9 +302,9 @@ model GroupMemberTransaction {
   targetUserJid  String?
   asset          MemberTransactionAsset
   type           MemberTransactionType
-  amount         Int
-  balanceBefore  Int?
-  balanceAfter   Int?
+  amount         BigInt
+  balanceBefore  BigInt?
+  balanceAfter   BigInt?
   feature        HeavyFeatureType?
   correlationId  String?
   idempotencyKey String?                @unique

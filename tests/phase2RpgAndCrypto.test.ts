@@ -21,7 +21,10 @@ import {
 } from "../src/services/rpg/rpgState";
 import { buildMemberProfile, buildTenantGroup } from "./helpers/factories";
 
-function createInMemoryRpgHarness(initialProfiles: GroupMemberProfile[], initialTreasury = 500_000) {
+function createInMemoryRpgHarness(
+  initialProfiles: GroupMemberProfile[],
+  initialTreasury = 50_000_000n,
+) {
   const profiles = new Map<string, GroupMemberProfile>();
   for (const p of initialProfiles) {
     profiles.set(`${p.groupJid}:${p.userJid}`, { ...p });
@@ -41,7 +44,7 @@ function createInMemoryRpgHarness(initialProfiles: GroupMemberProfile[], initial
           id: `prof_${userJid}`,
           groupJid,
           userJid,
-          moneyBalance: 25_000,
+          moneyBalance: 500_000n,
         });
         profiles.set(key, found);
       }
@@ -67,12 +70,15 @@ function createInMemoryRpgHarness(initialProfiles: GroupMemberProfile[], initial
     throw new Error(`Profile ${id} not found`);
   };
 
-  const applyData = (prof: GroupMemberProfile, data: Record<string, unknown>): GroupMemberProfile => {
+  const applyData = (
+    prof: GroupMemberProfile,
+    data: Record<string, unknown>,
+  ): GroupMemberProfile => {
     const next = { ...prof };
-    const moneyOp = data.moneyBalance as { increment?: number; decrement?: number } | undefined;
+    const moneyOp = data.moneyBalance as { increment?: bigint; decrement?: bigint } | undefined;
     if (moneyOp?.increment) next.moneyBalance += moneyOp.increment;
     if (moneyOp?.decrement) next.moneyBalance -= moneyOp.decrement;
-    const totalMoneyOp = data.totalMoneyEarned as { increment?: number } | undefined;
+    const totalMoneyOp = data.totalMoneyEarned as { increment?: bigint } | undefined;
     if (totalMoneyOp?.increment) next.totalMoneyEarned += totalMoneyOp.increment;
     const xpOp = data.experience as { increment?: number } | undefined;
     if (xpOp?.increment) next.experience += xpOp.increment;
@@ -90,8 +96,8 @@ function createInMemoryRpgHarness(initialProfiles: GroupMemberProfile[], initial
       fn({
         tenantGroup: {
           findUnique: () => Promise.resolve({ ...tenant }),
-          update: (args: { data: { treasuryBalance?: number } }) => {
-            if (typeof args.data.treasuryBalance === "number") {
+          update: (args: { data: { treasuryBalance?: bigint } }) => {
+            if (typeof args.data.treasuryBalance === "bigint") {
               tenant = { ...tenant, treasuryBalance: args.data.treasuryBalance };
             }
             return Promise.resolve({ ...tenant });
@@ -106,7 +112,7 @@ function createInMemoryRpgHarness(initialProfiles: GroupMemberProfile[], initial
           },
           updateMany: (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
             const [key, prof] = findById(String(args.where.id));
-            const moneyGuard = args.where.moneyBalance as { gte?: number } | undefined;
+            const moneyGuard = args.where.moneyBalance as { gte?: bigint } | undefined;
             if (moneyGuard?.gte !== undefined && prof.moneyBalance < moneyGuard.gte) {
               return Promise.resolve({ count: 0 });
             }
@@ -143,9 +149,15 @@ void test("rpgState helpers parse, cooldown, jail, and update crypto holdings sa
   assert.equal(cleared.crypto.MINJI, undefined);
 });
 
-void test("RpgEconomyService: job run credits money & XP and enforces cooldown", async () => {
+void test("RpgEconomyService: job run credits Sultan money & XP and enforces cooldown", async () => {
   const harness = createInMemoryRpgHarness([
-    buildMemberProfile({ id: "p1", groupJid: "120@g.us", userJid: "u1@s.whatsapp.net", moneyBalance: 10_000 }),
+    buildMemberProfile({
+      id: "p1",
+      groupJid: "120@g.us",
+      userJid: "u1@s.whatsapp.net",
+      moneyBalance: 1_000_000n,
+      level: 1,
+    }),
   ]);
   const service = new RpgEconomyService(
     harness.profileRepo,
@@ -156,8 +168,8 @@ void test("RpgEconomyService: job run credits money & XP and enforces cooldown",
 
   const now = new Date("2026-11-28T05:00:00Z");
   const res = await service.runJob("120@g.us", "u1@s.whatsapp.net", "kerja", now);
-  assert.equal(res.moneyGained, 8_000);
-  assert.equal(res.currentMoney, 18_000);
+  assert.equal(res.moneyGained, 900_000n);
+  assert.equal(res.currentMoney, 1_900_000n);
 
   await assert.rejects(
     () => service.runJob("120@g.us", "u1@s.whatsapp.net", "kerja", new Date(now.getTime() + 10_000)),
@@ -172,10 +184,10 @@ void test("RpgEconomyService: korupsi OTT fines wallet into group treasury and j
         id: "p1",
         groupJid: "120@g.us",
         userJid: "u1@s.whatsapp.net",
-        moneyBalance: 100_000,
+        moneyBalance: 10_000_000n,
       }),
     ],
-    500_000,
+    50_000_000n,
   );
 
   const failService = new RpgEconomyService(
@@ -188,10 +200,10 @@ void test("RpgEconomyService: korupsi OTT fines wallet into group treasury and j
   const now = new Date("2026-11-28T05:00:00Z");
   const res = await failService.runCorruption("120@g.us", "u1@s.whatsapp.net", false, now);
   assert.equal(res.success, false);
-  assert.equal(res.amountDelta, -20_000);
-  assert.equal(res.currentMoney, 80_000);
+  assert.equal(res.amountDelta, -2_000_000n);
+  assert.equal(res.currentMoney, 8_000_000n);
   assert.equal(res.jailMinutes, 10);
-  assert.equal(harness.getTenant().treasuryBalance, 520_000);
+  assert.equal(harness.getTenant().treasuryBalance, 52_000_000n);
 
   // While jailed, cannot rob
   await assert.rejects(
@@ -207,17 +219,17 @@ void test("RpgEconomyService: pajak splits tax between collector and treasury; m
         id: "p1",
         groupJid: "120@g.us",
         userJid: "628111@s.whatsapp.net",
-        moneyBalance: 20_000,
+        moneyBalance: 2_000_000n,
       }),
       buildMemberProfile({
         id: "p2",
         groupJid: "120@g.us",
         userJid: "628222@s.whatsapp.net",
-        moneyBalance: 100_000,
-        bankBalance: 500_000,
+        moneyBalance: 10_000_000n,
+        bankBalance: 50_000_000n,
       }),
     ],
-    500_000,
+    50_000_000n,
   );
 
   const successService = new RpgEconomyService(
@@ -235,10 +247,10 @@ void test("RpgEconomyService: pajak splits tax between collector and treasury; m
     now,
   );
   assert.equal(tax.success, true);
-  assert.equal(tax.taxCollected, 6_000); // 6% of 100_000
-  assert.equal(tax.collectorShare, 2_400);
-  assert.equal(tax.treasuryShare, 3_600);
-  assert.equal(tax.targetMoney, 94_000);
+  assert.equal(tax.taxCollected, 600_000n); // 6% of 10_000_000
+  assert.equal(tax.collectorShare, 240_000n);
+  assert.equal(tax.treasuryShare, 360_000n);
+  assert.equal(tax.targetMoney, 9_400_000n);
 
   const rob = await successService.robMember(
     "120@g.us",
@@ -247,9 +259,9 @@ void test("RpgEconomyService: pajak splits tax between collector and treasury; m
     now,
   );
   assert.equal(rob.success, true);
-  assert.equal(rob.amountMoved, 9_400); // 10% of remaining 94_000 wallet (bank untouched!)
-  assert.equal(rob.victimMoney, 84_600);
-  assert.equal(harness.profiles.get("120@g.us:628222@s.whatsapp.net")?.bankBalance, 500_000);
+  assert.equal(rob.amountMoved, 940_000n); // 10% of remaining 9_400_000 wallet (bank untouched!)
+  assert.equal(rob.victimMoney, 8_460_000n);
+  assert.equal(harness.profiles.get("120@g.us:628222@s.whatsapp.net")?.bankBalance, 50_000_000n);
 });
 
 void test("RpgEconomyService: bansos gives poverty bonus and casino settles dice fairly", async () => {
@@ -258,8 +270,8 @@ void test("RpgEconomyService: bansos gives poverty bonus and casino settles dice
       id: "p1",
       groupJid: "120@g.us",
       userJid: "628111@s.whatsapp.net",
-      moneyBalance: 10_000,
-      bankBalance: 0,
+      moneyBalance: 1_000_000n,
+      bankBalance: 0n,
     }),
   ]);
 
@@ -286,15 +298,15 @@ void test("RpgEconomyService: bansos gives poverty bonus and casino settles dice
   const bansos = await service.claimBansos("120@g.us", "628111@s.whatsapp.net", now);
   assert.equal(bansos.povertyBonus, true);
   assert.equal(bansos.wasSkimmed, false);
-  assert.equal(bansos.moneyGained, 50_000); // 25k base + 25k poverty bonus
+  assert.equal(bansos.moneyGained, 5_500_000n); // 2.5jt base + 3jt poverty bonus
 
-  const casino = await service.playCasino("120@g.us", "628111@s.whatsapp.net", 10_000, now);
+  const casino = await service.playCasino("120@g.us", "628111@s.whatsapp.net", 1_000_000n, now);
   assert.equal(casino.outcome, "jackpot");
-  assert.equal(casino.netDelta, 15_000);
-  assert.equal(casino.currentMoney, 75_000);
+  assert.equal(casino.netDelta, 1_500_000n);
+  assert.equal(casino.currentMoney, 8_000_000n);
 });
 
-void test("CryptoMarketService: deterministic prices, buy, portfolio, and sell all", async () => {
+void test("CryptoMarketService: deterministic prices, buy, portfolio, and sell all with BigInt", async () => {
   const btc = CRYPTO_COINS[0];
   assert.ok(btc);
   assert.equal(computeCoinPriceAtEpoch(btc, 5000), computeCoinPriceAtEpoch(btc, 5000));
@@ -304,7 +316,7 @@ void test("CryptoMarketService: deterministic prices, buy, portfolio, and sell a
       id: "p1",
       groupJid: "120@g.us",
       userJid: "628111@s.whatsapp.net",
-      moneyBalance: 200_000,
+      moneyBalance: 200_000_000n,
     }),
   ]);
 
@@ -314,7 +326,7 @@ void test("CryptoMarketService: deterministic prices, buy, portfolio, and sell a
   const bought = await crypto.buyCrypto("120@g.us", "628111@s.whatsapp.net", "MINJI", 3, now);
   assert.equal(bought.symbol, "MINJI");
   assert.equal(bought.newHolding, 3);
-  assert.equal(bought.currentMoney, 200_000 - bought.totalMoney);
+  assert.equal(bought.currentMoney, 200_000_000n - bought.totalMoney);
 
   const porto = await crypto.getPortfolio("120@g.us", "628111@s.whatsapp.net", now);
   assert.equal(porto.items.length, 1);
@@ -323,22 +335,22 @@ void test("CryptoMarketService: deterministic prices, buy, portfolio, and sell a
   const sold = await crypto.sellCrypto("120@g.us", "628111@s.whatsapp.net", "MINJI", "all", now);
   assert.equal(sold.units, 3);
   assert.equal(sold.newHolding, 0);
-  assert.equal(sold.currentMoney, 200_000);
+  assert.equal(sold.currentMoney, 200_000_000n);
 });
 
-void test("DuelService: challenge creation, acceptance, and atomic pot transfer", async () => {
+void test("DuelService: challenge creation, acceptance, and atomic pot transfer with BigInt", async () => {
   const harness = createInMemoryRpgHarness([
     buildMemberProfile({
       id: "p1",
       groupJid: "120@g.us",
       userJid: "628111@s.whatsapp.net",
-      moneyBalance: 50_000,
+      moneyBalance: 5_000_000n,
     }),
     buildMemberProfile({
       id: "p2",
       groupJid: "120@g.us",
       userJid: "628222@s.whatsapp.net",
-      moneyBalance: 50_000,
+      moneyBalance: 5_000_000n,
     }),
   ]);
 
@@ -354,11 +366,11 @@ void test("DuelService: challenge creation, acceptance, and atomic pot transfer"
     harness.db,
   );
 
-  await duel.createChallenge("120@g.us", "628111@s.whatsapp.net", "628222@s.whatsapp.net", 15_000);
+  await duel.createChallenge("120@g.us", "628111@s.whatsapp.net", "628222@s.whatsapp.net", 1_500_000n);
   const res = await duel.acceptChallenge("120@g.us", "628222@s.whatsapp.net");
   assert.equal(res.winnerJid, "628111@s.whatsapp.net");
-  assert.equal(res.winnerMoney, 65_000);
-  assert.equal(res.loserMoney, 35_000);
+  assert.equal(res.winnerMoney, 6_500_000n);
+  assert.equal(res.loserMoney, 3_500_000n);
 });
 
 void test("Phase 2 commands are registered in commandRouter", () => {

@@ -1,13 +1,18 @@
 import { identityResolverService } from "../../services/identity/identityResolver.service";
 import { cryptoMarketService } from "../../services/rpg/cryptoMarket.service";
 import { duelService } from "../../services/rpg/duel.service";
-import { rpgEconomyService, type RpgJobType } from "../../services/rpg/rpgEconomy.service";
+import {
+  BANSOS_POVERTY_BONUS,
+  rpgEconomyService,
+  type RpgJobType,
+} from "../../services/rpg/rpgEconomy.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import {
+  absBigInt,
   formatRemainingDuration,
   formatRupiah,
-  parseAmountOrAll,
-  parsePositiveMoneyInput,
+  parseBigIntAmountOrAll,
+  parsePositiveBigIntMoneyInput,
 } from "../../utils/currency";
 import { getBotCanonicalJids, normalizeUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
@@ -119,7 +124,7 @@ async function handleCorruption(context: CommandContext, mega: boolean): Promise
         "",
         `${phoneTag(senderJid)} ${res.story}`,
         "",
-        `• Denda Disita  : -${formatRupiah(Math.abs(res.amountDelta))}`,
+        `• Denda Disita  : -${formatRupiah(absBigInt(res.amountDelta))}`,
         `• Masa Tahanan  : ${String(res.jailMinutes)} menit`,
         `• Sisa Dompet   : ${formatRupiah(res.currentMoney)}`,
         `• Kas Negara    : ${formatRupiah(res.treasuryBalance)}`,
@@ -261,7 +266,7 @@ async function handleBansos(context: CommandContext): Promise<void> {
     const res = await rpgEconomyService.claimBansos(context.chatJid, senderJid);
     const notes: string[] = [];
     if (res.povertyBonus) {
-      notes.push("Dapat tambahan subsidi warga dompet tipis (+Rp 25.000)!");
+      notes.push(`Dapat tambahan subsidi warga dompet tipis (+${formatRupiah(BANSOS_POVERTY_BONUS)})!`);
     }
     if (res.wasSkimmed) {
       notes.push("Aduh! Dananya sempat disunat oknum jadi cair setengah saja.");
@@ -290,10 +295,10 @@ async function handleCasino(context: CommandContext): Promise<void> {
     return;
   }
 
-  const parsedBet = parseAmountOrAll(context.args[0]);
+  const parsedBet = parseBigIntAmountOrAll(context.args[0]);
   if (parsedBet === null) {
     await context.reply(
-      "Format salah.\nGunakan: .casino <jumlah|all>\nContoh: .casino 10k atau .judi 25000",
+      "Format salah.\nGunakan: .casino <jumlah|all>\nContoh: .casino 500k atau .judi 2jt",
     );
     return;
   }
@@ -311,7 +316,7 @@ async function handleCasino(context: CommandContext): Promise<void> {
           ? `MENANG! Profit +${formatRupiah(res.netDelta)}`
           : res.outcome === "draw"
             ? "SERI! Uang taruhan kembali utuh."
-            : `KALAH! Taruhan hangus -${formatRupiah(Math.abs(res.netDelta))}`;
+            : `KALAH! Taruhan hangus -${formatRupiah(absBigInt(res.netDelta))}`;
 
     await context.reply(
       [
@@ -352,11 +357,11 @@ async function handleDuel(context: CommandContext): Promise<void> {
       : context.quoted?.participantJid
         ? context.args[0]
         : context.args[1];
-  const betAmount = parsePositiveMoneyInput(rawBetArg);
+  const betAmount = parsePositiveBigIntMoneyInput(rawBetArg);
 
   if (!targetJid || betAmount === null) {
     await context.reply(
-      "Format salah.\nGunakan: .duel @user <taruhan>\nContoh: .duel @user 20k\nTerima duel: .terimaduel | Tolak: .tolakduel",
+      "Format salah.\nGunakan: .duel @user <taruhan>\nContoh: .duel @user 1jt\nTerima duel: .terimaduel | Tolak: .tolakduel",
     );
     return;
   }
@@ -381,7 +386,7 @@ async function handleDuel(context: CommandContext): Promise<void> {
         "*─── [ TANTANGAN DUEL PVP ] ───*",
         "",
         `${phoneTag(pending.challengerJid)} menantang ${phoneTag(pending.opponentJid)} duel taruhan!`,
-        `• Taruhan : ${formatRupiah(pending.betAmount)} (Total pot: ${formatRupiah(pending.betAmount * 2)})`,
+        `• Taruhan : ${formatRupiah(pending.betAmount)} (Total pot: ${formatRupiah(pending.betAmount * 2n)})`,
         `• Waktu   : 3 menit`,
         "",
         `${phoneTag(pending.opponentJid)} ketik *.terimaduel* untuk menerima atau *.tolakduel* untuk menolak!`,

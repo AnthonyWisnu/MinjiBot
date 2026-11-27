@@ -1,7 +1,7 @@
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { leaderboardService } from "../../services/member/leaderboard.service";
 import type { LeaderboardResult } from "../../services/member/leaderboard.service";
-import { formatRupiah } from "../../utils/currency";
+import { formatCompactRupiah } from "../../utils/currency";
 
 function formatLeaderboard(
   result: LeaderboardResult,
@@ -20,7 +20,7 @@ function formatLeaderboard(
   for (const entry of result.entries) {
     mentions.push(entry.userJid);
     const formattedValue = asRupiah
-      ? formatRupiah(entry.value)
+      ? formatCompactRupiah(entry.value)
       : `${entry.value.toLocaleString("id-ID")} ${unit}`;
     lines.push(`${String(entry.position)}. @${entry.displayName} [${entry.rank}]`);
     lines.push(`   ${asRupiah ? "Total Aset" : unit}: ${formattedValue}`);

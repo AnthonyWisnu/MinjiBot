@@ -9,8 +9,17 @@ import type {
 } from "../../services/member/memberProfileView.service";
 import { tenantAdminService } from "../../services/tenant/tenantAdmin.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
-import { formatRupiah } from "../../utils/currency";
+import { formatCompactRupiah, formatRupiah, toBigIntSafe } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
+
+function formatSultanRupiah(amount: bigint | number): string {
+  const val = toBigIntSafe(amount);
+  const full = formatRupiah(val);
+  if (val >= 1_000_000_000n) {
+    return `${full} (${formatCompactRupiah(val)})`;
+  }
+  return full;
+}
 
 function formatProfileView(
   view: ProfileView,
@@ -26,8 +35,8 @@ function formatProfileView(
       "• Level: Lv. MAX (Immortal)",
       "• Rank: Immortal [MAX]",
       "• XP: 999.999",
-      "• Uang Dompet: Rp 999.999.999",
-      "• Saldo Bank: Rp 999.999.999",
+      "• Uang Dompet: Rp 999.999.999.999 (Rp 1 T)",
+      "• Saldo Bank: Rp 999.999.999.999 (Rp 1 T)",
       "• Poin Game: 999.999",
       "• Limit: 999 (Unlimited)",
       "• Daily Streak: 999 hari",
@@ -53,8 +62,8 @@ function formatProfileView(
     `• Role: ${role}`,
     `• Level: Lv. ${String(currentLevel)} (${rank})`,
     `• XP: ${profile.experience.toLocaleString("id-ID")} / ${nextLevelXp.toLocaleString("id-ID")}`,
-    `• Uang Dompet: ${formatRupiah(profile.moneyBalance)}`,
-    `• Saldo Bank: ${formatRupiah(profile.bankBalance)}`,
+    `• Uang Dompet: ${formatSultanRupiah(profile.moneyBalance)}`,
+    `• Saldo Bank: ${formatSultanRupiah(profile.bankBalance)}`,
     `• Poin Game: ${profile.pointsBalance.toLocaleString("id-ID")}`,
     `• Limit: ${String(profile.limitBalance)}`,
     `• Daily Streak: ${String(profile.currentStreak)} hari`,
@@ -73,9 +82,9 @@ function formatWalletView(
     return [
       "*─── [ DOMPET & KEKAYAAN ] ───*",
       `• Pemilik: ${label}`,
-      "• Uang Dompet : Rp 999.999.999",
-      "• Bank / ATM  : Rp 999.999.999",
-      "• Total Aset  : Rp 1.999.999.998",
+      "• Uang Dompet : Rp 999.999.999.999 (Rp 1 T)",
+      "• Bank / ATM  : Rp 999.999.999.999 (Rp 1 T)",
+      "• Total Aset  : Rp 1.999.999.999.998 (Rp 2 T)",
       "• Poin Game   : 999.999 Poin",
       "• Limit       : Unlimited",
       "• Level       : Lv. MAX (Immortal)",
@@ -83,7 +92,9 @@ function formatWalletView(
   }
 
   const { profile, rank } = view;
-  const totalWealth = profile.moneyBalance + profile.bankBalance;
+  const money = toBigIntSafe(profile.moneyBalance);
+  const bank = toBigIntSafe(profile.bankBalance);
+  const totalWealth = money + bank;
   const currentLevel = Math.max(1, profile.level);
   const nextLevelXp = xpRequiredForLevel(currentLevel + 1);
   const partnerLabel = profile.partnerJid
@@ -93,9 +104,9 @@ function formatWalletView(
   return [
     "*─── [ DOMPET & KEKAYAAN ] ───*",
     `• Pemilik     : ${label}`,
-    `• Uang Dompet : ${formatRupiah(profile.moneyBalance)}`,
-    `• Bank / ATM  : ${formatRupiah(profile.bankBalance)}`,
-    `• Total Aset  : ${formatRupiah(totalWealth)}`,
+    `• Uang Dompet : ${formatSultanRupiah(money)}`,
+    `• Bank / ATM  : ${formatSultanRupiah(bank)}`,
+    `• Total Aset  : ${formatSultanRupiah(totalWealth)}`,
     "",
     `• Poin Game   : ${profile.pointsBalance.toLocaleString("id-ID")} Poin`,
     `• Limit       : ${String(profile.limitBalance)} Limit`,

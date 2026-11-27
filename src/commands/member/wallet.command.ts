@@ -17,7 +17,8 @@ import {
 import {
   formatRemainingDuration,
   formatRupiah,
-  parseAmountOrAll,
+  parseBigIntAmountOrAll,
+  parsePositiveBigIntMoneyInput,
   parsePositiveMoneyInput,
 } from "../../utils/currency";
 import { getBotCanonicalJids, normalizeUserJid } from "../../utils/jid";
@@ -45,10 +46,10 @@ async function handleDeposit(context: CommandContext, forceAll = false): Promise
     return;
   }
 
-  const parsed = forceAll ? "all" : parseAmountOrAll(context.args[0]);
+  const parsed = forceAll ? "all" : parseBigIntAmountOrAll(context.args[0]);
   if (parsed === null) {
     await context.reply(
-      "Format salah.\nGunakan: .atm <jumlah|all> atau .atmall\nContoh: .atm 50k atau .atm all",
+      "Format salah.\nGunakan: .atm <jumlah|all> atau .atmall\nContoh: .atm 5jt atau .atm all",
     );
     return;
   }
@@ -81,10 +82,10 @@ async function handleWithdraw(context: CommandContext, forceAll = false): Promis
     return;
   }
 
-  const parsed = forceAll ? "all" : parseAmountOrAll(context.args[0]);
+  const parsed = forceAll ? "all" : parseBigIntAmountOrAll(context.args[0]);
   if (parsed === null) {
     await context.reply(
-      "Format salah.\nGunakan: .pull <jumlah|all> atau .pullall\nContoh: .pull 25k atau .pull all",
+      "Format salah.\nGunakan: .pull <jumlah|all> atau .pullall\nContoh: .pull 2jt atau .pull all",
     );
     return;
   }
@@ -132,10 +133,10 @@ async function handleTransferMoney(context: CommandContext): Promise<void> {
     }
   }
 
-  const amount = parsePositiveMoneyInput(rawAmountArg);
+  const amount = parsePositiveBigIntMoneyInput(rawAmountArg);
   if (!rawTargetJid || amount === null) {
     await context.reply(
-      "Format salah.\nGunakan: .transfer @user <jumlah> (atau reply pesan target: .transfer <jumlah>)\nContoh: .transfer @user 50k",
+      "Format salah.\nGunakan: .transfer @user <jumlah> (atau reply pesan target: .transfer <jumlah>)\nContoh: .transfer @user 5jt",
     );
     return;
   }

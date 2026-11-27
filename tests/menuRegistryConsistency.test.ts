@@ -13,8 +13,14 @@ function extractCommandTokens(text: string): string[] {
   const commands: string[] = [];
 
   for (const line of lines) {
-    // Only parse bullet/guide lines that declare commands
-    if (line.includes("• .") || line.startsWith("•") || line.includes("Format: .")) {
+    // Parse bullet, numbered command list ("1. .cmd"), and format guide lines
+    const isCommandLine =
+      line.includes("• .") ||
+      line.startsWith("•") ||
+      /^\s*\d+\.\s+\./.test(line) ||
+      line.includes("Format: .");
+
+    if (isCommandLine) {
       const matches = line.matchAll(/(?:^|[\s/])\.([a-z0-9]+)/gi);
       for (const match of matches) {
         const cmd = match[1]?.toLowerCase();
@@ -39,7 +45,11 @@ test("menuRegistryConsistency - all commands declared in menuService must exist 
     ownerJid: "628111@s.whatsapp.net",
   });
 
-  const createMockContext = (role: CommandContext["role"], isGroup: boolean): CommandContext =>
+  const createMockContext = (
+    role: CommandContext["role"],
+    isGroup: boolean,
+    args: string[] = [],
+  ): CommandContext =>
     buildCommandContext({
       chatJid: isGroup ? "12345@g.us" : "628111@s.whatsapp.net",
       senderJid: "628111@s.whatsapp.net",
@@ -48,7 +58,7 @@ test("menuRegistryConsistency - all commands declared in menuService must exist 
       role,
       tenantGroup: isGroup ? fakeTenantGroup : undefined,
       commandName: "menu",
-      args: [],
+      args,
       mentionedJids: [],
     });
 
@@ -94,6 +104,12 @@ test("menuRegistryConsistency - all commands declared in menuService must exist 
     await menu.buildMenu(createMockContext("SUPER_OWNER", false)),
     await menu.buildMenu(createMockContext("TENANT_OWNER", false)),
     await menu.buildMenu(createMockContext("MEMBER", false)),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["ai"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["rpg"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["game"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["fun"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["media"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["grup"])),
   ];
 
   // Also test tenant panel quick control lines

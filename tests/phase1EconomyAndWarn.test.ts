@@ -33,13 +33,14 @@ import {
   formatRemainingDuration,
   formatRupiah,
   parseAmountOrAll,
+  parsePositiveBigIntMoneyInput,
   parsePositiveMoneyInput,
 } from "../src/utils/currency";
 import { buildMemberProfile } from "./helpers/factories";
 
 void test("Default limit & money constants and idempotent legacy top-up query", async () => {
   assert.equal(INITIAL_LIMIT_BALANCE, 100);
-  assert.equal(INITIAL_MONEY_BALANCE, 25_000);
+  assert.equal(INITIAL_MONEY_BALANCE, 500_000n);
 
   const calls: unknown[] = [];
   const repo = new GroupMemberProfileRepository({
@@ -65,13 +66,16 @@ void test("Default limit & money constants and idempotent legacy top-up query", 
   });
 });
 
-void test("Currency parser & formatter handle shortcuts (k, jt, m, all) and rupiah formatting", () => {
+void test("Currency parser & formatter handle shortcuts (k, jt, m, b, t, all) and rupiah formatting", () => {
   assert.equal(formatRupiah(25000), "Rp 25.000");
+  assert.equal(formatRupiah(12_500_000n), "Rp 12.500.000");
   assert.equal(parsePositiveMoneyInput("50000"), 50_000);
   assert.equal(parsePositiveMoneyInput("50.000"), 50_000);
   assert.equal(parsePositiveMoneyInput("25k"), 25_000);
   assert.equal(parsePositiveMoneyInput("1.5jt"), 1_500_000);
   assert.equal(parsePositiveMoneyInput("2m"), 2_000_000);
+  assert.equal(parsePositiveBigIntMoneyInput("5b"), 5_000_000_000n);
+  assert.equal(parsePositiveBigIntMoneyInput("2.4t"), 2_400_000_000_000n);
   assert.equal(parsePositiveMoneyInput("-500"), null);
   assert.equal(parsePositiveMoneyInput("abc"), null);
   assert.equal(parseAmountOrAll("all"), "all");
@@ -87,8 +91,8 @@ void test("WalletBankService: deposit, withdraw, transfer, and exchange are atom
       buildMemberProfile({
         id: "p1",
         userJid: "628111@s.whatsapp.net",
-        moneyBalance: 100_000,
-        bankBalance: 20_000,
+        moneyBalance: 10_000_000n,
+        bankBalance: 2_000_000n,
         pointsBalance: 50,
       }),
     ],
@@ -97,8 +101,8 @@ void test("WalletBankService: deposit, withdraw, transfer, and exchange are atom
       buildMemberProfile({
         id: "p2",
         userJid: "628222@s.whatsapp.net",
-        moneyBalance: 10_000,
-        bankBalance: 0,
+        moneyBalance: 1_000_000n,
+        bankBalance: 0n,
       }),
     ],
   ]);
@@ -127,20 +131,25 @@ void test("WalletBankService: deposit, withdraw, transfer, and exchange are atom
             const prof = store.get(key);
             if (!prof) return Promise.resolve({ count: 0 });
 
-            const moneyGuard = args.where.moneyBalance as { gte?: number } | undefined;
+            const moneyGuard = args.where.moneyBalance as { gte?: bigint } | undefined;
             if (moneyGuard?.gte !== undefined && prof.moneyBalance < moneyGuard.gte) {
               return Promise.resolve({ count: 0 });
             }
-            const bankGuard = args.where.bankBalance as { gte?: number } | undefined;
+            const bankGuard = args.where.bankBalance as { gte?: bigint } | undefined;
             if (bankGuard?.gte !== undefined && prof.bankBalance < bankGuard.gte) {
               return Promise.resolve({ count: 0 });
             }
 
-            const decMoney = (args.data.moneyBalance as { decrement?: number } | undefined)?.decrement ?? 0;
-            const incMoney = (args.data.moneyBalance as { increment?: number } | undefined)?.increment ?? 0;
-            const decBank = (args.data.bankBalance as { decrement?: number } | undefined)?.decrement ?? 0;
-            const incBank = (args.data.bankBalance as { increment?: number } | undefined)?.increment ?? 0;
-            const incPts = (args.data.pointsBalance as { increment?: number } | undefined)?.increment ?? 0;
+            const decMoney =
+              (args.data.moneyBalance as { decrement?: bigint } | undefined)?.decrement ?? 0n;
+            const incMoney =
+              (args.data.moneyBalance as { increment?: bigint } | undefined)?.increment ?? 0n;
+            const decBank =
+              (args.data.bankBalance as { decrement?: bigint } | undefined)?.decrement ?? 0n;
+            const incBank =
+              (args.data.bankBalance as { increment?: bigint } | undefined)?.increment ?? 0n;
+            const incPts =
+              (args.data.pointsBalance as { increment?: number } | undefined)?.increment ?? 0;
 
             store.set(key, {
               ...prof,
@@ -160,7 +169,8 @@ void test("WalletBankService: deposit, withdraw, transfer, and exchange are atom
             const key = args.where.id === "p1" ? "u1" : "u2";
             const prof = store.get(key);
             if (!prof) throw new Error("Profile missing");
-            const incMoney = (args.data.moneyBalance as { increment?: number } | undefined)?.increment ?? 0;
+            const incMoney =
+              (args.data.moneyBalance as { increment?: bigint } | undefined)?.increment ?? 0n;
             const updated = { ...prof, moneyBalance: prof.moneyBalance + incMoney };
             store.set(key, updated);
             return Promise.resolve({ ...updated });
@@ -171,17 +181,17 @@ void test("WalletBankService: deposit, withdraw, transfer, and exchange are atom
 
   const service = new WalletBankService(profileRepo, txRepo, db);
 
-  const dep = await service.depositToBank("g@g.us", "628111@s.whatsapp.net", 40_000);
-  assert.equal(dep.moneyBalance, 60_000);
-  assert.equal(dep.bankBalance, 60_000);
+  const dep = await service.depositToBank("g@g.us", "628111@s.whatsapp.net", 4_000_000n);
+  assert.equal(dep.moneyBalance, 6_000_000n);
+  assert.equal(dep.bankBalance, 6_000_000n);
 
   const wdr = await service.withdrawFromBank("g@g.us", "628111@s.whatsapp.net", "all");
-  assert.equal(wdr.amount, 60_000);
-  assert.equal(wdr.moneyBalance, 120_000);
-  assert.equal(wdr.bankBalance, 0);
+  assert.equal(wdr.amount, 6_000_000n);
+  assert.equal(wdr.moneyBalance, 12_000_000n);
+  assert.equal(wdr.bankBalance, 0n);
 
   await assert.rejects(
-    () => service.withdrawFromBank("g@g.us", "628111@s.whatsapp.net", 5_000),
+    () => service.withdrawFromBank("g@g.us", "628111@s.whatsapp.net", 500_000n),
     InsufficientBankError,
   );
 
@@ -189,22 +199,22 @@ void test("WalletBankService: deposit, withdraw, transfer, and exchange are atom
     "g@g.us",
     "628111@s.whatsapp.net",
     "628222@s.whatsapp.net",
-    20_000,
+    2_000_000n,
   );
-  assert.equal(tf.senderMoneyBalance, 100_000);
-  assert.equal(tf.targetMoneyBalance, 30_000);
+  assert.equal(tf.senderMoneyBalance, 10_000_000n);
+  assert.equal(tf.targetMoneyBalance, 3_000_000n);
 
   await assert.rejects(
     () =>
-      service.transferMoney("g@g.us", "628111@s.whatsapp.net", "628111@s.whatsapp.net", 5_000),
+      service.transferMoney("g@g.us", "628111@s.whatsapp.net", "628111@s.whatsapp.net", 500_000n),
     InvalidAmountError,
   );
 
   const ex = await service.exchangeMoneyToPoints("g@g.us", "628111@s.whatsapp.net", 100);
-  assert.equal(ex.moneySpent, 100 * EXCHANGE_MONEY_PER_POINT);
+  assert.equal(ex.moneySpent, 100n * EXCHANGE_MONEY_PER_POINT);
   assert.equal(ex.pointsGained, 100);
   assert.equal(ex.pointsBalance, 150);
-  assert.equal(ex.moneyBalance, 80_000);
+  assert.equal(ex.moneyBalance, 8_000_000n);
 
   await assert.rejects(
     () => service.exchangeMoneyToPoints("g@g.us", "628111@s.whatsapp.net", 999_999),
@@ -214,7 +224,7 @@ void test("WalletBankService: deposit, withdraw, transfer, and exchange are atom
   assert.ok(txRecords.length >= 8);
 });
 
-void test("LevelService: XP thresholds and multi-level claim grant money, points, and limits", async () => {
+void test("LevelService: XP thresholds and multi-level claim grant Sultan money, points, and limits", async () => {
   assert.equal(xpRequiredForLevel(1), 0);
   assert.equal(xpRequiredForLevel(2), 150);
   assert.equal(xpRequiredForLevel(3), 350);
@@ -222,7 +232,7 @@ void test("LevelService: XP thresholds and multi-level claim grant money, points
   assert.equal(calculateReachableLevel(350), 3);
 
   const rewards = computeLevelUpRewards(1, 3);
-  assert.equal(rewards.moneyGained, 20_000 + 30_000);
+  assert.equal(rewards.moneyGained, 3_000_000n + 4_500_000n);
   assert.equal(rewards.pointsGained, 60);
   assert.equal(rewards.limitGained, 4);
 
@@ -230,7 +240,7 @@ void test("LevelService: XP thresholds and multi-level claim grant money, points
     id: "p-lvl",
     level: 1,
     experience: 400,
-    moneyBalance: 25_000,
+    moneyBalance: 500_000n,
     pointsBalance: 100,
     limitBalance: 100,
   });
@@ -243,7 +253,7 @@ void test("LevelService: XP thresholds and multi-level claim grant money, points
           groupMemberProfile: {
             updateMany: (args: { data: Record<string, unknown> }) => {
               const lvl = args.data.level as number;
-              const incMoney = (args.data.moneyBalance as { increment: number }).increment;
+              const incMoney = (args.data.moneyBalance as { increment: bigint }).increment;
               const incPts = (args.data.pointsBalance as { increment: number }).increment;
               const incLim = (args.data.limitBalance as { increment: number }).increment;
               currentProfile = {
@@ -269,7 +279,7 @@ void test("LevelService: XP thresholds and multi-level claim grant money, points
   assert.equal(res.oldLevel, 1);
   assert.equal(res.newLevel, 3);
   assert.equal(res.levelsGained, 2);
-  assert.equal(res.moneyGained, 50_000);
+  assert.equal(res.moneyGained, 7_500_000n);
   assert.equal(res.pointsGained, 60);
   assert.equal(res.limitGained, 4);
 
@@ -278,10 +288,10 @@ void test("LevelService: XP thresholds and multi-level claim grant money, points
   assert.equal(second.leveledUp, false);
 });
 
-void test("PeriodicRewardService: weekly & monthly rewards enforce cooldown", async () => {
+void test("PeriodicRewardService: weekly & monthly rewards enforce cooldown with Sultan scale", async () => {
   let profile = buildMemberProfile({
     id: "p-per",
-    moneyBalance: 25_000,
+    moneyBalance: 500_000n,
     pointsBalance: 100,
     limitBalance: 100,
     experience: 0,
@@ -300,7 +310,7 @@ void test("PeriodicRewardService: weekly & monthly rewards enforce cooldown", as
               profile = {
                 ...profile,
                 moneyBalance:
-                  profile.moneyBalance + (args.data.moneyBalance as { increment: number }).increment,
+                  profile.moneyBalance + (args.data.moneyBalance as { increment: bigint }).increment,
                 pointsBalance:
                   profile.pointsBalance + (args.data.pointsBalance as { increment: number }).increment,
                 limitBalance:
@@ -325,7 +335,7 @@ void test("PeriodicRewardService: weekly & monthly rewards enforce cooldown", as
 
   const now = new Date("2026-11-28T05:00:00Z");
   const weekly = await service.claimWeekly("g@g.us", "u@s.net", now);
-  assert.equal(weekly.moneyGained, 75_000);
+  assert.equal(weekly.moneyGained, 12_000_000n);
   assert.equal(weekly.pointsGained, 250);
   assert.equal(weekly.limitGained, 5);
 
@@ -335,7 +345,7 @@ void test("PeriodicRewardService: weekly & monthly rewards enforce cooldown", as
   );
 
   const monthly = await service.claimMonthly("g@g.us", "u@s.net", now);
-  assert.equal(monthly.moneyGained, 350_000);
+  assert.equal(monthly.moneyGained, 75_000_000n);
   assert.equal(monthly.pointsGained, 1_000);
   assert.equal(monthly.limitGained, 20);
 });

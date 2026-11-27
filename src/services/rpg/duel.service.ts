@@ -8,20 +8,20 @@ import { AppUserError } from "../../errors/appUserError";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../../repositories/groupMemberTransaction.repository";
 import { prisma } from "../../repositories/prismaClient";
-import { formatRupiah } from "../../utils/currency";
+import { clampMoneyCredit, formatRupiah } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
-import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "../member/memberEconomy.service";
+import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
 
-const DUEL_MIN_BET = 2_000;
-const DUEL_MAX_BET = 500_000;
+export const DUEL_MIN_BET = 250_000n;
+export const DUEL_MAX_BET = 250_000_000n;
 const DUEL_TTL_MS = 3 * 60 * 1000;
 
 export interface PendingDuel {
   groupJid: string;
   challengerJid: string;
   opponentJid: string;
-  betAmount: number;
+  betAmount: bigint;
   expiresAt: number;
 }
 
@@ -32,9 +32,9 @@ export interface DuelResolution {
   loserJid: string;
   challengerRoll: number;
   opponentRoll: number;
-  betAmount: number;
-  winnerMoney: number;
-  loserMoney: number;
+  betAmount: bigint;
+  winnerMoney: bigint;
+  loserMoney: bigint;
 }
 
 interface DuelProfileStore {
@@ -51,9 +51,9 @@ interface DuelTxStore {
       targetUserJid?: string;
       asset: MemberTransactionAsset;
       type: MemberTransactionType;
-      amount: number;
-      balanceBefore?: number;
-      balanceAfter?: number;
+      amount: number | bigint;
+      balanceBefore?: number | bigint;
+      balanceAfter?: number | bigint;
       correlationId?: string;
     },
     tx?: unknown,
@@ -88,7 +88,7 @@ export class DuelService {
     groupJid: string,
     challengerJid: string,
     opponentJid: string,
-    betAmount: number,
+    betAmount: bigint,
     nowMs = Date.now(),
   ): Promise<PendingDuel> {
     const normChallenger = normalizeUserJid(challengerJid);
@@ -97,7 +97,7 @@ export class DuelService {
     if (!normChallenger || !normOpponent || normChallenger === normOpponent) {
       throw new AppUserError("Tidak bisa menantang duel diri sendiri.");
     }
-    if (!Number.isSafeInteger(betAmount) || betAmount < DUEL_MIN_BET || betAmount > DUEL_MAX_BET) {
+    if (betAmount < DUEL_MIN_BET || betAmount > DUEL_MAX_BET) {
       throw new AppUserError(
         `Taruhan duel harus antara ${formatRupiah(DUEL_MIN_BET)} sampai ${formatRupiah(DUEL_MAX_BET)}.`,
       );
@@ -200,7 +200,7 @@ export class DuelService {
         throw new AppUserError("Saldo lawan tidak cukup saat memproses duel.");
       }
 
-      const creditAmount = Math.max(0, Math.min(bet, MAX_SAFE_ECONOMY_INT - winnerProfile.moneyBalance));
+      const creditAmount = clampMoneyCredit(winnerProfile.moneyBalance, bet);
       const creditWinner = await tx.groupMemberProfile.updateMany({
         where: { id: winnerProfile.id, moneyBalance: { gte: bet } },
         data: {

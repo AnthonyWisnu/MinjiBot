@@ -30,9 +30,9 @@ interface PurchaseTxStore {
       userJid: string;
       asset: MemberTransactionAsset;
       type: MemberTransactionType;
-      amount: number;
-      balanceBefore?: number;
-      balanceAfter?: number;
+      amount: number | bigint;
+      balanceBefore?: number | bigint;
+      balanceAfter?: number | bigint;
       correlationId?: string;
     },
     tx?: unknown,
