@@ -5,17 +5,25 @@ import { TenantFeatureRepository } from "../../repositories/tenantFeature.reposi
 import type { CommandContext } from "../../types/command";
 import { formatDateId, formatNullableText } from "../../utils/format";
 
-interface MenuSection {
+export interface MenuSection {
   title: string;
   items: string[];
+}
+
+export interface SearchableMenuEntry {
+  usage: string;
+  primaryCommand: string;
+  mentionedCommands: string[];
+  category: string;
 }
 
 const SUB_MENU_NAV_LINES = [
   "*Sub-Menu Cepat:*",
   ".menu ai | .menu rpg | .menu game",
   ".menu kasino | .menu sosial | .menu fun",
-  ".menu media | .menu islami | .menu info",
-  ".menu grup",
+  ".menu anime | .menu media | .menu util",
+  ".menu islami | .menu info | .menu grup",
+  ".menu bisnis | .menu all | .carifitur",
 ] as const;
 
 const MENU_LEGEND = "_Info: (L) = Pakai Limit | (Admin) = Admin_";
@@ -68,17 +76,29 @@ export class MenuService {
     }
 
     const sub = (context.args[0] ?? "").trim().toLowerCase();
+    if (sub === "all" || sub === "semua") {
+      const body = await this.buildGroupMenu(context);
+      return `${header}\n\n${body}`;
+    }
+
     if (
       sub &&
       [
         "ai",
         "rpg",
+        "bisnis",
+        "ekonomi",
+        "bank",
         "game",
         "kasino",
         "sosial",
         "fun",
+        "anime",
+        "geek",
         "media",
+        "util",
         "tools",
+        "alat",
         "grup",
         "group",
         "islami",
@@ -128,6 +148,22 @@ export class MenuService {
       return this.renderCategoryPage("*── [ SUB-MENU: RPG ] ──*", groupHeader, sections, footer);
     }
 
+    if (category === "bisnis" || category === "ekonomi" || category === "bank") {
+      const sections: MenuSection[] = [this.buildEconomySection()];
+      const business = this.buildBusinessExpansionSection(featureSetting);
+      if (business) sections.push(business);
+      return this.renderCategoryPage("*── [ SUB-MENU: BISNIS ] ──*", groupHeader, sections, footer);
+    }
+
+    if (category === "anime" || category === "geek") {
+      return this.renderCategoryPage(
+        "*── [ SUB-MENU: ANIME ] ──*",
+        groupHeader,
+        [this.buildGeekNetworkSection(), this.buildAnimeRpSection()],
+        footer,
+      );
+    }
+
     if (category === "game") {
       const sections: MenuSection[] = [];
       const gameSection = this.buildPureGameSection(featureSetting);
@@ -170,7 +206,7 @@ export class MenuService {
       );
     }
 
-    if (category === "media" || category === "tools") {
+    if (category === "media") {
       return this.renderCategoryPage(
         "*── [ SUB-MENU: MEDIA ] ──*",
         groupHeader,
@@ -182,6 +218,17 @@ export class MenuService {
         ],
         footer,
       );
+    }
+
+    if (category === "util" || category === "tools" || category === "alat") {
+      const sections: MenuSection[] = [
+        this.buildDailyUtilitySection(),
+        this.buildPublicInfoSection(),
+        this.buildInteractiveToolsSection(),
+      ];
+      const utility = this.buildUtilitySection(featureSetting);
+      if (utility) sections.push(utility);
+      return this.renderCategoryPage("*── [ SUB-MENU: UTIL ] ──*", groupHeader, sections, footer);
     }
 
     if (category === "islami") {
@@ -430,6 +477,7 @@ export class MenuService {
         title: "*── [ PENGATURAN ] ──*",
         items: [
           ".feature <fitur> <on/off>",
+          ".carifitur <kata>",
           ".status",
           ".panel / .tenantstatus",
           ".ownermenu",
@@ -481,7 +529,7 @@ export class MenuService {
       ...this.buildCommonGroupSections(featureSetting),
       {
         title: "*── [ INFORMASI ] ──*",
-        items: [".panel / .tenantstatus", ".status", ".featuremenu", ".menu"],
+        items: [".panel / .tenantstatus", ".carifitur <kata>", ".status", ".featuremenu", ".menu"],
       },
     ];
 
@@ -522,7 +570,7 @@ export class MenuService {
       ...this.buildCommonGroupSections(featureSetting),
       {
         title: "*── [ INFORMASI ] ──*",
-        items: [".panel / .tenantstatus", ".status", ".menu"],
+        items: [".panel / .tenantstatus", ".carifitur <kata>", ".status", ".menu"],
       },
     ];
 
@@ -549,7 +597,7 @@ export class MenuService {
       ...this.buildCommonGroupSections(featureSetting),
       {
         title: "*── [ BANTUAN ] ──*",
-        items: [".status", ".menu"],
+        items: [".carifitur <kata>", ".status", ".menu"],
       },
     ];
 
@@ -1234,6 +1282,51 @@ export class MenuService {
   private formatGroupName(tenantGroup: TenantGroup | undefined): string {
     if (!tenantGroup) return "Grup Umum";
     return formatNullableText(tenantGroup.name);
+  }
+
+  getSearchableCatalog(): SearchableMenuEntry[] {
+    const sections: MenuSection[] = [
+      ...this.buildCommonGroupSections(null),
+      this.buildModerationSection(true),
+      {
+        title: "*── [ BANTUAN ] ──*",
+        items: [".carifitur <kata>", ".panel / .tenantstatus", ".status", ".menu"],
+      },
+    ];
+
+    const entries: SearchableMenuEntry[] = [];
+    const seenUsage = new Set<string>();
+
+    for (const section of sections) {
+      const category = section.title
+        .replace(/^\*──\s*\[\s*/, "")
+        .replace(/\s*\]\s*──\*$/, "")
+        .trim();
+
+      for (const usage of section.items) {
+        if (seenUsage.has(usage)) continue;
+        seenUsage.add(usage);
+
+        const mentioned: string[] = [];
+        for (const match of usage.matchAll(/(?:^|[\s/])\.([a-z0-9-]+)/gi)) {
+          const token = match[1]?.toLowerCase();
+          if (token && !mentioned.includes(token)) {
+            mentioned.push(token);
+          }
+        }
+        const primaryCommand = mentioned[0] ?? "";
+        if (!primaryCommand) continue;
+
+        entries.push({
+          usage,
+          primaryCommand,
+          mentionedCommands: mentioned,
+          category,
+        });
+      }
+    }
+
+    return entries;
   }
 }
 

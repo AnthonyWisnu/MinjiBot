@@ -1,4 +1,8 @@
 import { avatarService } from "../services/media/avatar.service";
+import {
+  featureSearchService,
+  type RouterCommandSummary,
+} from "../services/menu/featureSearch.service";
 import { menuService } from "../services/menu/menu.service";
 import type { CommandContext, CommandDefinition } from "../types/command";
 
@@ -99,4 +103,71 @@ async function ensureSuperOwner(context: CommandContext): Promise<boolean> {
 
   await context.reply("Command ini hanya dapat digunakan oleh Super Owner.");
   return false;
+}
+
+export function createFeatureSearchCommands(
+  listCommands: () => readonly RouterCommandSummary[],
+): CommandDefinition[] {
+  return [
+    {
+      name: "carifitur",
+      aliases: ["searchcmd", "cari", "findcmd"],
+      execute: async (context: CommandContext) => {
+        const query = context.argsText.trim();
+        const res = featureSearchService.search(query, listCommands(), 20);
+
+        if (!query) {
+          await context.reply(
+            [
+              "*── [ CARI FITUR MINJI ] ──*",
+              `Katalog  : ${String(res.totalCatalogItems)} fitur aktif`,
+              `Perintah : ${String(res.totalRegisteredCommands)} unik (${String(res.totalCommandsWithAliases)} dgn alias)`,
+              "",
+              "Cara pakai: *.carifitur <kata kunci>*",
+              "Contoh:",
+              "- .carifitur saham",
+              "- .carifitur stiker",
+              "- .carifitur download",
+              "- .carifitur anime",
+              "- .carifitur islam",
+            ].join("\n"),
+          );
+          return;
+        }
+
+        if (res.matches.length === 0) {
+          await context.reply(
+            [
+              `*── [ CARI FITUR ] ──*`,
+              `Kata kunci "${query}" tidak ditemukan.`,
+              "",
+              "Coba kata kunci umum: ai, stiker, download, saham, kripto, game, kasino, anime, islam, berita, warna, admin.",
+              "Atau lihat kategori lengkap di *.menu*",
+            ].join("\n"),
+          );
+          return;
+        }
+
+        const lines = res.matches.map((m, idx) => {
+          const aliasNote =
+            m.matchedAliases.length > 0
+              ? ` (alias: ${m.matchedAliases.map((a) => `.${a}`).join(", ")})`
+              : "";
+          return `${String(idx + 1)}. ${m.usage}${aliasNote}\n   [${m.category}]`;
+        });
+
+        await context.reply(
+          [
+            `*── [ CARI FITUR ] ──*`,
+            `Kata kunci : "${res.query}"`,
+            `Ditemukan  : ${String(res.matches.length)} hasil teratas`,
+            "",
+            ...lines,
+            "",
+            "_Ketik .menu <kategori> untuk membuka sub-menu lengkap._",
+          ].join("\n"),
+        );
+      },
+    },
+  ];
 }

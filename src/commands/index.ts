@@ -39,7 +39,7 @@ import { stickerCommands } from "./media/sticker.command";
 import { videoNoteCommands } from "./media/videoNote.command";
 import { quoteCardCommands } from "./media/quoteCard.command";
 import { audioEffectCommands } from "./media/audioEffect.command";
-import { menuCommands } from "./menu.command";
+import { createFeatureSearchCommands, menuCommands } from "./menu.command";
 import { antiLinkCommands } from "./moderation/antiLink.command";
 import { antiSpamCommands } from "./moderation/antiSpam.command";
 import { antiDeleteCommands } from "./moderation/antiDelete.command";
@@ -73,6 +73,17 @@ export class CommandRouter {
 
   has(commandName: string): boolean {
     return this.commands.has(commandName.toLowerCase());
+  }
+
+  listCommandEntries(): { name: string; aliases: string[] }[] {
+    const unique = new Map<string, CommandDefinition>();
+    for (const def of this.commands.values()) {
+      unique.set(def.name.toLowerCase(), def);
+    }
+    return Array.from(unique.values()).map((def) => ({
+      name: def.name,
+      aliases: def.aliases ? [...def.aliases] : [],
+    }));
   }
 
   async handle(context: CommandContext): Promise<void> {
@@ -186,6 +197,7 @@ export const commandRouter = new CommandRouter([
   ...publicInfoCommands,
   ...geekNetworkCommands,
   ...createCustomStickerCommands((cmd) => routerRef.current?.has(cmd) ?? false),
+  ...createFeatureSearchCommands(() => routerRef.current?.listCommandEntries() ?? []),
 ]);
 
 routerRef.current = commandRouter;

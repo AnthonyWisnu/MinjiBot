@@ -106,14 +106,18 @@ test("menuRegistryConsistency - all commands declared in menuService must exist 
     await menu.buildMenu(createMockContext("MEMBER", false)),
     await menu.buildMenu(createMockContext("MEMBER", true, ["ai"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["rpg"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["bisnis"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["game"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["kasino"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["sosial"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["fun"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["anime"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["media"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["util"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["islami"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["info"])),
     await menu.buildMenu(createMockContext("MEMBER", true, ["grup"])),
+    await menu.buildMenu(createMockContext("MEMBER", true, ["all"])),
   ];
 
   // Also test tenant panel quick control lines
