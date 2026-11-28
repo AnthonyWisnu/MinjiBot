@@ -55,8 +55,8 @@ const MAX_ACTIVE_GROUPS = 100;
 const MAX_BOUNTIES_PER_GROUP = 20;
 
 export const WORLD_BOSS_TTL_MS = 3 * 60 * 60 * 1000;
-export const WORLD_BOSS_RESPAWN_COOLDOWN_MS = 30 * 60 * 1000;
-export const WORLD_BOSS_ATTACK_COOLDOWN_MS = 2 * 60 * 1000;
+export const WORLD_BOSS_RESPAWN_COOLDOWN_MS = 60 * 60 * 1000;
+export const WORLD_BOSS_ATTACK_COOLDOWN_MS = 4 * 60 * 1000;
 export const WORLD_BOSS_MIN_HP = 15;
 
 export const SKILL_RESET_COST = 5_000_000n;
@@ -70,7 +70,7 @@ export const BUFF_MAX_STACK_MS = 6 * 60 * 60 * 1000;
 export const BOUNTY_MIN_AMOUNT = 2_000_000n;
 export const BOUNTY_MAX_AMOUNT = 500_000_000n;
 export const BOUNTY_TTL_MS = 24 * 60 * 60 * 1000;
-export const BOUNTY_HUNT_COOLDOWN_MS = 10 * 60 * 1000;
+export const BOUNTY_HUNT_COOLDOWN_MS = 20 * 60 * 1000;
 export const BOUNTY_FAIL_PENALTY = 500_000n;
 export const BOUNTY_UGD_MS = 5 * 60 * 1000;
 export const BOUNTY_TAX_PERCENT = 5;

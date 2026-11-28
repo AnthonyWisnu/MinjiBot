@@ -351,7 +351,7 @@ void test("Tahap 14: World Boss Raid spawn, multi-player attack, kill distributi
   const spawned = service.inspectOrSpawnWorldBoss("120@g.us", t0);
   assert.equal(spawned.spawned, true);
 
-  // Attack until defeated (alternating players advancing time past 2m cooldown)
+  // Attack until defeated (alternating players advancing time past 4m cooldown)
   let t = t0;
   let defeated = false;
   let lastResult = null;
@@ -360,7 +360,7 @@ void test("Tahap 14: World Boss Raid spawn, multi-player attack, kill distributi
     const res = await service.attackWorldBoss("120@g.us", attacker, t);
     lastResult = res;
     defeated = res.defeated;
-    t += 130_000;
+    t += 250_000;
   }
 
   assert.equal(defeated, true);

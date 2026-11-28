@@ -235,7 +235,7 @@ async function handleStartup(context: CommandContext): Promise<void> {
         `Level     : Lv.${String(s.level)} / 10`,
         `Karyawan  : ${String(s.employees)} / ${String(s.maxEmployees)} orang (.rekruit)`,
         `Valuasi   : ${formatRupiah(s.valuation)}`,
-        `Dividen   : ${formatRupiah(s.dividendPayout)} / 6 jam`,
+        `Dividen   : ${formatRupiah(s.dividendPayout)} / 12 jam`,
         `Status    : ${s.dividendCooldownMs > 0 ? `Tersedia ${formatRemainingDuration(s.dividendCooldownMs)} lagi` : "Siap ditarik (.dividen)!"}`,
         ...(s.nextUpgradeCost
           ? [`Upgrade   : ${formatCompactRupiah(s.nextUpgradeCost)} (.upgradestartup)`]

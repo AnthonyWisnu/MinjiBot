@@ -49,15 +49,15 @@ import {
 } from "./rpgState";
 
 export const INFINITE_RPG_COOLDOWNS_MS: Record<string, number> = {
-  adventure: 8 * 60 * 1000,
-  nebang: 5 * 60 * 1000,
-  berkebon: 5 * 60 * 1000,
-  fight_kucing: 12 * 60 * 1000,
-  fight_kyubi: 15 * 60 * 1000,
-  fight_centaur: 15 * 60 * 1000,
-  fight_griffin: 18 * 60 * 1000,
-  fight_naga: 20 * 60 * 1000,
-  fight_phonix: 25 * 60 * 1000,
+  adventure: 16 * 60 * 1000,
+  nebang: 10 * 60 * 1000,
+  berkebon: 10 * 60 * 1000,
+  fight_kucing: 24 * 60 * 1000,
+  fight_kyubi: 30 * 60 * 1000,
+  fight_centaur: 30 * 60 * 1000,
+  fight_griffin: 36 * 60 * 1000,
+  fight_naga: 40 * 60 * 1000,
+  fight_phonix: 50 * 60 * 1000,
 };
 
 const POTION_HEAL_AMOUNT = 40;

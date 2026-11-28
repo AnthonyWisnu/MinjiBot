@@ -91,13 +91,13 @@ export const CAREER_MAP = new Map<string, CareerSpec>(
   CAREER_CATALOG.map((c) => [c.id, c]),
 );
 
-export const CAREER_SHIFT_COOLDOWN_MS = 30 * 60 * 1000;
+export const CAREER_SHIFT_COOLDOWN_MS = 60 * 60 * 1000;
 export const CAREER_MAX_LEVEL = 5;
 
 export const STARTUP_CREATE_COST = 150_000_000n;
 export const STARTUP_RECRUIT_COST = 35_000_000n;
 export const STARTUP_MAX_LEVEL = 10;
-export const STARTUP_DIVIDEND_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+export const STARTUP_DIVIDEND_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
 export function getStartupUpgradeCost(currentLevel: number): bigint {
   return 200_000_000n * BigInt(currentLevel) * BigInt(currentLevel);

@@ -237,7 +237,7 @@ export const PROPERTY_MAP = new Map<string, PropertySpec>(
 );
 
 export const PROPERTY_SELL_REFUND_PERCENT = 65;
-export const PROPERTY_MIN_HARVEST_MS = 10 * 60 * 1000;
+export const PROPERTY_MIN_HARVEST_MS = 20 * 60 * 1000;
 export const PROPERTY_MAX_ACCUMULATION_HOURS = 24;
 
 export interface RankSalarySpec {

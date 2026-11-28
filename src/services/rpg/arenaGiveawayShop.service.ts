@@ -55,7 +55,7 @@ export const LOTTERY_MAX_TICKETS_PER_USER = 3;
 
 export const ARENA_MIN_BET = 100_000n;
 export const ARENA_MAX_BET = 100_000_000n;
-export const ARENA_COOLDOWN_MS = 10_000;
+export const ARENA_COOLDOWN_MS = 20_000;
 
 export const POINT_DUEL_MIN_BET = 10;
 export const POINT_DUEL_MAX_BET = 5_000;
@@ -63,7 +63,7 @@ export const POINT_DUEL_TTL_MS = 3 * 60 * 1000;
 
 export const PET_ARENA_MIN_BET = 500_000n;
 export const PET_ARENA_MAX_BET = 50_000_000n;
-export const PET_ARENA_COOLDOWN_MS = 2 * 60 * 1000;
+export const PET_ARENA_COOLDOWN_MS = 4 * 60 * 1000;
 const MAX_PET_LEVEL = 20;
 
 export const POINT_SHOP_XP_PER_POINT = 3;
@@ -77,7 +77,7 @@ export const POINT_SHOP_CRATE_PRICES: Record<"common" | "uncommon" | "mythic", n
 
 export const SEDEKAH_MIN_AMOUNT = 500_000n;
 export const SEDEKAH_MAX_AMOUNT = 5_000_000_000n;
-export const SEDEKAH_COOLDOWN_MS = 10 * 60 * 1000;
+export const SEDEKAH_COOLDOWN_MS = 20 * 60 * 1000;
 
 const MAX_ACTIVE_GROUPS = 100;
 
