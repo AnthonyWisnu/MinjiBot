@@ -282,7 +282,7 @@ void test("Tahap 1 Mobile-First Menu: headers <= 28 chars, numbered full list, s
   }
 
   // Check continuous numbering and rich feature count (100+ items)
-  assert.match(fullMenu, /1\. \.ai <pertanyaan> \(L\)/);
+  assert.match(fullMenu, /1\. \.ai <tanya\/foto> \(L\)/);
   assert.match(fullMenu, /100\. \./);
   assert.match(fullMenu, /\.menu ai \| \.menu rpg \| \.menu game/);
 

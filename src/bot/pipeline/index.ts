@@ -3,6 +3,7 @@ import { TenantContextInterceptor } from "./interceptors/tenantContext.intercept
 import { PendingTenantInterceptor } from "./interceptors/pendingTenant.interceptor";
 import { AntiDeleteInterceptor } from "./interceptors/antiDelete.interceptor";
 import { ActivityTrackerInterceptor } from "./interceptors/activityTracker.interceptor";
+import { ChatMemoryInterceptor } from "./interceptors/chatMemory.interceptor";
 import { AfkInterceptor } from "./interceptors/afk.interceptor";
 import { AntiLinkInterceptor } from "./interceptors/antiLink.interceptor";
 import { AntiSpamInterceptor } from "./interceptors/antiSpam.interceptor";
@@ -14,6 +15,7 @@ export * from "./interceptors/tenantContext.interceptor";
 export * from "./interceptors/pendingTenant.interceptor";
 export * from "./interceptors/antiDelete.interceptor";
 export * from "./interceptors/activityTracker.interceptor";
+export * from "./interceptors/chatMemory.interceptor";
 export * from "./interceptors/afk.interceptor";
 export * from "./interceptors/antiLink.interceptor";
 export * from "./interceptors/antiSpam.interceptor";
@@ -25,6 +27,7 @@ export function createDefaultMessagePipeline(): MessagePipeline {
     new PendingTenantInterceptor(),
     new AntiDeleteInterceptor(),
     new ActivityTrackerInterceptor(),
+    new ChatMemoryInterceptor(),
     new AfkInterceptor(),
     new AntiLinkInterceptor(),
     new AntiSpamInterceptor(),

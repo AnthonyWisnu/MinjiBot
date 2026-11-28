@@ -1,24 +1,47 @@
+import sharp from "sharp";
+
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { AppUserError } from "../../errors/appUserError";
+import { mediaQueueService } from "../../utils/boundedQueue";
 import { formatRemainingDuration } from "../../utils/currency";
+import { MAX_SAFE_IMAGE_PIXELS } from "../../utils/imageSafety";
 import { toWibDateKey } from "../../utils/wibDate";
 
 export const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const AI_MAX_PROMPT_CHARS = 600;
+export const AI_MAX_CONTEXT_CHARS = 2_400;
 export const AI_MAX_TOKENS = 450;
 export const AI_COOLDOWN_MS = 15_000;
-const AI_REQUEST_TIMEOUT_MS = 20_000;
+const AI_REQUEST_TIMEOUT_MS = 25_000;
 const MAX_COOLDOWN_ENTRIES = 2_000;
 const MAX_QUOTA_ENTRIES = 500;
 
-export type AiPersona = "assistant" | "simi";
+export type AiPersona =
+  | "assistant"
+  | "simi"
+  | "ringkas"
+  | "tanyachat"
+  | "vision"
+  | "ocr"
+  | "roast"
+  | "puji"
+  | "pantunai"
+  | "cerpen"
+  | "curhat"
+  | "debat"
+  | "koding"
+  | "perbaiki"
+  | "summarize"
+  | "ide";
 
 export interface OpenRouterAskInput {
   groupJid: string;
   userJid: string;
   prompt: string;
   persona: AiPersona;
+  imageDataUrl?: string;
+  maxPromptChars?: number;
   bypassCooldown?: boolean;
   now?: Date;
 }
@@ -60,7 +83,71 @@ const SYSTEM_PROMPTS: Record<AiPersona, string> = {
     "Balas super singkat (1-3 kalimat saja) pakai gaya bahasa Indonesia sehari-hari yang seru dan lucu.",
     "Tetap sopan, dilarang kasar, dilarang SARA, dan dilarang konten dewasa.",
   ].join(" "),
+  ringkas: [
+    "Kamu meringkas obrolan grup WhatsApp dalam Bahasa Indonesia santai dan rapi.",
+    "Buat maksimal 5 poin bullet singkat tentang topik utama, keputusan, atau hal lucu dari transkrip obrolan.",
+    "Jangan mengarang hal di luar transkrip.",
+  ].join(" "),
+  tanyachat: [
+    "Jawab pertanyaan user secara singkat dan akurat dalam Bahasa Indonesia HANYA berdasarkan transkrip obrolan grup yang diberikan.",
+    "Jika jawabannya tidak ada di transkrip, katakan terus terang belum dibahas di obrolan terakhir.",
+  ].join(" "),
+  vision: [
+    "Kamu adalah MinjiBot dengan kemampuan analisis gambar di WhatsApp.",
+    "Jelaskan isi gambar, meme, grafik, atau bantu selesaikan soal di gambar dalam Bahasa Indonesia yang ringkas, jelas, dan mudah dibaca di HP.",
+  ].join(" "),
+  ocr: [
+    "Ekstrak seluruh teks yang terlihat pada gambar/screenshot dengan akurat dan rapi.",
+    "Pertahankan susunan baris seperlunya tanpa tambahan basa-basi panjang.",
+  ].join(" "),
+  roast: [
+    "Kamu komika stand-up yang me-roast teman tongkrongan secara kocak, cerdas, dan akrab berdasarkan statistik profil game/ekonomi mereka.",
+    "Buat 3-4 kalimat punchy dalam Bahasa Indonesia santai. WAJIB aman, ramah teman, dilarang menghina fisik, SARA, kata kasar berat, atau menyakiti hati.",
+  ].join(" "),
+  puji: [
+    "Kamu teman yang super suportif dan suka memuji secara kocak dan lebay dalam Bahasa Indonesia.",
+    "Puji member berdasarkan data profil mereka dalam 3-4 kalimat yang bikin senyum dan makin semangat di grup.",
+  ].join(" "),
+  pantunai: [
+    "Buatkan 2 bait pantun Bahasa Indonesia (masing-masing 4 baris berima a-b-a-b) yang jenaka, kreatif, dan sesuai topik permintaan.",
+  ].join(" "),
+  cerpen: [
+    "Tulis cerita pendek seru, mengalir, dan menghibur dalam Bahasa Indonesia (maksimal 3 paragraf pendek) sesuai tema yang diminta.",
+  ].join(" "),
+  curhat: [
+    "Kamu teman curhat yang hangat, empatik, tidak menghakimi, dan menenangkan dalam Bahasa Indonesia.",
+    "Validasi perasaan user lalu beri 1-2 saran ringan yang realistis dan menguatkan (maksimal 3 paragraf pendek).",
+  ].join(" "),
+  debat: [
+    "Kamu partner debat intelektual sekaligus jenaka di grup tongkrongan.",
+    "Berikan sudut pandang tandingan (devil's advocate) yang logis, tajam, tapi tetap santai dan sopan dalam 3 poin singkat.",
+  ].join(" "),
+  koding: [
+    "Kamu asisten programmer senior yang ringkas dan to the point.",
+    "Jawab pertanyaan pemrograman dalam Bahasa Indonesia, sertakan contoh kode singkat yang benar dan mudah disalin di WhatsApp.",
+  ].join(" "),
+  perbaiki: [
+    "Perbaiki ejaan, typo, tanda baca, dan tata bahasa teks berikut menjadi Bahasa Indonesia yang rapi, natural, dan enak dibaca.",
+    "Tampilkan hasil perbaikannya langsung tanpa penjelasan panjang.",
+  ].join(" "),
+  summarize: [
+    "Ringkas teks panjang berikut menjadi 3-5 poin inti yang padat, jelas, dan mudah dipahami dalam Bahasa Indonesia.",
+  ].join(" "),
+  ide: [
+    "Berikan 5 ide kreatif, unik, dan praktis dalam format daftar bernomor singkat (Bahasa Indonesia) sesuai topik yang diminta.",
+  ].join(" "),
 };
+
+export async function prepareVisionImageDataUrl(rawBuffer: Buffer): Promise<string> {
+  const jpeg = await mediaQueueService.imageComputeQueue.run(async () =>
+    sharp(rawBuffer, { animated: false, limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
+      .rotate()
+      .resize(800, 800, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 75 })
+      .toBuffer(),
+  );
+  return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
+}
 
 export class OpenRouterService {
   private readonly userCooldowns = new Map<string, number>();
@@ -99,6 +186,7 @@ export class OpenRouterService {
     groupJid: string;
     userJid: string;
     prompt: string;
+    maxPromptChars?: number;
     bypassCooldown?: boolean;
     now?: Date;
   }): string {
@@ -108,13 +196,14 @@ export class OpenRouterService {
       );
     }
 
+    const maxChars = Math.min(AI_MAX_CONTEXT_CHARS, input.maxPromptChars ?? AI_MAX_PROMPT_CHARS);
     const cleaned = input.prompt.trim();
     if (!cleaned) {
       throw new AppUserError("Tulis pertanyaan atau pesan yang ingin dikirim ke AI.");
     }
-    if (cleaned.length > AI_MAX_PROMPT_CHARS) {
+    if (cleaned.length > maxChars) {
       throw new AppUserError(
-        `Pesan terlalu panjang (${String(cleaned.length)} karakter). Maksimal ${String(AI_MAX_PROMPT_CHARS)} karakter biar hemat dan cepat dijawab.`,
+        `Pesan terlalu panjang (${String(cleaned.length)} karakter). Maksimal ${String(maxChars)} karakter biar hemat dan cepat dijawab.`,
       );
     }
 
@@ -151,11 +240,25 @@ export class OpenRouterService {
       groupJid: input.groupJid,
       userJid: input.userJid,
       prompt: input.prompt,
+      maxPromptChars: input.maxPromptChars,
       bypassCooldown: input.bypassCooldown,
       now,
     });
 
     const apiKey = this.apiKey?.trim() ?? "";
+    const userContent = input.imageDataUrl
+      ? [
+          { type: "text", text: cleanedPrompt },
+          { type: "image_url", image_url: { url: input.imageDataUrl } },
+        ]
+      : cleanedPrompt;
+
+    const temperature =
+      input.persona === "simi" || input.persona === "roast" || input.persona === "pantunai"
+        ? 0.9
+        : input.persona === "ocr" || input.persona === "perbaiki"
+          ? 0.2
+          : 0.7;
 
     let response: Response;
     try {
@@ -170,10 +273,10 @@ export class OpenRouterService {
         body: JSON.stringify({
           model: this.model,
           max_tokens: AI_MAX_TOKENS,
-          temperature: input.persona === "simi" ? 0.9 : 0.7,
+          temperature,
           messages: [
             { role: "system", content: SYSTEM_PROMPTS[input.persona] },
-            { role: "user", content: cleanedPrompt },
+            { role: "user", content: userContent },
           ],
         }),
         signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
