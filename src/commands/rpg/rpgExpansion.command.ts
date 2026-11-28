@@ -16,7 +16,7 @@ import {
   formatRupiah,
   parseBigIntAmountOrAll,
 } from "../../utils/currency";
-import { getBotCanonicalJids, normalizeUserJid } from "../../utils/jid";
+import { isBotUserJid, normalizeUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
 async function ensureActiveGroup(context: CommandContext): Promise<boolean> {
@@ -650,8 +650,14 @@ async function handleTrade(context: CommandContext): Promise<void> {
 
   try {
     const sender = await resolveSender(context);
-    const botJids = getBotCanonicalJids(context.socket);
-    if (botJids.has(target)) {
+    if (
+      isBotUserJid(
+        context.socket,
+        context.mentionedJids[0],
+        context.quoted?.participantJid,
+        target,
+      )
+    ) {
       await context.reply("Tidak bisa mengirim item barter ke bot.");
       return;
     }

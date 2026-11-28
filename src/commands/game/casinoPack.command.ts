@@ -8,6 +8,7 @@ import { identityResolverService } from "../../services/identity/identityResolve
 import { memberEconomyService } from "../../services/member/memberEconomy.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatRupiah, minBigInt, parseBigIntAmountOrAll } from "../../utils/currency";
+import { isBotUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
 function tagOf(jid: string): string {
@@ -162,6 +163,12 @@ async function handleSuit(context: CommandContext): Promise<void> {
         context.chatJid,
         rawTarget,
       );
+      if (isBotUserJid(context.socket, rawTarget, opponent)) {
+        await context.reply(
+          "Untuk suit melawan bot, langsung ketik *.suit batu*, *.suit gunting*, atau *.suit kertas* tanpa tag bot ya!",
+        );
+        return;
+      }
       const nonTagArgs = context.args.filter((a) => !a.startsWith("@"));
       const bet = await resolveBetArg(context.chatJid, sender, nonTagArgs[0]);
       if (bet === null) {

@@ -212,3 +212,28 @@ export function getBotCanonicalJids(socket: {
 
   return result;
 }
+
+export function isBotUserJid(
+  socket: { user?: ParticipantOrContactLike | null } | null | undefined,
+  ...candidateJids: (string | null | undefined)[]
+): boolean {
+  if (!socket) {
+    return false;
+  }
+  const botJids = getBotCanonicalJids(socket);
+  if (botJids.size === 0) {
+    return false;
+  }
+  for (const raw of candidateJids) {
+    if (!raw) continue;
+    const norm = normalizeJid(raw);
+    if (norm && botJids.has(norm)) {
+      return true;
+    }
+    const userNorm = normalizeUserJid(raw);
+    if (userNorm && botJids.has(userNorm)) {
+      return true;
+    }
+  }
+  return false;
+}

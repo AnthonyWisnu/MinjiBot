@@ -14,7 +14,7 @@ import {
   parseBigIntAmountOrAll,
   parsePositiveBigIntMoneyInput,
 } from "../../utils/currency";
-import { getBotCanonicalJids, normalizeUserJid } from "../../utils/jid";
+import { isBotUserJid, normalizeUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
 async function ensureActiveGroup(context: CommandContext): Promise<boolean> {
@@ -161,8 +161,14 @@ async function handleTax(context: CommandContext): Promise<void> {
     }
 
     const senderJid = await resolveCanonicalSender(context);
-    const botJids = getBotCanonicalJids(context.socket);
-    if (botJids.has(targetJid)) {
+    if (
+      isBotUserJid(
+        context.socket,
+        context.mentionedJids[0],
+        context.quoted?.participantJid,
+        targetJid,
+      )
+    ) {
       await context.reply("Bot bebas pajak ya, cari member sultan lain!");
       return;
     }
@@ -212,8 +218,14 @@ async function handleRob(context: CommandContext): Promise<void> {
     }
 
     const senderJid = await resolveCanonicalSender(context);
-    const botJids = getBotCanonicalJids(context.socket);
-    if (botJids.has(targetJid)) {
+    if (
+      isBotUserJid(
+        context.socket,
+        context.mentionedJids[0],
+        context.quoted?.participantJid,
+        targetJid,
+      )
+    ) {
       await context.reply("Dompet bot dijaga CCTV 24 jam, tidak bisa dimailing!");
       return;
     }
@@ -368,8 +380,14 @@ async function handleDuel(context: CommandContext): Promise<void> {
 
   try {
     const senderJid = await resolveCanonicalSender(context);
-    const botJids = getBotCanonicalJids(context.socket);
-    if (botJids.has(targetJid)) {
+    if (
+      isBotUserJid(
+        context.socket,
+        context.mentionedJids[0],
+        context.quoted?.participantJid,
+        targetJid,
+      )
+    ) {
       await context.reply("Tidak bisa duel melawan bot. Gunakan .casino untuk melawan bandar!");
       return;
     }

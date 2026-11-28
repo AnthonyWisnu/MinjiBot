@@ -8,10 +8,61 @@ import type {
   ProfileView,
 } from "../../services/member/memberProfileView.service";
 import { parseRpgState } from "../../services/rpg/rpgState";
+import { rpgEconomyService } from "../../services/rpg/rpgEconomy.service";
 import { tenantAdminService } from "../../services/tenant/tenantAdmin.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatCompactRupiah, formatRupiah, toBigIntSafe } from "../../utils/currency";
-import { normalizeUserJid } from "../../utils/jid";
+import { isBotUserJid, normalizeUserJid } from "../../utils/jid";
+import { toWibDateKey } from "../../utils/wibDate";
+
+const BOT_WALLET_MONEY = 88_750_420_500_000n;
+const BOT_BANK_BALANCE = 1_250_840_915_000_000n;
+const BOT_TOTAL_WEALTH = BOT_WALLET_MONEY + BOT_BANK_BALANCE;
+
+function formatBotProfileView(
+  label: string,
+  treasuryBalance: bigint,
+  createdAtWib: string,
+): string {
+  return [
+    "*─── [ PROFIL RESMI BOT ] ───*",
+    `• User: ${label} (MinjiBot V2)`,
+    "• Gelar: *Bank Sentral Tongkrongan*",
+    "• Role: Official System Bot",
+    "• Level: Lv. 999 (Celestial Sovereign [TOP])",
+    "• Rank: Celestial Sovereign [TOP]",
+    "• XP: 9.847.520",
+    `• Uang Dompet: ${formatSultanRupiah(BOT_WALLET_MONEY)}`,
+    `• Saldo Bank: ${formatSultanRupiah(BOT_BANK_BALANCE)}`,
+    `• Kas Negara Grup: ${formatSultanRupiah(treasuryBalance)}`,
+    "• Poin Game: 7.420.850",
+    "• Limit: 99.850",
+    "• Daily Streak: 1.095 hari",
+    "• Game Menang: 9.998 / 10.000",
+    "• Pasangan: Menikah dengan Server VPS",
+    `• Profil Dibuat: ${createdAtWib}`,
+    "",
+    "_Proteksi Sistem: Kebal .maling, .pajak, .serang, .duel, .transfer & .warn._",
+  ].join("\n");
+}
+
+function formatBotWalletView(label: string, treasuryBalance: bigint): string {
+  return [
+    "*─── [ BRANKAS RESMI BOT ] ───*",
+    `• Pemilik         : ${label} (Bank Sentral MinjiBot)`,
+    `• Uang Dompet     : ${formatSultanRupiah(BOT_WALLET_MONEY)}`,
+    `• Bank / Cadangan : ${formatSultanRupiah(BOT_BANK_BALANCE)}`,
+    `• Total Aset Bot  : ${formatSultanRupiah(BOT_TOTAL_WEALTH)}`,
+    `• Kas Negara Grup : ${formatSultanRupiah(treasuryBalance)}`,
+    "",
+    "• Poin Game       : 7.420.850 Poin",
+    "• Limit           : 99.850 Limit",
+    "• Level           : Lv. 999 (Celestial Sovereign [TOP])",
+    "• XP              : 9.847.520",
+    "",
+    "_Dompet bot dijaga sistem 24 jam. Tidak bisa dimaling, dipajaki, ditransfer, atau dibarter._",
+  ].join("\n");
+}
 
 function formatSultanRupiah(amount: bigint | number): string {
   const val = toBigIntSafe(amount);
@@ -308,6 +359,36 @@ async function executeProfileOrWallet(
 
   if (rawTargetJid && !senderCandidates.has(rawTargetJid)) {
     const candidateTargetInfo = await resolveTargetInfo(context, rawTargetJid);
+    if (
+      isBotUserJid(
+        context.socket,
+        rawTargetJid,
+        candidateTargetInfo.userJid,
+        ...candidateTargetInfo.avatarAltJids,
+      )
+    ) {
+      let treasuryBalance = toBigIntSafe(context.tenantGroup.treasuryBalance);
+      try {
+        treasuryBalance = await rpgEconomyService.getGroupTreasury(context.chatJid);
+      } catch {
+        // Fallback ke snapshot tenantGroup bila lookup kas gagal
+      }
+      const label = `@${candidateTargetInfo.phone}`;
+      const createdAtWib = toWibDateKey(context.tenantGroup.createdAt);
+      const botText =
+        mode === "wallet"
+          ? formatBotWalletView(label, treasuryBalance)
+          : formatBotProfileView(label, treasuryBalance, createdAtWib);
+      await sendProfileMessage(
+        context,
+        botText,
+        candidateTargetInfo.userJid,
+        candidateTargetInfo.mentions,
+        candidateTargetInfo.avatarAltJids,
+      );
+      return;
+    }
+
     if (senderCandidates.has(candidateTargetInfo.userJid)) {
       resolvedInfo = await resolveTargetInfo(context, ownSenderJid, senderAltJids);
       view = await service.getOwnProfile(context.chatJid, resolvedInfo.userJid);

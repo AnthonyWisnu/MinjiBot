@@ -14,6 +14,7 @@ import { photoMemeService } from "../../services/media/photoMeme.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatCompactRupiah, formatRupiah, parsePositiveBigIntMoneyInput } from "../../utils/currency";
 import { formatDateId } from "../../utils/format";
+import { isBotUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
 function tagOf(jid: string): string {
@@ -141,6 +142,11 @@ async function handleNikah(context: CommandContext): Promise<void> {
       context.chatJid,
       rawTarget,
     );
+
+    if (isBotUserJid(context.socket, rawTarget, target)) {
+      await context.reply("Minji sudah menikah dengan Server VPS! Cari pasangan manusia di grup ini ya.");
+      return;
+    }
 
     let dowry = MARRIAGE_DEFAULT_DOWRY;
     const nonTagArgs = context.args.filter((a) => !a.startsWith("@"));

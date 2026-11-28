@@ -21,7 +21,7 @@ import {
   parsePositiveBigIntMoneyInput,
   parsePositiveMoneyInput,
 } from "../../utils/currency";
-import { getBotCanonicalJids, normalizeUserJid } from "../../utils/jid";
+import { isBotUserJid, normalizeUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
 async function ensureActiveGroup(context: CommandContext): Promise<boolean> {
@@ -149,8 +149,7 @@ async function handleTransferMoney(context: CommandContext): Promise<void> {
       rawTargetJid,
     );
 
-    const botJids = getBotCanonicalJids(context.socket);
-    if (botJids.has(targetJid)) {
+    if (isBotUserJid(context.socket, rawTargetJid, targetJid)) {
       await context.reply("Tidak dapat mentransfer uang ke bot.");
       return;
     }
