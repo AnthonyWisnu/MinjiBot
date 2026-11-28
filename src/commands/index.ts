@@ -3,8 +3,11 @@ import { formatUserSafeError } from "../utils/userSafeError";
 import type { CommandContext, CommandDefinition } from "../types/command";
 import { afkCommands } from "./afk/afk.command";
 import { aiCommands } from "./ai/ai.command";
+import { animeRoleplayCommands } from "./fun/animeRoleplay.command";
 import { funCommands } from "./fun/fun.command";
 import { menfessCommands } from "./fun/menfess.command";
+import { socialDramaCommands } from "./fun/socialDrama.command";
+import { socialEconomyCommands } from "./fun/socialEconomy.command";
 import { gameCommands } from "./game/game.command";
 import { teamWarCommands } from "./game/teamWar.command";
 import { werewolfCommands } from "./game/werewolf.command";
@@ -24,6 +27,7 @@ import { groupStatusCommands } from "./media/groupStatus.command";
 import { hdCommands } from "./media/hd.command";
 import { lightMakerCommands } from "./media/lightMaker.command";
 import { lyricsCommands } from "./media/lyrics.command";
+import { photoMemeCommands } from "./media/photoMeme.command";
 import { playCommands } from "./media/play.command";
 import { stickerCommands } from "./media/sticker.command";
 import { videoNoteCommands } from "./media/videoNote.command";
@@ -126,6 +130,7 @@ export const commandRouter = new CommandRouter([
   ...hdCommands,
   ...stickerCommands,
   ...lightMakerCommands,
+  ...photoMemeCommands,
   ...groupStatusCommands,
   ...videoNoteCommands,
   ...quoteCardCommands,
@@ -147,6 +152,9 @@ export const commandRouter = new CommandRouter([
   ...teamWarCommands,
   ...funCommands,
   ...menfessCommands,
+  ...socialDramaCommands,
+  ...socialEconomyCommands,
+  ...animeRoleplayCommands,
   ...rpgCommands,
   ...rpgInfiniteCommands,
   dailyCommand,

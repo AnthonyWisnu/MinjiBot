@@ -130,6 +130,7 @@ model TenantGroup {
   privateSessions TenantPrivateSession[]
   notes           GroupNote[]
   stickerCommands GroupStickerCommand[]
+  clans           GroupClan[]
 
   @@index([ownerJid])
   @@index([status])
@@ -366,4 +367,22 @@ model GroupStickerCommand {
 
   @@unique([groupJid, stickerHash])
   @@index([groupJid])
+}
+
+model GroupClan {
+  id              String   @id @default(cuid())
+  groupJid        String
+  name            String
+  slug            String
+  leaderJid       String
+  treasuryBalance BigInt   @default(0)
+  memberJids      Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@unique([groupJid, slug])
+  @@index([groupJid])
+  @@index([groupJid, treasuryBalance])
 }

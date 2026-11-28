@@ -13,8 +13,8 @@ interface MenuSection {
 const SUB_MENU_NAV_LINES = [
   "*Sub-Menu Cepat:*",
   ".menu ai | .menu rpg | .menu game",
-  ".menu fun | .menu media | .menu grup",
-  ".menu islami | .menu info",
+  ".menu sosial | .menu fun | .menu media",
+  ".menu islami | .menu info | .menu grup",
 ] as const;
 
 const MENU_LEGEND = "_Info: (L) = Pakai Limit | (Admin) = Admin_";
@@ -69,9 +69,19 @@ export class MenuService {
     const sub = (context.args[0] ?? "").trim().toLowerCase();
     if (
       sub &&
-      ["ai", "rpg", "game", "fun", "media", "tools", "grup", "group", "islami", "info"].includes(
-        sub,
-      )
+      [
+        "ai",
+        "rpg",
+        "game",
+        "sosial",
+        "fun",
+        "media",
+        "tools",
+        "grup",
+        "group",
+        "islami",
+        "info",
+      ].includes(sub)
     ) {
       const tenantGroup = context.tenantGroup;
       const featureSetting = tenantGroup
@@ -122,6 +132,15 @@ export class MenuService {
       return this.renderCategoryPage("*── [ SUB-MENU: GAME ] ──*", groupHeader, sections, footer);
     }
 
+    if (category === "sosial") {
+      return this.renderCategoryPage(
+        "*── [ SUB-MENU: SOSIAL ] ──*",
+        groupHeader,
+        [this.buildSocialDramaSection(), this.buildAnimeRpSection()],
+        footer,
+      );
+    }
+
     if (category === "fun") {
       return this.renderCategoryPage(
         "*── [ SUB-MENU: FUN ] ──*",
@@ -135,7 +154,12 @@ export class MenuService {
       return this.renderCategoryPage(
         "*── [ SUB-MENU: MEDIA ] ──*",
         groupHeader,
-        [this.buildMediaCreativeSection(), this.buildAudioToolsSection(), this.buildDownloaderSection()],
+        [
+          this.buildMediaCreativeSection(),
+          this.buildPhotoMemeSection(),
+          this.buildAudioToolsSection(),
+          this.buildDownloaderSection(),
+        ],
         footer,
       );
     }
@@ -322,8 +346,11 @@ export class MenuService {
     if (games) sections.push(games);
 
     sections.push(
+      this.buildSocialDramaSection(),
       this.buildFunSection(),
+      this.buildAnimeRpSection(),
       this.buildMediaCreativeSection(),
+      this.buildPhotoMemeSection(),
       this.buildAudioToolsSection(),
       this.buildDownloaderSection(),
       this.buildIslamiSection(),
@@ -639,6 +666,90 @@ export class MenuService {
         ".attack @user",
         ".clue",
         ".nyerah",
+      ],
+    };
+  }
+
+  private buildSocialDramaSection(): MenuSection {
+    return {
+      title: "*── [ SOSIAL & GENG ] ──*",
+      items: [
+        ".siapa <kalimat>",
+        ".paling <sifat>",
+        ".pick <1-10> <label>",
+        ".jodohgrup",
+        ".cekcocok @a @b",
+        ".ship @a @b",
+        ".fakta [@user]",
+        ".ramalan [@user]",
+        ".zodiak <bintang>",
+        ".shio <tahun>",
+        ".weton <dd-mm-yyyy>",
+        ".beligelar <nama>",
+        ".gelar",
+        ".hapusgelar",
+        ".nikah @user [mahar]",
+        ".terimanikah",
+        ".tolaknikah",
+        ".bukunikah [@user]",
+        ".cerai",
+        ".geng <buat|join|top>",
+        ".lelang <buka|info|tutup>",
+        ".bid <nominal>",
+      ],
+    };
+  }
+
+  private buildAnimeRpSection(): MenuSection {
+    return {
+      title: "*── [ ANIME RP SFW ] ──*",
+      items: [
+        ".peluk [@user]",
+        ".tampar [@user]",
+        ".pat [@user]",
+        ".bonk [@user]",
+        ".poke [@user]",
+        ".pukul [@user]",
+        ".tendang [@user]",
+        ".gigit [@user]",
+        ".cuddle [@user]",
+        ".highfive [@user]",
+        ".wink [@user]",
+        ".wave [@user]",
+        ".baka [@user]",
+        ".stare [@user]",
+        ".yeet [@user]",
+        ".blush",
+        ".cry",
+        ".smile",
+        ".dance",
+        ".smug",
+        ".facepalm",
+        ".shrug",
+        ".thumbsup",
+      ],
+    };
+  }
+
+  private buildPhotoMemeSection(): MenuSection {
+    return {
+      title: "*── [ PHOTO MEME ] ──*",
+      items: [
+        ".wanted [@user]",
+        ".jail [@user]",
+        ".rip [@user]",
+        ".triggered [@user]",
+        ".trash [@user]",
+        ".clown [@user]",
+        ".blur",
+        ".grayscale / .bw",
+        ".invert",
+        ".sepia",
+        ".pixelate",
+        ".mirror / .flip",
+        ".rotate [90|180|270]",
+        ".circle",
+        ".polaroid [teks]",
       ],
     };
   }

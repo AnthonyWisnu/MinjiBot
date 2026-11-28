@@ -25,6 +25,10 @@ export interface MemberRpgState {
   crates: Record<CrateType, number>;
   tools: Record<ToolType, ToolState>;
   pets: Record<PetType, PetState>;
+  customTitle: string | null;
+  spouseJid: string | null;
+  marriedAt: number;
+  dowryAmount: string;
 }
 
 export const MAX_PLAYER_HP = 100;
@@ -84,6 +88,10 @@ export function createDefaultRpgState(): MemberRpgState {
     crates: createEmptyCrates(),
     tools: createEmptyTools(),
     pets: createEmptyPets(),
+    customTitle: null,
+    spouseJid: null,
+    marriedAt: 0,
+    dowryAmount: "0",
   };
 }
 
@@ -191,6 +199,26 @@ export function parseRpgState(raw: unknown): MemberRpgState {
       ? Math.max(0, Math.min(MAX_PLAYER_HP, Math.floor(obj.hp)))
       : MAX_PLAYER_HP;
 
+  const customTitle =
+    typeof obj.customTitle === "string" && obj.customTitle.trim().length > 0
+      ? obj.customTitle.trim().slice(0, 32)
+      : null;
+
+  const spouseJid =
+    typeof obj.spouseJid === "string" && obj.spouseJid.trim().length > 0
+      ? obj.spouseJid.trim()
+      : null;
+
+  const marriedAt =
+    typeof obj.marriedAt === "number" && Number.isFinite(obj.marriedAt) && obj.marriedAt > 0
+      ? Math.floor(obj.marriedAt)
+      : 0;
+
+  const dowryAmount =
+    typeof obj.dowryAmount === "string" && /^\d+$/.test(obj.dowryAmount)
+      ? obj.dowryAmount
+      : "0";
+
   return {
     cooldowns,
     jailedUntil,
@@ -201,6 +229,10 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     crates,
     tools,
     pets,
+    customTitle,
+    spouseJid,
+    marriedAt,
+    dowryAmount,
   };
 }
 
@@ -227,6 +259,10 @@ export function serializeRpgState(state: MemberRpgState): Prisma.InputJsonValue 
       naga: { ...state.pets.naga },
       phonix: { ...state.pets.phonix },
     },
+    customTitle: state.customTitle,
+    spouseJid: state.spouseJid,
+    marriedAt: state.marriedAt,
+    dowryAmount: state.dowryAmount,
   };
 }
 
@@ -397,5 +433,26 @@ export function withUpdatedCryptoHolding(
   return {
     ...state,
     crypto: nextCrypto,
+  };
+}
+
+export function withCustomTitle(state: MemberRpgState, title: string | null): MemberRpgState {
+  return {
+    ...state,
+    customTitle: title ? title.trim().slice(0, 32) : null,
+  };
+}
+
+export function withMarriage(
+  state: MemberRpgState,
+  spouseJid: string | null,
+  marriedAt = 0,
+  dowryAmount = "0",
+): MemberRpgState {
+  return {
+    ...state,
+    spouseJid,
+    marriedAt: spouseJid ? marriedAt : 0,
+    dowryAmount: spouseJid ? dowryAmount : "0",
   };
 }

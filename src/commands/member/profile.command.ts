@@ -7,6 +7,7 @@ import type {
   MemberProfileViewService,
   ProfileView,
 } from "../../services/member/memberProfileView.service";
+import { parseRpgState } from "../../services/rpg/rpgState";
 import { tenantAdminService } from "../../services/tenant/tenantAdmin.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatCompactRupiah, formatRupiah, toBigIntSafe } from "../../utils/currency";
@@ -52,13 +53,18 @@ function formatProfileView(
       : "0 / 0";
   const currentLevel = Math.max(1, profile.level);
   const nextLevelXp = xpRequiredForLevel(currentLevel + 1);
-  const partnerLine = profile.partnerJid
-    ? `• Pasangan: @${profile.partnerJid.split("@")[0] ?? profile.partnerJid}`
-    : "• Pasangan: Jomblo";
+  const rpgState = parseRpgState(profile.rpgState);
+  const titleLine = rpgState.customTitle ? `• Gelar: *${rpgState.customTitle}*` : null;
+  const partnerLine = rpgState.spouseJid
+    ? `• Status: Menikah dengan @${rpgState.spouseJid.split("@")[0] ?? rpgState.spouseJid}`
+    : profile.partnerJid
+      ? `• Pasangan: @${profile.partnerJid.split("@")[0] ?? profile.partnerJid}`
+      : "• Pasangan: Jomblo";
 
   return [
     "*─── [ PROFIL MEMBER ] ───*",
     `• User: ${label}`,
+    ...(titleLine ? [titleLine] : []),
     `• Role: ${role}`,
     `• Level: Lv. ${String(currentLevel)} (${rank})`,
     `• XP: ${profile.experience.toLocaleString("id-ID")} / ${nextLevelXp.toLocaleString("id-ID")}`,
