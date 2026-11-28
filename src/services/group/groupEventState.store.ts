@@ -8,7 +8,8 @@ export type GroupEventSectionKey =
   | "drops"
   | "groupTools"
   | "auction"
-  | "aiDailyUsage";
+  | "aiDailyUsage"
+  | "npcClaims";
 
 export interface GroupEventTenantClient {
   findUnique(args: {

@@ -67,7 +67,7 @@ export const WORLD_BOSS_ATTACK_COOLDOWN_MS = 4 * 60 * 1000;
 export const WORLD_BOSS_MIN_HP = 15;
 export const WORLD_BOSS_HISTORY_LIMIT = 5;
 
-export const SKILL_RESET_COST = 5_000_000n;
+export const SKILL_RESET_COST = 25_000_000n;
 
 export const FARM_WATER_SPEEDUP_PERCENT = 35;
 export const COMMODITY_EPOCH_MS = 15 * 60 * 1000;
@@ -283,7 +283,7 @@ export const BLACK_MARKET_CATALOG: readonly BlackMarketBuffSpec[] = [
     id: "jamukuat",
     itemKey: "bm_jamukuat",
     label: "Jamu Kuat Sakti",
-    price: 8_000_000n,
+    price: 25_000_000n,
     durationMinutes: 60,
     effect: "+35% Combat Power & damage World Boss selama 60 menit",
   },
@@ -291,7 +291,7 @@ export const BLACK_MARKET_CATALOG: readonly BlackMarketBuffSpec[] = [
     id: "jimatcuan",
     itemKey: "bm_jimatcuan",
     label: "Jimat Cuan Maut",
-    price: 12_000_000n,
+    price: 35_000_000n,
     durationMinutes: 60,
     effect: "+25% uang hadiah World Boss & jual panen ladang selama 60 menit",
   },
@@ -299,7 +299,7 @@ export const BLACK_MARKET_CATALOG: readonly BlackMarketBuffSpec[] = [
     id: "ramuanxp",
     itemKey: "bm_ramuanxp",
     label: "Ramuan Fokus XP",
-    price: 10_000_000n,
+    price: 30_000_000n,
     durationMinutes: 60,
     effect: "+50% bonus XP dari World Boss, Ladang & Bounty selama 60 menit",
   },
@@ -307,7 +307,7 @@ export const BLACK_MARKET_CATALOG: readonly BlackMarketBuffSpec[] = [
     id: "perisaibaja",
     itemKey: "bm_perisaibaja",
     label: "Perisai Baja Hitam",
-    price: 9_000_000n,
+    price: 28_000_000n,
     durationMinutes: 60,
     effect: "-40% damage HP saat Raid Boss & +25% pertahanan saat diburu Bounty",
   },

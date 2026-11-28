@@ -30,6 +30,7 @@ import {
   DAILY_QUEST_SPECS,
   DEPOSITO_DAILY_INTEREST_PERCENT,
   DEPOSITO_MAX_INTEREST_DAYS,
+  DEPOSITO_MAX_PRINCIPAL,
   DEPOSITO_MIN_AMOUNT,
   GACHA_CARD_MAP,
   GACHA_CARDS,
@@ -1032,10 +1033,20 @@ export class RpgExpansionService {
         );
       }
 
-      const amount = amountOrAll === "all" ? profile.moneyBalance : amountOrAll;
+      const amount =
+        amountOrAll === "all"
+          ? profile.moneyBalance > DEPOSITO_MAX_PRINCIPAL
+            ? DEPOSITO_MAX_PRINCIPAL
+            : profile.moneyBalance
+          : amountOrAll;
       if (amount < DEPOSITO_MIN_AMOUNT) {
         throw new AppUserError(
           `Minimal setoran deposito adalah ${formatRupiah(DEPOSITO_MIN_AMOUNT)}.`,
+        );
+      }
+      if (amount > DEPOSITO_MAX_PRINCIPAL) {
+        throw new AppUserError(
+          `Maksimal pokok deposito adalah ${formatRupiah(DEPOSITO_MAX_PRINCIPAL)} agar ekonomi grup tetap seimbang.`,
         );
       }
       if (profile.moneyBalance < amount) {

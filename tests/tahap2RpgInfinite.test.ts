@@ -123,7 +123,7 @@ void test("Tahap 2 RpgInfinite: gather, cook, shop buy/sell, craft, upgrade, hea
       id: "p1",
       groupJid: "120@g.us",
       userJid: "628111@s.whatsapp.net",
-      moneyBalance: 50_000_000n,
+      moneyBalance: 150_000_000n,
       level: 1,
       rpgState: serializeRpgState(initialState),
     }),
@@ -138,7 +138,7 @@ void test("Tahap 2 RpgInfinite: gather, cook, shop buy/sell, craft, upgrade, hea
 
   // 1. Shop buy potion & heal
   const buyRes = await service.shopBuy("120@g.us", "628111@s.whatsapp.net", "potion", 2);
-  assert.equal(buyRes.totalMoney, 700_000n);
+  assert.equal(buyRes.totalMoney, 3_600_000n);
   const healRes = await service.healPlayer("120@g.us", "628111@s.whatsapp.net");
   assert.equal(healRes.hpBefore, 50);
   assert.equal(healRes.hpAfter, 100);

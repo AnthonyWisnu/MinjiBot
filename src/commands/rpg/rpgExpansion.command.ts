@@ -5,6 +5,7 @@ import { rpgExpansionService } from "../../services/rpg/rpgExpansion.service";
 import {
   DEPOSITO_DAILY_INTEREST_PERCENT,
   DEPOSITO_MAX_INTEREST_DAYS,
+  DEPOSITO_MAX_PRINCIPAL,
   DEPOSITO_MIN_AMOUNT,
   GACHA_PULL_PRICE,
   PROPERTY_SELL_REFUND_PERCENT,
@@ -171,26 +172,36 @@ async function handleProperti(context: CommandContext): Promise<void> {
   try {
     const sender = await resolveSender(context);
     const overview = await rpgExpansionService.getPropertiesOverview(context.chatJid, sender);
+    const dailyIncome = overview.totalHourlyIncome * 24n;
 
-    const listLines = overview.items.map(
-      (item) =>
-        `- *${item.spec.id}* (${item.spec.name}) [Min Lv.${String(item.spec.minLevel)}]\n  Harga: ${formatCompactRupiah(item.spec.price)} | Sewa: ${formatCompactRupiah(item.spec.incomePerHour)}/jam | Punya: ${String(item.owned)}/${String(item.spec.maxOwned)}`,
-    );
+    const listLines = overview.items.map((item, idx) => {
+      const perDay = item.spec.incomePerHour * 24n;
+      const ownedBadge =
+        item.owned > 0 ? `*${String(item.owned)}/${String(item.spec.maxOwned)}*` : `0/${String(item.spec.maxOwned)}`;
+      return [
+        `*${String(idx + 1)}. ${item.spec.name}* (\`${item.spec.id}\`)`,
+        `  ├ Harga  : *${formatCompactRupiah(item.spec.price)}* (Min Lv.${String(item.spec.minLevel)})`,
+        `  ├ Income : ${formatCompactRupiah(item.spec.incomePerHour)}/jam (${formatCompactRupiah(perDay)}/hari)`,
+        `  └ Punya  : ${ownedBadge} unit`,
+      ].join("\n");
+    });
 
     await context.reply(
       [
-        "*── [ PASAR PROPERTI ] ──*",
-        `Pemilik   : ${tagOf(sender)}`,
-        `Dompet    : ${formatCompactRupiah(overview.moneyBalance)}`,
-        `Total Unit: ${String(overview.totalOwned)} Properti`,
-        `Passive   : ${formatCompactRupiah(overview.totalHourlyIncome)} / jam`,
-        `Siap Panen: ${formatRupiah(overview.pendingHarvest)}`,
+        "╭─〔 PASAR PROPERTI 〕─╮",
+        `│ Juragan   : ${tagOf(sender)}`,
+        `│ Dompet    : *${formatCompactRupiah(overview.moneyBalance)}*`,
+        `│ Total Aset: ${String(overview.totalOwned)} unit`,
+        `│ Passive   : ${formatCompactRupiah(overview.totalHourlyIncome)}/jam (${formatCompactRupiah(dailyIncome)}/hari)`,
+        `│ Siap Panen: *${formatCompactRupiah(overview.pendingHarvest)}*`,
+        "╰──────────────────────╯",
         "",
         ...listLines,
         "",
-        "Beli : .beliproperti <kode> [jumlah]",
-        `Jual : .jualproperti <kode> [jumlah] (refund ${String(PROPERTY_SELL_REFUND_PERCENT)}%)`,
-        "Panen: .panen (akumulasi maks 24 jam)",
+        "*Perintah Cepat:*",
+        "• `.beliproperti <kode> [jml]`",
+        `• \`.jualproperti <kode> [jml]\` (refund ${String(PROPERTY_SELL_REFUND_PERCENT)}%)`,
+        "• `.panen` (akumulasi maks 24 jam)",
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -315,14 +326,16 @@ async function handleDeposito(context: CommandContext): Promise<void> {
       if (!info.active) {
         await context.reply(
           [
-            "*── [ BANK DEPOSITO ] ──*",
-            `Nasabah : ${tagOf(sender)}`,
-            `Status  : Belum ada deposito aktif`,
-            `Bunga   : ${String(DEPOSITO_DAILY_INTEREST_PERCENT)}% per 24 jam (maks ${String(DEPOSITO_MAX_INTEREST_DAYS)} hari)`,
-            `Minimal : ${formatRupiah(DEPOSITO_MIN_AMOUNT)}`,
-            `Dompet  : ${formatRupiah(info.moneyBalance)}`,
+            "╭─〔 BANK DEPOSITO 〕─╮",
+            `│ Nasabah : ${tagOf(sender)}`,
+            `│ Status  : Belum aktif`,
+            `│ Bunga   : *${String(DEPOSITO_DAILY_INTEREST_PERCENT)}% / 24 jam* (maks ${String(DEPOSITO_MAX_INTEREST_DAYS)} hari)`,
+            `│ Minimal : ${formatCompactRupiah(DEPOSITO_MIN_AMOUNT)}`,
+            `│ Maksimal: ${formatCompactRupiah(DEPOSITO_MAX_PRINCIPAL)}`,
+            `│ Dompet  : *${formatCompactRupiah(info.moneyBalance)}*`,
+            "╰────────────────────╯",
             "",
-            "Buka deposito: .deposito <jumlah|all>",
+            "*Cara Buka:* `.deposito <jumlah|all>`",
           ].join("\n"),
           { mentions: [sender] },
         );
@@ -331,14 +344,15 @@ async function handleDeposito(context: CommandContext): Promise<void> {
 
       await context.reply(
         [
-          "*── [ BANK DEPOSITO AKTIF ] ──*",
-          `Nasabah  : ${tagOf(sender)}`,
-          `Pokok    : ${formatRupiah(info.principal)}`,
-          `Lama     : ${String(info.daysHeld)} hari penuh (${String(info.ratePercent)}%/hari)`,
-          `Bunga    : +${formatRupiah(info.accruedInterest)}`,
-          `Cair Kini: ${formatRupiah(info.totalWithdrawValue)}`,
+          "╭─〔 BANK DEPOSITO AKTIF 〕─╮",
+          `│ Nasabah  : ${tagOf(sender)}`,
+          `│ Pokok    : *${formatCompactRupiah(info.principal)}*`,
+          `│ Durasi   : ${String(info.daysHeld)} hari (${String(info.ratePercent)}%/hari)`,
+          `│ Bunga    : *+${formatCompactRupiah(info.accruedInterest)}*`,
+          `│ Nilai    : *${formatCompactRupiah(info.totalWithdrawValue)}*`,
+          "╰──────────────────────────╯",
           "",
-          "Cairkan kapan saja dengan: .cairdeposito atau .deposito cair",
+          "*Cairkan:* `.cairdeposito` atau `.deposito cair`",
         ].join("\n"),
         { mentions: [sender] },
       );
@@ -405,21 +419,26 @@ async function handleCairDeposito(context: CommandContext): Promise<void> {
 async function handleSaham(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
   const quotes = rpgExpansionService.getStockMarket();
-  const lines = quotes.map(
-    (q) =>
-      `- *${q.ticker}* (${q.name})\n  Harga: ${formatRupiah(q.lotPrice)} / lot (${formatPct(q.changePercent)})`,
-  );
+  const lines = quotes.map((q) => {
+    const trend = q.changePercent > 0 ? "▲" : q.changePercent < 0 ? "▼" : "•";
+    return [
+      `*${q.ticker}* — ${q.name}`,
+      `  └ ${trend} *${formatCompactRupiah(q.lotPrice)}*/lot (${formatPct(q.changePercent)})`,
+    ].join("\n");
+  });
 
   await context.reply(
     [
-      "*── [ BURSA SAHAM LOKAL ] ──*",
-      "_Harga berubah setiap 10 menit (1 lot = 100 lembar)_",
+      "╭─〔 BURSA SAHAM LOKAL 〕─╮",
+      "│ Update tiap 10 menit (1 lot = 100 lbr)",
+      "╰────────────────────────╯",
       "",
       ...lines,
       "",
-      "Beli: .belisaham <kode> <lot>",
-      "Jual: .jualsaham <kode> <lot|all>",
-      "Cek : .portofolio",
+      "*Perintah Cepat:*",
+      "• `.belisaham <kode> <lot>`",
+      "• `.jualsaham <kode> <lot|all>`",
+      "• `.portofolio`",
     ].join("\n"),
   );
 }
@@ -503,18 +522,19 @@ async function handlePortofolio(context: CommandContext): Promise<void> {
 
     await context.reply(
       [
-        "*── [ PORTOFOLIO KEKAYAAN ] ──*",
-        `Investor : ${tagOf(sender)}`,
-        `Net Worth: *${formatRupiah(pf.netWorth)}*`,
+        "╭─〔 PORTOFOLIO KEKAYAAN 〕─╮",
+        `│ Investor  : ${tagOf(sender)}`,
+        `│ Net Worth : *${formatCompactRupiah(pf.netWorth)}*`,
+        "╰──────────────────────────╯",
         "",
-        `*Rincian Aset:*`,
-        `- Dompet   : ${formatCompactRupiah(pf.moneyBalance)}`,
-        `- Bank     : ${formatCompactRupiah(pf.bankBalance)}`,
-        `- Deposito : ${formatCompactRupiah(pf.depositoValue)}`,
-        `- Saham    : ${formatCompactRupiah(pf.totalStocksValue)}`,
-        `- Kripto   : ${formatCompactRupiah(pf.totalCryptoValue)}`,
-        `- Properti : ${formatCompactRupiah(pf.totalPropertyValue)} (${String(pf.totalPropertyOwned)} unit)`,
-        `- Kartu    : ${String(pf.uniqueCards)} unik (${String(pf.totalCardCopies)} lembar)`,
+        "*Rincian Aset:*",
+        `  ├ Dompet   : ${formatCompactRupiah(pf.moneyBalance)}`,
+        `  ├ Bank     : ${formatCompactRupiah(pf.bankBalance)}`,
+        `  ├ Deposito : ${formatCompactRupiah(pf.depositoValue)}`,
+        `  ├ Saham    : ${formatCompactRupiah(pf.totalStocksValue)}`,
+        `  ├ Kripto   : ${formatCompactRupiah(pf.totalCryptoValue)}`,
+        `  ├ Properti : ${formatCompactRupiah(pf.totalPropertyValue)} (${String(pf.totalPropertyOwned)} unit)`,
+        `  └ Kartu    : ${String(pf.uniqueCards)} unik (${String(pf.totalCardCopies)} lbr)`,
         "",
         "*Kepemilikan Saham:*",
         ...stockLines,

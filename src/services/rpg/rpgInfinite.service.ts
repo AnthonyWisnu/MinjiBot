@@ -14,6 +14,7 @@ import {
   formatRupiah,
   scaleMoneyByLevel,
 } from "../../utils/currency";
+import { toWibDateKey } from "../../utils/wibDate";
 import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
@@ -46,6 +47,7 @@ import {
   serializeRpgState,
   TOOL_TYPES,
   withCrateDelta,
+  withDailyShopCrateBuy,
   withHp,
   withItemDelta,
   withItemsDelta,
@@ -77,6 +79,7 @@ const MAX_TOOL_LEVEL = 10;
 const MAX_PET_LEVEL = 20;
 const MAX_OPEN_CRATE_BATCH = 20;
 const MAX_SHOP_QTY = 500;
+export const MAX_DAILY_SHOP_CRATE_BUY = 10;
 
 const ADVENTURE_ZONES = [
   "Hutan Kristal Abadi",
@@ -781,13 +784,10 @@ export class RpgInfiniteService {
         }
       }
 
-      const basePocket = BigInt(this.random.intBetween(1_200_000, 2_400_000));
-      const petFactorPct = BigInt(100 + tier * 30 + petOldLevel * 5);
+      const basePocket = BigInt(this.random.intBetween(1_000_000, 2_000_000));
+      const petFactorPct = BigInt(100 + tier * 25 + petOldLevel * 5);
       const scaledMoney = (basePocket * petFactorPct) / 100n;
-      const moneyGained = clampMoneyCredit(
-        profile.moneyBalance,
-        scaleMoneyByLevel(scaledMoney, profile.level),
-      );
+      const moneyGained = clampMoneyCredit(profile.moneyBalance, scaledMoney);
       const xpGained = applyGroupXpEvent(groupJid, 75 + tier * 15);
 
       const petExpGained = 60 + tier * 10 + petOldLevel * 5;
@@ -1169,6 +1169,7 @@ export class RpgInfiniteService {
     userJid: string,
     rawItemId: string,
     quantity = 1,
+    now: Date = new Date(),
   ): Promise<ShopTradeResult> {
     if (!Number.isInteger(quantity) || quantity <= 0 || quantity > MAX_SHOP_QTY) {
       throw new AppUserError(`Jumlah pembelian harus antara 1 sampai ${String(MAX_SHOP_QTY)}.`);
@@ -1187,6 +1188,7 @@ export class RpgInfiniteService {
     }
 
     const totalCost = spec.buyPrice * BigInt(quantity);
+    const todayKey = toWibDateKey(now);
     const correlationId = generateCorrelationId();
 
     return this.db.$transaction(async (tx) => {
@@ -1198,9 +1200,26 @@ export class RpgInfiniteService {
       }
 
       const state = parseRpgState(profile.rpgState);
-      const nextState = spec.isCrate
-        ? withCrateDelta(state, spec.isCrate, quantity)
-        : withItemDelta(state, spec.id, quantity);
+      let nextState = state;
+      if (spec.isCrate) {
+        const boughtToday =
+          state.dailyShopCrateBuy.dateKey === todayKey ? state.dailyShopCrateBuy.count : 0;
+        const remainingQuota = Math.max(0, MAX_DAILY_SHOP_CRATE_BUY - boughtToday);
+        if (quantity > remainingQuota) {
+          throw new AppUserError(
+            remainingQuota <= 0
+              ? `Batas pembelian peti di toko hari ini sudah habis (${String(MAX_DAILY_SHOP_CRATE_BUY)}/${String(MAX_DAILY_SHOP_CRATE_BUY)} peti, reset 00:00 WIB). Cari peti tambahan lewat *.adventure*, *.fight*, *.world*, atau *.ekspedisipet*!`
+              : `Batas beli peti di toko tersisa *${String(remainingQuota)} peti* lagi hari ini (maks ${String(MAX_DAILY_SHOP_CRATE_BUY)}/hari WIB).`,
+          );
+        }
+        nextState = withDailyShopCrateBuy(
+          withCrateDelta(state, spec.isCrate, quantity),
+          todayKey,
+          boughtToday + quantity,
+        );
+      } else {
+        nextState = withItemDelta(state, spec.id, quantity);
+      }
 
       const debitRes = await tx.groupMemberProfile.updateMany({
         where: { id: profile.id, moneyBalance: { gte: totalCost } },
@@ -1549,10 +1568,8 @@ export class RpgInfiniteService {
       }
 
       nextState = withItemsDelta(nextState, itemsGained);
-      const moneyGained = clampMoneyCredit(
-        profile.moneyBalance,
-        scaleMoneyByLevel(rawMoney, profile.level),
-      );
+      // Uang crate TIDAK dikalikan level agar mustahil menjadi exploit cetak uang (.shop buy -> .open)
+      const moneyGained = clampMoneyCredit(profile.moneyBalance, rawMoney);
 
       const updated = await tx.groupMemberProfile.update({
         where: { id: profile.id },

@@ -9,8 +9,9 @@ import type {
 } from "../../services/member/memberProfileView.service";
 import { profileCardService } from "../../services/member/profileCard.service";
 import { getProfileThemeSpec } from "../../services/member/profileThemes";
+import { formatNpcRelationLabel } from "../../services/fun/npcRomance.service";
 import { PET_LABELS } from "../../services/rpg/rpgCatalog";
-import { getFeaturedPet, parseRpgState } from "../../services/rpg/rpgState";
+import { getFeaturedPet, getPrimaryNpcPartner, parseRpgState } from "../../services/rpg/rpgState";
 import { rpgEconomyService } from "../../services/rpg/rpgEconomy.service";
 import { tenantAdminService } from "../../services/tenant/tenantAdmin.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
@@ -116,11 +117,16 @@ function formatProfileView(
   const themeSpec = getProfileThemeSpec(rpgState.profileTheme);
   const themeLine =
     themeSpec.id !== "midnight" ? `• Tema Kartu: *${themeSpec.name}*` : null;
+  const primaryNpc = getPrimaryNpcPartner(rpgState);
+  const extraNpcCount = Math.max(0, rpgState.npcRomance.partners.length - 1);
+  const extraNpcTag = extraNpcCount > 0 ? ` (+${String(extraNpcCount)} koleksi)` : "";
   const partnerLine = rpgState.spouseJid
     ? `• Status: Menikah dengan @${rpgState.spouseJid.split("@")[0] ?? rpgState.spouseJid}`
     : profile.partnerJid
       ? `• Pasangan: @${profile.partnerJid.split("@")[0] ?? profile.partnerJid}`
-      : "• Pasangan: Jomblo";
+      : primaryNpc
+        ? `• ${formatNpcRelationLabel(primaryNpc.relation)} (NPC): *${primaryNpc.name}* (Cinta Lv.${String(primaryNpc.affectionLevel)})${extraNpcTag}`
+        : "• Pasangan: Jomblo";
 
   return [
     "*─── [ PROFIL MEMBER ] ───*",
@@ -166,9 +172,13 @@ function formatWalletView(
   const totalWealth = money + bank;
   const currentLevel = Math.max(1, profile.level);
   const nextLevelXp = xpRequiredForLevel(currentLevel + 1);
+  const walletRpgState = parseRpgState(profile.rpgState);
+  const walletPrimaryNpc = getPrimaryNpcPartner(walletRpgState);
   const partnerLabel = profile.partnerJid
     ? `@${profile.partnerJid.split("@")[0] ?? profile.partnerJid}`
-    : "Jomblo";
+    : walletPrimaryNpc
+      ? `${walletPrimaryNpc.name} (${formatNpcRelationLabel(walletPrimaryNpc.relation)} NPC)`
+      : "Jomblo";
 
   return [
     "*─── [ DOMPET & KEKAYAAN ] ───*",

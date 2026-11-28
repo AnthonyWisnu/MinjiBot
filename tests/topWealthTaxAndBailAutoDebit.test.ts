@@ -59,8 +59,8 @@ void test("3x price rebalance: only Jail Bail, UGD VIP, and 3 Insurances tripled
   assert.equal(INSURANCE_MAP.get("brankas")?.price, 105_000_000n);
   assert.equal(INSURANCE_MAP.get("bpjs")?.price, 75_000_000n);
   assert.equal(INSURANCE_MAP.get("pengacara")?.price, 120_000_000n);
-  // Other sinks remain unchanged
-  assert.equal(SKILL_RESET_COST, 5_000_000n);
+  // Skill reset sink updated in economy rebalance
+  assert.equal(SKILL_RESET_COST, 25_000_000n);
   // Commands registered
   assert.equal(commandRouter.has("pajaktop"), true);
   assert.equal(commandRouter.has("pajaksultan"), true);

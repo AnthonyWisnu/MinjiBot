@@ -210,10 +210,11 @@ void test("WalletBankService: deposit, withdraw, transfer, and exchange are atom
     InvalidAmountError,
   );
 
-  const ex = await service.exchangeMoneyToPoints("g@g.us", "628111@s.whatsapp.net", 100);
-  assert.equal(ex.moneySpent, 100n * EXCHANGE_MONEY_PER_POINT);
-  assert.equal(ex.pointsGained, 100);
-  assert.equal(ex.pointsBalance, 150);
+  // Exchange 10 poin (10 * 200k = 2jt) agar cocok dengan saldo tersisa 10jt
+  const ex = await service.exchangeMoneyToPoints("g@g.us", "628111@s.whatsapp.net", 10);
+  assert.equal(ex.moneySpent, 10n * EXCHANGE_MONEY_PER_POINT);
+  assert.equal(ex.pointsGained, 10);
+  assert.equal(ex.pointsBalance, 60);
   assert.equal(ex.moneyBalance, 8_000_000n);
 
   await assert.rejects(

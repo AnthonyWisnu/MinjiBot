@@ -23,20 +23,21 @@ import {
 } from "../group/groupEventState.store";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import {
+  hasActiveNpcPartner,
   parseRpgState,
   serializeRpgState,
   withCustomTitle,
   withMarriage,
 } from "../rpg/rpgState";
 
-export const CUSTOM_TITLE_PRICE = 100_000_000n;
-export const MARRIAGE_DEFAULT_DOWRY = 50_000_000n;
-export const MARRIAGE_MIN_DOWRY = 10_000_000n;
+export const CUSTOM_TITLE_PRICE = 300_000_000n;
+export const MARRIAGE_DEFAULT_DOWRY = 100_000_000n;
+export const MARRIAGE_MIN_DOWRY = 25_000_000n;
 export const MARRIAGE_MAX_DOWRY = 5_000_000_000n;
 export const MARRIAGE_PROPOSAL_TTL_MS = 10 * 60 * 1000;
 export const MARRIAGE_XP_BONUS = 300;
 
-export const CLAN_CREATE_PRICE = 50_000_000n;
+export const CLAN_CREATE_PRICE = 250_000_000n;
 export const CLAN_MAX_PER_GROUP = 15;
 export const CLAN_MAX_MEMBERS = 15;
 export const CLAN_MIN_DONATION = 100_000n;
@@ -339,11 +340,23 @@ export class SocialEconomyService {
       this.profileRepo.findOrCreate(groupJid, normTarget),
     ]);
 
-    if (parseRpgState(pProf.rpgState).spouseJid) {
+    const pState = parseRpgState(pProf.rpgState);
+    const tState = parseRpgState(tProf.rpgState);
+    if (pState.spouseJid) {
       throw new AppUserError("Kamu sudah menikah! Selesaikan dulu dengan *.cerai* kalau mau ganti pasangan.");
     }
-    if (parseRpgState(tProf.rpgState).spouseJid) {
+    if (hasActiveNpcPartner(pState)) {
+      throw new AppUserError(
+        "Kamu masih memiliki pasangan karakter anime/game! Selesaikan dulu lewat *.putusnpc* jika ingin menikahi member asli.",
+      );
+    }
+    if (tState.spouseJid) {
       throw new AppUserError("Target yang kamu lamar sudah menikah dengan orang lain!");
+    }
+    if (hasActiveNpcPartner(tState)) {
+      throw new AppUserError(
+        "Target masih memiliki pasangan karakter anime/game! Tidak bisa dilamar sebelum dia *.putusnpc*.",
+      );
     }
     if (pProf.moneyBalance < dowry) {
       throw new AppUserError(
@@ -385,8 +398,15 @@ export class SocialEconomyService {
       const pProf = await this.profileRepo.findOrCreate(groupJid, proposal.proposerJid, tx);
       const tProf = await this.profileRepo.findOrCreate(groupJid, normTarget, tx);
 
-      if (parseRpgState(pProf.rpgState).spouseJid || parseRpgState(tProf.rpgState).spouseJid) {
+      const pState = parseRpgState(pProf.rpgState);
+      const tState = parseRpgState(tProf.rpgState);
+      if (pState.spouseJid || tState.spouseJid) {
         throw new AppUserError("Salah satu pihak sudah menikah.");
+      }
+      if (hasActiveNpcPartner(pState) || hasActiveNpcPartner(tState)) {
+        throw new AppUserError(
+          "Salah satu pihak masih memiliki pasangan karakter anime/game (.putusnpc dulu).",
+        );
       }
       if (pProf.moneyBalance < proposal.dowry) {
         throw new AppUserError("Saldo pelamar tidak lagi cukup untuk membayar mahar.");

@@ -26,12 +26,15 @@ export interface AniListMediaResult {
 }
 
 export interface AniListCharacterResult {
+  id: number | null;
   nameFull: string;
   nameNative: string | null;
+  gender: string | null;
   favourites: number;
   appearances: string[];
   description: string;
   siteUrl: string;
+  imageUrl: string | null;
   imageBuffer: Buffer | null;
 }
 
@@ -260,7 +263,9 @@ export class GeekNetworkService {
     const gql = `
       query ($search: String) {
         Character(search: $search) {
+          id
           name { full native }
+          gender
           favourites
           description(asHtml: false)
           siteUrl
@@ -289,7 +294,9 @@ export class GeekNetworkService {
       const json = (await res.json()) as {
         data?: {
           Character?: {
+            id?: number;
             name?: { full?: string; native?: string | null };
+            gender?: string | null;
             favourites?: number;
             description?: string | null;
             siteUrl?: string;
@@ -307,15 +314,19 @@ export class GeekNetworkService {
       const appearances = (char.media?.nodes ?? [])
         .map((n) => n.title?.romaji ?? "")
         .filter((s) => s.length > 0);
-      const imageBuffer = await this.downloadImageSafe(char.image?.large);
+      const imageUrl = typeof char.image?.large === "string" && char.image.large.length > 0 ? char.image.large : null;
+      const imageBuffer = await this.downloadImageSafe(imageUrl);
 
       return {
+        id: typeof char.id === "number" && Number.isInteger(char.id) ? char.id : null,
         nameFull: char.name?.full ?? search,
         nameNative: char.name?.native ?? null,
+        gender: typeof char.gender === "string" && char.gender.trim().length > 0 ? char.gender.trim() : null,
         favourites: char.favourites ?? 0,
         appearances,
         description: stripHtml(char.description, 380),
         siteUrl: char.siteUrl ?? "",
+        imageUrl,
         imageBuffer,
       };
     } catch (error: unknown) {

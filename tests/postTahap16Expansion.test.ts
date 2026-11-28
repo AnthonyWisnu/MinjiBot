@@ -400,7 +400,7 @@ void describe("Prioritas 3: Pengayaan Sistem Pet (.petshop, .telurpet, .ekspedis
     // 1. Adopsi langsung kucing
     const adopted = await rpg.adoptPet(GROUP_JID, USER_A, "kucing");
     assert.equal(adopted.pet, "kucing");
-    assert.equal(adopted.pricePaid, 15_000_000n);
+    assert.equal(adopted.pricePaid, 60_000_000n);
 
     // Tolak adopsi ulang kucing
     await assert.rejects(() => rpg.adoptPet(GROUP_JID, USER_A, "kucing"), /sudah memiliki pet/i);
@@ -528,8 +528,8 @@ void describe("Prioritas 4: Kontrol Inflasi (.ekonomigrup), Tema Profil (.temapr
 
     assert.equal(PROFILE_THEME_CATALOG.length, 7);
     const bought = await ctrl.buyProfileTheme(GROUP_JID, USER_A, "sakura");
-    assert.equal(bought.pricePaid, 25_000_000n);
-    assert.equal(bought.currentMoney, 175_000_000n);
+    assert.equal(bought.pricePaid, 80_000_000n);
+    assert.equal(bought.currentMoney, 120_000_000n);
 
     // Tolak beli ulang tema yang sudah dimiliki
     await assert.rejects(() => ctrl.buyProfileTheme(GROUP_JID, USER_A, "sakura"), /sudah memiliki/i);

@@ -11,20 +11,20 @@ export interface ShopItemSpec {
 
 export const SHOP_CATALOG: readonly ShopItemSpec[] = [
   // Supplies
-  { id: "potion", label: "Potion HP (+40 HP)", category: "supply", buyPrice: 350_000n, sellPrice: 150_000n },
-  { id: "makananpet", label: "Pakan Pet", category: "supply", buyPrice: 500_000n, sellPrice: 200_000n },
-  { id: "ramuanpet", label: "Ramuan Kuat Pet", category: "supply", buyPrice: 2_500_000n, sellPrice: 1_000_000n },
-  // Crates
-  { id: "common", label: "Common Crate", category: "crate", buyPrice: 2_000_000n, sellPrice: 800_000n, isCrate: "common" },
-  { id: "uncommon", label: "Uncommon Crate", category: "crate", buyPrice: 6_000_000n, sellPrice: 2_500_000n, isCrate: "uncommon" },
-  { id: "mythic", label: "Mythic Crate", category: "crate", buyPrice: 20_000_000n, sellPrice: 8_000_000n, isCrate: "mythic" },
-  { id: "legendary", label: "Legendary Crate", category: "crate", buyPrice: 60_000_000n, sellPrice: 25_000_000n, isCrate: "legendary" },
+  { id: "potion", label: "Potion HP (+40 HP)", category: "supply", buyPrice: 1_800_000n, sellPrice: 600_000n },
+  { id: "makananpet", label: "Pakan Pet", category: "supply", buyPrice: 2_500_000n, sellPrice: 800_000n },
+  { id: "ramuanpet", label: "Ramuan Kuat Pet", category: "supply", buyPrice: 30_000_000n, sellPrice: 10_000_000n },
+  // Crates (harga mahal & cashback <50% agar murni money sink + gacha item/pet, bukan mesin cetak uang)
+  { id: "common", label: "Common Crate", category: "crate", buyPrice: 18_000_000n, sellPrice: 6_000_000n, isCrate: "common" },
+  { id: "uncommon", label: "Uncommon Crate", category: "crate", buyPrice: 55_000_000n, sellPrice: 18_000_000n, isCrate: "uncommon" },
+  { id: "mythic", label: "Mythic Crate", category: "crate", buyPrice: 180_000_000n, sellPrice: 60_000_000n, isCrate: "mythic" },
+  { id: "legendary", label: "Legendary Crate", category: "crate", buyPrice: 550_000_000n, sellPrice: 180_000_000n, isCrate: "legendary" },
   // Raw materials
-  { id: "kayu", label: "Kayu", category: "material", buyPrice: 400_000n, sellPrice: 250_000n },
-  { id: "batu", label: "Batu", category: "material", buyPrice: 450_000n, sellPrice: 280_000n },
-  { id: "besi", label: "Bijih Besi", category: "material", buyPrice: 900_000n, sellPrice: 550_000n },
-  { id: "emas", label: "Bongkahan Emas", category: "material", buyPrice: 2_500_000n, sellPrice: 1_600_000n },
-  { id: "berlian", label: "Berlian", category: "material", buyPrice: 8_000_000n, sellPrice: 5_500_000n },
+  { id: "kayu", label: "Kayu", category: "material", buyPrice: 1_200_000n, sellPrice: 450_000n },
+  { id: "batu", label: "Batu", category: "material", buyPrice: 1_400_000n, sellPrice: 500_000n },
+  { id: "besi", label: "Bijih Besi", category: "material", buyPrice: 2_800_000n, sellPrice: 1_000_000n },
+  { id: "emas", label: "Bongkahan Emas", category: "material", buyPrice: 7_500_000n, sellPrice: 2_800_000n },
+  { id: "berlian", label: "Berlian", category: "material", buyPrice: 22_000_000n, sellPrice: 8_000_000n },
   // Farm & hunt raw food
   { id: "apel", label: "Apel", category: "food", buyPrice: null, sellPrice: 180_000n },
   { id: "pisang", label: "Pisang", category: "food", buyPrice: null, sellPrice: 180_000n },
@@ -109,36 +109,36 @@ export const TOOL_SPECS: Record<ToolType, ToolCraftSpec> = {
     id: "sword",
     label: "Pedang",
     bonusDesc: "+Power saat .adventure, .dungeon, .fight*, & .serang",
-    craftCostMoney: 3_000_000n,
+    craftCostMoney: 18_000_000n,
     craftMaterials: { kayu: 4, besi: 3 },
-    upgradeMoneyPerLevel: 5_000_000n,
+    upgradeMoneyPerLevel: 20_000_000n,
     upgradeMaterials: { besi: 2, emas: 1 },
   },
   armor: {
     id: "armor",
     label: "Armor Zirah",
     bonusDesc: "Kurangi damage HP & lindungi dompet saat diserang",
-    craftCostMoney: 3_500_000n,
+    craftCostMoney: 20_000_000n,
     craftMaterials: { batu: 4, besi: 4 },
-    upgradeMoneyPerLevel: 5_500_000n,
+    upgradeMoneyPerLevel: 22_000_000n,
     upgradeMaterials: { besi: 3, emas: 1 },
   },
   pickaxe: {
     id: "pickaxe",
     label: "Pickaxe",
     bonusDesc: "+15%/level cuan .nebang & tambah drop mineral langka",
-    craftCostMoney: 2_500_000n,
+    craftCostMoney: 15_000_000n,
     craftMaterials: { kayu: 4, batu: 4 },
-    upgradeMoneyPerLevel: 4_500_000n,
+    upgradeMoneyPerLevel: 18_000_000n,
     upgradeMaterials: { kayu: 2, besi: 2 },
   },
   fishingrod: {
     id: "fishingrod",
     label: "Pancingan",
     bonusDesc: "+15%/level hasil .berkebon & bonus drop ikan/bahan",
-    craftCostMoney: 2_500_000n,
+    craftCostMoney: 15_000_000n,
     craftMaterials: { kayu: 5, besi: 1 },
-    upgradeMoneyPerLevel: 4_500_000n,
+    upgradeMoneyPerLevel: 18_000_000n,
     upgradeMaterials: { kayu: 3, emas: 1 },
   },
 };
@@ -253,9 +253,9 @@ export const CRATE_LOOT_SPECS: Record<CrateType, CrateLootSpec> = {
   common: {
     id: "common",
     label: "Common Crate",
-    minMoney: 900_000,
-    maxMoney: 2_700_000,
-    xp: 50,
+    minMoney: 4_000_000,
+    maxMoney: 8_000_000,
+    xp: 25,
     petChance: 0.12,
     petPool: ["kucing", "kyubi"],
     itemPool: [
@@ -268,9 +268,9 @@ export const CRATE_LOOT_SPECS: Record<CrateType, CrateLootSpec> = {
   uncommon: {
     id: "uncommon",
     label: "Uncommon Crate",
-    minMoney: 3_000_000,
-    maxMoney: 8_400_000,
-    xp: 120,
+    minMoney: 12_000_000,
+    maxMoney: 24_000_000,
+    xp: 60,
     petChance: 0.2,
     petPool: ["kucing", "kyubi", "centaur"],
     itemPool: [
@@ -283,9 +283,9 @@ export const CRATE_LOOT_SPECS: Record<CrateType, CrateLootSpec> = {
   mythic: {
     id: "mythic",
     label: "Mythic Crate",
-    minMoney: 10_800_000,
-    maxMoney: 30_000_000,
-    xp: 300,
+    minMoney: 40_000_000,
+    maxMoney: 80_000_000,
+    xp: 150,
     petChance: 0.32,
     petPool: ["centaur", "griffin", "naga"],
     itemPool: [
@@ -298,13 +298,13 @@ export const CRATE_LOOT_SPECS: Record<CrateType, CrateLootSpec> = {
   legendary: {
     id: "legendary",
     label: "Legendary Crate",
-    minMoney: 33_000_000,
-    maxMoney: 108_000_000,
-    xp: 650,
+    minMoney: 120_000_000,
+    maxMoney: 250_000_000,
+    xp: 320,
     petChance: 0.5,
     petPool: ["griffin", "naga", "phonix"],
     itemPool: [
-      { id: "berlian", min: 3, max: 8 },
+      { id: "berlian", min: 3, max: 7 },
       { id: "emas", min: 4, max: 10 },
       { id: "ramuanpet", min: 2, max: 4 },
       { id: "potion", min: 5, max: 10 },
@@ -342,21 +342,21 @@ export const PET_SHOP_CATALOG: readonly PetShopSpec[] = [
   {
     id: "kucing",
     label: "Kucing Oren",
-    price: 15_000_000n,
+    price: 60_000_000n,
     minLevel: 1,
     desc: "Pet pemula lincah & hemat pakan",
   },
   {
     id: "kyubi",
     label: "Kyubi Rubah",
-    price: 45_000_000n,
+    price: 220_000_000n,
     minLevel: 8,
     desc: "Rubah berekor sembilan penuh hoki",
   },
   {
     id: "centaur",
     label: "Centaur Ksatria",
-    price: 110_000_000n,
+    price: 550_000_000n,
     minLevel: 16,
     desc: "Pet menengah tangguh penambah Combat Power",
   },
@@ -381,7 +381,7 @@ export const PET_EGG_CATALOG: readonly PetEggSpec[] = [
   {
     id: "biasa",
     label: "Telur Pet Biasa",
-    price: 12_000_000n,
+    price: 45_000_000n,
     minLevel: 1,
     xp: 40,
     pool: [
@@ -393,7 +393,7 @@ export const PET_EGG_CATALOG: readonly PetEggSpec[] = [
   {
     id: "langka",
     label: "Telur Pet Langka",
-    price: 40_000_000n,
+    price: 180_000_000n,
     minLevel: 5,
     xp: 90,
     pool: [
@@ -406,7 +406,7 @@ export const PET_EGG_CATALOG: readonly PetEggSpec[] = [
   {
     id: "mitos",
     label: "Telur Pet Mitos",
-    price: 120_000_000n,
+    price: 600_000_000n,
     minLevel: 15,
     xp: 180,
     pool: [

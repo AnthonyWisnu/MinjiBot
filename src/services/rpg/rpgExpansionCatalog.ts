@@ -179,64 +179,64 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
     id: "warung",
     name: "Warung Kopi Tongkrongan",
     minLevel: 1,
-    price: 15_000_000n,
-    incomePerHour: 900_000n,
+    price: 75_000_000n,
+    incomePerHour: 1_000_000n,
     maxOwned: 10,
   },
   {
     id: "kosan",
     name: "Kos-Kosan 10 Pintu",
     minLevel: 1,
-    price: 60_000_000n,
-    incomePerHour: 3_900_000n,
+    price: 300_000_000n,
+    incomePerHour: 3_800_000n,
     maxOwned: 10,
   },
   {
     id: "cafe",
     name: "Cafe Estetik 24 Jam",
     minLevel: 5,
-    price: 180_000_000n,
-    incomePerHour: 12_600_000n,
+    price: 900_000_000n,
+    incomePerHour: 11_000_000n,
     maxOwned: 10,
   },
   {
     id: "spbu",
     name: "SPBU Pasti Pas",
     minLevel: 10,
-    price: 500_000_000n,
-    incomePerHour: 37_200_000n,
+    price: 2_800_000_000n,
+    incomePerHour: 32_000_000n,
     maxOwned: 10,
   },
   {
     id: "hotel",
     name: "Hotel Bintang 5",
     minLevel: 18,
-    price: 1_500_000_000n,
-    incomePerHour: 117_000_000n,
+    price: 9_000_000_000n,
+    incomePerHour: 96_000_000n,
     maxOwned: 10,
   },
   {
     id: "mall",
     name: "Mall Pusat Kota",
     minLevel: 28,
-    price: 5_000_000_000n,
-    incomePerHour: 408_000_000n,
+    price: 30_000_000_000n,
+    incomePerHour: 300_000_000n,
     maxOwned: 10,
   },
   {
     id: "maskapai",
     name: "Maskapai Jet Pribadi",
     minLevel: 40,
-    price: 18_000_000_000n,
-    incomePerHour: 1_560_000_000n,
+    price: 120_000_000_000n,
+    incomePerHour: 1_100_000_000n,
     maxOwned: 10,
   },
   {
     id: "pulau",
     name: "Pulau Resort Pribadi",
     minLevel: 55,
-    price: 75_000_000_000n,
-    incomePerHour: 6_900_000_000n,
+    price: 450_000_000_000n,
+    incomePerHour: 3_750_000_000n,
     maxOwned: 5,
   },
 ] as const;
@@ -266,8 +266,9 @@ export const RANK_SALARY_TABLE: Record<MemberRank, RankSalarySpec> = {
   "Immortal [MAX]": { money: 900_000_000n, limit: 12, xp: 450 },
 };
 
-export const DEPOSITO_MIN_AMOUNT = 10_000_000n;
-export const DEPOSITO_DAILY_INTEREST_PERCENT = 5;
+export const DEPOSITO_MIN_AMOUNT = 25_000_000n;
+export const DEPOSITO_MAX_PRINCIPAL = 50_000_000_000n; // Maks pokok deposito Rp 50 Miliar anti cetak bunga liar
+export const DEPOSITO_DAILY_INTEREST_PERCENT = 2;
 export const DEPOSITO_MAX_INTEREST_DAYS = 7;
 
 export interface StockSpec {
@@ -410,7 +411,7 @@ export interface GachaCardSpec {
   duplicateCashback: bigint;
 }
 
-export const GACHA_PULL_PRICE = 25_000_000n;
+export const GACHA_PULL_PRICE = 60_000_000n;
 
 export const GACHA_CARDS: readonly GachaCardSpec[] = [
   // R (55% rate) - 8 cards
@@ -422,7 +423,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 120,
     quote: "Online terus tapi cuma baca doang.",
-    duplicateCashback: 3_600_000n,
+    duplicateCashback: 8_000_000n,
   },
   {
     id: "r_tukang_kopi",
@@ -432,7 +433,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 135,
     quote: "Begadang demi push rank sampe subuh.",
-    duplicateCashback: 3_600_000n,
+    duplicateCashback: 8_000_000n,
   },
   {
     id: "r_ojol_ngebut",
@@ -442,7 +443,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 150,
     quote: "Sesuai titik ya kak, jangan geser.",
-    duplicateCashback: 3_600_000n,
+    duplicateCashback: 8_000_000n,
   },
   {
     id: "r_pemburu_wifi",
@@ -452,7 +453,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 145,
     quote: "Mas, password WiFi-nya apa ya?",
-    duplicateCashback: 3_600_000n,
+    duplicateCashback: 8_000_000n,
   },
   {
     id: "r_anak_indomie",
@@ -462,7 +463,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 160,
     quote: "Satu kurang, dua kebanyakan.",
-    duplicateCashback: 3_600_000n,
+    duplicateCashback: 8_000_000n,
   },
   {
     id: "r_kolektor_stiker",
@@ -472,7 +473,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 170,
     quote: "Semua muka kaget sudah aman di galeri.",
-    duplicateCashback: 3_600_000n,
+    duplicateCashback: 8_000_000n,
   },
   {
     id: "r_tukang_tidur",
@@ -482,7 +483,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 155,
     quote: "Lima menit lagi, beneran deh.",
-    duplicateCashback: 3_600_000n,
+    duplicateCashback: 8_000_000n,
   },
   {
     id: "r_kucing_oren",
@@ -492,7 +493,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 180,
     quote: "Tidak ada rasa takut, hanya gaspol.",
-    duplicateCashback: 3_600_000n,
+    duplicateCashback: 8_000_000n,
   },
   // SR (30% rate) - 6 cards
   {
@@ -503,7 +504,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 320,
     quote: "Share link sembarangan langsung auto terbang.",
-    duplicateCashback: 10_800_000n,
+    duplicateCashback: 22_000_000n,
   },
   {
     id: "sr_trader_santai",
@@ -513,7 +514,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 350,
     quote: "Tenang, ini cuma koreksi sehat.",
-    duplicateCashback: 10_800_000n,
+    duplicateCashback: 22_000_000n,
   },
   {
     id: "sr_bandar_slot",
@@ -523,7 +524,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 380,
     quote: "All-in sekarang, nangis belakangan.",
-    duplicateCashback: 10_800_000n,
+    duplicateCashback: 22_000_000n,
   },
   {
     id: "sr_sepuh_coding",
@@ -533,7 +534,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 410,
     quote: "Di laptop saya jalan kok.",
-    duplicateCashback: 10_800_000n,
+    duplicateCashback: 22_000_000n,
   },
   {
     id: "sr_wibu_elit",
@@ -543,7 +544,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 390,
     quote: "Manga-nya jauh lebih bagus bro.",
-    duplicateCashback: 10_800_000n,
+    duplicateCashback: 22_000_000n,
   },
   {
     id: "sr_juragan_kos",
@@ -553,7 +554,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 430,
     quote: "Halo dek, kosan bulan ini belum ya.",
-    duplicateCashback: 10_800_000n,
+    duplicateCashback: 22_000_000n,
   },
   // SSR (12% rate) - 4 cards
   {
@@ -564,7 +565,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SSR",
     power: 680,
     quote: "Uang bukan masalah, yang penting rame.",
-    duplicateCashback: 33_000_000n,
+    duplicateCashback: 75_000_000n,
   },
   {
     id: "ssr_naga_emas",
@@ -574,7 +575,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SSR",
     power: 720,
     quote: "Hanya petualang terkuat yang selamat.",
-    duplicateCashback: 33_000_000n,
+    duplicateCashback: 75_000_000n,
   },
   {
     id: "ssr_raja_bursa",
@@ -584,7 +585,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SSR",
     power: 750,
     quote: "Sekali borong langsung auto ARA.",
-    duplicateCashback: 33_000_000n,
+    duplicateCashback: 75_000_000n,
   },
   {
     id: "ssr_detektif_uc",
@@ -594,7 +595,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SSR",
     power: 710,
     quote: "Percaya aku, bukan aku impostor-nya.",
-    duplicateCashback: 33_000_000n,
+    duplicateCashback: 75_000_000n,
   },
   // UR (3% rate) - 2 cards
   {
@@ -605,7 +606,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "UR",
     power: 999,
     quote: "Seluruh server dan takdir ada di genggamanku.",
-    duplicateCashback: 90_000_000n,
+    duplicateCashback: 180_000_000n,
   },
   {
     id: "ur_emperor_sultan",
@@ -615,7 +616,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "UR",
     power: 980,
     quote: "Membeli grup beserta isinya tanpa berkedip.",
-    duplicateCashback: 90_000_000n,
+    duplicateCashback: 180_000_000n,
   },
 ] as const;
 
@@ -646,7 +647,7 @@ export function rollGachaCard(randomValue: number = Math.random()): GachaCardSpe
     rarity: "R",
     power: 120,
     quote: "Online terus tapi cuma baca doang.",
-    duplicateCashback: 3_600_000n,
+    duplicateCashback: 8_000_000n,
   };
   return pool[index] ?? GACHA_CARDS[0] ?? fallback;
 }

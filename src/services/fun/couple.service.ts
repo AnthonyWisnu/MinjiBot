@@ -5,6 +5,7 @@ import { GroupMemberProfileRepository } from "../../repositories/groupMemberProf
 import { prisma } from "../../repositories/prismaClient";
 import { clampMoneyCredit, formatRemainingDuration } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
+import { hasActiveNpcPartner, parseRpgState } from "../rpg/rpgState";
 
 const PROPOSAL_TTL_MS = 10 * 60 * 1000;
 const COUPLE_BONUS_MONEY = 1_500_000n;
@@ -77,10 +78,20 @@ export class CoupleService {
     if (proposer.partnerJid) {
       throw new AppUserError("Kamu sudah punya pasangan di grup ini! Ketik .putus dulu kalau mau cari baru.");
     }
+    if (hasActiveNpcPartner(parseRpgState(proposer.rpgState))) {
+      throw new AppUserError(
+        "Kamu masih punya pasangan karakter anime/game! Putuskan dulu lewat *.putusnpc* jika ingin menembak member asli.",
+      );
+    }
 
     const target = await this.profileRepo.findOrCreate(groupJid, normTarget);
     if (target.partnerJid) {
       throw new AppUserError("Target sudah punya pasangan di grup ini. Jangan jadi orang ketiga ya!");
+    }
+    if (hasActiveNpcPartner(parseRpgState(target.rpgState))) {
+      throw new AppUserError(
+        "Target masih setia dengan pasangan karakter anime/game-nya! Tunggu dia putus lewat *.putusnpc* dulu.",
+      );
     }
 
     const key = `${groupJid}:${normTarget}`;
@@ -126,6 +137,14 @@ export class CoupleService {
 
       if (proposer.partnerJid || acceptor.partnerJid) {
         throw new AppUserError("Salah satu pihak sudah berpasangan.");
+      }
+      if (
+        hasActiveNpcPartner(parseRpgState(proposer.rpgState)) ||
+        hasActiveNpcPartner(parseRpgState(acceptor.rpgState))
+      ) {
+        throw new AppUserError(
+          "Salah satu pihak masih punya pasangan karakter anime/game (.putusnpc dulu agar saling setia).",
+        );
       }
 
       const bonusP = clampMoneyCredit(proposer.moneyBalance, COUPLE_BONUS_MONEY);

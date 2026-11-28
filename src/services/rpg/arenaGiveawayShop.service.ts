@@ -75,9 +75,9 @@ export const POINT_SHOP_XP_PER_POINT = 3;
 export const POINT_SHOP_MIN_XP_POINTS = 10;
 export const POINT_SHOP_MAX_XP_POINTS = 10_000;
 export const POINT_SHOP_CRATE_PRICES: Record<"common" | "uncommon" | "mythic", number> = {
-  common: 80,
-  uncommon: 220,
-  mythic: 650,
+  common: 120,
+  uncommon: 350,
+  mythic: 1_100,
 };
 
 export const SEDEKAH_MIN_AMOUNT = 500_000n;

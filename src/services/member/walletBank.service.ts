@@ -16,7 +16,7 @@ import { formatRupiah, MAX_SAFE_MONEY_BIGINT } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
 import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "./memberEconomy.service";
 
-export const EXCHANGE_MONEY_PER_POINT = 20_000n;
+export const EXCHANGE_MONEY_PER_POINT = 200_000n;
 
 export interface BankTransferResult {
   amount: bigint;

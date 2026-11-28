@@ -95,13 +95,13 @@ export const CAREER_SHIFT_COOLDOWN_MS = 60 * 60 * 1000;
 export const CAREER_MAX_LEVEL = 5;
 
 export const STARTUP_MIN_PLAYER_LEVEL = 20;
-export const STARTUP_CREATE_COST = 150_000_000n;
-export const STARTUP_RECRUIT_COST = 35_000_000n;
+export const STARTUP_CREATE_COST = 600_000_000n;
+export const STARTUP_RECRUIT_COST = 150_000_000n;
 export const STARTUP_MAX_LEVEL = 10;
 export const STARTUP_DIVIDEND_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 export function getStartupUpgradeCost(currentLevel: number): bigint {
-  return 200_000_000n * BigInt(currentLevel) * BigInt(currentLevel);
+  return 600_000_000n * BigInt(currentLevel) * BigInt(currentLevel);
 }
 
 export function getStartupMaxEmployees(level: number): number {
@@ -113,7 +113,7 @@ export function getStartupValuation(level: number, employees: number): bigint {
 }
 
 export function getStartupDividendPayout(level: number, employees: number): bigint {
-  return 27_000_000n * BigInt(level) + 10_800_000n * BigInt(employees);
+  return 25_000_000n * BigInt(level) + 10_000_000n * BigInt(employees);
 }
 
 export const PINJOL_MAX_BY_RANK: Record<MemberRank, bigint> = {

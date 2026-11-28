@@ -237,7 +237,7 @@ void test("Tahap 14: Skill Tree upgrade, real combat power boost, and reset fee 
       groupJid: "120@g.us",
       userJid: "6281@s.whatsapp.net",
       level: 5, // 10 SP available
-      moneyBalance: 20_000_000n,
+      moneyBalance: 50_000_000n,
     },
   ]);
 
@@ -260,7 +260,7 @@ void test("Tahap 14: Skill Tree upgrade, real combat power boost, and reset fee 
   const reset = await service.resetSkills("120@g.us", "6281@s.whatsapp.net");
   assert.equal(reset.costPaid, SKILL_RESET_COST);
   assert.equal(reset.refundedPoints, 5);
-  assert.equal(reset.currentMoney, 20_000_000n - SKILL_RESET_COST);
+  assert.equal(reset.currentMoney, 50_000_000n - SKILL_RESET_COST);
 
   const prof = Array.from(profiles.values())[0];
   assert.ok(prof);

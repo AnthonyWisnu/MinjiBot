@@ -10,6 +10,7 @@ import {
   normalizeUserJid,
 } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
+import { executeNpcCompatibilityRoll } from "./npcRomance.command";
 
 function tagOf(jid: string): string {
   return `@${jid.split("@")[0] ?? jid}`;
@@ -214,7 +215,13 @@ async function handleCekCocok(context: CommandContext): Promise<void> {
   try {
     const pair = await resolvePairTargets(context);
     if (!pair) {
-      await context.reply("Tag 1 atau 2 member! Contoh: *.cekcocok @user1 @user2*");
+      if (context.argsText.trim().length > 0) {
+        await executeNpcCompatibilityRoll(context);
+        return;
+      }
+      await context.reply(
+        "Tag member atau ketik nama karakter anime/game!\n• Member: *.cekcocok @user1 @user2*\n• NPC: *.cekcocok Frieren* atau *.cocoknpc Raiden Shogun*",
+      );
       return;
     }
     const [a, b] = pair;
@@ -241,7 +248,13 @@ async function handleShip(context: CommandContext): Promise<void> {
   try {
     const pair = await resolvePairTargets(context);
     if (!pair) {
-      await context.reply("Tag 1 atau 2 member! Contoh: *.ship @user1 @user2*");
+      if (context.argsText.trim().length > 0) {
+        await executeNpcCompatibilityRoll(context);
+        return;
+      }
+      await context.reply(
+        "Tag member atau ketik nama karakter anime/game!\n• Member: *.ship @user1 @user2*\n• NPC: *.ship Frieren* atau *.cocoknpc Kafka*",
+      );
       return;
     }
     const [a, b] = pair;

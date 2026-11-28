@@ -13,7 +13,10 @@ import {
   BUSINESS_CAPITAL_PER_PERSON,
   rpgGroupInteractionService,
 } from "../../services/rpg/rpgGroupInteraction.service";
-import { rpgInfiniteService } from "../../services/rpg/rpgInfinite.service";
+import {
+  MAX_DAILY_SHOP_CRATE_BUY,
+  rpgInfiniteService,
+} from "../../services/rpg/rpgInfinite.service";
 import type { PetType } from "../../services/rpg/rpgState";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import {
@@ -84,21 +87,21 @@ async function handleInventory(context: CommandContext): Promise<void> {
 
     await context.reply(
       [
-        "*── [ TAS & STATUS RPG ] ──*",
-        `Pemilik : ${tagOf(sender)}`,
-        `• HP     : ${String(inv.hp)} / ${String(inv.maxHp)}`,
-        `• Level  : Lv. ${String(inv.level)}`,
-        `• Dompet : ${formatRupiah(inv.moneyBalance)}`,
-        ugdLine,
+        "╭─〔 TAS & STATUS RPG 〕─╮",
+        `│ Pemilik : ${tagOf(sender)}`,
+        `│ HP      : ${String(inv.hp)} / ${String(inv.maxHp)} | Lv.${String(inv.level)}`,
+        `│ Dompet  : *${formatCompactRupiah(inv.moneyBalance)}*`,
+        `│ ${ugdLine.replace(/^•\s*/, "")}`,
+        "╰───────────────────────╯",
         "",
         "*Peralatan:*",
         ...toolLines,
         "",
-        "*Peti Gacha (.open):*",
-        ...(crateLines.length > 0 ? crateLines : ["Belum ada peti."]),
+        "*Peti Gacha (`.open`):*",
+        ...(crateLines.length > 0 ? crateLines : ["  _Belum ada peti._"]),
         "",
         "*Isi Tas:*",
-        ...(itemLines.length > 0 ? itemLines : ["Tas masih kosong. Coba .adventure atau .nebang!"]),
+        ...(itemLines.length > 0 ? itemLines : ["  _Tas masih kosong. Coba .adventure atau .nebang!_"]),
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -131,16 +134,17 @@ async function handleKandang(context: CommandContext): Promise<void> {
 
     await context.reply(
       [
-        "*── [ KANDANG PET ] ──*",
-        `Pemilik : ${tagOf(sender)}`,
+        "╭─〔 KANDANG PET 〕─╮",
+        `│ Pemilik : ${tagOf(sender)}`,
+        `│ Pakan   : ${String(pen.foodCount)} (\`.feed\`)`,
+        `│ Ramuan  : ${String(pen.elixirCount)} (\`.ramuan\`)`,
+        "╰──────────────────╯",
         "",
         ...petLines,
         "",
         expLine,
-        `• Stok Pakan  : ${String(pen.foodCount)} (.feed <pet>)`,
-        `• Stok Ramuan : ${String(pen.elixirCount)} (.ramuan <pet>)`,
         "",
-        "_Adopsi pet baru: .petshop | Gacha telur: .telurpet | Ekspedisi: .ekspedisipet_",
+        "_Toko: `.petshop` | Telur: `.telurpet` | Ekspedisi: `.ekspedisipet`_",
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -155,27 +159,34 @@ async function handlePetShop(context: CommandContext): Promise<void> {
   const arg1 = (context.args[1] ?? "").trim().toLowerCase();
 
   if (!arg0 || arg0 === "list" || arg0 === "daftar" || arg0 === "katalog") {
-    const shopLines = PET_SHOP_CATALOG.map(
-      (p) =>
-        `• *${p.id}* (${p.label}) — ${formatCompactRupiah(p.price)} | Min Lv.${String(p.minLevel)}\n  _${p.desc}_`,
+    const shopLines = PET_SHOP_CATALOG.map((p, idx) =>
+      [
+        `*${String(idx + 1)}. ${p.label}* (\`${p.id}\`)`,
+        `  ├ Harga : *${formatCompactRupiah(p.price)}* (Min Lv.${String(p.minLevel)})`,
+        `  └ Info  : ${p.desc}`,
+      ].join("\n"),
     );
     const eggLines = PET_EGG_CATALOG.map(
       (e) =>
-        `• *${e.id}* (${e.label}) — ${formatCompactRupiah(e.price)} | Min Lv.${String(e.minLevel)} (100% menetas!)`,
+        `• *${e.label}* (\`${e.id}\`)\n  └ *${formatCompactRupiah(e.price)}* | Min Lv.${String(e.minLevel)} (100% menetas)`,
     );
 
     await context.reply(
       [
-        "*── [ PET SHOP & TELUR PET ] ──*",
+        "╭─〔 PET SHOP & TELUR PET 〕─╮",
+        "│ Adopsi pet & tingkatkan Combat Power!",
+        "╰───────────────────────────╯",
         "",
-        "*Adopsi Langsung (.petshop beli <pet>):*",
+        "*Adopsi Langsung:*",
         ...shopLines,
         "",
-        "*Gacha Telur Pet (.telurpet <tier>):*",
+        "*Gacha Telur Pet:*",
         ...eggLines,
         "",
-        "Pet mitos (Griffin/Naga/Phonix) juga bisa didapat dari *.telurpet mitos*, *.open*, atau *.fight*!",
-        "Contoh: *.petshop beli kucing* atau *.telurpet biasa*",
+        "*Perintah Cepat:*",
+        "• `.petshop beli <pet>`",
+        "• `.telurpet <biasa|langka|mitos>`",
+        "_Pet mitos (Griffin/Naga/Phonix): .telurpet mitos, .open, atau .fight!_",
       ].join("\n"),
     );
     return;
@@ -510,25 +521,35 @@ async function handleShop(context: CommandContext): Promise<void> {
 
   if (sub === "list" || sub === "daftar" || sub === "menu") {
     const catalog = rpgInfiniteService.listShopItems();
-    const buyables = catalog.filter((i) => i.buyPrice !== null);
+    const supplies = catalog.filter((i) => i.category === "supply");
+    const crates = catalog.filter((i) => i.category === "crate");
+    const materials = catalog.filter((i) => i.category === "material");
     const sellOnly = catalog.filter((i) => i.buyPrice === null);
+
+    const fmtBuyable = (i: (typeof catalog)[number]) =>
+      `• *${i.label}* (\`${i.id}\`)\n  └ Beli *${formatCompactRupiah(i.buyPrice ?? 0n)}* | Jual ${formatCompactRupiah(i.sellPrice)}`;
 
     await context.reply(
       [
-        "*── [ TOKO RPG SULTAN ] ──*",
+        "╭─〔 TOKO RPG SULTAN 〕─╮",
+        `│ Kuota Beli Peti: maks ${String(MAX_DAILY_SHOP_CRATE_BUY)}/hari WIB`,
+        "╰──────────────────────╯",
         "",
-        "*Barang Dijual (Beli / Jual):*",
-        ...buyables.map(
-          (i) =>
-            `• *${i.id}* : Beli ${formatRupiah(i.buyPrice ?? 0n)} | Jual ${formatRupiah(i.sellPrice)}`,
-        ),
+        "*Kebutuhan & Pet:*",
+        ...supplies.map(fmtBuyable),
         "",
-        "*Hasil Panen & Masak (Jual):*",
-        ...sellOnly.map((i) => `• *${i.id}* : Jual ${formatRupiah(i.sellPrice)}`),
+        "*Peti Gacha (Item, XP & Peluang Pet):*",
+        ...crates.map(fmtBuyable),
         "",
-        "Cara pakai:",
-        "• .shop buy <item> [jumlah]",
-        "• .shop sell <item> [jumlah|all]",
+        "*Material Crafting:*",
+        ...materials.map(fmtBuyable),
+        "",
+        "*Hasil Panen & Masak (Jual Saja):*",
+        ...sellOnly.map((i) => `• \`${i.id}\` (${i.label}) : ${formatCompactRupiah(i.sellPrice)}`),
+        "",
+        "*Perintah Cepat:*",
+        "• `.shop buy <kode> [jml]`",
+        "• `.shop sell <kode> [jml|all]`",
       ].join("\n"),
     );
     return;

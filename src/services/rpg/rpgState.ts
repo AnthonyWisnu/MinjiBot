@@ -79,6 +79,51 @@ export interface FarmState {
   harvest: Record<string, number>;
 }
 
+export type NpcPartnerRelation = "pacar" | "istri" | "suami" | "pasangan";
+export type NpcCharacterKind = "anime" | "game";
+export type NpcCharacterGender = "female" | "male" | "other";
+
+export interface NpcPartnerEntry {
+  characterKey: string;
+  name: string;
+  sourceTitle: string;
+  kind: NpcCharacterKind;
+  gender: NpcCharacterGender;
+  relation: NpcPartnerRelation;
+  affectionLevel: number;
+  affectionExp: number;
+  startedAt: number;
+  marriedAt: number;
+  lastDateAt: number;
+  imageUrl: string | null;
+}
+
+export interface PendingNpcTicket {
+  characterKey: string;
+  name: string;
+  sourceTitle: string;
+  kind: NpcCharacterKind;
+  gender: NpcCharacterGender;
+  score: number;
+  rolledAt: number;
+  expiresAt: number;
+  imageUrl: string | null;
+}
+
+export interface NpcRomanceState {
+  maxSlots: number;
+  primaryKey: string | null;
+  partners: NpcPartnerEntry[];
+  pendingTicket: PendingNpcTicket | null;
+}
+
+export interface DailyShopCrateBuyState {
+  dateKey: string;
+  count: number;
+}
+
+export const MAX_NPC_PARTNER_SLOTS = 4;
+
 export interface MemberRpgState {
   cooldowns: Record<string, number>;
   jailedUntil: number;
@@ -116,6 +161,8 @@ export interface MemberRpgState {
   petExpedition: PetExpeditionState | null;
   profileTheme: ProfileThemeId;
   ownedThemes: ProfileThemeId[];
+  dailyShopCrateBuy: DailyShopCrateBuyState;
+  npcRomance: NpcRomanceState;
 }
 
 export const MAX_PLAYER_HP = 100;
@@ -211,6 +258,13 @@ export function createDefaultRpgState(): MemberRpgState {
     petExpedition: null,
     profileTheme: "midnight",
     ownedThemes: ["midnight"],
+    dailyShopCrateBuy: { dateKey: "", count: 0 },
+    npcRomance: {
+      maxSlots: 1,
+      primaryKey: null,
+      partners: [],
+      pendingTicket: null,
+    },
   };
 }
 
@@ -639,6 +693,156 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     parsedTheme && ownedThemesSet.has(parsedTheme) ? parsedTheme : "midnight";
   const ownedThemes = Array.from(ownedThemesSet);
 
+  const dailyShopCrateBuy: DailyShopCrateBuyState = { dateKey: "", count: 0 };
+  if (
+    obj.dailyShopCrateBuy &&
+    typeof obj.dailyShopCrateBuy === "object" &&
+    !Array.isArray(obj.dailyShopCrateBuy)
+  ) {
+    const rawBuy = obj.dailyShopCrateBuy as Record<string, unknown>;
+    if (typeof rawBuy.dateKey === "string") {
+      dailyShopCrateBuy.dateKey = rawBuy.dateKey.slice(0, 16);
+    }
+    if (typeof rawBuy.count === "number" && Number.isInteger(rawBuy.count) && rawBuy.count > 0) {
+      dailyShopCrateBuy.count = Math.min(1000, rawBuy.count);
+    }
+  }
+
+  const npcRomance: NpcRomanceState = {
+    maxSlots: 1,
+    primaryKey: null,
+    partners: [],
+    pendingTicket: null,
+  };
+  if (obj.npcRomance && typeof obj.npcRomance === "object" && !Array.isArray(obj.npcRomance)) {
+    const rawNpc = obj.npcRomance as Record<string, unknown>;
+    if (
+      typeof rawNpc.maxSlots === "number" &&
+      Number.isInteger(rawNpc.maxSlots) &&
+      rawNpc.maxSlots >= 1
+    ) {
+      npcRomance.maxSlots = Math.min(MAX_NPC_PARTNER_SLOTS, rawNpc.maxSlots);
+    }
+    if (Array.isArray(rawNpc.partners)) {
+      const seenKeys = new Set<string>();
+      for (const item of rawNpc.partners) {
+        if (npcRomance.partners.length >= MAX_NPC_PARTNER_SLOTS) break;
+        if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+        const p = item as Record<string, unknown>;
+        if (
+          typeof p.characterKey !== "string" ||
+          p.characterKey.trim().length === 0 ||
+          typeof p.name !== "string" ||
+          p.name.trim().length === 0 ||
+          seenKeys.has(p.characterKey)
+        ) {
+          continue;
+        }
+        seenKeys.add(p.characterKey);
+        const kind: NpcCharacterKind = p.kind === "game" ? "game" : "anime";
+        const gender: NpcCharacterGender =
+          p.gender === "female" || p.gender === "male" ? p.gender : "other";
+        const relation: NpcPartnerRelation =
+          p.relation === "istri" ||
+          p.relation === "suami" ||
+          p.relation === "pasangan" ||
+          p.relation === "pacar"
+            ? p.relation
+            : "pacar";
+        npcRomance.partners.push({
+          characterKey: p.characterKey.trim().slice(0, 80),
+          name: p.name.trim().slice(0, 64),
+          sourceTitle:
+            typeof p.sourceTitle === "string" && p.sourceTitle.trim().length > 0
+              ? p.sourceTitle.trim().slice(0, 80)
+              : kind === "game"
+                ? "Game"
+                : "Anime",
+          kind,
+          gender,
+          relation,
+          affectionLevel:
+            typeof p.affectionLevel === "number" &&
+            Number.isInteger(p.affectionLevel) &&
+            p.affectionLevel >= 1
+              ? Math.min(10, p.affectionLevel)
+              : 1,
+          affectionExp:
+            typeof p.affectionExp === "number" && Number.isFinite(p.affectionExp) && p.affectionExp >= 0
+              ? Math.floor(p.affectionExp)
+              : 0,
+          startedAt:
+            typeof p.startedAt === "number" && Number.isFinite(p.startedAt) && p.startedAt > 0
+              ? Math.floor(p.startedAt)
+              : 0,
+          marriedAt:
+            typeof p.marriedAt === "number" && Number.isFinite(p.marriedAt) && p.marriedAt > 0
+              ? Math.floor(p.marriedAt)
+              : 0,
+          lastDateAt:
+            typeof p.lastDateAt === "number" && Number.isFinite(p.lastDateAt) && p.lastDateAt > 0
+              ? Math.floor(p.lastDateAt)
+              : 0,
+          imageUrl:
+            typeof p.imageUrl === "string" && p.imageUrl.trim().length > 0
+              ? p.imageUrl.trim().slice(0, 300)
+              : null,
+        });
+      }
+    }
+    if (
+      typeof rawNpc.primaryKey === "string" &&
+      npcRomance.partners.some((p) => p.characterKey === rawNpc.primaryKey)
+    ) {
+      npcRomance.primaryKey = rawNpc.primaryKey;
+    } else {
+      npcRomance.primaryKey = npcRomance.partners[0]?.characterKey ?? null;
+    }
+
+    if (
+      rawNpc.pendingTicket &&
+      typeof rawNpc.pendingTicket === "object" &&
+      !Array.isArray(rawNpc.pendingTicket)
+    ) {
+      const t = rawNpc.pendingTicket as Record<string, unknown>;
+      if (
+        typeof t.characterKey === "string" &&
+        t.characterKey.trim().length > 0 &&
+        typeof t.name === "string" &&
+        t.name.trim().length > 0 &&
+        typeof t.score === "number" &&
+        Number.isFinite(t.score) &&
+        typeof t.rolledAt === "number" &&
+        Number.isFinite(t.rolledAt) &&
+        typeof t.expiresAt === "number" &&
+        Number.isFinite(t.expiresAt)
+      ) {
+        const kind: NpcCharacterKind = t.kind === "game" ? "game" : "anime";
+        const gender: NpcCharacterGender =
+          t.gender === "female" || t.gender === "male" ? t.gender : "other";
+        npcRomance.pendingTicket = {
+          characterKey: t.characterKey.trim().slice(0, 80),
+          name: t.name.trim().slice(0, 64),
+          sourceTitle:
+            typeof t.sourceTitle === "string" && t.sourceTitle.trim().length > 0
+              ? t.sourceTitle.trim().slice(0, 80)
+              : kind === "game"
+                ? "Game"
+                : "Anime",
+          kind,
+          gender,
+          score: Math.max(1, Math.min(100, Math.floor(t.score))),
+          rolledAt: Math.floor(t.rolledAt),
+          expiresAt: Math.floor(t.expiresAt),
+          imageUrl:
+            typeof t.imageUrl === "string" && t.imageUrl.trim().length > 0
+              ? t.imageUrl.trim().slice(0, 300)
+              : null,
+        };
+      }
+    }
+  }
+
   return {
     cooldowns,
     jailedUntil,
@@ -676,6 +880,8 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     petExpedition,
     profileTheme,
     ownedThemes,
+    dailyShopCrateBuy,
+    npcRomance,
   };
 }
 
@@ -740,6 +946,13 @@ export function serializeRpgState(state: MemberRpgState): Prisma.InputJsonValue 
     petExpedition: state.petExpedition ? { ...state.petExpedition } : null,
     profileTheme: state.profileTheme,
     ownedThemes: [...state.ownedThemes],
+    dailyShopCrateBuy: { ...state.dailyShopCrateBuy },
+    npcRomance: {
+      maxSlots: state.npcRomance.maxSlots,
+      primaryKey: state.npcRomance.primaryKey,
+      partners: state.npcRomance.partners.map((p) => ({ ...p })),
+      pendingTicket: state.npcRomance.pendingTicket ? { ...state.npcRomance.pendingTicket } : null,
+    },
   };
 }
 
@@ -1249,4 +1462,50 @@ export function getFeaturedPet(state: MemberRpgState): FeaturedPetSummary | null
     }
   }
   return best;
+}
+
+export function withDailyShopCrateBuy(
+  state: MemberRpgState,
+  dateKey: string,
+  count: number,
+): MemberRpgState {
+  return {
+    ...state,
+    dailyShopCrateBuy: { dateKey, count: Math.max(0, Math.floor(count)) },
+  };
+}
+
+export function withNpcRomance(
+  state: MemberRpgState,
+  npcRomance: NpcRomanceState,
+): MemberRpgState {
+  const partners = npcRomance.partners.slice(0, MAX_NPC_PARTNER_SLOTS).map((p) => ({ ...p }));
+  const primaryKey =
+    npcRomance.primaryKey && partners.some((p) => p.characterKey === npcRomance.primaryKey)
+      ? npcRomance.primaryKey
+      : (partners[0]?.characterKey ?? null);
+  return {
+    ...state,
+    npcRomance: {
+      maxSlots: Math.max(1, Math.min(MAX_NPC_PARTNER_SLOTS, Math.floor(npcRomance.maxSlots))),
+      primaryKey,
+      partners,
+      pendingTicket: npcRomance.pendingTicket ? { ...npcRomance.pendingTicket } : null,
+    },
+  };
+}
+
+export function hasActiveNpcPartner(state: MemberRpgState): boolean {
+  return state.npcRomance.partners.length > 0;
+}
+
+export function getPrimaryNpcPartner(state: MemberRpgState): NpcPartnerEntry | null {
+  if (state.npcRomance.partners.length === 0) return null;
+  if (state.npcRomance.primaryKey) {
+    const found = state.npcRomance.partners.find(
+      (p) => p.characterKey === state.npcRomance.primaryKey,
+    );
+    if (found) return found;
+  }
+  return state.npcRomance.partners[0] ?? null;
 }

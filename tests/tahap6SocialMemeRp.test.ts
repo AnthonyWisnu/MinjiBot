@@ -105,7 +105,7 @@ test("SocialEconomyService - Gelar Sultan, Nikah atomic dowry, Geng/Clan, and Le
   const u2 = "628500000002@s.whatsapp.net";
 
   const profiles = new Map<string, GroupMemberProfile>([
-    [u1, buildMemberProfile({ id: "p1", groupJid, userJid: u1, moneyBalance: 500_000_000n })],
+    [u1, buildMemberProfile({ id: "p1", groupJid, userJid: u1, moneyBalance: 1_000_000_000n })],
     [u2, buildMemberProfile({ id: "p2", groupJid, userJid: u2, moneyBalance: 300_000_000n })],
   ]);
 
@@ -212,7 +212,7 @@ test("SocialEconomyService - Gelar Sultan, Nikah atomic dowry, Geng/Clan, and Le
   // 1. Gelar Sultan
   const titleRes = await svc.buyCustomTitle(groupJid, u1, "Raja Korupsi");
   assert.equal(titleRes.title, "Raja Korupsi");
-  assert.equal(titleRes.remainingMoney, 500_000_000n - CUSTOM_TITLE_PRICE);
+  assert.equal(titleRes.remainingMoney, 1_000_000_000n - CUSTOM_TITLE_PRICE);
   assert.equal(parseRpgState(profiles.get(u1)?.rpgState).customTitle, "Raja Korupsi");
 
   // 2. Nikah & Cerai
@@ -220,7 +220,8 @@ test("SocialEconomyService - Gelar Sultan, Nikah atomic dowry, Geng/Clan, and Le
   const married = await svc.acceptMarriage(groupJid, u2, 2_000);
   assert.equal(married.userJid, u1);
   assert.equal(married.spouseJid, u2);
-  assert.equal(profiles.get(u1)?.moneyBalance, 350_000_000n);
+  const u1AfterMarriage = 1_000_000_000n - CUSTOM_TITLE_PRICE - 50_000_000n;
+  assert.equal(profiles.get(u1)?.moneyBalance, u1AfterMarriage);
   assert.equal(profiles.get(u2)?.moneyBalance, 350_000_000n);
   assert.equal(parseRpgState(profiles.get(u1)?.rpgState).spouseJid, u2);
 
@@ -231,7 +232,8 @@ test("SocialEconomyService - Gelar Sultan, Nikah atomic dowry, Geng/Clan, and Le
   // 3. Geng / Clan
   const clan = await svc.createClan(groupJid, u1, "Elit Grup");
   assert.equal(clan.slug, "elit-grup");
-  assert.equal(profiles.get(u1)?.moneyBalance, 350_000_000n - CLAN_CREATE_PRICE);
+  const u1AfterClan = u1AfterMarriage - CLAN_CREATE_PRICE;
+  assert.equal(profiles.get(u1)?.moneyBalance, u1AfterClan);
 
   await svc.joinClan(groupJid, u2, "Elit Grup");
   const donated = await svc.donateToClan(groupJid, u2, 10_000_000n);
@@ -242,7 +244,7 @@ test("SocialEconomyService - Gelar Sultan, Nikah atomic dowry, Geng/Clan, and Le
   await svc.placeBid(groupJid, u2, 20_000_000n, 11_000);
   const closed = await svc.closeAuction(groupJid, u1, false, 12_000);
   assert.equal(closed.settled, true);
-  assert.equal(profiles.get(u1)?.moneyBalance, 320_000_000n);
+  assert.equal(profiles.get(u1)?.moneyBalance, u1AfterClan + 20_000_000n);
   assert.equal(profiles.get(u2)?.moneyBalance, 320_000_000n);
 });
 

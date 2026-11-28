@@ -7,6 +7,7 @@ import { animeRoleplayCommands } from "./fun/animeRoleplay.command";
 import { funCommands } from "./fun/fun.command";
 import { localFunBankCommands } from "./fun/localFunBank.command";
 import { menfessCommands } from "./fun/menfess.command";
+import { npcRomanceCommands } from "./fun/npcRomance.command";
 import { socialDramaCommands } from "./fun/socialDrama.command";
 import { socialEconomyCommands } from "./fun/socialEconomy.command";
 import { casinoPackCommands } from "./game/casinoPack.command";
@@ -181,6 +182,7 @@ export const commandRouter = new CommandRouter([
   ...funCommands,
   ...localFunBankCommands,
   ...menfessCommands,
+  ...npcRomanceCommands,
   ...socialDramaCommands,
   ...socialEconomyCommands,
   ...animeRoleplayCommands,

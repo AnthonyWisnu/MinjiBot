@@ -139,30 +139,35 @@ async function handleTemaProfil(context: CommandContext): Promise<void> {
 
     if (sub === "list" || sub === "daftar" || sub === "katalog" || sub === "info") {
       const ov = await groupEconomyControlService.getProfileThemesOverview(context.chatJid, sender);
-      const lines = ov.items.map((item) => {
+      const lines = ov.items.map((item, idx) => {
         const tag = item.equipped
           ? "[DIPAKAI]"
           : item.owned
             ? "[DIMILIKI]"
             : item.spec.price > 0n
-              ? formatCompactRupiah(item.spec.price)
-              : "GRATIS";
-        return `• *${item.spec.id}* (${item.spec.name}) — *${tag}*\n  _${item.spec.tagline}_`;
+              ? `*${formatCompactRupiah(item.spec.price)}*`
+              : "*GRATIS*";
+        return [
+          `*${String(idx + 1)}. ${item.spec.name}* (\`${item.spec.id}\`)`,
+          `  ├ Status : ${tag}`,
+          `  └ Info   : ${item.spec.tagline}`,
+        ].join("\n");
       });
 
       await context.reply(
         [
-          "*── [ TOKO TEMA PROFIL & FLEX ] ──*",
-          `Pemilik : ${tagOf(sender)}`,
-          `Dompet  : ${formatRupiah(ov.moneyBalance)}`,
-          `Aktif   : *${getProfileThemeSpec(ov.activeTheme).name}*`,
+          "╭─〔 TOKO TEMA PROFIL & FLEX 〕─╮",
+          `│ Pemilik : ${tagOf(sender)}`,
+          `│ Dompet  : *${formatCompactRupiah(ov.moneyBalance)}*`,
+          `│ Aktif   : *${getProfileThemeSpec(ov.activeTheme).name}*`,
+          "╰──────────────────────────────╯",
           "",
           ...lines,
           "",
-          "Beli tema   : *.temaprofil beli <kode>*",
-          "Pasang tema : *.temaprofil pakai <kode>*",
-          "Lihat contoh: *.temaprofil preview <kode>*",
-          "_Tema otomatis berlaku di kartu visual .profile dan Black Card .flex!_",
+          "*Perintah Cepat:*",
+          "• `.temaprofil beli <kode>`",
+          "• `.temaprofil pakai <kode>`",
+          "• `.temaprofil preview <kode>`",
         ].join("\n"),
         { mentions: [sender] },
       );

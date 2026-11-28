@@ -343,12 +343,12 @@ void test("Tahap 9: Rank Salary, Deposito interest, and IDX Stock buy/sell/portf
     /sudah diambil/,
   );
 
-  // Deposito Rp 100jt for 3 days @ 5%/day = +15jt interest
+  // Deposito Rp 100jt for 3 days @ 2%/day = +6jt interest
   await service.openDeposito("120@g.us", "6281@s.whatsapp.net", 100_000_000n, day1);
   const depOut = await service.withdrawDeposito("120@g.us", "6281@s.whatsapp.net", day4);
   assert.equal(depOut.daysHeld, 3);
-  assert.equal(depOut.interest, 15_000_000n);
-  assert.equal(depOut.totalReceived, 115_000_000n);
+  assert.equal(depOut.interest, 6_000_000n);
+  assert.equal(depOut.totalReceived, 106_000_000n);
 
   // Stocks buy & sell
   const buyRes = await service.buyStock("120@g.us", "6281@s.whatsapp.net", "BBCA", 5, day4);
