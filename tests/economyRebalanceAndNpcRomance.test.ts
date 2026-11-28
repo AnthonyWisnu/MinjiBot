@@ -166,11 +166,11 @@ void describe("Rebalance Ekonomi Anti-Exploit & Anti-Spam Crate", () => {
     assert.equal(computeLevelMoneyMultiplier(99), 3);
   });
 
-  void it("Semua Crate mustahil jadi mesin cetak uang: bahkan di Lv.99 & MAX roll, uang + nilai jual item < harga beli", async () => {
+  void it("Crate realistis & aman: uang tunai < harga beli, EV cair ~75-83% (<100%), tapi nilai pakai/utility >100% + 2 item di Mythic/Legendary", async () => {
     const h = createTestHarness();
     h.seedProfile(USER_A, { level: 99, moneyBalance: 50_000_000_000n });
 
-    // Random selalu mengembalikan nilai MAKSIMUM (skenario terburuk exploit)
+    // Random selalu mengembalikan nilai MAKSIMUM
     const maxRollRandom = {
       intBetween: (_min: number, max: number) => max,
       chance: () => true,
@@ -182,26 +182,46 @@ void describe("Rebalance Ekonomi Anti-Exploit & Anti-Spam Crate", () => {
       const lootSpec = CRATE_LOOT_SPECS[crateKey];
       assert.ok(shopSpec?.buyPrice);
 
-      // Verifikasi matematis max roll
-      let maxItemSellValue = 0n;
-      for (const item of lootSpec.itemPool) {
-        const itemSpec = SHOP_ITEM_MAP.get(item.id);
-        const val = (itemSpec?.sellPrice ?? 0n) * BigInt(item.max);
-        if (val > maxItemSellValue) maxItemSellValue = val;
-      }
+      const buyPriceNum = Number(shopSpec.buyPrice);
+      const avgMoney = (lootSpec.minMoney + lootSpec.maxMoney) / 2;
+
+      // 1. Uang tunai murni (bahkan roll maks) selalu di bawah harga beli
       assert.ok(
-        BigInt(lootSpec.maxMoney) + maxItemSellValue < shopSpec.buyPrice,
-        `${crateKey} max cash + max item sell harus lebih kecil dari buyPrice`,
+        BigInt(lootSpec.maxMoney) < shopSpec.buyPrice,
+        `${crateKey} maxMoney harus < buyPrice`,
       );
 
-      // Verifikasi langsung via shopBuy + openCrate pada Lv.99
+      // 2. Rata-rata nilai cair (uang + jual item) harus < 90% harga beli (anti cetak uang!)
+      let sumAvgItemSell = 0;
+      let sumAvgItemBuy = 0;
+      for (const item of lootSpec.itemPool) {
+        const itemSpec = SHOP_ITEM_MAP.get(item.id);
+        const avgQty = (item.min + item.max) / 2;
+        sumAvgItemSell += Number(itemSpec?.sellPrice ?? 0n) * avgQty;
+        sumAvgItemBuy += Number(itemSpec?.buyPrice ?? 0n) * avgQty;
+      }
+      const avgItemSellPerRoll = sumAvgItemSell / lootSpec.itemPool.length;
+      const avgItemBuyPerRoll = sumAvgItemBuy / lootSpec.itemPool.length;
+
+      const expectedLiquid = avgMoney + avgItemSellPerRoll * lootSpec.itemRolls;
+      const expectedUtility = avgMoney + avgItemBuyPerRoll * lootSpec.itemRolls;
+
+      assert.ok(
+        expectedLiquid < buyPriceNum * 0.9,
+        `${crateKey} EV cair (${String(Math.round(expectedLiquid))}) harus < 90% harga beli`,
+      );
+      // 3. Rata-rata nilai pakai (uang + harga toko item) harus > 100% harga beli (worth it!)
+      assert.ok(
+        expectedUtility > buyPriceNum,
+        `${crateKey} nilai pakai (${String(Math.round(expectedUtility))}) harus > harga beli`,
+      );
+
+      // Verifikasi langsung via shopBuy + openCrate pada Lv.99 (tanpa level multiplier!)
       const buy = await rpg.shopBuy(GROUP_JID, USER_A, crateKey, 1, new Date("2026-11-28T05:00:00Z"));
       const opened = await rpg.openCrate(GROUP_JID, USER_A, crateKey, 1);
-      assert.ok(
-        opened.moneyGained < buy.totalMoney,
-        `${crateKey} uang hasil buka (${String(opened.moneyGained)}) harus < harga beli (${String(buy.totalMoney)})`,
-      );
+      assert.ok(opened.moneyGained < buy.totalMoney);
       assert.equal(opened.moneyGained, BigInt(lootSpec.maxMoney));
+      assert.equal(Object.keys(opened.itemsGained).length, lootSpec.itemRolls);
     }
 
     // Verifikasi tidak ada arbitrase lewat .tukar -> .belicrate

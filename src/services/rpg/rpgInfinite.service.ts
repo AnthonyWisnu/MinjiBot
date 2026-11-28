@@ -1543,11 +1543,15 @@ export class RpgInfiniteService {
         rawMoney += BigInt(this.random.intBetween(spec.minMoney, spec.maxMoney));
         xpGained += spec.xp;
 
-        const chosenItem =
-          spec.itemPool[this.random.intBetween(0, spec.itemPool.length - 1)] ?? spec.itemPool[0];
-        if (chosenItem) {
-          const qty = this.random.intBetween(chosenItem.min, chosenItem.max);
-          itemsGained[chosenItem.id] = (itemsGained[chosenItem.id] ?? 0) + qty;
+        const poolCandidates = [...spec.itemPool];
+        const rolls = Math.min(Math.max(1, spec.itemRolls), poolCandidates.length);
+        for (let r = 0; r < rolls; r += 1) {
+          const pickIdx = this.random.intBetween(0, poolCandidates.length - 1);
+          const chosenItem = poolCandidates.splice(pickIdx, 1)[0] ?? spec.itemPool[0];
+          if (chosenItem) {
+            const qty = this.random.intBetween(chosenItem.min, chosenItem.max);
+            itemsGained[chosenItem.id] = (itemsGained[chosenItem.id] ?? 0) + qty;
+          }
         }
 
         if (this.random.chance(spec.petChance)) {
