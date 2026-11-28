@@ -1,6 +1,14 @@
 import type { Prisma } from "@prisma/client";
 
-export type GroupEventSectionKey = "politics" | "lottery" | "bounties" | "xpEvent";
+export type GroupEventSectionKey =
+  | "politics"
+  | "lottery"
+  | "bounties"
+  | "xpEvent"
+  | "drops"
+  | "groupTools"
+  | "auction"
+  | "aiDailyUsage";
 
 export interface GroupEventTenantClient {
   findUnique(args: {

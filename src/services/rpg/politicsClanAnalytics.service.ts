@@ -64,7 +64,7 @@ import {
 } from "./rpgState";
 
 const MAX_POLITICS_GROUPS = 100;
-const MAX_CLAN_WAR_COOLDOWNS = 500;
+const MAX_CLAN_WAR_COOLDOWNS_PER_GROUP = 50;
 
 export const ELECTION_DURATION_MS = 24 * 60 * 60 * 1000;
 export const ELECTION_MAX_CANDIDATES = 8;
@@ -594,9 +594,10 @@ function parsePersistedPoliticsSection(
   election: GroupElectionSession | null;
   presidency: GroupPresidency | null;
   lastCoupAt: number;
+  clanWarCooldowns: Map<string, number>;
 } {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { election: null, presidency: null, lastCoupAt: 0 };
+    return { election: null, presidency: null, lastCoupAt: 0, clanWarCooldowns: new Map() };
   }
   const obj = raw as Record<string, unknown>;
 
@@ -688,18 +689,44 @@ function parsePersistedPoliticsSection(
       ? Math.floor(obj.lastCoupAt)
       : 0;
 
-  return { election, presidency, lastCoupAt };
+  const clanWarCooldowns = new Map<string, number>();
+  if (
+    obj.clanWarCooldowns &&
+    typeof obj.clanWarCooldowns === "object" &&
+    !Array.isArray(obj.clanWarCooldowns)
+  ) {
+    for (const [clanId, ts] of Object.entries(obj.clanWarCooldowns as Record<string, unknown>)) {
+      if (clanWarCooldowns.size >= 50) break;
+      if (clanId.length > 0 && typeof ts === "number" && Number.isFinite(ts) && ts > 0) {
+        clanWarCooldowns.set(clanId, Math.floor(ts));
+      }
+    }
+  }
+
+  return { election, presidency, lastCoupAt, clanWarCooldowns };
 }
 
 function serializePersistedPoliticsSection(
   election: GroupElectionSession | null,
   presidency: GroupPresidency | null,
   lastCoupAt: number,
+  clanWarCooldowns: Map<string, number> | undefined,
+  nowMs?: number,
 ): Prisma.InputJsonValue {
   const votesObj: Record<string, string> = {};
   if (election) {
     for (const [voter, cand] of election.votes.entries()) {
       votesObj[voter] = cand;
+    }
+  }
+
+  const warCooldownObj: Record<string, number> = {};
+  if (clanWarCooldowns) {
+    for (const [clanId, ts] of clanWarCooldowns.entries()) {
+      if (nowMs !== undefined && nowMs - ts >= CLAN_WAR_COOLDOWN_MS) {
+        continue;
+      }
+      warCooldownObj[clanId] = Math.floor(ts);
     }
   }
 
@@ -730,6 +757,7 @@ function serializePersistedPoliticsSection(
         }
       : null,
     lastCoupAt: Math.max(0, Math.floor(lastCoupAt)),
+    clanWarCooldowns: warCooldownObj,
   };
 }
 
@@ -738,7 +766,7 @@ export class PoliticsClanAnalyticsService {
   private readonly presidencies = new Map<string, GroupPresidency>();
   private readonly coupCooldowns = new Map<string, number>();
   private readonly hydratedPoliticsGroups = new Set<string>();
-  private readonly clanWarCooldowns = new Map<string, number>();
+  private readonly clanWarCooldownsByGroup = new Map<string, Map<string, number>>();
 
   constructor(
     private readonly profileRepo: PoliticsProfileStore = new GroupMemberProfileRepository(),
@@ -754,7 +782,7 @@ export class PoliticsClanAnalyticsService {
     this.presidencies.clear();
     this.coupCooldowns.clear();
     this.hydratedPoliticsGroups.clear();
-    this.clanWarCooldowns.clear();
+    this.clanWarCooldownsByGroup.clear();
   }
 
   private async hydratePoliticsState(groupJid: string): Promise<void> {
@@ -777,13 +805,19 @@ export class PoliticsClanAnalyticsService {
       this.coupCooldowns.set(groupJid, parsed.lastCoupAt);
       pruneMapOldest(this.coupCooldowns, MAX_POLITICS_GROUPS);
     }
+    if (parsed.clanWarCooldowns.size > 0) {
+      this.clanWarCooldownsByGroup.set(groupJid, parsed.clanWarCooldowns);
+      pruneMapOldest(this.clanWarCooldownsByGroup, MAX_POLITICS_GROUPS);
+    }
   }
 
-  private async persistPoliticsState(groupJid: string): Promise<void> {
+  private async persistPoliticsState(groupJid: string, nowMs?: number): Promise<void> {
     const payload = serializePersistedPoliticsSection(
       this.elections.get(groupJid) ?? null,
       this.presidencies.get(groupJid) ?? null,
       this.coupCooldowns.get(groupJid) ?? 0,
+      this.clanWarCooldownsByGroup.get(groupJid),
+      nowMs,
     );
     await writeGroupEventSection(this.db.tenantGroup, groupJid, "politics", payload);
   }
@@ -1660,7 +1694,9 @@ export class PoliticsClanAnalyticsService {
       throw new AppUserError("Tidak bisa mengajak perang gengmu sendiri!");
     }
 
-    const lastWarAt = this.clanWarCooldowns.get(attackerClan.id) ?? 0;
+    await this.hydratePoliticsState(groupJid);
+    const groupWarCooldowns = this.clanWarCooldownsByGroup.get(groupJid);
+    const lastWarAt = groupWarCooldowns?.get(attackerClan.id) ?? 0;
     if (lastWarAt > 0 && nowMs - lastWarAt < CLAN_WAR_COOLDOWN_MS) {
       const rem = CLAN_WAR_COOLDOWN_MS - (nowMs - lastWarAt);
       throw new AppUserError(
@@ -1815,8 +1851,15 @@ export class PoliticsClanAnalyticsService {
       return { winnerAfterTreasury, loserAfterTreasury, winnerWarWins, rewardedMemberJids };
     });
 
-    this.clanWarCooldowns.set(attackerClan.id, nowMs);
-    pruneMapOldest(this.clanWarCooldowns, MAX_CLAN_WAR_COOLDOWNS);
+    let updatedGroupWarCooldowns = this.clanWarCooldownsByGroup.get(groupJid);
+    if (!updatedGroupWarCooldowns) {
+      updatedGroupWarCooldowns = new Map<string, number>();
+      this.clanWarCooldownsByGroup.set(groupJid, updatedGroupWarCooldowns);
+      pruneMapOldest(this.clanWarCooldownsByGroup, MAX_POLITICS_GROUPS);
+    }
+    updatedGroupWarCooldowns.set(attackerClan.id, nowMs);
+    pruneMapOldest(updatedGroupWarCooldowns, MAX_CLAN_WAR_COOLDOWNS_PER_GROUP);
+    await this.persistPoliticsState(groupJid, nowMs);
 
     return {
       attackerClanName: attackerClan.name,

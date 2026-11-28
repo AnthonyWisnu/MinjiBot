@@ -1,8 +1,14 @@
-import type { GroupNote } from "@prisma/client";
+import type { GroupNote, Prisma } from "@prisma/client";
 
 import { AppUserError } from "../../errors/appUserError";
 import { GroupNoteRepository, normalizeNoteTitle } from "../../repositories/groupNote.repository";
+import { prisma } from "../../repositories/prismaClient";
 import { normalizeUserJid } from "../../utils/jid";
+import {
+  readGroupEventSection,
+  writeGroupEventSection,
+  type GroupEventTenantClient,
+} from "./groupEventState.store";
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_NOTES_PER_GROUP = 30;
@@ -48,11 +54,234 @@ function formatWibTime(date: Date): string {
   }).format(date);
 }
 
+function parsePersistedGroupToolsSection(
+  groupJid: string,
+  raw: unknown,
+): { attendance: AttendanceSession | null; vote: VoteSession | null } {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { attendance: null, vote: null };
+  }
+  const obj = raw as Record<string, unknown>;
+
+  let attendance: AttendanceSession | null = null;
+  if (obj.attendance && typeof obj.attendance === "object" && !Array.isArray(obj.attendance)) {
+    const a = obj.attendance as Record<string, unknown>;
+    if (
+      typeof a.title === "string" &&
+      typeof a.createdBy === "string" &&
+      typeof a.createdAt === "number" &&
+      Number.isFinite(a.createdAt)
+    ) {
+      const entries: AttendanceEntry[] = [];
+      if (Array.isArray(a.entries)) {
+        for (const item of a.entries) {
+          if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+          const e = item as Record<string, unknown>;
+          if (typeof e.userJid === "string" && typeof e.timeWib === "string") {
+            entries.push({ userJid: e.userJid, timeWib: e.timeWib });
+          }
+        }
+      }
+      attendance = {
+        groupJid,
+        title: a.title.slice(0, 100),
+        createdBy: a.createdBy,
+        createdAt: Math.floor(a.createdAt),
+        entries,
+      };
+    }
+  }
+
+  let vote: VoteSession | null = null;
+  if (obj.vote && typeof obj.vote === "object" && !Array.isArray(obj.vote)) {
+    const v = obj.vote as Record<string, unknown>;
+    if (
+      typeof v.topic === "string" &&
+      typeof v.createdBy === "string" &&
+      typeof v.createdAt === "number" &&
+      Number.isFinite(v.createdAt)
+    ) {
+      const upvoters = new Set<string>();
+      const downvoters = new Set<string>();
+      if (Array.isArray(v.upvoters)) {
+        for (const u of v.upvoters) {
+          if (typeof u === "string" && u.length > 0) upvoters.add(u);
+        }
+      }
+      if (Array.isArray(v.downvoters)) {
+        for (const d of v.downvoters) {
+          if (typeof d === "string" && d.length > 0) downvoters.add(d);
+        }
+      }
+      vote = {
+        groupJid,
+        topic: v.topic.slice(0, 120),
+        createdBy: v.createdBy,
+        createdAt: Math.floor(v.createdAt),
+        upvoters,
+        downvoters,
+      };
+    }
+  }
+
+  return { attendance, vote };
+}
+
+function serializePersistedGroupToolsSection(
+  attendance: AttendanceSession | null,
+  vote: VoteSession | null,
+): Prisma.InputJsonValue | null {
+  if (!attendance && !vote) return null;
+  return {
+    attendance: attendance
+      ? {
+          title: attendance.title,
+          createdBy: attendance.createdBy,
+          createdAt: attendance.createdAt,
+          entries: attendance.entries.map((e) => ({ userJid: e.userJid, timeWib: e.timeWib })),
+        }
+      : null,
+    vote: vote
+      ? {
+          topic: vote.topic,
+          createdBy: vote.createdBy,
+          createdAt: vote.createdAt,
+          upvoters: Array.from(vote.upvoters),
+          downvoters: Array.from(vote.downvoters),
+        }
+      : null,
+  };
+}
+
 export class GroupToolsService {
   private readonly attendanceMap = new Map<string, AttendanceSession>();
   private readonly voteMap = new Map<string, VoteSession>();
+  private readonly hydratedGroups = new Set<string>();
 
-  constructor(private readonly noteRepo: NoteStore = new GroupNoteRepository()) {}
+  constructor(
+    private readonly noteRepo: NoteStore = new GroupNoteRepository(),
+    private readonly tenantClient: GroupEventTenantClient | undefined = prisma.tenantGroup,
+  ) {}
+
+  private async hydrateGroup(groupJid: string): Promise<void> {
+    if (this.hydratedGroups.has(groupJid)) return;
+    this.hydratedGroups.add(groupJid);
+
+    const raw = await readGroupEventSection(this.tenantClient, groupJid, "groupTools");
+    if (!raw) return;
+    const parsed = parsePersistedGroupToolsSection(groupJid, raw);
+    if (parsed.attendance) {
+      this.attendanceMap.set(groupJid, parsed.attendance);
+    }
+    if (parsed.vote) {
+      this.voteMap.set(groupJid, parsed.vote);
+    }
+  }
+
+  private async persistGroup(groupJid: string): Promise<void> {
+    const payload = serializePersistedGroupToolsSection(
+      this.attendanceMap.get(groupJid) ?? null,
+      this.voteMap.get(groupJid) ?? null,
+    );
+    await writeGroupEventSection(this.tenantClient, groupJid, "groupTools", payload);
+  }
+
+  // ---- Absen (Persisted Async Wrappers) ----
+
+  async startAttendancePersisted(
+    groupJid: string,
+    creatorJid: string,
+    title: string,
+    nowMs = Date.now(),
+  ): Promise<AttendanceSession> {
+    await this.hydrateGroup(groupJid);
+    const session = this.startAttendance(groupJid, creatorJid, title, nowMs);
+    await this.persistGroup(groupJid);
+    return session;
+  }
+
+  async markAttendancePersisted(
+    groupJid: string,
+    userJid: string,
+    now: Date = new Date(),
+  ): Promise<{ session: AttendanceSession; alreadyPresent: boolean }> {
+    await this.hydrateGroup(groupJid);
+    const res = this.markAttendance(groupJid, userJid, now);
+    if (!res.alreadyPresent) {
+      await this.persistGroup(groupJid);
+    }
+    return res;
+  }
+
+  async getAttendancePersisted(groupJid: string, nowMs = Date.now()): Promise<AttendanceSession> {
+    await this.hydrateGroup(groupJid);
+    try {
+      return this.getAttendance(groupJid, nowMs);
+    } catch (error: unknown) {
+      await this.persistGroup(groupJid);
+      throw error;
+    }
+  }
+
+  async deleteAttendancePersisted(
+    groupJid: string,
+    actorJid: string,
+    isAdminOrOwner: boolean,
+    nowMs = Date.now(),
+  ): Promise<AttendanceSession> {
+    await this.hydrateGroup(groupJid);
+    const closed = this.deleteAttendance(groupJid, actorJid, isAdminOrOwner, nowMs);
+    await this.persistGroup(groupJid);
+    return closed;
+  }
+
+  // ---- Voting (Persisted Async Wrappers) ----
+
+  async startVotePersisted(
+    groupJid: string,
+    creatorJid: string,
+    topic: string,
+    nowMs = Date.now(),
+  ): Promise<VoteSession> {
+    await this.hydrateGroup(groupJid);
+    const session = this.startVote(groupJid, creatorJid, topic, nowMs);
+    await this.persistGroup(groupJid);
+    return session;
+  }
+
+  async castVotePersisted(
+    groupJid: string,
+    userJid: string,
+    choice: "up" | "down",
+    nowMs = Date.now(),
+  ): Promise<VoteSession> {
+    await this.hydrateGroup(groupJid);
+    const session = this.castVote(groupJid, userJid, choice, nowMs);
+    await this.persistGroup(groupJid);
+    return session;
+  }
+
+  async getVotePersisted(groupJid: string, nowMs = Date.now()): Promise<VoteSession> {
+    await this.hydrateGroup(groupJid);
+    try {
+      return this.getVote(groupJid, nowMs);
+    } catch (error: unknown) {
+      await this.persistGroup(groupJid);
+      throw error;
+    }
+  }
+
+  async deleteVotePersisted(
+    groupJid: string,
+    actorJid: string,
+    isAdminOrOwner: boolean,
+    nowMs = Date.now(),
+  ): Promise<VoteSession> {
+    await this.hydrateGroup(groupJid);
+    const closed = this.deleteVote(groupJid, actorJid, isAdminOrOwner, nowMs);
+    await this.persistGroup(groupJid);
+    return closed;
+  }
 
   // ---- Absen ----
 

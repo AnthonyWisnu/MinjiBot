@@ -3,6 +3,7 @@ import { env } from "./config/env";
 import { logger } from "./config/logger";
 import { groupMemberProfileRepository } from "./repositories/groupMemberProfile.repository";
 import { memberEconomyService } from "./services/member/memberEconomy.service";
+import { arenaGiveawayShopService } from "./services/rpg/arenaGiveawayShop.service";
 import { cleanAllStaleTempDirs, sweepStaleTempFiles } from "./utils/tempFile";
 
 async function main(): Promise<void> {
@@ -39,6 +40,26 @@ async function main(): Promise<void> {
   } catch (error: unknown) {
     logger.error({ err: error }, "Gagal top-up limit default member lama saat startup");
   }
+
+  // Refund otomatis amplop Dana Kaget / Poin Kaget kadaluarsa yang sempat tertinggal saat restart
+  try {
+    const dropRec = await arenaGiveawayShopService.reconcileExpiredDropsAcrossGroups();
+    if (dropRec.refundedDrops > 0) {
+      logger.info(dropRec, "Berhasil mengembalikan sisa amplop Dana/Poin Kaget kadaluarsa saat startup");
+    }
+  } catch (error: unknown) {
+    logger.error({ err: error }, "Gagal rekonsiliasi Dana/Poin Kaget kadaluarsa saat startup");
+  }
+
+  // Jadwalkan refund otomatis Dana/Poin Kaget kadaluarsa setiap 5 menit
+  setInterval(
+    () => {
+      arenaGiveawayShopService.reconcileExpiredDropsAcrossGroups().catch((error: unknown) => {
+        logger.error({ err: error }, "Gagal rekonsiliasi periodik Dana/Poin Kaget kadaluarsa");
+      });
+    },
+    5 * 60 * 1000,
+  ).unref();
 
   // Jadwalkan rekonsiliasi berkala setiap 30 menit
   setInterval(

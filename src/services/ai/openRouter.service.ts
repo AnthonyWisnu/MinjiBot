@@ -3,10 +3,18 @@ import sharp from "sharp";
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { AppUserError } from "../../errors/appUserError";
+import { prisma } from "../../repositories/prismaClient";
 import { mediaQueueService } from "../../utils/boundedQueue";
 import { formatRemainingDuration } from "../../utils/currency";
 import { MAX_SAFE_IMAGE_PIXELS } from "../../utils/imageSafety";
+import { isGroupJid } from "../../utils/jid";
 import { toWibDateKey } from "../../utils/wibDate";
+import {
+  extractGroupEventStateObject,
+  readGroupEventSection,
+  writeGroupEventSection,
+  type GroupEventTenantClient,
+} from "../group/groupEventState.store";
 
 export const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const AI_MAX_PROMPT_CHARS = 600;
@@ -58,6 +66,7 @@ interface OpenRouterConfig {
   model: string;
   dailyQuotaPerGroup: number;
   fetchFn?: typeof fetch;
+  tenantClient?: GroupEventTenantClient | null;
 }
 
 interface OpenRouterCompletionResponse {
@@ -149,19 +158,82 @@ export async function prepareVisionImageDataUrl(rawBuffer: Buffer): Promise<stri
   return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
 }
 
+function parsePersistedAiDailyUsage(
+  raw: unknown,
+): { dateKey: string; count: number } | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return null;
+  }
+  const obj = raw as Record<string, unknown>;
+  if (
+    typeof obj.dateKey !== "string" ||
+    obj.dateKey.length === 0 ||
+    typeof obj.count !== "number" ||
+    !Number.isInteger(obj.count) ||
+    obj.count < 0
+  ) {
+    return null;
+  }
+  return { dateKey: obj.dateKey, count: obj.count };
+}
+
 export class OpenRouterService {
   private readonly userCooldowns = new Map<string, number>();
   private readonly groupDailyUsage = new Map<string, number>();
+  private readonly hydratedQuotaGroups = new Set<string>();
   private readonly apiKey: string | undefined;
   private readonly model: string;
   private readonly dailyQuotaPerGroup: number;
   private readonly fetchFn: typeof fetch;
+  private readonly tenantClient: GroupEventTenantClient | undefined;
 
   constructor(config?: Partial<OpenRouterConfig>) {
     this.apiKey = config && "apiKey" in config ? config.apiKey : env.OPENROUTER_API_KEY;
     this.model = config?.model ?? env.OPENROUTER_MODEL;
     this.dailyQuotaPerGroup = config?.dailyQuotaPerGroup ?? env.AI_DAILY_QUOTA_PER_GROUP;
     this.fetchFn = config?.fetchFn ?? fetch;
+    this.tenantClient =
+      config && "tenantClient" in config
+        ? (config.tenantClient ?? undefined)
+        : config === undefined
+          ? prisma.tenantGroup
+          : undefined;
+  }
+
+  syncDailyUsageFromTenantState(
+    groupJid: string,
+    rawGroupEventState: unknown,
+    now: Date = new Date(),
+  ): void {
+    const obj = extractGroupEventStateObject(rawGroupEventState);
+    const parsed = parsePersistedAiDailyUsage(obj.aiDailyUsage);
+    const todayKey = toWibDateKey(now);
+    const quotaKey = `${groupJid}:${todayKey}`;
+    this.hydratedQuotaGroups.add(quotaKey);
+    if (parsed?.dateKey !== todayKey) {
+      return;
+    }
+    const existing = this.groupDailyUsage.get(quotaKey) ?? 0;
+    if (parsed.count > existing) {
+      this.groupDailyUsage.set(quotaKey, parsed.count);
+    }
+  }
+
+  private async hydrateGroupDailyUsage(groupJid: string, now: Date): Promise<void> {
+    if (!this.tenantClient || !isGroupJid(groupJid)) return;
+    const todayKey = toWibDateKey(now);
+    const quotaKey = `${groupJid}:${todayKey}`;
+    if (this.hydratedQuotaGroups.has(quotaKey)) return;
+    this.hydratedQuotaGroups.add(quotaKey);
+
+    const raw = await readGroupEventSection(this.tenantClient, groupJid, "aiDailyUsage");
+    const parsed = parsePersistedAiDailyUsage(raw);
+    if (parsed?.dateKey === todayKey) {
+      const existing = this.groupDailyUsage.get(quotaKey) ?? 0;
+      if (parsed.count > existing) {
+        this.groupDailyUsage.set(quotaKey, parsed.count);
+      }
+    }
   }
 
   isConfigured(): boolean {
@@ -236,6 +308,7 @@ export class OpenRouterService {
 
   async ask(input: OpenRouterAskInput): Promise<OpenRouterAskResult> {
     const now = input.now ?? new Date();
+    await this.hydrateGroupDailyUsage(input.groupJid, now);
     const cleanedPrompt = this.validateBeforeLimitReserve({
       groupJid: input.groupJid,
       userJid: input.userJid,
@@ -313,7 +386,7 @@ export class OpenRouterService {
     }
 
     const nowMs = now.getTime();
-    this.recordUsage(input.groupJid, input.userJid, now, nowMs);
+    await this.recordUsage(input.groupJid, input.userJid, now, nowMs);
 
     return {
       answer,
@@ -323,7 +396,12 @@ export class OpenRouterService {
     };
   }
 
-  private recordUsage(groupJid: string, userJid: string, now: Date, nowMs: number): void {
+  private async recordUsage(
+    groupJid: string,
+    userJid: string,
+    now: Date,
+    nowMs: number,
+  ): Promise<void> {
     const cdKey = `${groupJid}:${userJid}`;
     this.userCooldowns.set(cdKey, nowMs);
     if (this.userCooldowns.size > MAX_COOLDOWN_ENTRIES) {
@@ -339,20 +417,30 @@ export class OpenRouterService {
 
     const todayKey = toWibDateKey(now);
     const quotaKey = `${groupJid}:${todayKey}`;
-    const prev = this.groupDailyUsage.get(quotaKey) ?? 0;
-    this.groupDailyUsage.set(quotaKey, prev + 1);
+    const nextCount = (this.groupDailyUsage.get(quotaKey) ?? 0) + 1;
+    this.groupDailyUsage.set(quotaKey, nextCount);
+    this.hydratedQuotaGroups.add(quotaKey);
 
     if (this.groupDailyUsage.size > MAX_QUOTA_ENTRIES) {
       for (const k of this.groupDailyUsage.keys()) {
         if (!k.endsWith(`:${todayKey}`)) {
           this.groupDailyUsage.delete(k);
+          this.hydratedQuotaGroups.delete(k);
         }
       }
       while (this.groupDailyUsage.size > MAX_QUOTA_ENTRIES) {
         const oldest = this.groupDailyUsage.keys().next().value;
         if (!oldest) break;
         this.groupDailyUsage.delete(oldest);
+        this.hydratedQuotaGroups.delete(oldest);
       }
+    }
+
+    if (this.tenantClient && isGroupJid(groupJid)) {
+      await writeGroupEventSection(this.tenantClient, groupJid, "aiDailyUsage", {
+        dateKey: todayKey,
+        count: nextCount,
+      });
     }
   }
 }

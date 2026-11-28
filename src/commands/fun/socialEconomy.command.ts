@@ -482,7 +482,7 @@ async function handleLelang(context: CommandContext): Promise<void> {
         return;
       }
 
-      const session = socialEconomyService.openAuction(
+      const session = await socialEconomyService.openAuctionPersisted(
         context.chatJid,
         sender,
         itemName,
@@ -503,7 +503,7 @@ async function handleLelang(context: CommandContext): Promise<void> {
     }
 
     if (sub === "info" || sub === "status") {
-      const session = socialEconomyService.getAuction(context.chatJid);
+      const session = await socialEconomyService.loadAuction(context.chatJid);
       if (!session) {
         await context.reply("Belum ada lelang aktif di grup ini.");
         return;
@@ -556,7 +556,11 @@ async function handleLelang(context: CommandContext): Promise<void> {
 
     if (sub === "batal" || sub === "cancel") {
       const admin = await isAdminOrOwner(context);
-      const session = socialEconomyService.cancelAuction(context.chatJid, sender, admin);
+      const session = await socialEconomyService.cancelAuctionPersisted(
+        context.chatJid,
+        sender,
+        admin,
+      );
       await context.reply(`Lelang *${session.itemName}* berhasil dibatalkan.`);
       return;
     }

@@ -3,6 +3,7 @@ import {
   MemberTransactionType,
   type GroupClan,
   type GroupMemberProfile,
+  type Prisma,
 } from "@prisma/client";
 
 import { AppUserError } from "../../errors/appUserError";
@@ -15,6 +16,11 @@ import { GroupMemberTransactionRepository } from "../../repositories/groupMember
 import { prisma } from "../../repositories/prismaClient";
 import { clampMoneyCredit, formatRupiah } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
+import {
+  readGroupEventSection,
+  writeGroupEventSection,
+  type GroupEventTenantClient,
+} from "../group/groupEventState.store";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import {
   parseRpgState,
@@ -145,6 +151,53 @@ interface SocialTx {
 
 interface SocialDb {
   $transaction<T>(fn: (tx: SocialTx) => Promise<T>): Promise<T>;
+  tenantGroup?: GroupEventTenantClient;
+}
+
+function parsePersistedAuctionSection(
+  groupJid: string,
+  raw: unknown,
+): GroupAuctionSession | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const a = raw as Record<string, unknown>;
+  if (
+    typeof a.sellerJid === "string" &&
+    a.sellerJid.length > 0 &&
+    typeof a.itemName === "string" &&
+    typeof a.startPrice === "string" &&
+    /^\d+$/.test(a.startPrice) &&
+    typeof a.currentBid === "string" &&
+    /^\d+$/.test(a.currentBid) &&
+    typeof a.createdAt === "number" &&
+    typeof a.expiresAt === "number"
+  ) {
+    return {
+      groupJid,
+      sellerJid: a.sellerJid,
+      itemName: a.itemName.slice(0, 60),
+      startPrice: BigInt(a.startPrice),
+      currentBid: BigInt(a.currentBid),
+      highestBidderJid: typeof a.highestBidderJid === "string" ? a.highestBidderJid : null,
+      createdAt: Math.floor(a.createdAt),
+      expiresAt: Math.floor(a.expiresAt),
+    };
+  }
+  return null;
+}
+
+function serializePersistedAuctionSection(
+  session: GroupAuctionSession | null,
+): Prisma.InputJsonValue | null {
+  if (!session) return null;
+  return {
+    sellerJid: session.sellerJid,
+    itemName: session.itemName,
+    startPrice: session.startPrice.toString(),
+    currentBid: session.currentBid.toString(),
+    highestBidderJid: session.highestBidderJid,
+    createdAt: session.createdAt,
+    expiresAt: session.expiresAt,
+  };
 }
 
 function slugifyClanName(name: string): string {
@@ -158,6 +211,7 @@ function slugifyClanName(name: string): string {
 export class SocialEconomyService {
   private readonly proposals = new Map<string, MarriageProposal>(); // key: groupJid::targetJid
   private readonly auctions = new Map<string, GroupAuctionSession>(); // key: groupJid
+  private readonly hydratedAuctionGroups = new Set<string>();
 
   constructor(
     private readonly profileRepo: SocialProfileStore = new GroupMemberProfileRepository(),
@@ -165,6 +219,27 @@ export class SocialEconomyService {
     private readonly clanRepo: SocialClanStore = new GroupClanRepository(),
     private readonly db: SocialDb = prisma,
   ) {}
+
+  private async hydrateAuction(groupJid: string): Promise<void> {
+    if (this.hydratedAuctionGroups.has(groupJid)) return;
+    this.hydratedAuctionGroups.add(groupJid);
+
+    const raw = await readGroupEventSection(this.db.tenantGroup, groupJid, "auction");
+    if (!raw) return;
+    const parsed = parsePersistedAuctionSection(groupJid, raw);
+    if (parsed) {
+      this.auctions.set(groupJid, parsed);
+    }
+  }
+
+  private async persistAuction(groupJid: string): Promise<void> {
+    await writeGroupEventSection(
+      this.db.tenantGroup,
+      groupJid,
+      "auction",
+      serializePersistedAuctionSection(this.auctions.get(groupJid) ?? null),
+    );
+  }
 
   // ======================== GELAR SULTAN ========================
 
@@ -683,6 +758,41 @@ export class SocialEconomyService {
     return this.auctions.get(groupJid) ?? null;
   }
 
+  async loadAuction(groupJid: string, nowMs = Date.now()): Promise<GroupAuctionSession | null> {
+    await this.hydrateAuction(groupJid);
+    const had = this.auctions.has(groupJid);
+    const current = this.getAuction(groupJid, nowMs);
+    if (had && !current) {
+      await this.persistAuction(groupJid);
+    }
+    return current;
+  }
+
+  async openAuctionPersisted(
+    groupJid: string,
+    sellerJid: string,
+    rawItemName: string,
+    startPrice: bigint,
+    nowMs = Date.now(),
+  ): Promise<GroupAuctionSession> {
+    await this.hydrateAuction(groupJid);
+    const session = this.openAuction(groupJid, sellerJid, rawItemName, startPrice, nowMs);
+    await this.persistAuction(groupJid);
+    return session;
+  }
+
+  async cancelAuctionPersisted(
+    groupJid: string,
+    actorJid: string,
+    isAdminOrOwner: boolean,
+    nowMs = Date.now(),
+  ): Promise<GroupAuctionSession> {
+    await this.hydrateAuction(groupJid);
+    const session = this.cancelAuction(groupJid, actorJid, isAdminOrOwner, nowMs);
+    await this.persistAuction(groupJid);
+    return session;
+  }
+
   openAuction(
     groupJid: string,
     sellerJid: string,
@@ -728,6 +838,7 @@ export class SocialEconomyService {
     amount: bigint,
     nowMs = Date.now(),
   ): Promise<GroupAuctionSession> {
+    await this.hydrateAuction(groupJid);
     this.sweepAuctions(nowMs);
     const session = this.auctions.get(groupJid);
     if (!session) {
@@ -756,6 +867,7 @@ export class SocialEconomyService {
     session.currentBid = amount;
     session.highestBidderJid = normBidder;
     session.expiresAt = nowMs + AUCTION_TTL_MS;
+    await this.persistAuction(groupJid);
     return session;
   }
 
@@ -765,6 +877,7 @@ export class SocialEconomyService {
     isAdminOrOwner: boolean,
     nowMs = Date.now(),
   ): Promise<{ session: GroupAuctionSession; settled: boolean }> {
+    await this.hydrateAuction(groupJid);
     this.sweepAuctions(nowMs);
     const session = this.auctions.get(groupJid);
     if (!session) {
@@ -777,6 +890,7 @@ export class SocialEconomyService {
     }
 
     this.auctions.delete(groupJid);
+    await this.persistAuction(groupJid);
     if (!session.highestBidderJid) {
       return { session, settled: false };
     }

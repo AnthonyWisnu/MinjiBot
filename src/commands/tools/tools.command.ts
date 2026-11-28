@@ -56,7 +56,7 @@ async function handleStartAttendance(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
   try {
     const senderJid = await resolveCanonicalSender(context);
-    const session = groupToolsService.startAttendance(
+    const session = await groupToolsService.startAttendancePersisted(
       context.chatJid,
       senderJid,
       context.argsText,
@@ -81,7 +81,10 @@ async function handleMarkAttendance(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
   try {
     const senderJid = await resolveCanonicalSender(context);
-    const { session, alreadyPresent } = groupToolsService.markAttendance(context.chatJid, senderJid);
+    const { session, alreadyPresent } = await groupToolsService.markAttendancePersisted(
+      context.chatJid,
+      senderJid,
+    );
     if (alreadyPresent) {
       await context.reply(`${tag(senderJid)}, kamu sudah tercatat hadir di absen "${session.title}".`, {
         mentions: [senderJid],
@@ -111,7 +114,7 @@ async function handleMarkAttendance(context: CommandContext): Promise<void> {
 async function handleCheckAttendance(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
   try {
-    const session = groupToolsService.getAttendance(context.chatJid);
+    const session = await groupToolsService.getAttendancePersisted(context.chatJid);
     const mentions = session.entries.map((e) => e.userJid);
     const listLines =
       session.entries.length > 0
@@ -138,7 +141,11 @@ async function handleDeleteAttendance(context: CommandContext): Promise<void> {
   try {
     const senderJid = await resolveCanonicalSender(context);
     const privileged = await isAdminOrOwner(context);
-    const closed = groupToolsService.deleteAttendance(context.chatJid, senderJid, privileged);
+    const closed = await groupToolsService.deleteAttendancePersisted(
+      context.chatJid,
+      senderJid,
+      privileged,
+    );
     await context.reply(
       `Sesi absen *"${closed.title}"* telah ditutup dengan total *${String(closed.entries.length)}* peserta hadir.`,
     );
@@ -177,7 +184,11 @@ async function handleStartVote(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
   try {
     const senderJid = await resolveCanonicalSender(context);
-    const session = groupToolsService.startVote(context.chatJid, senderJid, context.argsText);
+    const session = await groupToolsService.startVotePersisted(
+      context.chatJid,
+      senderJid,
+      context.argsText,
+    );
     await context.reply(
       [
         "*─── [ VOTING DIBUKA ] ───*",
@@ -199,7 +210,7 @@ async function handleCastVote(context: CommandContext, choice: "up" | "down"): P
   if (!(await ensureActiveGroup(context))) return;
   try {
     const senderJid = await resolveCanonicalSender(context);
-    const session = groupToolsService.castVote(context.chatJid, senderJid, choice);
+    const session = await groupToolsService.castVotePersisted(context.chatJid, senderJid, choice);
     const summary = renderVoteSummary(session.topic, session.upvoters, session.downvoters);
     await context.reply(summary.text);
   } catch (error: unknown) {
@@ -210,7 +221,7 @@ async function handleCastVote(context: CommandContext, choice: "up" | "down"): P
 async function handleCheckVote(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
   try {
-    const session = groupToolsService.getVote(context.chatJid);
+    const session = await groupToolsService.getVotePersisted(context.chatJid);
     const summary = renderVoteSummary(session.topic, session.upvoters, session.downvoters);
     await context.reply(summary.text);
   } catch (error: unknown) {
@@ -223,7 +234,11 @@ async function handleDeleteVote(context: CommandContext): Promise<void> {
   try {
     const senderJid = await resolveCanonicalSender(context);
     const privileged = await isAdminOrOwner(context);
-    const closed = groupToolsService.deleteVote(context.chatJid, senderJid, privileged);
+    const closed = await groupToolsService.deleteVotePersisted(
+      context.chatJid,
+      senderJid,
+      privileged,
+    );
     const summary = renderVoteSummary(closed.topic, closed.upvoters, closed.downvoters);
     await context.reply(`${summary.text}\n\n_Sesi voting telah ditutup._`);
   } catch (error: unknown) {

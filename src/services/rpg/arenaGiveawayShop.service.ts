@@ -1,8 +1,8 @@
 import {
   MemberTransactionAsset,
   MemberTransactionType,
+  Prisma,
   type GroupMemberProfile,
-  type Prisma,
   type TenantGroup,
 } from "@prisma/client";
 
@@ -312,10 +312,12 @@ interface ArenaTxStore {
       balanceBefore?: number | bigint;
       balanceAfter?: number | bigint;
       correlationId?: string;
+      idempotencyKey?: string;
       note?: string;
     },
     tx?: unknown,
   ): Promise<unknown>;
+  findByIdempotencyKey?(key: string): Promise<object | null>;
 }
 
 interface ArenaTx {
@@ -343,6 +345,10 @@ interface ArenaDb {
   $transaction<T>(fn: (tx: ArenaTx) => Promise<T>): Promise<T>;
   tenantGroup?: {
     findUnique(args: { where: { groupJid: string } }): Promise<TenantGroup | null>;
+    findMany?(args?: {
+      where?: { groupEventState?: { not: typeof Prisma.DbNull } };
+      select?: { groupJid: true; groupEventState: true };
+    }): Promise<Pick<TenantGroup, "groupJid" | "groupEventState">[]>;
     update?(args: {
       where: { groupJid: string };
       data: Record<string, unknown>;
@@ -454,9 +460,142 @@ function serializePersistedLotterySection(state: GroupLotteryState): Prisma.Inpu
   };
 }
 
+function parsePersistedDropsSection(
+  groupJid: string,
+  raw: unknown,
+): { dana: ActiveDanaKaget | null; poin: ActivePoinKaget | null } {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { dana: null, poin: null };
+  }
+  const obj = raw as Record<string, unknown>;
+
+  let dana: ActiveDanaKaget | null = null;
+  if (obj.dana && typeof obj.dana === "object" && !Array.isArray(obj.dana)) {
+    const d = obj.dana as Record<string, unknown>;
+    if (
+      typeof d.creatorJid === "string" &&
+      d.creatorJid.length > 0 &&
+      typeof d.totalAmount === "string" &&
+      /^\d+$/.test(d.totalAmount) &&
+      typeof d.remainingAmount === "string" &&
+      /^\d+$/.test(d.remainingAmount) &&
+      typeof d.totalQuota === "number" &&
+      typeof d.remainingQuota === "number" &&
+      typeof d.createdAt === "number" &&
+      typeof d.expiresAt === "number"
+    ) {
+      const claimedBy = new Map<string, bigint>();
+      if (d.claimedBy && typeof d.claimedBy === "object" && !Array.isArray(d.claimedBy)) {
+        for (const [jid, amt] of Object.entries(d.claimedBy as Record<string, unknown>)) {
+          if (typeof amt === "string" && /^\d+$/.test(amt)) {
+            claimedBy.set(jid, BigInt(amt));
+          }
+        }
+      }
+      dana = {
+        groupJid,
+        creatorJid: d.creatorJid,
+        totalAmount: BigInt(d.totalAmount),
+        remainingAmount: BigInt(d.remainingAmount),
+        totalQuota: Math.max(1, Math.floor(d.totalQuota)),
+        remainingQuota: Math.max(0, Math.floor(d.remainingQuota)),
+        claimedBy,
+        createdAt: Math.floor(d.createdAt),
+        expiresAt: Math.floor(d.expiresAt),
+      };
+    }
+  }
+
+  let poin: ActivePoinKaget | null = null;
+  if (obj.poin && typeof obj.poin === "object" && !Array.isArray(obj.poin)) {
+    const p = obj.poin as Record<string, unknown>;
+    if (
+      typeof p.creatorJid === "string" &&
+      p.creatorJid.length > 0 &&
+      typeof p.totalPoints === "number" &&
+      typeof p.remainingPoints === "number" &&
+      typeof p.totalQuota === "number" &&
+      typeof p.remainingQuota === "number" &&
+      typeof p.createdAt === "number" &&
+      typeof p.expiresAt === "number"
+    ) {
+      const claimedBy = new Map<string, number>();
+      if (p.claimedBy && typeof p.claimedBy === "object" && !Array.isArray(p.claimedBy)) {
+        for (const [jid, pts] of Object.entries(p.claimedBy as Record<string, unknown>)) {
+          if (typeof pts === "number" && Number.isFinite(pts) && pts >= 0) {
+            claimedBy.set(jid, Math.floor(pts));
+          }
+        }
+      }
+      poin = {
+        groupJid,
+        creatorJid: p.creatorJid,
+        totalPoints: Math.max(1, Math.floor(p.totalPoints)),
+        remainingPoints: Math.max(0, Math.floor(p.remainingPoints)),
+        totalQuota: Math.max(1, Math.floor(p.totalQuota)),
+        remainingQuota: Math.max(0, Math.floor(p.remainingQuota)),
+        claimedBy,
+        createdAt: Math.floor(p.createdAt),
+        expiresAt: Math.floor(p.expiresAt),
+      };
+    }
+  }
+
+  return { dana, poin };
+}
+
+function serializePersistedDropsSection(
+  dana: ActiveDanaKaget | null,
+  poin: ActivePoinKaget | null,
+): Prisma.InputJsonValue | null {
+  if (!dana && !poin) return null;
+
+  const danaClaimed: Record<string, string> = {};
+  if (dana) {
+    for (const [jid, amt] of dana.claimedBy.entries()) {
+      danaClaimed[jid] = amt.toString();
+    }
+  }
+
+  const poinClaimed: Record<string, number> = {};
+  if (poin) {
+    for (const [jid, pts] of poin.claimedBy.entries()) {
+      poinClaimed[jid] = pts;
+    }
+  }
+
+  return {
+    dana: dana
+      ? {
+          creatorJid: dana.creatorJid,
+          totalAmount: dana.totalAmount.toString(),
+          remainingAmount: dana.remainingAmount.toString(),
+          totalQuota: dana.totalQuota,
+          remainingQuota: dana.remainingQuota,
+          claimedBy: danaClaimed,
+          createdAt: dana.createdAt,
+          expiresAt: dana.expiresAt,
+        }
+      : null,
+    poin: poin
+      ? {
+          creatorJid: poin.creatorJid,
+          totalPoints: poin.totalPoints,
+          remainingPoints: poin.remainingPoints,
+          totalQuota: poin.totalQuota,
+          remainingQuota: poin.remainingQuota,
+          claimedBy: poinClaimed,
+          createdAt: poin.createdAt,
+          expiresAt: poin.expiresAt,
+        }
+      : null,
+  };
+}
+
 export class ArenaGiveawayShopService {
   private readonly danaDrops = new Map<string, ActiveDanaKaget>();
   private readonly poinDrops = new Map<string, ActivePoinKaget>();
+  private readonly hydratedDropsGroups = new Set<string>();
   private readonly lotteries = new Map<string, GroupLotteryState>();
   private readonly hydratedLotteryGroups = new Set<string>();
   private readonly pendingPointDuels = new Map<string, PendingPointDuel>();
@@ -467,6 +606,179 @@ export class ArenaGiveawayShopService {
     private readonly random: RandomProvider = defaultRandom,
     private readonly db: ArenaDb = prisma,
   ) {}
+
+  private async hydrateDropsState(groupJid: string): Promise<void> {
+    if (this.hydratedDropsGroups.has(groupJid)) return;
+    this.hydratedDropsGroups.add(groupJid);
+
+    const raw = await readGroupEventSection(this.db.tenantGroup, groupJid, "drops");
+    if (!raw) return;
+    const parsed = parsePersistedDropsSection(groupJid, raw);
+    if (parsed.dana) {
+      evictOldestIfNeeded(this.danaDrops, MAX_ACTIVE_GROUPS);
+      this.danaDrops.set(groupJid, parsed.dana);
+    }
+    if (parsed.poin) {
+      evictOldestIfNeeded(this.poinDrops, MAX_ACTIVE_GROUPS);
+      this.poinDrops.set(groupJid, parsed.poin);
+    }
+  }
+
+  private async persistDropsState(groupJid: string): Promise<void> {
+    const payload = serializePersistedDropsSection(
+      this.danaDrops.get(groupJid) ?? null,
+      this.poinDrops.get(groupJid) ?? null,
+    );
+    await writeGroupEventSection(this.db.tenantGroup, groupJid, "drops", payload);
+  }
+
+  async refundExpiredDropsForGroup(
+    groupJid: string,
+    nowMs = Date.now(),
+  ): Promise<{ moneyRefunded: bigint; pointsRefunded: number }> {
+    await this.hydrateDropsState(groupJid);
+    let moneyRefunded = 0n;
+    let pointsRefunded = 0;
+    let changed = false;
+
+    const dana = this.danaDrops.get(groupJid);
+    if (dana && (dana.expiresAt <= nowMs || dana.remainingQuota <= 0 || dana.remainingAmount <= 0n)) {
+      this.danaDrops.delete(groupJid);
+      changed = true;
+
+      if (dana.remainingAmount > 0n) {
+        const idempotencyKey = `refund:danakaget:${groupJid}:${String(dana.createdAt)}`;
+        try {
+          const alreadyRefunded = this.txRepo.findByIdempotencyKey
+            ? await this.txRepo.findByIdempotencyKey(idempotencyKey)
+            : null;
+          if (!alreadyRefunded) {
+            const correlationId = generateCorrelationId();
+            moneyRefunded = await this.db.$transaction(async (tx) => {
+              const creator = await this.profileRepo.findOrCreate(groupJid, dana.creatorJid, tx);
+              const refundCredit = clampMoneyCredit(creator.moneyBalance, dana.remainingAmount);
+              if (refundCredit <= 0n) return 0n;
+              const saved = await tx.groupMemberProfile.update({
+                where: { id: creator.id },
+                data: { moneyBalance: { increment: refundCredit } },
+              });
+              await this.txRepo.create(
+                {
+                  profileId: creator.id,
+                  groupJid,
+                  userJid: dana.creatorJid,
+                  asset: MemberTransactionAsset.MONEY,
+                  type: MemberTransactionType.CORRECTION,
+                  amount: refundCredit,
+                  balanceBefore: creator.moneyBalance,
+                  balanceAfter: saved.moneyBalance,
+                  correlationId,
+                  idempotencyKey,
+                  note: "danakaget_expired_refund",
+                },
+                tx,
+              );
+              return refundCredit;
+            });
+          }
+        } catch (error: unknown) {
+          this.danaDrops.set(groupJid, dana);
+          throw error;
+        }
+      }
+    }
+
+    const poin = this.poinDrops.get(groupJid);
+    if (poin && (poin.expiresAt <= nowMs || poin.remainingQuota <= 0 || poin.remainingPoints <= 0)) {
+      this.poinDrops.delete(groupJid);
+      changed = true;
+
+      if (poin.remainingPoints > 0) {
+        const idempotencyKey = `refund:poinkaget:${groupJid}:${String(poin.createdAt)}`;
+        try {
+          const alreadyRefunded = this.txRepo.findByIdempotencyKey
+            ? await this.txRepo.findByIdempotencyKey(idempotencyKey)
+            : null;
+          if (!alreadyRefunded) {
+            const correlationId = generateCorrelationId();
+            pointsRefunded = await this.db.$transaction(async (tx) => {
+              const creator = await this.profileRepo.findOrCreate(groupJid, poin.creatorJid, tx);
+              const safeRefund = Math.min(
+                poin.remainingPoints,
+                Math.max(0, MAX_SAFE_ECONOMY_INT - creator.pointsBalance),
+              );
+              if (safeRefund <= 0) return 0;
+              const saved = await tx.groupMemberProfile.update({
+                where: { id: creator.id },
+                data: { pointsBalance: { increment: safeRefund } },
+              });
+              await this.txRepo.create(
+                {
+                  profileId: creator.id,
+                  groupJid,
+                  userJid: poin.creatorJid,
+                  asset: MemberTransactionAsset.POINT,
+                  type: MemberTransactionType.CORRECTION,
+                  amount: safeRefund,
+                  balanceBefore: creator.pointsBalance,
+                  balanceAfter: saved.pointsBalance,
+                  correlationId,
+                  idempotencyKey,
+                  note: "poinkaget_expired_refund",
+                },
+                tx,
+              );
+              return safeRefund;
+            });
+          }
+        } catch (error: unknown) {
+          this.poinDrops.set(groupJid, poin);
+          throw error;
+        }
+      }
+    }
+
+    if (changed) {
+      await this.persistDropsState(groupJid);
+    }
+
+    return { moneyRefunded, pointsRefunded };
+  }
+
+  async reconcileExpiredDropsAcrossGroups(
+    nowMs = Date.now(),
+  ): Promise<{ groupsChecked: number; refundedDrops: number }> {
+    const groupJids = new Set<string>([
+      ...this.danaDrops.keys(),
+      ...this.poinDrops.keys(),
+    ]);
+
+    if (this.db.tenantGroup?.findMany) {
+      try {
+        const rows = await this.db.tenantGroup.findMany({
+          where: { groupEventState: { not: Prisma.DbNull } },
+          select: { groupJid: true, groupEventState: true },
+        });
+        for (const row of rows) {
+          const raw = row.groupEventState;
+          if (raw && typeof raw === "object" && !Array.isArray(raw) && "drops" in raw) {
+            groupJids.add(row.groupJid);
+          }
+        }
+      } catch {
+        // Fallback aman jika mock tenantGroup tidak mendukung filter findMany
+      }
+    }
+
+    let refundedDrops = 0;
+    for (const gJid of groupJids) {
+      const res = await this.refundExpiredDropsForGroup(gJid, nowMs);
+      if (res.moneyRefunded > 0n) refundedDrops += 1;
+      if (res.pointsRefunded > 0) refundedDrops += 1;
+    }
+
+    return { groupsChecked: groupJids.size, refundedDrops };
+  }
 
   private async hydrateLotteryState(groupJid: string): Promise<void> {
     if (this.hydratedLotteryGroups.has(groupJid)) return;
@@ -501,7 +813,7 @@ export class ArenaGiveawayShopService {
     quota: number,
     nowMs = Date.now(),
   ): Promise<ActiveDanaKaget> {
-    this.sweepDrops(nowMs);
+    await this.refundExpiredDropsForGroup(groupJid, nowMs);
     const normCreator = normalizeUserJid(creatorJid);
     if (totalAmount < DANA_KAGET_MIN_AMOUNT || totalAmount > DANA_KAGET_MAX_AMOUNT) {
       throw new AppUserError(
@@ -574,6 +886,7 @@ export class ArenaGiveawayShopService {
       expiresAt: nowMs + DANA_KAGET_TTL_MS,
     };
     this.danaDrops.set(groupJid, drop);
+    await this.persistDropsState(groupJid);
     return drop;
   }
 
@@ -582,7 +895,7 @@ export class ArenaGiveawayShopService {
     claimerJid: string,
     nowMs = Date.now(),
   ): Promise<DanaKagetClaimResult> {
-    this.sweepDrops(nowMs);
+    await this.refundExpiredDropsForGroup(groupJid, nowMs);
     const normClaimer = normalizeUserJid(claimerJid);
     const drop = this.danaDrops.get(groupJid);
     if (!drop || drop.remainingQuota <= 0 || drop.expiresAt <= nowMs) {
@@ -645,6 +958,7 @@ export class ArenaGiveawayShopService {
       if (finished) {
         this.danaDrops.delete(groupJid);
       }
+      await this.persistDropsState(groupJid);
 
       return {
         creatorJid: drop.creatorJid,
@@ -672,7 +986,7 @@ export class ArenaGiveawayShopService {
     quota: number,
     nowMs = Date.now(),
   ): Promise<ActivePoinKaget> {
-    this.sweepDrops(nowMs);
+    await this.refundExpiredDropsForGroup(groupJid, nowMs);
     const normCreator = normalizeUserJid(creatorJid);
     if (
       !Number.isInteger(totalPoints) ||
@@ -750,6 +1064,7 @@ export class ArenaGiveawayShopService {
       expiresAt: nowMs + DANA_KAGET_TTL_MS,
     };
     this.poinDrops.set(groupJid, drop);
+    await this.persistDropsState(groupJid);
     return drop;
   }
 
@@ -758,7 +1073,7 @@ export class ArenaGiveawayShopService {
     claimerJid: string,
     nowMs = Date.now(),
   ): Promise<PoinKagetClaimResult> {
-    this.sweepDrops(nowMs);
+    await this.refundExpiredDropsForGroup(groupJid, nowMs);
     const normClaimer = normalizeUserJid(claimerJid);
     const drop = this.poinDrops.get(groupJid);
     if (!drop || drop.remainingQuota <= 0 || drop.expiresAt <= nowMs) {
@@ -820,6 +1135,7 @@ export class ArenaGiveawayShopService {
       if (finished) {
         this.poinDrops.delete(groupJid);
       }
+      await this.persistDropsState(groupJid);
 
       return {
         creatorJid: drop.creatorJid,
@@ -2062,19 +2378,6 @@ export class ArenaGiveawayShopService {
     const low = Math.max(1, Math.floor(avg * 0.4));
     const high = Math.min(maxAllowed, Math.max(low, Math.ceil(avg * 1.6)));
     return this.random.intBetween(low, high);
-  }
-
-  private sweepDrops(nowMs: number): void {
-    for (const [k, d] of this.danaDrops.entries()) {
-      if (d.expiresAt <= nowMs || d.remainingQuota <= 0) {
-        this.danaDrops.delete(k);
-      }
-    }
-    for (const [k, d] of this.poinDrops.entries()) {
-      if (d.expiresAt <= nowMs || d.remainingQuota <= 0) {
-        this.poinDrops.delete(k);
-      }
-    }
   }
 
   private sweepPointDuels(nowMs: number): void {
