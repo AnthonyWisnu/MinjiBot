@@ -397,14 +397,16 @@ async function handleTax(context: CommandContext): Promise<void> {
       const treasury = await rpgEconomyService.getGroupTreasury(context.chatJid);
       await context.reply(
         [
-          "*─── [ KAS NEGARA GRUP ] ───*",
+          "╭─〔 KAS NEGARA GRUP 〕─╮",
+          `│ Saldo : *${formatCompactRupiah(treasury)}*`,
+          `│ Exact : ${formatRupiah(treasury)}`,
+          "╰──────────────────────╯",
           "",
-          `• Saldo Kas Negara : ${formatRupiah(treasury)}`,
-          "",
-          "Cara pakai:",
-          "• .pajak @user — Tarik pajak kekayaan dari dompet member sultan",
-          "• .bansos — Klaim bantuan sosial dari Kas Grup",
-          "• .korupsi — Coba tilap Kas Negara (hati-hati KPK!)",
+          "*Perintah Cepat:*",
+          "• `.pajak @user` — Tarik pajak sultan",
+          "• `.bansos` — Klaim bantuan sosial",
+          "• `.korupsi` — Tilap kas (awas KPK!)",
+          "• `.sedekah <uang>` — Donasi ke kas",
         ].join("\n"),
       );
       return;
@@ -759,43 +761,60 @@ async function handleCrypto(context: CommandContext): Promise<void> {
 
     if (sub === "market" || sub === "harga" || sub === "list") {
       const quotes = cryptoMarketService.getMarketSnapshot();
-      const lines = [
-        "*─── [ PASAR KRIPTO GRUP ] ───*",
-        "_Harga berubah dinamis setiap 5 menit_",
-        "",
-        ...quotes.map((q) => {
-          const arrow = q.changePercent > 0 ? "NAIK" : q.changePercent < 0 ? "TURUN" : "STABIL";
-          const sign = q.changePercent > 0 ? "+" : "";
-          return `• *${q.symbol}* (${q.name}): ${formatRupiah(q.price)} [${arrow} ${sign}${String(q.changePercent)}%]`;
-        }),
-        "",
-        "Perintah:",
-        "• .crypto buy <koin> <unit>  (contoh: .crypto buy MINJI 2)",
-        "• .crypto sell <koin> <unit|all>",
-        "• .crypto portofolio",
-      ];
-      await context.reply(lines.join("\n"));
+      const coinLines = quotes.map((q, idx) => {
+        const trend = q.changePercent > 0 ? "▲" : q.changePercent < 0 ? "▼" : "•";
+        const sign = q.changePercent > 0 ? "+" : "";
+        return [
+          `*${String(idx + 1)}. ${q.symbol}* — ${q.name}`,
+          `  └ ${trend} *${formatCompactRupiah(q.price)}* (${sign}${String(q.changePercent)}%)`,
+        ].join("\n");
+      });
+      await context.reply(
+        [
+          "╭─〔 PASAR KRIPTO GRUP 〕─╮",
+          "│ Harga berubah tiap 5 menit",
+          "╰────────────────────────╯",
+          "",
+          ...coinLines,
+          "",
+          "*Perintah Cepat:*",
+          "• `.crypto buy <koin> <unit>`",
+          "• `.crypto sell <koin> <unit|all>`",
+          "• `.crypto portofolio`",
+        ].join("\n"),
+      );
       return;
     }
 
     if (sub === "portofolio" || sub === "porto" || sub === "aset" || sub === "wallet") {
       const portfolio = await cryptoMarketService.getPortfolio(context.chatJid, senderJid);
-      const lines = ["*─── [ PORTOFOLIO KRIPTO ] ───*", ""];
-      if (portfolio.items.length === 0) {
-        lines.push("Kamu belum memiliki koin kripto.");
-        lines.push("Ketik *.crypto market* untuk melihat harga koin saat ini.");
-      } else {
-        for (const item of portfolio.items) {
-          const sign = item.changePercent > 0 ? "+" : "";
-          lines.push(
-            `• *${item.symbol}*: ${String(item.units)} unit x ${formatRupiah(item.unitPrice)} = *${formatRupiah(item.marketValue)}* (${sign}${String(item.changePercent)}%)`,
-          );
-        }
-        lines.push("");
-        lines.push(`• Total Nilai Kripto : *${formatRupiah(portfolio.totalValue)}*`);
-      }
-      lines.push(`• Uang Dompet        : ${formatRupiah(portfolio.moneyBalance)}`);
-      await context.reply(lines.join("\n"));
+      const holdingLines =
+        portfolio.items.length > 0
+          ? portfolio.items.map((item, idx) => {
+              const trend = item.changePercent > 0 ? "▲" : item.changePercent < 0 ? "▼" : "•";
+              const sign = item.changePercent > 0 ? "+" : "";
+              return [
+                `*${String(idx + 1)}. ${item.symbol}* (${String(item.units)} unit)`,
+                `  ├ Harga : ${formatCompactRupiah(item.unitPrice)} (${trend} ${sign}${String(item.changePercent)}%)`,
+                `  └ Nilai : *${formatCompactRupiah(item.marketValue)}*`,
+              ].join("\n");
+            })
+          : ["  _Belum punya koin. Cek `.crypto market`!_"];
+
+      await context.reply(
+        [
+          "╭─〔 PORTOFOLIO KRIPTO 〕─╮",
+          `│ Nilai Kripto : *${formatCompactRupiah(portfolio.totalValue)}*`,
+          `│ Dompet       : *${formatCompactRupiah(portfolio.moneyBalance)}*`,
+          "╰────────────────────────╯",
+          "",
+          "*Kepemilikan Koin:*",
+          ...holdingLines,
+          "",
+          "*Perintah Cepat:*",
+          "• `.crypto market` | `.crypto sell <koin> all`",
+        ].join("\n"),
+      );
       return;
     }
 
@@ -876,19 +895,54 @@ async function handleCooldown(context: CommandContext): Promise<void> {
   try {
     const senderJid = await resolveCanonicalSender(context);
     const summary = await rpgEconomyService.getCooldownSummary(context.chatJid, senderJid);
-    const lines = ["*─── [ STATUS COOLDOWN RPG ] ───*", ""];
+    const activeCds = summary.entries.filter((e) => e.remainingMs > 0);
+    const readyCds = summary.entries.filter((e) => e.remainingMs <= 0);
+
+    const headerLines = [
+      "╭─〔 STATUS COOLDOWN RPG 〕─╮",
+      `│ Siap     : *${String(readyCds.length)}* perintah`,
+      `│ Cooldown : *${String(activeCds.length)}* perintah`,
+    ];
 
     if (summary.jailedRemainingMs > 0) {
-      lines.push(
-        `Status Penjara KPK/Ronda: Bebas dalam *${formatRemainingDuration(summary.jailedRemainingMs)}*`,
-      );
-      lines.push("");
+      headerLines.push(`│ Penjara  : *${formatRemainingDuration(summary.jailedRemainingMs)}* (\`.bebaspenjara\`)`);
+    }
+    if (summary.ugdRemainingMs > 0) {
+      headerLines.push(`│ UGD      : *${formatRemainingDuration(summary.ugdRemainingMs)}* (\`.bebasugd\`)`);
+    }
+    if (summary.expedition) {
+      const expText = summary.expedition.ready
+        ? `*${summary.expedition.petLabel}* siap klaim!`
+        : `${summary.expedition.petLabel} (${formatRemainingDuration(summary.expedition.remainingMs)})`;
+      headerLines.push(`│ Ekspedisi: ${expText}`);
+    }
+    headerLines.push("╰──────────────────────────╯");
+
+    const lines: string[] = [...headerLines];
+
+    if (activeCds.length > 0) {
+      lines.push("", "*Sedang Cooldown:*");
+      activeCds.forEach((entry, idx) => {
+        const branch = idx === activeCds.length - 1 ? "└" : "├";
+        lines.push(`  ${branch} \`${entry.label}\` : *${formatRemainingDuration(entry.remainingMs)}*`);
+      });
     }
 
-    for (const entry of summary.entries) {
-      const status =
-        entry.remainingMs > 0 ? `Tunggu ${formatRemainingDuration(entry.remainingMs)}` : "SIAP";
-      lines.push(`• ${entry.label}: ${status}`);
+    if (readyCds.length > 0) {
+      const readyKerja = readyCds.filter((e) => e.category === "kerja");
+      const readyRpg = readyCds.filter((e) => e.category === "petualangan");
+      const readyAksi = readyCds.filter((e) => e.category === "kriminal");
+
+      lines.push("", "*Siap Dipakai:*");
+      if (readyKerja.length > 0) {
+        lines.push(`• *Kerja:* ${readyKerja.map((e) => `\`${e.label}\``).join(", ")}`);
+      }
+      if (readyRpg.length > 0) {
+        lines.push(`• *RPG:* ${readyRpg.map((e) => `\`${e.label}\``).join(", ")}`);
+      }
+      if (readyAksi.length > 0) {
+        lines.push(`• *Aksi:* ${readyAksi.map((e) => `\`${e.label}\``).join(", ")}`);
+      }
     }
 
     await context.reply(lines.join("\n"));

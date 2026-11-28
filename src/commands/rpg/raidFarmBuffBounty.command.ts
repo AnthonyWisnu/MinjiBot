@@ -76,31 +76,33 @@ async function handleWorldBoss(context: CommandContext): Promise<void> {
 
   try {
     const res = await raidFarmBuffBountyService.inspectOrSpawnWorldBoss(context.chatJid);
+    const topSlice = res.topDamagers.slice(0, 5);
     const topLines =
-      res.topDamagers.length > 0
+      topSlice.length > 0
         ? [
             "",
             "*Top Damage Sementara:*",
-            ...res.topDamagers
-              .slice(0, 5)
-              .map(
-                (r, idx) =>
-                  `${String(idx + 1)}. ${tagOf(r.userJid)} - ${r.damage.toLocaleString("id-ID")} dmg (${String(r.sharePercent)}%)`,
-              ),
+            ...topSlice.map((r, idx) => {
+              const branch = idx === topSlice.length - 1 ? "└" : "├";
+              return `  ${branch} ${String(idx + 1)}. ${tagOf(r.userJid)} — *${r.damage.toLocaleString("id-ID")}* (${String(r.sharePercent)}%)`;
+            }),
           ]
-        : ["", "Belum ada yang menyerang. Jadilah yang pertama memukul boss!"];
+        : ["", "_Belum ada serangan. Jadilah yang pertama memukul boss!_"];
 
-    const mentions = res.topDamagers.slice(0, 5).map((r) => r.userJid);
+    const mentions = topSlice.map((r) => r.userJid);
     const text = [
-      res.spawned ? "*── [ WORLD BOSS MUNCUL! ] ──*" : "*── [ WORLD BOSS AKTIF ] ──*",
-      `Boss    : *${res.boss.spec.name}* (${res.boss.spec.title})`,
-      `HP Boss : ${res.boss.currentHp.toLocaleString("id-ID")} / ${res.boss.spec.maxHp.toLocaleString("id-ID")}`,
-      `Bar HP  : ${renderHpBar(res.boss.currentHp, res.boss.spec.maxHp)}`,
-      `Pool    : *${formatRupiah(res.boss.spec.rewardPool)}* + Crate *${res.boss.spec.crateDrop.toUpperCase()}*`,
-      `Sisa    : ${formatRemainingDuration(res.remainingMs)}`,
+      res.spawned ? "╭─〔 WORLD BOSS MUNCUL! 〕─╮" : "╭─〔 WORLD BOSS AKTIF 〕─╮",
+      `│ Boss  : *${res.boss.spec.name}*`,
+      `│ Gelar : ${res.boss.spec.title}`,
+      `│ HP    : ${res.boss.currentHp.toLocaleString("id-ID")} / ${res.boss.spec.maxHp.toLocaleString("id-ID")}`,
+      `│ Bar   : ${renderHpBar(res.boss.currentHp, res.boss.spec.maxHp)}`,
+      `│ Pool  : *${formatCompactRupiah(res.boss.spec.rewardPool)}* + ${res.boss.spec.crateDrop.toUpperCase()}`,
+      `│ Sisa  : ${formatRemainingDuration(res.remainingMs)}`,
+      res.spawned ? "╰─────────────────────────╯" : "╰───────────────────────╯",
       ...topLines,
       "",
-      "Serang bersama grup: *.serangboss* | Cek log: *.topdamage*",
+      "*Perintah Cepat:*",
+      "• `.serangboss` | `.statusboss` | `.topdamage`",
     ].join("\n");
 
     if (res.spawned) {
@@ -213,30 +215,32 @@ async function handleStatusBoss(context: CommandContext): Promise<void> {
   const status = await raidFarmBuffBountyService.getWorldBossStatus(context.chatJid);
   if (status.active) {
     const b = status.active;
-    const mentions = status.topDamagers.slice(0, 3).map((r) => r.userJid);
+    const top3 = status.topDamagers.slice(0, 3);
+    const mentions = top3.map((r) => r.userJid);
     await context.socket.sendMessage(
       context.chatJid,
       {
         text: [
-          "*── [ STATUS WORLD BOSS ] ──*",
-          `Boss    : *${b.spec.name}*`,
-          `HP      : ${b.currentHp.toLocaleString("id-ID")} / ${b.spec.maxHp.toLocaleString("id-ID")}`,
-          `Bar HP  : ${renderHpBar(b.currentHp, b.spec.maxHp)}`,
-          `Hit     : ${String(b.hitsCount)} serangan dari ${String(b.damageByUser.size)} pemain`,
-          `Pool    : ${formatRupiah(b.spec.rewardPool)}`,
-          `Sisa    : ${formatRemainingDuration(status.remainingMs)}`,
-          ...(status.topDamagers.length > 0
+          "╭─〔 STATUS WORLD BOSS 〕─╮",
+          `│ Boss : *${b.spec.name}*`,
+          `│ HP   : ${b.currentHp.toLocaleString("id-ID")} / ${b.spec.maxHp.toLocaleString("id-ID")}`,
+          `│ Bar  : ${renderHpBar(b.currentHp, b.spec.maxHp)}`,
+          `│ Hit  : ${String(b.hitsCount)}x (${String(b.damageByUser.size)} pemain)`,
+          `│ Pool : *${formatCompactRupiah(b.spec.rewardPool)}*`,
+          `│ Sisa : ${formatRemainingDuration(status.remainingMs)}`,
+          "╰────────────────────────╯",
+          ...(top3.length > 0
             ? [
                 "",
                 "*Top 3 Damage:*",
-                ...status.topDamagers
-                  .slice(0, 3)
-                  .map(
-                    (r, i) =>
-                      `${String(i + 1)}. ${tagOf(r.userJid)} - ${r.damage.toLocaleString("id-ID")} (${String(r.sharePercent)}%)`,
-                  ),
+                ...top3.map((r, i) => {
+                  const branch = i === top3.length - 1 ? "└" : "├";
+                  return `  ${branch} ${String(i + 1)}. ${tagOf(r.userJid)} — *${r.damage.toLocaleString("id-ID")}* (${String(r.sharePercent)}%)`;
+                }),
               ]
             : []),
+          "",
+          "*Perintah Cepat:* `.serangboss` | `.topdamage`",
         ].join("\n"),
         mentions,
       },
@@ -248,16 +252,17 @@ async function handleStatusBoss(context: CommandContext): Promise<void> {
   if (status.respawnRemainingMs > 0) {
     await context.reply(
       [
-        "*── [ STATUS WORLD BOSS ] ──*",
-        "Tidak ada World Boss aktif saat ini.",
+        "╭─〔 STATUS WORLD BOSS 〕─╮",
+        "│ Status  : Sedang Respawn",
         ...(status.lastDefeated
           ? [
-              `Boss Terakhir : *${status.lastDefeated.bossName}* (${status.lastDefeated.outcome === "escaped" ? "Kabur" : "Tumbang"})`,
+              `│ Terakhir: *${status.lastDefeated.bossName}* (${status.lastDefeated.outcome === "escaped" ? "Kabur" : "Tumbang"})`,
             ]
           : []),
-        `Respawn Dalam : *${formatRemainingDuration(status.respawnRemainingMs)}*`,
+        `│ Respawn : *${formatRemainingDuration(status.respawnRemainingMs)}*`,
+        "╰────────────────────────╯",
         "",
-        "Cek rekor: *.topdamage* | *.topdamage all* | *.topdamage riwayat*",
+        "*Cek Rekor:* `.topdamage` | `.topdamage all` | `.topdamage riwayat`",
       ].join("\n"),
     );
     return;
@@ -299,15 +304,18 @@ async function handleTopDamage(context: CommandContext): Promise<void> {
       context.chatJid,
       {
         text: [
-          "*── [ TOP DAMAGE ALL-TIME ] ──*",
-          "Akumulasi permanen seluruh raid World Boss grup:",
+          "╭─〔 TOP DAMAGE ALL-TIME 〕─╮",
+          "│ Akumulasi permanen raid grup",
+          "╰──────────────────────────╯",
           "",
-          ...allTime.map(
-            (r, idx) =>
-              `${String(idx + 1)}. ${tagOf(r.userJid)} - *${r.totalDamage.toLocaleString("id-ID")} dmg* (${String(r.bossKills)} kill | ${String(r.bossMvpCount)} MVP)`,
+          ...allTime.map((r, idx) =>
+            [
+              `*${String(idx + 1)}.* ${tagOf(r.userJid)}`,
+              `  └ *${r.totalDamage.toLocaleString("id-ID")} dmg* (${String(r.bossKills)} kill | ${String(r.bossMvpCount)} MVP)`,
+            ].join("\n"),
           ),
           "",
-          "_Lihat 5 boss terakhir: *.topdamage riwayat*_",
+          "*Lihat 5 Boss Terakhir:* `.topdamage riwayat`",
         ].join("\n"),
         mentions,
       },
@@ -331,18 +339,26 @@ async function handleTopDamage(context: CommandContext): Promise<void> {
       if (h.finisherJid) mentionSet.add(h.finisherJid);
       const statusLabel = h.outcome === "escaped" ? "KABUR" : "TUMBANG";
       const mvpText = mvp
-        ? `MVP: ${tagOf(mvp.userJid)} (${mvp.damage.toLocaleString("id-ID")})`
+        ? `${tagOf(mvp.userJid)} (${mvp.damage.toLocaleString("id-ID")})`
         : "Tanpa damage";
-      return `${String(idx + 1)}. *${h.bossName}* [${statusLabel}] - ${formatWibDateTime(h.defeatedAt)}\n   ${mvpText}${h.finisherJid ? ` | Finisher: ${tagOf(h.finisherJid)}` : ""}`;
+      return [
+        `*${String(idx + 1)}. ${h.bossName}* [${statusLabel}]`,
+        `  ├ Waktu : ${formatWibDateTime(h.defeatedAt)}`,
+        `  ├ MVP   : ${mvpText}`,
+        ...(h.finisherJid ? [`  └ Finish: ${tagOf(h.finisherJid)}`] : ["  └ Finish: -"]),
+      ].join("\n");
     });
     await context.socket.sendMessage(
       context.chatJid,
       {
         text: [
-          "*── [ RIWAYAT 5 WORLD BOSS ] ──*",
+          "╭─〔 RIWAYAT 5 WORLD BOSS 〕─╮",
+          `│ Tercatat ${String(history.length)} raid terakhir`,
+          "╰───────────────────────────╯",
+          "",
           ...lines,
           "",
-          "_Lihat peringkat kumulatif: *.topdamage all*_",
+          "*Peringkat Kumulatif:* `.topdamage all`",
         ].join("\n"),
         mentions: Array.from(mentionSet),
       },
@@ -360,40 +376,47 @@ async function handleTopDamage(context: CommandContext): Promise<void> {
   }
 
   const mentionSet = new Set<string>();
-  const lines: string[] = ["*── [ TOP DAMAGE WORLD BOSS ] ──*"];
+  const lines: string[] = ["╭─〔 TOP DAMAGE WORLD BOSS 〕─╮"];
 
   if (log.source === "active" || log.source === "last") {
     const statusText =
       log.source === "active"
         ? "AKTIF"
         : log.outcome === "escaped"
-          ? "BOSS TERAKHIR - KABUR"
-          : "BOSS TERAKHIR - TUMBANG";
-    lines.push(`Boss   : *${log.bossName}* (${statusText})`);
-    lines.push(`HP     : ${log.currentHp.toLocaleString("id-ID")} / ${log.maxHp.toLocaleString("id-ID")}`);
+          ? "TERAKHIR - KABUR"
+          : "TERAKHIR - TUMBANG";
+    lines.push(`│ Boss   : *${log.bossName}*`);
+    lines.push(`│ Status : ${statusText}`);
+    lines.push(`│ HP     : ${log.currentHp.toLocaleString("id-ID")} / ${log.maxHp.toLocaleString("id-ID")}`);
     if (log.activeBossPendingName) {
-      lines.push(`Info   : *${log.activeBossPendingName}* sedang aktif (belum dipukul, ketik *.serangboss*!)`);
+      lines.push(`│ Baru   : *${log.activeBossPendingName}* (belum dipukul)`);
     }
-    lines.push("");
-    for (const [idx, r] of log.rankings.slice(0, 10).entries()) {
+    lines.push("╰────────────────────────────╯", "", "*Damage Raid Ini:*");
+    const rankSlice = log.rankings.slice(0, 10);
+    for (const [idx, r] of rankSlice.entries()) {
       mentionSet.add(r.userJid);
+      const branch = idx === rankSlice.length - 1 ? "└" : "├";
       lines.push(
-        `${String(idx + 1)}. ${tagOf(r.userJid)} - *${r.damage.toLocaleString("id-ID")} dmg* (${String(r.sharePercent)}%)`,
+        `  ${branch} ${String(idx + 1)}. ${tagOf(r.userJid)} — *${r.damage.toLocaleString("id-ID")}* (${String(r.sharePercent)}%)`,
       );
     }
+  } else {
+    lines.push("╰────────────────────────────╯");
   }
 
   if (log.allTimeTop.length > 0) {
     lines.push("", "*Top All-Time Damage Grup:*");
-    for (const [idx, r] of log.allTimeTop.slice(0, 5).entries()) {
+    const allSlice = log.allTimeTop.slice(0, 5);
+    for (const [idx, r] of allSlice.entries()) {
       mentionSet.add(r.userJid);
+      const branch = idx === allSlice.length - 1 ? "└" : "├";
       lines.push(
-        `${String(idx + 1)}. ${tagOf(r.userJid)} - *${r.totalDamage.toLocaleString("id-ID")} dmg* (${String(r.bossKills)} kill | ${String(r.bossMvpCount)} MVP)`,
+        `  ${branch} ${String(idx + 1)}. ${tagOf(r.userJid)} — *${r.totalDamage.toLocaleString("id-ID")}* (${String(r.bossKills)}K/${String(r.bossMvpCount)}M)`,
       );
     }
   }
 
-  lines.push("", "_Ketik *.topdamage all* (All-Time) atau *.topdamage riwayat* (5 boss terakhir)._");
+  lines.push("", "*Perintah Cepat:* `.topdamage all` | `.topdamage riwayat`");
 
   await context.socket.sendMessage(
     context.chatJid,
@@ -415,20 +438,26 @@ async function handleSkill(context: CommandContext): Promise<void> {
     const info = await raidFarmBuffBountyService.getSkillOverview(context.chatJid, senderJid);
     const lines = SKILL_KEYS.map((key) => {
       const spec = SKILL_SPECS[key];
-      return `• *${key.toUpperCase()}* (${String(info.skills[key])}/${String(MAX_SKILL_STAT)}) - ${spec.effect}`;
+      return [
+        `• *${key.toUpperCase()}* (\`${key}\`) — *${String(info.skills[key])}/${String(MAX_SKILL_STAT)}*`,
+        `  └ ${spec.effect}`,
+      ].join("\n");
     });
 
     await context.reply(
       [
-        "*── [ SKILL TREE KARAKTER ] ──*",
-        `Level Kamu    : Lv. ${String(info.level)} (+2 SP per level)`,
-        `Sisa SP       : *${String(info.freeSkillPoints)}* (Terpakai: ${String(info.spentSkillPoints)}/${String(info.totalSkillPoints)})`,
-        `Combat Power  : *${info.combatPower.toLocaleString("id-ID")}*`,
+        "╭─〔 SKILL TREE KARAKTER 〕─╮",
+        `│ Level : Lv.${String(info.level)} (+2 SP/level)`,
+        `│ Sisa  : *${String(info.freeSkillPoints)} SP* (${String(info.spentSkillPoints)}/${String(info.totalSkillPoints)} terpakai)`,
+        `│ Power : *${info.combatPower.toLocaleString("id-ID")}*`,
+        "╰──────────────────────────╯",
         "",
+        "*Atribut Karakter:*",
         ...lines,
         "",
-        "Alokasi SP : *.upskill <str|agi|luk|int|cha> [jumlah]*",
-        `Reset SP   : *.resetskill* (biaya ${formatCompactRupiah(SKILL_RESET_COST)})`,
+        "*Perintah Cepat:*",
+        "• `.upskill <str|agi|luk|int|cha> [jml]`",
+        `• \`.resetskill\` (biaya ${formatCompactRupiah(SKILL_RESET_COST)})`,
       ].join("\n"),
     );
   } catch (error: unknown) {
@@ -507,40 +536,50 @@ async function handleLadang(context: CommandContext): Promise<void> {
     const plotLines =
       ov.plots.length > 0
         ? ov.plots.map((p, idx) => {
+            const branch = idx === ov.plots.length - 1 ? "└" : "├";
             const status = p.ready
               ? "*SIAP PANEN!*"
-              : `Tumbuh (${formatRemainingDuration(p.remainingMs)})${p.watered ? " [Disiram]" : ""}`;
-            return `${String(idx + 1)}. ${p.label} - ${status}`;
+              : `${formatRemainingDuration(p.remainingMs)}${p.watered ? " [Disiram]" : ""}`;
+            return `  ${branch} ${String(idx + 1)}. *${p.label}* — ${status}`;
           })
-        : ["(Semua petak masih kosong. Tanam lewat *.tanam <bibit> [jumlah]*)"];
+        : ["  _Semua petak kosong. Tanam lewat `.tanam <bibit>`!_"];
 
     const harvestLines =
       ov.harvest.length > 0
         ? [
             "",
             "*Gudang Hasil Panen:*",
-            ...ov.harvest.map(
-              (h) => `• ${h.label} x${String(h.qty)} (~${formatCompactRupiah(h.subtotal)})`,
-            ),
-            `Estimasi Jual : *${formatRupiah(ov.estimatedSellTotal)}*`,
+            ...ov.harvest.map((h, idx) => {
+              const branch = idx === ov.harvest.length - 1 ? "└" : "├";
+              return `  ${branch} ${h.label} x${String(h.qty)} (~${formatCompactRupiah(h.subtotal)})`;
+            }),
           ]
         : [];
 
-    const seedLines = FARM_CROP_CATALOG.map(
-      (c) =>
-        `• *${c.id}* (${c.label}) [Lv.${String(c.minLevel)}+] - Bibit ${formatCompactRupiah(c.seedPrice)} | ${String(c.growMinutes)}m`,
+    const seedLines = FARM_CROP_CATALOG.map((c, idx) =>
+      [
+        `*${String(idx + 1)}. ${c.label}* (\`${c.id}\`)`,
+        `  └ Bibit *${formatCompactRupiah(c.seedPrice)}* | ${String(c.growMinutes)}m | Min Lv.${String(c.minLevel)}`,
+      ].join("\n"),
     );
 
     await context.reply(
       [
-        `*── [ LADANG KOMODITAS (${String(ov.plots.length)}/${String(ov.maxPlots)}) ] ──*`,
+        "╭─〔 LADANG KOMODITAS 〕─╮",
+        `│ Petak  : ${String(ov.plots.length)} / ${String(ov.maxPlots)} terisi`,
+        `│ Gudang : *${formatCompactRupiah(ov.estimatedSellTotal)}* (est. jual)`,
+        "╰───────────────────────╯",
+        "",
+        "*Petak Tanam:*",
         ...plotLines,
         ...harvestLines,
         "",
         "*Katalog Bibit:*",
         ...seedLines,
         "",
-        "Aksi: *.tanam <bibit> [jml]* | *.siram* | *.panenladang* | *.pasarharga* | *.jualsemua*",
+        "*Perintah Cepat:*",
+        "• `.tanam <bibit> [jml]` | `.siram` | `.panenladang`",
+        "• `.pasarharga` | `.jualsemua`",
       ].join("\n"),
     );
   } catch (error: unknown) {
@@ -638,18 +677,25 @@ async function handlePasarHarga(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
 
   const { quotes, nextRefreshMs } = raidFarmBuffBountyService.getCommodityMarket();
-  const lines = quotes.map((q) => {
+  const lines = quotes.map((q, idx) => {
+    const arrow = q.changePercent > 0 ? "▲" : q.changePercent < 0 ? "▼" : "•";
     const sign = q.changePercent > 0 ? "+" : "";
-    return `• *${q.crop.label}* (${q.crop.id}) : *${formatRupiah(q.price)}* [${q.trend} ${sign}${String(q.changePercent)}%]`;
+    return [
+      `*${String(idx + 1)}. ${q.crop.label}* (\`${q.crop.id}\`)`,
+      `  └ ${arrow} *${formatCompactRupiah(q.price)}* (${q.trend} ${sign}${String(q.changePercent)}%)`,
+    ].join("\n");
   });
 
   await context.reply(
     [
-      "*── [ PASAR KOMODITAS LIVE ] ──*",
+      "╭─〔 PASAR KOMODITAS LIVE 〕─╮",
+      `│ Update : ${formatRemainingDuration(nextRefreshMs)} lagi`,
+      "╰───────────────────────────╯",
+      "",
       ...lines,
       "",
-      `Update Harga Berikutnya : *${formatRemainingDuration(nextRefreshMs)}*`,
-      "Jual semua hasil panenmu: *.jualsemua*",
+      "*Perintah Cepat:*",
+      "• `.jualsemua` | `.ladang`",
     ].join("\n"),
   );
 }
@@ -689,27 +735,30 @@ async function handleBlackMarket(context: CommandContext): Promise<void> {
 
   try {
     const ov = await raidFarmBuffBountyService.getBlackMarketOverview(context.chatJid, senderJid);
-    const lines = ov.items.map((item) => {
-      const activeText =
+    const lines = ov.items.map((item, idx) => {
+      const statusLine =
         item.activeRemainingMs > 0
-          ? ` | AKTIF (${formatRemainingDuration(item.activeRemainingMs)})`
-          : "";
+          ? `  ├ Status : *AKTIF* (${formatRemainingDuration(item.activeRemainingMs)})`
+          : null;
       return [
-        `• *${item.spec.id}* - ${item.spec.label} (*${formatCompactRupiah(item.spec.price)}*)`,
-        `  ${item.spec.effect}`,
-        `  Stok Tas: ${String(item.ownedQty)}${activeText}`,
+        `*${String(idx + 1)}. ${item.spec.label}* (\`${item.spec.id}\`)`,
+        `  ├ Harga  : *${formatCompactRupiah(item.spec.price)}* | Tas: ${String(item.ownedQty)}`,
+        ...(statusLine ? [statusLine] : []),
+        `  └ Efek   : ${item.spec.effect}`,
       ].join("\n");
     });
 
     await context.reply(
       [
-        "*── [ BLACK MARKET BUFF ] ──*",
-        `Dompetmu : ${formatRupiah(ov.currentMoney)}`,
+        "╭─〔 BLACK MARKET BUFF 〕─╮",
+        `│ Dompet : *${formatCompactRupiah(ov.currentMoney)}*`,
+        "╰────────────────────────╯",
         "",
         ...lines,
         "",
-        "Beli    : *.belibuff <item> [jumlah]*",
-        "Pakai   : *.gunakan <item>* | Cek aktif: *.buffaktif*",
+        "*Perintah Cepat:*",
+        "• `.belibuff <kode> [jml]`",
+        "• `.gunakan <kode>` | `.buffaktif`",
       ].join("\n"),
     );
   } catch (error: unknown) {
@@ -770,18 +819,30 @@ async function handleBuffAktif(context: CommandContext): Promise<void> {
 
     await context.reply(
       [
-        "*── [ STATUS BUFF AKTIF ] ──*",
+        "╭─〔 STATUS BUFF AKTIF 〕─╮",
+        `│ Aktif    : *${String(active.length)}* buff`,
+        `│ Stok Tas : *${String(stocked.reduce((sum, s) => sum + s.ownedQty, 0))}* item`,
+        "╰────────────────────────╯",
+        "",
+        "*Sedang Aktif:*",
         ...(active.length > 0
-          ? active.map(
-              (a) =>
-                `• *${a.spec.label}* - Sisa *${formatRemainingDuration(a.activeRemainingMs)}*\n  (${a.spec.effect})`,
+          ? active.map((a) =>
+              [
+                `• *${a.spec.label}* — *${formatRemainingDuration(a.activeRemainingMs)}*`,
+                `  └ ${a.spec.effect}`,
+              ].join("\n"),
             )
-          : ["Belum ada buff yang sedang aktif."]),
+          : ["  _Belum ada buff aktif._"]),
         "",
         "*Stok Buff di Tas:*",
         ...(stocked.length > 0
-          ? stocked.map((s) => `• ${s.spec.id} (${s.spec.label}) x${String(s.ownedQty)}`)
-          : ["Kosong. Kunjungi *.blackmarket* untuk membeli buff!"]),
+          ? stocked.map((s, idx) => {
+              const branch = idx === stocked.length - 1 ? "└" : "├";
+              return `  ${branch} *${s.spec.label}* (\`${s.spec.id}\`) : x${String(s.ownedQty)}`;
+            })
+          : ["  _Kosong. Kunjungi `.blackmarket`!_"]),
+        "",
+        "*Perintah Cepat:* `.gunakan <kode>` | `.blackmarket`",
       ].join("\n"),
     );
   } catch (error: unknown) {
@@ -893,19 +954,26 @@ async function handleListBounty(context: CommandContext): Promise<void> {
 
   const nowMs = Date.now();
   const mentions = list.map((b) => b.targetJid);
-  const lines = list.map(
-    (b, idx) =>
-      `${String(idx + 1)}. ${tagOf(b.targetJid)} - *${formatRupiah(b.amount)}* (${String(b.postersCount)} pemasang, sisa ${formatRemainingDuration(Math.max(0, b.expiresAt - nowMs))})`,
+  const lines = list.map((b, idx) =>
+    [
+      `*${String(idx + 1)}.* ${tagOf(b.targetJid)}`,
+      `  ├ Bounty : *${formatCompactRupiah(b.amount)}* (${String(b.postersCount)} pemasang)`,
+      `  └ Sisa   : ${formatRemainingDuration(Math.max(0, b.expiresAt - nowMs))}`,
+    ].join("\n"),
   );
 
   await context.socket.sendMessage(
     context.chatJid,
     {
       text: [
-        "*── [ PAPAN BURONAN GRUP ] ──*",
+        "╭─〔 PAPAN BURONAN GRUP 〕─╮",
+        `│ Target Aktif : *${String(list.length)}* buronan`,
+        "╰─────────────────────────╯",
+        "",
         ...lines,
         "",
-        "Tangkap target & klaim hadiah: *.burubounty @target*",
+        "*Perintah Cepat:*",
+        "• `.burubounty @target` | `.bounty @user <uang>`",
       ].join("\n"),
       mentions,
     },

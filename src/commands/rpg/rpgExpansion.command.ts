@@ -72,20 +72,26 @@ async function handleMisi(context: CommandContext): Promise<void> {
     const sender = await resolveSender(context);
     const overview = await rpgExpansionService.getDailyQuests(context.chatJid, sender);
     const lines = overview.items.map((item, idx) => {
-      const status = item.claimed ? "[DIKLAIM]" : item.completed ? "[SIAP KLAIM]" : "[BELUM]";
-      return `${String(idx + 1)}. ${status} *${item.spec.title}*\n   ${item.spec.description}\n   Hadiah: ${formatCompactRupiah(item.spec.rewardMoney)} + ${String(item.spec.rewardLimit)} Limit + ${String(item.spec.rewardXp)} XP`;
+      const status = item.claimed ? "[DIKLAIM]" : item.completed ? "[SIAP]" : "[BELUM]";
+      return [
+        `*${String(idx + 1)}. ${status} ${item.spec.title}*`,
+        `  ├ Tugas  : ${item.spec.description}`,
+        `  └ Hadiah : ${formatCompactRupiah(item.spec.rewardMoney)} + ${String(item.spec.rewardLimit)} Limit + ${String(item.spec.rewardXp)} XP`,
+      ].join("\n");
     });
 
     const footer =
       overview.claimableCount > 0
-        ? `Ada ${String(overview.claimableCount)} misi siap diklaim! Ketik *.klaimmisi* sekarang.`
-        : "Selesaikan misi di atas lalu ketik *.klaimmisi* (reset 00:00 WIB).";
+        ? `Ada *${String(overview.claimableCount)} misi* siap diklaim! Ketik \`.klaimmisi\`.`
+        : "Selesaikan misi lalu ketik `.klaimmisi` (reset 00:00 WIB).";
 
     await context.reply(
       [
-        "*── [ MISI HARIAN ] ──*",
-        `Pemain : ${tagOf(sender)}`,
-        `Tanggal: ${overview.dateKey} WIB`,
+        "╭─〔 MISI HARIAN 〕─╮",
+        `│ Pemain : ${tagOf(sender)}`,
+        `│ Tanggal: ${overview.dateKey} WIB`,
+        `│ Siap   : *${String(overview.claimableCount)}* / ${String(overview.items.length)} misi`,
+        "╰──────────────────╯",
         "",
         ...lines,
         "",
@@ -136,28 +142,43 @@ async function handleAchievement(context: CommandContext): Promise<void> {
     const total = res.unlocked.length + res.locked.length;
 
     const lines: string[] = [
-      "*── [ LENCANA & ACHIEVEMENT ] ──*",
-      `Pemain   : ${tagOf(sender)}`,
-      `Terbuka  : ${String(res.unlocked.length)} / ${String(total)}`,
+      "╭─〔 LENCANA & ACHIEVEMENT 〕─╮",
+      `│ Pemain  : ${tagOf(sender)}`,
+      `│ Terbuka : *${String(res.unlocked.length)} / ${String(total)}* lencana`,
+      "╰────────────────────────────╯",
     ];
 
     if (res.newlyUnlocked.length > 0) {
       lines.push(
         "",
-        `*BARU TERBUKA (+${formatCompactRupiah(res.bonusMoney)} | +${String(res.bonusLimit)} Limit | +${String(res.bonusXp)} XP):*`,
-        ...res.newlyUnlocked.map((a) => `- ${a.badge} ${a.title}`),
+        `*BARU TERBUKA (+${formatCompactRupiah(res.bonusMoney)} | +${String(res.bonusLimit)} Lmt | +${String(res.bonusXp)} XP):*`,
+        ...res.newlyUnlocked.map((a, idx) => {
+          const branch = idx === res.newlyUnlocked.length - 1 ? "└" : "├";
+          return `  ${branch} ${a.badge} *${a.title}*`;
+        }),
       );
     }
 
     if (res.unlocked.length > 0) {
-      lines.push("", "*Sudah Dimiliki:*", ...res.unlocked.map((a) => `- ${a.badge} ${a.title}`));
+      lines.push(
+        "",
+        "*Sudah Dimiliki:*",
+        ...res.unlocked.map((a, idx) => {
+          const branch = idx === res.unlocked.length - 1 ? "└" : "├";
+          return `  ${branch} ${a.badge} ${a.title}`;
+        }),
+      );
     }
 
     if (res.locked.length > 0) {
+      const nextSlice = res.locked.slice(0, 5);
       lines.push(
         "",
         "*Target Berikutnya:*",
-        ...res.locked.slice(0, 5).map((a) => `- ${a.title}: ${a.requirement}`),
+        ...nextSlice.map((a, idx) => {
+          const branch = idx === nextSlice.length - 1 ? "└" : "├";
+          return `  ${branch} *${a.title}* — ${a.requirement}`;
+        }),
       );
     }
 
@@ -550,7 +571,8 @@ async function handleHargaKripto(context: CommandContext): Promise<void> {
   try {
     const query = context.argsText.trim();
     const tickers = await liveCryptoService.getPrices(query);
-    const lines = tickers.map((t) => {
+    const lines = tickers.map((t, idx) => {
+      const trend = t.change24h > 0 ? "▲" : t.change24h < 0 ? "▼" : "•";
       const idrText =
         t.idr >= 1
           ? `Rp ${Math.round(t.idr).toLocaleString("id-ID")}`
@@ -559,17 +581,22 @@ async function handleHargaKripto(context: CommandContext): Promise<void> {
         t.usd >= 1
           ? `$${t.usd.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
           : `$${t.usd.toFixed(6)}`;
-      return `- *${t.symbol}* (${t.name})\n  ${idrText} | ${usdText} (${formatPct(t.change24h)} 24j)`;
+      return [
+        `*${String(idx + 1)}. ${t.symbol}* — ${t.name}`,
+        `  ├ IDR : *${idrText}*`,
+        `  └ USD : ${usdText} (${trend} ${formatPct(t.change24h)} 24j)`,
+      ].join("\n");
     });
 
     await context.reply(
       [
-        "*── [ HARGA KRIPTO LIVE ] ──*",
-        "_Sumber: CoinGecko Real-Time (cache 60d)_",
+        "╭─〔 HARGA KRIPTO LIVE 〕─╮",
+        "│ Sumber: CoinGecko Real-Time",
+        "╰────────────────────────╯",
         "",
         ...lines,
         "",
-        "Cek koin spesifik: .hargakripto <btc|eth|sol|doge|ton|pepe|sui>",
+        "*Cek Koin:* `.hargakripto <btc|eth|sol|doge|ton|pepe|sui>`",
       ].join("\n"),
     );
   } catch (error: unknown) {
@@ -629,22 +656,25 @@ async function handleKoleksi(context: CommandContext): Promise<void> {
     const col = await rpgExpansionService.getCardCollection(context.chatJid, sender);
     const cardLines =
       col.entries.length > 0
-        ? col.entries.map(
-            (e) =>
-              `- #${e.card.serial} *[${e.card.rarity}] ${e.card.name}* x${String(e.count)} (PWR ${String(e.card.power)})`,
-          )
-        : ["Belum punya kartu. Coba tarik gacha dengan .gachakartu!"];
+        ? col.entries.map((e, idx) => {
+            const branch = idx === col.entries.length - 1 ? "└" : "├";
+            return `  ${branch} #${e.card.serial} *[${e.card.rarity}] ${e.card.name}* x${String(e.count)} (PWR ${String(e.card.power)})`;
+          })
+        : ["  _Belum punya kartu. Tarik gacha lewat `.gachakartu`!_"];
 
     await context.reply(
       [
-        "*── [ ALBUM KOLEKSI KARTU ] ──*",
-        `Kolektor : ${tagOf(sender)}`,
-        `Unik     : ${String(col.uniqueOwned)} / ${String(col.totalCatalog)} kartu`,
-        `Total    : ${String(col.totalCopies)} lembar | Power: ${String(col.totalPower)}`,
+        "╭─〔 ALBUM KOLEKSI KARTU 〕─╮",
+        `│ Kolektor : ${tagOf(sender)}`,
+        `│ Unik     : *${String(col.uniqueOwned)} / ${String(col.totalCatalog)}* kartu`,
+        `│ Total    : ${String(col.totalCopies)} lbr | Power *${String(col.totalPower)}*`,
+        "╰──────────────────────────╯",
         "",
+        "*Daftar Kartu:*",
         ...cardLines,
         "",
-        "Tukar kartu/item: .trade @user <kode/nomor> <jumlah>",
+        "*Perintah Cepat:*",
+        "• `.gachakartu` | `.trade @user <kode> <jml>`",
       ].join("\n"),
       { mentions: [sender] },
     );

@@ -66,42 +66,54 @@ async function handleInventory(context: CommandContext): Promise<void> {
   try {
     const sender = await resolveSender(context);
     const inv = await rpgInfiniteService.getInventory(context.chatJid, sender);
-    const ugdLine =
+    const ugdStatus =
       inv.ugdRemainingMs > 0
-        ? `• Status UGD : Dirawat (${formatRemainingDuration(inv.ugdRemainingMs)} lagi)`
-        : "• Status     : Sehat";
+        ? `UGD (${formatRemainingDuration(inv.ugdRemainingMs)})`
+        : "Sehat";
 
-    const toolLines = inv.tools.map((t) =>
-      t.level > 0
-        ? `• ${t.label} : Lv.${String(t.level)} (Dur ${String(t.durability)}%)`
-        : `• ${t.label} : Belum punya (.craft ${t.id})`,
-    );
+    const toolLines = inv.tools.map((t, idx) => {
+      const branch = idx === inv.tools.length - 1 ? "└" : "├";
+      return t.level > 0
+        ? `  ${branch} *${t.label}* (\`${t.id}\`) : Lv.${String(t.level)} (Dur ${String(t.durability)}%)`
+        : `  ${branch} ${t.label} (\`${t.id}\`) : _Belum punya_`;
+    });
 
-    const crateLines = inv.crates
-      .filter((c) => c.count > 0)
-      .map((c) => `• ${c.id} : ${String(c.count)} peti`);
+    const ownedCrates = inv.crates.filter((c) => c.count > 0);
+    const crateLines = ownedCrates.map((c, idx) => {
+      const branch = idx === ownedCrates.length - 1 ? "└" : "├";
+      return `  ${branch} \`${c.id}\` : *${String(c.count)} peti*`;
+    });
 
-    const itemLines = inv.items.map(
-      (item) => `• ${item.label} (${item.id}) : x${String(item.count)}`,
-    );
+    const itemLines = inv.items.map((item, idx) => {
+      const branch = idx === inv.items.length - 1 ? "└" : "├";
+      const estValue = item.sellPrice * BigInt(item.count);
+      const valTag = estValue > 0n ? ` (~${formatCompactRupiah(estValue)})` : "";
+      return `  ${branch} *${item.label}* (\`${item.id}\`) : x${String(item.count)}${valTag}`;
+    });
 
     await context.reply(
       [
         "╭─〔 TAS & STATUS RPG 〕─╮",
         `│ Pemilik : ${tagOf(sender)}`,
-        `│ HP      : ${String(inv.hp)} / ${String(inv.maxHp)} | Lv.${String(inv.level)}`,
+        `│ Level   : Lv.${String(inv.level)} | HP ${String(inv.hp)}/${String(inv.maxHp)}`,
         `│ Dompet  : *${formatCompactRupiah(inv.moneyBalance)}*`,
-        `│ ${ugdLine.replace(/^•\s*/, "")}`,
+        `│ Status  : ${ugdStatus}`,
         "╰───────────────────────╯",
         "",
         "*Peralatan:*",
         ...toolLines,
         "",
-        "*Peti Gacha (`.open`):*",
+        "*Peti Gacha:*",
         ...(crateLines.length > 0 ? crateLines : ["  _Belum ada peti._"]),
         "",
         "*Isi Tas:*",
-        ...(itemLines.length > 0 ? itemLines : ["  _Tas masih kosong. Coba .adventure atau .nebang!_"]),
+        ...(itemLines.length > 0
+          ? itemLines
+          : ["  _Tas masih kosong. Coba `.adventure` atau `.nebang`!_"]),
+        "",
+        "*Perintah Cepat:*",
+        "• `.craft <alat>` | `.upgrade <alat>`",
+        "• `.open <peti>` | `.shop sell <kode> all`",
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -115,36 +127,63 @@ async function handleKandang(context: CommandContext): Promise<void> {
   try {
     const sender = await resolveSender(context);
     const pen = await rpgInfiniteService.getPetPen(context.chatJid, sender);
-    const petLines = pen.pets.map((p) => {
-      if (p.level <= 0) return `• ${p.label} : Belum punya`;
-      const expTag =
-        pen.expedition?.pet === p.id
-          ? pen.expedition.ready
-            ? " [EKSPEDISI SIAP KLAIM!]"
-            : ` [EKSPEDISI: ${formatRemainingDuration(pen.expedition.remainingMs)}]`
-          : "";
-      return `• *${p.label}* : Lv.${String(p.level)} | Power ${String(p.power)} | Kenyang ${String(p.hunger)}%${expTag}`;
-    });
+    const ownedPets = pen.pets.filter((p) => p.level > 0);
+    const lockedPets = pen.pets.filter((p) => p.level <= 0);
 
-    const expLine = pen.expedition
+    const ownedLines =
+      ownedPets.length > 0
+        ? ownedPets.map((p, idx) => {
+            const isExp = pen.expedition?.pet === p.id;
+            const expStatus = isExp && pen.expedition
+              ? pen.expedition.ready
+                ? "*SIAP KLAIM!* (`.ekspedisipet klaim`)"
+                : `${pen.expedition.zoneName} (${formatRemainingDuration(pen.expedition.remainingMs)})`
+              : null;
+
+            return expStatus
+              ? [
+                  `*${String(idx + 1)}. ${p.label}* (\`${p.id}\`) — *Lv.${String(p.level)}*`,
+                  `  ├ Power   : *${String(p.power)}* | Kenyang ${String(p.hunger)}%`,
+                  `  └ Ekspedisi: ${expStatus}`,
+                ].join("\n")
+              : [
+                  `*${String(idx + 1)}. ${p.label}* (\`${p.id}\`) — *Lv.${String(p.level)}*`,
+                  `  └ Power   : *${String(p.power)}* | Kenyang ${String(p.hunger)}%`,
+                ].join("\n");
+          })
+        : ["  _Belum punya pet. Adopsi di `.petshop` atau `.telurpet`!_"];
+
+    const lockedBlock =
+      lockedPets.length > 0
+        ? [
+            "",
+            "*Belum Dimiliki:*",
+            `  ${lockedPets.map((p) => `\`${p.id}\``).join(", ")}`,
+          ]
+        : [];
+
+    const expBoxLine = pen.expedition
       ? pen.expedition.ready
-        ? `• Ekspedisi   : *${pen.expedition.petLabel}* pulang dari ${pen.expedition.zoneName}! Ketik *.ekspedisipet klaim*`
-        : `• Ekspedisi   : *${pen.expedition.petLabel}* di ${pen.expedition.zoneName} (sisa ${formatRemainingDuration(pen.expedition.remainingMs)})`
-      : "• Ekspedisi   : Siap kirim (.ekspedisipet <pet>)";
+        ? `*${pen.expedition.petLabel}* siap klaim!`
+        : `${pen.expedition.petLabel} (${formatRemainingDuration(pen.expedition.remainingMs)})`
+      : "Siap kirim";
 
     await context.reply(
       [
         "╭─〔 KANDANG PET 〕─╮",
-        `│ Pemilik : ${tagOf(sender)}`,
-        `│ Pakan   : ${String(pen.foodCount)} (\`.feed\`)`,
-        `│ Ramuan  : ${String(pen.elixirCount)} (\`.ramuan\`)`,
+        `│ Pemilik   : ${tagOf(sender)}`,
+        `│ Pet Aktif : ${String(ownedPets.length)}/${String(pen.pets.length)}`,
+        `│ Pakan     : ${String(pen.foodCount)} | Ramuan: ${String(pen.elixirCount)}`,
+        `│ Ekspedisi : ${expBoxLine}`,
         "╰──────────────────╯",
         "",
-        ...petLines,
+        "*Koleksi Pet:*",
+        ...ownedLines,
+        ...lockedBlock,
         "",
-        expLine,
-        "",
-        "_Toko: `.petshop` | Telur: `.telurpet` | Ekspedisi: `.ekspedisipet`_",
+        "*Perintah Cepat:*",
+        "• `.feed <pet>` | `.ramuan <pet>`",
+        "• `.ekspedisipet <pet>` | `.petshop` | `.telurpet`",
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -227,17 +266,26 @@ async function handleTelurPet(context: CommandContext): Promise<void> {
   const rawTier = (context.args[0] ?? "").trim().toLowerCase();
 
   if (!rawTier || rawTier === "list" || rawTier === "info") {
-    const lines = PET_EGG_CATALOG.map((e) => {
+    const lines = PET_EGG_CATALOG.map((e, idx) => {
       const poolText = e.pool.map((p) => `${p.pet} ${String(p.weight)}%`).join(", ");
-      return `• *${e.id}* (${e.label}) — *${formatCompactRupiah(e.price)}* (Min Lv.${String(e.minLevel)})\n  Isi: ${poolText}`;
+      return [
+        `*${String(idx + 1)}. ${e.label}* (\`${e.id}\`)`,
+        `  ├ Harga : *${formatCompactRupiah(e.price)}* (Min Lv.${String(e.minLevel)})`,
+        `  └ Peluang: ${poolText}`,
+      ].join("\n");
     });
     await context.reply(
       [
-        "*── [ PENETASAN TELUR PET ] ──*",
+        "╭─〔 PENETASAN TELUR PET 〕─╮",
+        "│ 100% menetas! Duplikat = +1 Lv",
+        "│ (Maks Lv.20, lebih = bonus item)",
+        "╰──────────────────────────╯",
+        "",
         ...lines,
         "",
-        "Cara menetas: *.telurpet <biasa|langka|mitos>*",
-        "_Duplikat pet otomatis menaikkan +1 Level pet (maks Lv.20)!_",
+        "*Perintah Cepat:*",
+        "• `.telurpet <biasa|langka|mitos>`",
+        "• `.kandang` | `.petshop`",
       ].join("\n"),
     );
     return;
@@ -332,34 +380,41 @@ async function handleEkspedisiPet(context: CommandContext): Promise<void> {
         }
         await context.reply(
           [
-            "*── [ STATUS EKSPEDISI PET ] ──*",
-            `Pet    : *${st.active.petLabel}* (Lv.${String(st.active.petLevel)})`,
-            `Lokasi : ${st.active.zoneName}`,
-            `Sisa   : *${formatRemainingDuration(st.active.remainingMs)}*`,
+            "╭─〔 EKSPEDISI PET AKTIF 〕─╮",
+            `│ Pet    : *${st.active.petLabel}* (Lv.${String(st.active.petLevel)})`,
+            `│ Lokasi : ${st.active.zoneName}`,
+            `│ Sisa   : *${formatRemainingDuration(st.active.remainingMs)}*`,
+            "╰──────────────────────────╯",
             "",
-            "Ketik *.ekspedisipet klaim* setelah waktu selesai!",
+            "*Ambil Hasil:* `.ekspedisipet klaim`",
           ].join("\n"),
         );
         return;
       }
 
-      const petSummary =
+      const petLines =
         st.ownedPets.length > 0
-          ? st.ownedPets
-              .map((p) => `• *${p.id}* (${p.label} Lv.${String(p.level)} | Kenyang ${String(p.hunger)}%)`)
-              .join("\n")
-          : "Belum punya pet. Adopsi dulu di *.petshop* atau *.telurpet*!";
+          ? st.ownedPets.map((p, idx) =>
+              [
+                `*${String(idx + 1)}. ${p.label}* (\`${p.id}\`)`,
+                `  └ Lv.${String(p.level)} | Kenyang ${String(p.hunger)}%`,
+              ].join("\n"),
+            )
+          : ["  _Belum punya pet. Adopsi di `.petshop` atau `.telurpet`!_"];
 
       await context.reply(
         [
-          "*── [ EKSPEDISI PET OTOMATIS ] ──*",
-          "Kirim pet selama 30 menit untuk mencari pakan, material craft, ramuan & peti!",
+          "╭─〔 EKSPEDISI PET 〕─╮",
+          "│ Durasi : 30 menit",
+          "│ Loot   : Pakan, Bahan, Ramuan, Peti",
+          "╰────────────────────╯",
           "",
           "*Pet Siap Berangkat:*",
-          petSummary,
+          ...petLines,
           "",
-          "Cara kirim : *.ekspedisipet <pet>* atau *.ekspedisipet mulai*",
-          "Ambil hasil: *.ekspedisipet klaim*",
+          "*Perintah Cepat:*",
+          "• `.ekspedisipet <pet>` (atau `mulai`)",
+          "• `.ekspedisipet klaim`",
         ].join("\n"),
       );
       return;
@@ -475,18 +530,30 @@ async function handleCook(context: CommandContext): Promise<void> {
   const recipeArg = context.args[0]?.trim().toLowerCase();
   if (!recipeArg || recipeArg === "list") {
     const recipes = rpgInfiniteService.listCookRecipes();
-    const lines = [
-      "*── [ DAFTAR RESEP MASAK ] ──*",
-      ...recipes.map((r) => {
-        const ings = Object.entries(r.ingredients)
-          .map(([k, v]) => `${String(v)} ${k}`)
-          .join(" + ");
-        return `• *${r.id}* (${r.label})\n  Bahan: ${ings} | Jual: ${formatRupiah(r.sellPrice)}`;
-      }),
-      "",
-      "Cara pakai: .masak <resep> [jumlah]\nContoh: .masak steak 2",
-    ];
-    await context.reply(lines.join("\n"));
+    const recipeLines = recipes.map((r, idx) => {
+      const ings = Object.entries(r.ingredients)
+        .map(([k, v]) => `${String(v)} ${k}`)
+        .join(" + ");
+      return [
+        `*${String(idx + 1)}. ${r.label}* (\`${r.id}\`)`,
+        `  ├ Bahan : ${ings}`,
+        `  └ Jual  : *${formatCompactRupiah(r.sellPrice)}*/porsi`,
+      ].join("\n");
+    });
+    await context.reply(
+      [
+        "╭─〔 DAPUR RESEP MASAK 〕─╮",
+        "│ Olah bahan hasil buruan & panen",
+        "│ jadi masakan bernilai jual tinggi!",
+        "╰────────────────────────╯",
+        "",
+        ...recipeLines,
+        "",
+        "*Perintah Cepat:*",
+        "• `.masak <resep> [jml]`",
+        "• `.shop sell <resep> all`",
+      ].join("\n"),
+    );
     return;
   }
 
@@ -624,19 +691,38 @@ async function handleForge(context: CommandContext, mode: "craft" | "upgrade"): 
   if (!(await ensureActiveGroup(context))) return;
   const tool = normalizeToolType(context.args[0]);
   if (!tool) {
-    const lines = [
-      mode === "craft" ? "*── [ DAFTAR CRAFT ALAT ] ──*" : "*── [ UPGRADE ALAT RPG ] ──*",
-      ...Object.values(TOOL_SPECS).map((s) => {
-        const mats = Object.entries(mode === "craft" ? s.craftMaterials : s.upgradeMaterials)
-          .map(([k, v]) => `${String(v)} ${k}`)
-          .join(", ");
-        const price = mode === "craft" ? s.craftCostMoney : s.upgradeMoneyPerLevel;
-        return `• *${s.id}* (${s.label}): ${s.bonusDesc}\n  Bahan: ${mats} | Biaya: ${formatRupiah(price)}${mode === "upgrade" ? " x Lv" : ""}`;
-      }),
-      "",
-      `Contoh: .${mode} sword`,
-    ];
-    await context.reply(lines.join("\n"));
+    const toolCards = Object.values(TOOL_SPECS).map((s, idx) => {
+      const mats = Object.entries(mode === "craft" ? s.craftMaterials : s.upgradeMaterials)
+        .map(([k, v]) => `${String(v)} ${k}`)
+        .join(", ");
+      const price = mode === "craft" ? s.craftCostMoney : s.upgradeMoneyPerLevel;
+      const costText =
+        mode === "upgrade"
+          ? `*${formatCompactRupiah(price)}* x Lv`
+          : `*${formatCompactRupiah(price)}*`;
+      return [
+        `*${String(idx + 1)}. ${s.label}* (\`${s.id}\`)`,
+        `  ├ Bahan : ${mats}`,
+        `  ├ Biaya : ${costText}`,
+        `  └ Efek  : ${s.bonusDesc}`,
+      ].join("\n");
+    });
+
+    await context.reply(
+      [
+        mode === "craft" ? "╭─〔 BENGKEL CRAFT ALAT 〕─╮" : "╭─〔 UPGRADE ALAT RPG 〕─╮",
+        mode === "craft"
+          ? "│ Buat alat baru dari material tas"
+          : "│ Naikkan level alat (maks Lv.10)",
+        mode === "craft" ? "╰─────────────────────────╯" : "╰───────────────────────╯",
+        "",
+        ...toolCards,
+        "",
+        "*Perintah Cepat:*",
+        `• \`.${mode} <kode>\` (contoh: \`.${mode} sword\`)`,
+        "• `.tas` (cek bahan & level alat)",
+      ].join("\n"),
+    );
     return;
   }
 

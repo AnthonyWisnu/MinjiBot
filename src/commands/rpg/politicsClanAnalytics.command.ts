@@ -209,12 +209,15 @@ async function handlePemilu(context: CommandContext): Promise<void> {
 
     const candLines =
       res.candidates.length > 0
-        ? res.candidates.map(
-            (c) =>
-              `${String(c.index)}. ${tagOf(c.userJid)} (${String(c.votes)} suara | ${String(c.percent)}%)\n   _"${c.slogan}"_`,
+        ? res.candidates.map((c) =>
+            [
+              `*${String(c.index)}.* ${tagOf(c.userJid)}`,
+              `  ├ Suara  : *${String(c.votes)}* (${String(c.percent)}%)`,
+              `  └ Slogan : _"${c.slogan}"_`,
+            ].join("\n"),
           )
         : [
-            `Belum ada calon terdaftar (Min Lv.${String(CANDIDATE_MIN_LEVEL)}, biaya ${formatCompactRupiah(CANDIDATE_REGISTRATION_FEE)}).`,
+            `  _Belum ada calon (Min Lv.${String(CANDIDATE_MIN_LEVEL)}, biaya ${formatCompactRupiah(CANDIDATE_REGISTRATION_FEE)})._`,
           ];
     const mentions = res.candidates.map((c) => c.userJid);
 
@@ -222,16 +225,18 @@ async function handlePemilu(context: CommandContext): Promise<void> {
       context.chatJid,
       {
         text: [
-          res.mode === "started" ? "*── [ PEMILU GRUP DIBUKA! ] ──*" : "*── [ PEMILU GRUP AKTIF ] ──*",
-          `Sisa Waktu   : ${formatRemainingDuration(res.remainingMs)}`,
-          `Total Suara  : ${String(res.totalVotes)} pemilih`,
+          res.mode === "started" ? "╭─〔 PEMILU GRUP DIBUKA! 〕─╮" : "╭─〔 PEMILU GRUP AKTIF 〕─╮",
+          `│ Sisa Waktu : ${formatRemainingDuration(res.remainingMs)}`,
+          `│ Partisipasi: ${String(res.totalVotes)} pemilih`,
+          res.mode === "started" ? "╰──────────────────────────╯" : "╰────────────────────────╯",
           "",
           "*Daftar Calon Presiden:*",
           ...candLines,
           "",
-          "Daftar calon : *.daftarcalon <slogan>*",
-          "Coblos calon : *.coblos @calon* atau *.coblos <nomor>* (+50 XP)",
-          "Tutup/lantik : *.pemilu lantik* (Admin/Owner)",
+          "*Perintah Cepat:*",
+          "• `.daftarcalon <slogan>`",
+          "• `.coblos @calon` atau `.coblos <no>` (+50 XP)",
+          "• `.pemilu lantik` (Admin/Owner)",
         ].join("\n"),
         mentions,
       },
@@ -319,14 +324,15 @@ async function handlePresiden(context: CommandContext): Promise<void> {
     if (!snap.president) {
       await context.reply(
         [
-          "*── [ ISTANA PRESIDEN GRUP ] ──*",
-          "Status     : *Kursi Presiden Kosong*",
-          `Kas Negara : *${formatRupiah(snap.treasuryBalance)}*`,
+          "╭─〔 ISTANA PRESIDEN GRUP 〕─╮",
+          "│ Status : *Kursi Kosong*",
+          `│ Kas    : *${formatCompactRupiah(snap.treasuryBalance)}*`,
           snap.hasActiveElection
-            ? `Pemilu     : Sedang berlangsung (${formatRemainingDuration(snap.electionRemainingMs)} lagi)`
-            : "Pemilu     : Belum dimulai",
+            ? `│ Pemilu : Aktif (${formatRemainingDuration(snap.electionRemainingMs)})`
+            : "│ Pemilu : Belum dimulai",
+          "╰───────────────────────────╯",
           "",
-          "Mulai pemilihan umum sekarang lewat *.pemilu*!",
+          "*Mulai Pemilu:* `.pemilu`",
         ].join("\n"),
       );
       return;
@@ -335,15 +341,20 @@ async function handlePresiden(context: CommandContext): Promise<void> {
     const p = snap.president;
     await context.reply(
       [
-        "*── [ ISTANA PRESIDEN GRUP ] ──*",
-        `Presiden    : ${tagOf(p.presidentJid)}${p.viaCoup ? " [KUDETA]" : ""}`,
-        `Slogan      : "${p.slogan}"`,
-        `Sisa Masa   : ${formatRemainingDuration(snap.termRemainingMs)}`,
-        `Kas Negara  : *${formatRupiah(snap.treasuryBalance)}*`,
-        `Tersalurkan : ${formatRupiah(p.totalDistributed)}`,
-        `Kudeta Gagal: ${String(p.coupsRepelled)}x digagalkan`,
-        `Anggaran CD : ${snap.budgetCooldownMs > 0 ? formatRemainingDuration(snap.budgetCooldownMs) : "SIAP (.bagianggaran)"}`,
-        `Kudeta CD   : ${snap.coupCooldownMs > 0 ? formatRemainingDuration(snap.coupCooldownMs) : `TERBUKA (.kudeta | Lv.${String(COUP_MIN_LEVEL)}, ${formatCompactRupiah(COUP_COST)})`}`,
+        "╭─〔 ISTANA PRESIDEN GRUP 〕─╮",
+        `│ Presiden : ${tagOf(p.presidentJid)}${p.viaCoup ? " [KUDETA]" : ""}`,
+        `│ Slogan   : _"${p.slogan}"_`,
+        `│ Sisa Masa: ${formatRemainingDuration(snap.termRemainingMs)}`,
+        `│ Kas Grup : *${formatCompactRupiah(snap.treasuryBalance)}*`,
+        "╰───────────────────────────╯",
+        "",
+        "*Catatan Pemerintahan:*",
+        `  ├ Tersalurkan : ${formatCompactRupiah(p.totalDistributed)}`,
+        `  ├ Kudeta Gagal: ${String(p.coupsRepelled)}x`,
+        `  ├ Anggaran CD : ${snap.budgetCooldownMs > 0 ? formatRemainingDuration(snap.budgetCooldownMs) : "*SIAP* (`.bagianggaran`)"}`,
+        `  └ Kudeta CD   : ${snap.coupCooldownMs > 0 ? formatRemainingDuration(snap.coupCooldownMs) : `*TERBUKA* (Lv.${String(COUP_MIN_LEVEL)}, ${formatCompactRupiah(COUP_COST)})`}`,
+        "",
+        "*Perintah Cepat:* `.bagianggaran` | `.kudeta`",
       ].join("\n"),
       { mentions: [p.presidentJid] },
     );
@@ -570,22 +581,26 @@ async function handleBandingkan(context: CommandContext): Promise<void> {
 
     await context.reply(
       [
-        "*── [ HEAD-TO-HEAD PEMAIN ] ──*",
-        `${tagOf(L.userJid)}  VS  ${tagOf(R.userJid)}`,
+        "╭─〔 HEAD-TO-HEAD PEMAIN 〕─╮",
+        `│ ${tagOf(L.userJid)}  VS  ${tagOf(R.userJid)}`,
+        `│ ${verdict}`,
+        "╰──────────────────────────╯",
         "",
-        `• Level       : Lv.${String(L.level)} vs Lv.${String(R.level)}`,
-        `• Rank & XP   : ${L.rank} (${L.experience.toLocaleString("id-ID")}) vs ${R.rank} (${R.experience.toLocaleString("id-ID")})`,
-        `• Total Uang  : ${formatCompactRupiah(L.totalCash)} vs ${formatCompactRupiah(R.totalCash)}`,
-        `• Power Tempur: ${L.combatPower.toLocaleString("id-ID")} vs ${R.combatPower.toLocaleString("id-ID")}`,
-        `• Prestige    : *${String(L.prestige)}* vs *${String(R.prestige)}*`,
-        `• Menang Game : ${String(L.gamesWon)} (${String(L.winRatePercent)}%) vs ${String(R.gamesWon)} (${String(R.winRatePercent)}%)`,
-        `• Dermawan    : ${formatCompactRupiah(L.totalDonated)} vs ${formatCompactRupiah(R.totalDonated)}`,
-        `• Streak Maks : ${String(L.longestStreak)} hari vs ${String(R.longestStreak)} hari`,
-        `• Properti    : ${String(L.propertyCount)} unit vs ${String(R.propertyCount)} unit`,
-        `• Karir       : ${L.careerTitle} | ${R.careerTitle}`,
-        `• Geng        : ${L.clanName ?? "-"} vs ${R.clanName ?? "-"}`,
+        "*Perbandingan Utama:*",
+        `  ├ Level    : Lv.${String(L.level)} vs Lv.${String(R.level)}`,
+        `  ├ Rank     : ${L.rank} vs ${R.rank}`,
+        `  ├ XP       : ${L.experience.toLocaleString("id-ID")} vs ${R.experience.toLocaleString("id-ID")}`,
+        `  ├ Total Kas: ${formatCompactRupiah(L.totalCash)} vs ${formatCompactRupiah(R.totalCash)}`,
+        `  ├ Power    : ${L.combatPower.toLocaleString("id-ID")} vs ${R.combatPower.toLocaleString("id-ID")}`,
+        `  └ Prestige : ★${String(L.prestige)} vs ★${String(R.prestige)}`,
         "",
-        verdict,
+        "*Aktivitas & Aset:*",
+        `  ├ Menang   : ${String(L.gamesWon)} (${String(L.winRatePercent)}%) vs ${String(R.gamesWon)} (${String(R.winRatePercent)}%)`,
+        `  ├ Dermawan : ${formatCompactRupiah(L.totalDonated)} vs ${formatCompactRupiah(R.totalDonated)}`,
+        `  ├ Streak   : ${String(L.longestStreak)}h vs ${String(R.longestStreak)}h`,
+        `  ├ Properti : ${String(L.propertyCount)} vs ${String(R.propertyCount)} unit`,
+        `  ├ Karir    : ${L.careerTitle} | ${R.careerTitle}`,
+        `  └ Geng     : ${L.clanName ?? "-"} vs ${R.clanName ?? "-"}`,
       ].join("\n"),
       { mentions: [L.userJid, R.userJid] },
     );
@@ -602,34 +617,42 @@ async function handleTargetRank(context: CommandContext): Promise<void> {
     const res = await politicsClanAnalyticsService.getTargetRank(context.chatJid, senderJid);
     const levelReadyNote =
       res.reachableLevel > res.currentLevel
-        ? `\n*SIAP NAIK LEVEL!* Ketik *.levelup* sekarang untuk langsung ke Lv.${String(res.reachableLevel)}!`
-        : "";
+        ? [`*SIAP NAIK!* Ketik \`.levelup\` -> *Lv.${String(res.reachableLevel)}*`, ""]
+        : [];
 
     const milestoneLines =
       res.upcomingMilestones.length > 0
         ? [
             "",
             "*Target Unlock Level Berikutnya:*",
-            ...res.upcomingMilestones.map(
-              (m) => `• Lv.${String(m.requiredLevel)} (+${String(m.levelsAway)} lv) -> ${m.label}`,
-            ),
+            ...res.upcomingMilestones.map((m, idx) => {
+              const branch = idx === res.upcomingMilestones.length - 1 ? "└" : "├";
+              return `  ${branch} Lv.${String(m.requiredLevel)} (+${String(m.levelsAway)} lv) — ${m.label}`;
+            }),
           ]
-        : ["", "*Semua milestone level utama sudah terbuka!*"];
+        : ["", "_Semua milestone level utama sudah terbuka!_"];
 
     await context.reply(
       [
-        "*── [ TARGET RANK & LEVEL ] ──*",
-        `Pemain : ${tagOf(res.userJid)}`,
-        `Level  : *Lv.${String(res.currentLevel)}* (${res.experience.toLocaleString("id-ID")} XP)`,
-        `Bar Lv : ${renderProgressBar(res.levelProgressPercent)} (kurang ${res.xpToNextLevel.toLocaleString("id-ID")} XP ke Lv.${String(res.currentLevel + 1)})${levelReadyNote}`,
+        "╭─〔 TARGET RANK & LEVEL 〕─╮",
+        `│ Pemain : ${tagOf(res.userJid)}`,
+        `│ Level  : *Lv.${String(res.currentLevel)}* (${res.experience.toLocaleString("id-ID")} XP)`,
+        `│ Rank   : *${res.currentRank}* -> ${res.nextRank ? `*${res.nextRank}*` : "*MAX*"}`,
+        "╰──────────────────────────╯",
         "",
-        `Rank   : *${res.currentRank}* -> ${res.nextRank ? `*${res.nextRank}*` : "MAX TIER"}`,
-        `Bar Rk : ${renderProgressBar(res.rankProgressPercent)}${res.nextRank ? ` (kurang ${res.xpToNextRank.toLocaleString("id-ID")} XP)` : ""}`,
+        ...levelReadyNote,
+        "*Progres Level:*",
+        `  ├ ${renderProgressBar(res.levelProgressPercent)}`,
+        `  └ Kurang *${res.xpToNextLevel.toLocaleString("id-ID")} XP* ke Lv.${String(res.currentLevel + 1)}`,
+        "",
+        "*Progres Rank:*",
+        `  ├ ${renderProgressBar(res.rankProgressPercent)}`,
+        `  └ ${res.nextRank ? `Kurang *${res.xpToNextRank.toLocaleString("id-ID")} XP* ke ${res.nextRank}` : "Tier tertinggi tercapai!"}`,
         "",
         "*Estimasi Aksi Menuju Target:*",
-        `• .kuis (~80 XP)       : ~${String(res.estimatedKuisRuns)}x`,
-        `• .kerja (~55 XP)      : ~${String(res.estimatedKerjaRuns)}x`,
-        `• .worldboss (~350 XP) : ~${String(res.estimatedBossRuns)}x`,
+        `  ├ \`.kuis\` (~80 XP)       : ~${String(res.estimatedKuisRuns)}x`,
+        `  ├ \`.kerja\` (~55 XP)      : ~${String(res.estimatedKerjaRuns)}x`,
+        `  └ \`.serangboss\` (~350 XP): ~${String(res.estimatedBossRuns)}x`,
         ...milestoneLines,
       ].join("\n"),
       { mentions: [res.userJid] },
@@ -669,13 +692,18 @@ async function handleRiwayat(context: CommandContext): Promise<void> {
     const lines = res.entries.map((e, idx) => {
       const timeStr = formatWibShort(e.createdAt);
       const deltaStr = formatSignedAssetDelta(e.asset, e.amount);
-      return `${String(idx + 1)}. [${timeStr}] *${e.label}* : ${deltaStr}`;
+      return [
+        `*${String(idx + 1)}. ${e.label}* (\`${timeStr}\`)`,
+        `  └ ${deltaStr}`,
+      ].join("\n");
     });
 
     await context.reply(
       [
-        `*── [ MUTASI ${String(res.entries.length)} TRANSAKSI ] ──*`,
-        `Pemilik: ${tagOf(res.userJid)} (WIB)`,
+        `╭─〔 MUTASI ${String(res.entries.length)} TRANSAKSI 〕─╮`,
+        `│ Pemilik : ${tagOf(res.userJid)}`,
+        "│ Zona    : WIB (Asia/Jakarta)",
+        "╰──────────────────────────╯",
         "",
         ...lines,
       ].join("\n"),
@@ -698,25 +726,29 @@ async function handleStatistik(context: CommandContext): Promise<void> {
     const s = await politicsClanAnalyticsService.getPlayerStatistics(context.chatJid, target);
     await context.reply(
       [
-        "*── [ STATISTIK LENGKAP ] ──*",
-        `Pemain     : ${tagOf(s.userJid)}${s.customTitle ? ` [${s.customTitle}]` : ""}`,
-        `Rank/Level : *${s.rank}* | Lv.${String(s.level)} (${s.experience.toLocaleString("id-ID")} XP)`,
-        `Peringkat  : Kaya #${String(s.wealthRank)} | XP #${String(s.xpRank)} | Level #${String(s.levelRank)}`,
-        `Prestige   : *${String(s.prestige)}* | Combat Power: *${s.combatPower.toLocaleString("id-ID")}*`,
-        `HP & Skill : ${String(s.hp)}/100 HP | SP Bebas: ${String(s.unspentSkillPoints)}/${String(s.totalSkillPoints)}`,
+        "╭─〔 STATISTIK LENGKAP 〕─╮",
+        `│ Pemain : ${tagOf(s.userJid)}${s.customTitle ? ` [${s.customTitle}]` : ""}`,
+        `│ Tier   : *${s.rank}* | Lv.${String(s.level)} (★${String(s.prestige)})`,
+        `│ Rank   : Kaya #${String(s.wealthRank)} | XP #${String(s.xpRank)} | Lv #${String(s.levelRank)}`,
+        `│ Tempur : Power *${s.combatPower.toLocaleString("id-ID")}* | HP ${String(s.hp)}/100`,
+        `│ Skill  : SP Bebas ${String(s.unspentSkillPoints)}/${String(s.totalSkillPoints)}`,
+        "╰────────────────────────╯",
         "",
         "*Keuangan & Saldo:*",
-        `• Total Kas : *${formatRupiah(s.totalCash)}* (Dompet ${formatCompactRupiah(s.wallet)} + ATM ${formatCompactRupiah(s.bank)})`,
-        `• Total Cuan: ${formatCompactRupiah(s.totalMoneyEarned)} | Donasi: ${formatCompactRupiah(s.totalDonated)}`,
-        `• Poin/Limit: ${s.pointsBalance.toLocaleString("id-ID")} Poin | ${s.limitBalance.toLocaleString("id-ID")} Limit`,
+        `  ├ Total Kas : *${formatCompactRupiah(s.totalCash)}*`,
+        `  ├ Dompet/ATM: ${formatCompactRupiah(s.wallet)} / ${formatCompactRupiah(s.bank)}`,
+        `  ├ Total Cuan: ${formatCompactRupiah(s.totalMoneyEarned)}`,
+        `  ├ Donasi    : ${formatCompactRupiah(s.totalDonated)}`,
+        `  └ Poin/Limit: ${s.pointsBalance.toLocaleString("id-ID")} P | ${s.limitBalance.toLocaleString("id-ID")} L`,
         "",
         "*Aktivitas & Karir:*",
-        `• Game      : ${String(s.gamesWon)}/${String(s.gamesPlayed)} menang (${String(s.winRatePercent)}% WR)`,
-        `• Streak    : ${String(s.currentStreak)} hari (Rekor: ${String(s.longestStreak)} hari) | Chat: ${s.messageCount.toLocaleString("id-ID")}x`,
-        `• Koleksi   : ${String(s.propertyUnits)} Properti | ${String(s.uniqueCards)} Kartu | ${String(s.achievementsCount)} Lencana`,
-        `• Karir     : ${s.careerLabel}`,
-        `• Startup   : ${s.startupLabel}`,
-        `• Geng      : ${s.clanLabel}`,
+        `  ├ Game    : ${String(s.gamesWon)}/${String(s.gamesPlayed)} (${String(s.winRatePercent)}% WR)`,
+        `  ├ Streak  : ${String(s.currentStreak)}h (Rekor ${String(s.longestStreak)}h)`,
+        `  ├ Chat    : ${s.messageCount.toLocaleString("id-ID")}x pesan`,
+        `  ├ Koleksi : ${String(s.propertyUnits)} Prop | ${String(s.uniqueCards)} Kartu | ${String(s.achievementsCount)} Lencana`,
+        `  ├ Karir   : ${s.careerLabel}`,
+        `  ├ Startup : ${s.startupLabel}`,
+        `  └ Geng    : ${s.clanLabel}`,
       ].join("\n"),
       { mentions: [s.userJid] },
     );
@@ -743,19 +775,30 @@ async function handleHallOfFame(context: CommandContext): Promise<void> {
     if (h.topStreak) mentionSet.add(h.topStreak.userJid);
 
     const lines = [
-      "*── [ HALL OF FAME GRUP ] ──*",
+      "╭─〔 HALL OF FAME GRUP 〕─╮",
+      "│ Tahta Kehormatan & Legenda Grup",
+      "╰────────────────────────╯",
       "",
-      `1. Presiden Grup  : ${h.president ? `${tagOf(h.president.presidentJid)}${h.president.viaCoup ? " [KUDETA]" : ""}` : "_Kursi Kosong (.pemilu)_"}`,
-      `2. Sultan Terkaya : ${h.richest ? `${tagOf(h.richest.userJid)} (${formatCompactRupiah(h.richest.totalCash)})` : "-"}`,
-      `3. Rank Tertinggi : ${h.topXp ? `${tagOf(h.topXp.userJid)} (${h.topXp.rank} - ${h.topXp.experience.toLocaleString("id-ID")} XP)` : "-"}`,
-      `4. Level Tertinggi: ${h.topLevel ? `${tagOf(h.topLevel.userJid)} (Lv.${String(h.topLevel.level)})` : "-"}`,
-      `5. Raja Prestige  : ${h.topPrestige ? `${tagOf(h.topPrestige.userJid)} (Prestige *${String(h.topPrestige.prestige)}*)` : "-"}`,
-      `6. Raja Game      : ${h.topGamesWon ? `${tagOf(h.topGamesWon.userJid)} (${String(h.topGamesWon.gamesWon)} menang)` : "-"}`,
-      `7. Paling Dermawan: ${h.topDonated ? `${tagOf(h.topDonated.userJid)} (${formatCompactRupiah(h.topDonated.totalDonated)})` : "-"}`,
-      `8. Streak Terlama : ${h.topStreak ? `${tagOf(h.topStreak.userJid)} (${String(h.topStreak.longestStreak)} hari)` : "-"}`,
-      `9. Geng Terkuat   : ${h.topClan ? `*${h.topClan.name}* (Lv.${String(h.topClan.level)}, ${String(h.topClan.warWins)}x War, Kas ${formatCompactRupiah(h.topClan.treasuryBalance)})` : "-"}`,
+      "*1. Presiden Grup*",
+      `  └ ${h.president ? `${tagOf(h.president.presidentJid)}${h.president.viaCoup ? " [KUDETA]" : ""}` : "_Kursi Kosong (`.pemilu`)_"}`,
+      "*2. Sultan Terkaya*",
+      `  └ ${h.richest ? `${tagOf(h.richest.userJid)} — *${formatCompactRupiah(h.richest.totalCash)}*` : "-"}`,
+      "*3. Rank Tertinggi*",
+      `  └ ${h.topXp ? `${tagOf(h.topXp.userJid)} — ${h.topXp.rank} (${h.topXp.experience.toLocaleString("id-ID")} XP)` : "-"}`,
+      "*4. Level Tertinggi*",
+      `  └ ${h.topLevel ? `${tagOf(h.topLevel.userJid)} — *Lv.${String(h.topLevel.level)}*` : "-"}`,
+      "*5. Raja Prestige*",
+      `  └ ${h.topPrestige ? `${tagOf(h.topPrestige.userJid)} — *★${String(h.topPrestige.prestige)}*` : "-"}`,
+      "*6. Raja Game*",
+      `  └ ${h.topGamesWon ? `${tagOf(h.topGamesWon.userJid)} — ${String(h.topGamesWon.gamesWon)} menang` : "-"}`,
+      "*7. Paling Dermawan*",
+      `  └ ${h.topDonated ? `${tagOf(h.topDonated.userJid)} — ${formatCompactRupiah(h.topDonated.totalDonated)}` : "-"}`,
+      "*8. Streak Terlama*",
+      `  └ ${h.topStreak ? `${tagOf(h.topStreak.userJid)} — ${String(h.topStreak.longestStreak)} hari` : "-"}`,
+      "*9. Geng Terkuat*",
+      `  └ ${h.topClan ? `*${h.topClan.name}* (Lv.${String(h.topClan.level)} | ${String(h.topClan.warWins)}x War | Kas ${formatCompactRupiah(h.topClan.treasuryBalance)})` : "-"}`,
       "",
-      "_Bandingkan dirimu dengan legenda grup pakai *.bandingkan @user*!_",
+      "*Bandingkan Profil:* `.bandingkan @user`",
     ];
 
     await context.socket.sendMessage(

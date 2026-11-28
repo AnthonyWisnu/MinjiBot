@@ -64,30 +64,36 @@ async function handleKarir(context: CommandContext): Promise<void> {
 
     const statusBlock = info.current
       ? [
-          `Profesi : *${info.current.spec.title}* (Lv.${String(info.current.level)}/${String(CAREER_MAX_LEVEL)})`,
-          `Shift   : ${String(info.current.shiftsDone)}x selesai`,
-          `Status  : ${info.current.shiftCooldownMs > 0 ? `Cooldown ${formatRemainingDuration(info.current.shiftCooldownMs)}` : "Siap .shift sekarang!"}`,
+          `│ Profesi : *${info.current.spec.title}* (Lv.${String(info.current.level)}/${String(CAREER_MAX_LEVEL)})`,
+          `│ Shift   : ${String(info.current.shiftsDone)}x selesai`,
+          `│ Status  : ${info.current.shiftCooldownMs > 0 ? `CD ${formatRemainingDuration(info.current.shiftCooldownMs)}` : "*Siap `.shift`!*"}`,
           ...(info.current.nextPromoteCost
-            ? [`Promosi : ${formatCompactRupiah(info.current.nextPromoteCost)} (.promosi)`]
-            : ["Jabatan : MAX LEVEL"]),
+            ? [`│ Promosi : ${formatCompactRupiah(info.current.nextPromoteCost)} (\`.promosi\`)`]
+            : ["│ Jabatan : *MAX LEVEL*"]),
         ]
-      : ["Profesi : Belum bekerja (lamar lewat .lamar <kode>)"];
+      : ["│ Profesi : _Belum bekerja_"];
 
-    const listLines = info.catalog.map(
-      (c) =>
-        `- *${c.id}* (${c.title}) | Min Lv.${String(c.minLevel)} | Gaji: ${formatCompactRupiah(c.basePay)}/shift`,
+    const listLines = info.catalog.map((c, idx) =>
+      [
+        `*${String(idx + 1)}. ${c.title}* (\`${c.id}\`)`,
+        `  ├ Syarat : Min Lv.${String(c.minLevel)}`,
+        `  └ Gaji   : *${formatCompactRupiah(c.basePay)}*/shift`,
+      ].join("\n"),
     );
 
     await context.reply(
       [
-        "*── [ PUSAT KARIR GRUP ] ──*",
-        `Pemain  : ${tagOf(sender)} (Lv.${String(info.playerLevel)} | Prestige ★${String(info.prestige)})`,
+        "╭─〔 PUSAT KARIR GRUP 〕─╮",
+        `│ Pemain  : ${tagOf(sender)} (Lv.${String(info.playerLevel)} | ★${String(info.prestige)})`,
         ...statusBlock,
+        "╰───────────────────────╯",
         "",
         "*Daftar Lowongan Profesi:*",
         ...listLines,
         "",
-        "Lamar: .lamar <kode> | Kerja: .shift | Naik: .promosi | Keluar: .resign",
+        "*Perintah Cepat:*",
+        "• `.lamar <kode>` | `.shift`",
+        "• `.promosi` | `.resign`",
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -214,15 +220,17 @@ async function handleStartup(context: CommandContext): Promise<void> {
     if (!info.startup) {
       await context.reply(
         [
-          "*── [ STARTUP & PERUSAHAAN ] ──*",
-          `Founder : ${tagOf(sender)}`,
-          `Status  : Belum memiliki perusahaan`,
-          `Syarat  : Minimal Level ${String(STARTUP_MIN_PLAYER_LEVEL)}`,
-          `Modal   : ${formatRupiah(STARTUP_CREATE_COST)}`,
-          `Dompet  : ${formatRupiah(info.moneyBalance)}`,
+          "╭─〔 STARTUP & PERUSAHAAN 〕─╮",
+          `│ Founder : ${tagOf(sender)}`,
+          "│ Status  : Belum punya startup",
+          `│ Syarat  : Min Lv.${String(STARTUP_MIN_PLAYER_LEVEL)}`,
+          `│ Modal   : *${formatCompactRupiah(STARTUP_CREATE_COST)}*`,
+          `│ Dompet  : ${formatCompactRupiah(info.moneyBalance)}`,
+          "╰───────────────────────────╯",
           "",
-          "Dirikan startup: *.buatstartup <nama perusahaan>*",
-          "Contoh: *.buatstartup PT Minji Nusantara*",
+          "*Perintah Cepat:*",
+          "• `.buatstartup <nama>`",
+          "• `.topstartup` (peringkat valuasi)",
         ].join("\n"),
         { mentions: [sender] },
       );
@@ -232,16 +240,22 @@ async function handleStartup(context: CommandContext): Promise<void> {
     const s = info.startup;
     await context.reply(
       [
-        `*── [ ${s.name.toUpperCase()} ] ──*`,
-        `Founder   : ${tagOf(sender)}`,
-        `Level     : Lv.${String(s.level)} / 10`,
-        `Karyawan  : ${String(s.employees)} / ${String(s.maxEmployees)} orang (.rekruit)`,
-        `Valuasi   : ${formatRupiah(s.valuation)}`,
-        `Dividen   : ${formatRupiah(s.dividendPayout)} / 6 jam`,
-        `Status    : ${s.dividendCooldownMs > 0 ? `Tersedia ${formatRemainingDuration(s.dividendCooldownMs)} lagi` : "Siap ditarik (.dividen)!"}`,
+        "╭─〔 DASHBOARD STARTUP 〕─╮",
+        `│ Nama     : *${s.name}*`,
+        `│ Founder  : ${tagOf(sender)}`,
+        `│ Level    : Lv.${String(s.level)} / 10`,
+        `│ Karyawan : ${String(s.employees)} / ${String(s.maxEmployees)} org`,
+        `│ Valuasi  : *${formatCompactRupiah(s.valuation)}*`,
+        `│ Dividen  : *${formatCompactRupiah(s.dividendPayout)}* / 6 jam`,
+        `│ Status   : ${s.dividendCooldownMs > 0 ? `CD ${formatRemainingDuration(s.dividendCooldownMs)}` : "*Siap `.dividen`!*"}`,
         ...(s.nextUpgradeCost
-          ? [`Upgrade   : ${formatCompactRupiah(s.nextUpgradeCost)} (.upgradestartup)`]
-          : ["Upgrade   : MAX LEVEL"]),
+          ? [`│ Upgrade  : ${formatCompactRupiah(s.nextUpgradeCost)}`]
+          : ["│ Upgrade  : *MAX LEVEL*"]),
+        "╰────────────────────────╯",
+        "",
+        "*Perintah Cepat:*",
+        "• `.dividen` | `.rekruit [jml]`",
+        "• `.upgradestartup` | `.topstartup`",
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -378,11 +392,23 @@ async function handleTopStartup(context: CommandContext): Promise<void> {
       return;
     }
     const mentions = rows.map((r) => r.userJid);
-    const lines = rows.map(
-      (r, idx) =>
-        `${String(idx + 1)}. *${r.startupName}* (Lv.${String(r.level)})\n   Founder: ${tagOf(r.userJid)} | Valuasi: ${formatCompactRupiah(r.valuation)}`,
+    const lines = rows.map((r, idx) =>
+      [
+        `*${String(idx + 1)}. ${r.startupName}* (Lv.${String(r.level)})`,
+        `  ├ Founder : ${tagOf(r.userJid)}`,
+        `  └ Valuasi : *${formatCompactRupiah(r.valuation)}*`,
+      ].join("\n"),
     );
-    await context.reply(["*── [ TOP STARTUP GRUP ] ──*", "", ...lines].join("\n"), { mentions });
+    await context.reply(
+      [
+        "╭─〔 TOP STARTUP GRUP 〕─╮",
+        `│ Peringkat ${String(rows.length)} Perusahaan Terbesar`,
+        "╰───────────────────────╯",
+        "",
+        ...lines,
+      ].join("\n"),
+      { mentions },
+    );
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Gagal memuat peringkat startup."));
   }
@@ -398,14 +424,16 @@ async function handleCekUtang(context: CommandContext): Promise<void> {
     if (!info.active) {
       await context.reply(
         [
-          "*── [ KOPERASI PINJOL GRUP ] ──*",
-          `Nasabah  : ${tagOf(sender)}`,
-          `Status   : Bebas Utang`,
-          `Rank     : *${info.rank}*`,
-          `Plafon   : Maks ${formatRupiah(info.maxBorrowLimit)}`,
-          `Bunga    : Flat ${String(PINJOL_INTEREST_PERCENT)}% (tenor 48 jam)`,
+          "╭─〔 KOPERASI PINJOL GRUP 〕─╮",
+          `│ Nasabah : ${tagOf(sender)}`,
+          "│ Status  : *Bebas Utang*",
+          `│ Rank    : *${info.rank}*`,
+          `│ Plafon  : Maks *${formatCompactRupiah(info.maxBorrowLimit)}*`,
+          `│ Bunga   : Flat ${String(PINJOL_INTEREST_PERCENT)}% (tenor 48 jam)`,
+          "╰───────────────────────────╯",
           "",
-          `Ajukan pinjaman: *.pinjam <jumlah>* (min ${formatCompactRupiah(PINJOL_MIN_AMOUNT)})`,
+          "*Perintah Cepat:*",
+          `• \`.pinjam <uang>\` (min ${formatCompactRupiah(PINJOL_MIN_AMOUNT)})`,
         ].join("\n"),
         { mentions: [sender] },
       );
@@ -413,19 +441,21 @@ async function handleCekUtang(context: CommandContext): Promise<void> {
     }
 
     const status = info.overdue
-      ? "*MENUNGGAK! Debt Collector aktif memotong 50% gaji/dividen!*"
-      : `Jatuh tempo ${formatRemainingDuration(info.remainingMs)} lagi`;
+      ? "*MENUNGGAK!* (Potong 50% gaji/dividen)"
+      : `Jatuh tempo ${formatRemainingDuration(info.remainingMs)}`;
 
     await context.reply(
       [
-        "*── [ TAGIHAN PINJOL AKTIF ] ──*",
-        `Nasabah : ${tagOf(sender)}`,
-        `Pokok   : ${formatRupiah(info.principal)}`,
-        `Bunga   : ${formatRupiah(info.interest)}`,
-        `Total   : *${formatRupiah(info.totalDue)}*`,
-        `Status  : ${status}`,
+        "╭─〔 TAGIHAN PINJOL AKTIF 〕─╮",
+        `│ Nasabah : ${tagOf(sender)}`,
+        `│ Pokok   : ${formatCompactRupiah(info.principal)}`,
+        `│ Bunga   : ${formatCompactRupiah(info.interest)}`,
+        `│ Total   : *${formatCompactRupiah(info.totalDue)}*`,
+        `│ Status  : ${status}`,
+        "╰───────────────────────────╯",
         "",
-        "Lunasi: *.bayarutang all* atau *.bayarutang <jumlah>*",
+        "*Perintah Cepat:*",
+        "• `.bayarutang all` | `.bayarutang <uang>`",
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -498,25 +528,32 @@ async function handleAsuransi(context: CommandContext): Promise<void> {
   try {
     const sender = await resolveSender(context);
     const info = await careerPrestigeService.getInsuranceOverview(context.chatJid, sender);
-    const lines = info.items.map((item) => {
+    const lines = info.items.map((item, idx) => {
       const stateText =
         item.remainingMs > 0
-          ? `AKTIF (${formatRemainingDuration(item.remainingMs)})`
-          : "Belum aktif";
-      return `- *${item.spec.id}* (${item.spec.name})\n  Harga: ${formatCompactRupiah(item.spec.price)}/24j | Status: *${stateText}*\n  Manfaat: ${item.spec.benefit}`;
+          ? `*AKTIF* (${formatRemainingDuration(item.remainingMs)})`
+          : "_Belum aktif_";
+      return [
+        `*${String(idx + 1)}. ${item.spec.name}* (\`${item.spec.id}\`)`,
+        `  ├ Premi   : *${formatCompactRupiah(item.spec.price)}*/24 jam`,
+        `  ├ Status  : ${stateText}`,
+        `  └ Manfaat : ${item.spec.benefit}`,
+      ].join("\n");
     });
 
     await context.reply(
       [
-        "*── [ ASURANSI & PROTEKSI ] ──*",
-        `Pemilik : ${tagOf(sender)}`,
-        `Dompet  : ${formatCompactRupiah(info.moneyBalance)}`,
+        "╭─〔 ASURANSI & PROTEKSI 〕─╮",
+        `│ Pemilik : ${tagOf(sender)}`,
+        `│ Dompet  : *${formatCompactRupiah(info.moneyBalance)}*`,
+        "╰──────────────────────────╯",
         "",
         ...lines,
         "",
-        "Beli: .beliasuransi <brankas|bpjs|pengacara>",
-        `Tebus Penjara: .bebaspenjara (${formatCompactRupiah(JAIL_BAIL_COST)} / gratis dgn Pengacara)`,
-        `Keluar UGD   : .bebasugd (${formatCompactRupiah(UGD_VIP_RELEASE_COST)} / gratis dgn BPJS)`,
+        "*Perintah Cepat:*",
+        "• `.beliasuransi <brankas|bpjs|pengacara>`",
+        `• \`.bebaspenjara\` (${formatCompactRupiah(JAIL_BAIL_COST)} / gratis Pengacara)`,
+        `• \`.bebasugd\` (${formatCompactRupiah(UGD_VIP_RELEASE_COST)} / gratis BPJS)`,
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -614,19 +651,22 @@ async function handlePrestige(context: CommandContext): Promise<void> {
     const info = await careerPrestigeService.getPrestigeOverview(context.chatJid, sender);
     await context.reply(
       [
-        "*── [ STATUS PRESTIGE ] ──*",
-        `Pemain   : ${tagOf(sender)}`,
-        `Prestige : *★${String(info.prestige)} / ★${String(info.maxPrestige)}*`,
-        `Boost    : *+${String(info.currentBoostPercent)}%* penghasilan Karir/Startup & XP permanen`,
-        `Level    : Lv.${String(info.playerLevel)} (Min Lv.${String(PRESTIGE_MIN_PLAYER_LEVEL)} untuk rebirth)`,
+        "╭─〔 STATUS PRESTIGE 〕─╮",
+        `│ Pemain   : ${tagOf(sender)}`,
+        `│ Bintang  : *★${String(info.prestige)} / ★${String(info.maxPrestige)}*`,
+        `│ Boost    : *+${String(info.currentBoostPercent)}%* Uang & XP`,
+        `│ Level    : Lv.${String(info.playerLevel)} (Min Lv.${String(PRESTIGE_MIN_PLAYER_LEVEL)})`,
+        "╰──────────────────────╯",
+        "",
         ...(info.nextCost
           ? [
-              `Biaya ★${String(info.prestige + 1)}: ${formatRupiah(info.nextCost)}`,
-              `Bonus    : +${String(PRESTIGE_BONUS_PERCENT_PER_STAR)}% permanen, +${String(PRESTIGE_REWARD_LIMIT)} Limit, +${String(PRESTIGE_REWARD_POINTS)} Poin`,
+              `*Target Prestige ★${String(info.prestige + 1)}:*`,
+              `  ├ Biaya : *${formatCompactRupiah(info.nextCost)}*`,
+              `  └ Bonus : +${String(PRESTIGE_BONUS_PERCENT_PER_STAR)}% permanen, +${String(PRESTIGE_REWARD_LIMIT)} Limit, +${String(PRESTIGE_REWARD_POINTS)} Poin`,
               "",
-              "Naik bintang: *.rebirth*",
+              "*Naik Bintang:* `.rebirth`",
             ]
-          : ["Status   : PRESTIGE TERTINGGI TERCAPAI!"]),
+          : ["*PRESTIGE TERTINGGI TERCAPAI!*"]),
       ].join("\n"),
       { mentions: [sender] },
     );

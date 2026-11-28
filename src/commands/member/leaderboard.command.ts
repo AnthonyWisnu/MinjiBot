@@ -9,11 +9,20 @@ function formatLeaderboard(
   unit: string,
   asRupiah = false,
 ): { text: string; mentions: string[] } {
-  const lines: string[] = [title, ""];
+  const cleanTitle = title.replace(/^\*───\s*\[\s*|\s*\]\s*───\*$/g, "").trim();
+  const border = "─".repeat(Math.max(16, cleanTitle.length + 6));
+  const lines: string[] = [
+    `╭─〔 ${cleanTitle} 〕─╮`,
+    ...(result.callerPosition !== null
+      ? [`│ Posisimu : *#${String(result.callerPosition)}* di grup ini`]
+      : [`│ Peringkat Teratas Grup`]),
+    `╰${border}╯`,
+    "",
+  ];
   const mentions: string[] = [];
 
   if (result.entries.length === 0) {
-    lines.push("Belum ada data di grup ini.");
+    lines.push("_Belum ada data di grup ini._");
     return { text: lines.join("\n"), mentions };
   }
 
@@ -22,13 +31,8 @@ function formatLeaderboard(
     const formattedValue = asRupiah
       ? formatCompactRupiah(entry.value)
       : `${entry.value.toLocaleString("id-ID")} ${unit}`;
-    lines.push(`${String(entry.position)}. @${entry.displayName} [${entry.rank}]`);
-    lines.push(`   ${asRupiah ? "Total Aset" : unit}: ${formattedValue}`);
-  }
-
-  if (result.callerPosition !== null) {
-    lines.push("");
-    lines.push(`Posisi kamu: #${String(result.callerPosition)}`);
+    lines.push(`*${String(entry.position)}.* @${entry.displayName} [${entry.rank}]`);
+    lines.push(`  └ ${asRupiah ? "Total Aset" : unit} : *${formattedValue}*`);
   }
 
   return { text: lines.join("\n"), mentions };

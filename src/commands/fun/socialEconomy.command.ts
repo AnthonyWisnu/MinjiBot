@@ -63,12 +63,14 @@ async function handleBeliGelar(context: CommandContext): Promise<void> {
     if (!title) {
       await context.reply(
         [
-          "*── [ TOKO GELAR SULTAN ] ──*",
-          `Harga : *${formatRupiah(CUSTOM_TITLE_PRICE)}*`,
-          "Format: *.beligelar <nama gelar>*",
-          "Contoh: *.beligelar Raja Korupsi*",
+          "╭─〔 TOKO GELAR SULTAN 〕─╮",
+          `│ Harga : *${formatCompactRupiah(CUSTOM_TITLE_PRICE)}*`,
+          "│ Tampil langsung di `.profile`!",
+          "╰────────────────────────╯",
           "",
-          "Gelar akan tampil langsung di kartu *.profile* kamu!",
+          "*Perintah Cepat:*",
+          "• `.beligelar <nama gelar>`",
+          "• `.gelar` (lihat inspirasi & gelar aktif)",
         ].join("\n"),
       );
       return;
@@ -97,14 +99,19 @@ async function handleGelar(context: CommandContext): Promise<void> {
     const current = await socialEconomyService.getCurrentTitle(context.chatJid, sender);
     await context.reply(
       [
-        "*── [ GELAR SULTAN ] ──*",
-        `Gelar Kamu : *${current ?? "Belum punya"}*`,
-        `Harga Beli : ${formatRupiah(CUSTOM_TITLE_PRICE)}`,
+        "╭─〔 GELAR SULTAN 〕─╮",
+        `│ Gelar : *${current ?? "Belum punya"}*`,
+        `│ Harga : *${formatCompactRupiah(CUSTOM_TITLE_PRICE)}*`,
+        "╰───────────────────╯",
         "",
         "*Inspirasi Gelar:*",
-        ...PRESET_TITLES.map((t, i) => `${String(i + 1)}. ${t}`),
+        ...PRESET_TITLES.map((t, i) => {
+          const branch = i === PRESET_TITLES.length - 1 ? "└" : "├";
+          return `  ${branch} ${String(i + 1)}. ${t}`;
+        }),
         "",
-        "Beli dengan *.beligelar <nama gelar>* atau hapus dengan *.hapusgelar*.",
+        "*Perintah Cepat:*",
+        "• `.beligelar <nama>` | `.hapusgelar`",
       ].join("\n"),
     );
   } catch (error: unknown) {
@@ -304,16 +311,21 @@ async function handleGeng(context: CommandContext): Promise<void> {
     if (!sub || sub === "help") {
       await context.reply(
         [
-          "*── [ GENG / KLAN GRUP ] ──*",
-          `Biaya Buat: ${formatRupiah(CLAN_CREATE_PRICE)}`,
+          "╭─〔 GENG / KLAN GRUP 〕─╮",
+          `│ Biaya Buat : *${formatCompactRupiah(CLAN_CREATE_PRICE)}*`,
+          "╰───────────────────────╯",
           "",
-          "• *.geng buat <nama>*   : Dirikan geng baru",
-          "• *.geng join <nama>*   : Gabung ke geng",
-          "• *.geng keluar*        : Keluar dari geng",
-          "• *.geng info [nama]*   : Info & anggota geng",
-          "• *.geng donasi <uang>* : Isi kas geng",
-          "• *.geng top*           : Top geng terkaya",
-          "• *.geng kick @user*    : Keluarkan anggota (Ketua)",
+          "*Menu Geng:*",
+          "  ├ `.geng buat <nama>` — Dirikan geng",
+          "  ├ `.geng join <nama>` — Gabung geng",
+          "  ├ `.geng info [nama]` — Info & anggota",
+          "  ├ `.geng donasi <uang>` — Isi kas geng",
+          "  ├ `.geng top` — Peringkat geng",
+          "  ├ `.geng keluar` — Keluar geng",
+          "  └ `.geng kick @user` — Kick (Ketua)",
+          "",
+          "*Perang & Upgrade:*",
+          "• `.gengupgrade` | `.gengbuff` | `.gengwar <nama>`",
         ].join("\n"),
       );
       return;
@@ -404,9 +416,21 @@ async function handleGeng(context: CommandContext): Promise<void> {
       }
       const lines = clans.slice(0, 10).map((c, idx) => {
         const count = parseClanMembers(c.memberJids).length;
-        return `${String(idx + 1)}. *${c.name}* Lv.${String(c.level)} (${String(count)} org | ${String(c.warWins)}x War) - Kas ${formatCompactRupiah(c.treasuryBalance)}`;
+        return [
+          `*${String(idx + 1)}. ${c.name}* (Lv.${String(c.level)})`,
+          `  ├ Anggota : ${String(count)} org | ${String(c.warWins)}x War`,
+          `  └ Kas     : *${formatCompactRupiah(c.treasuryBalance)}*`,
+        ].join("\n");
       });
-      await context.reply(["*── [ TOP GENG GRUP ] ──*", ...lines].join("\n"));
+      await context.reply(
+        [
+          "╭─〔 TOP GENG GRUP 〕─╮",
+          `│ Peringkat ${String(Math.min(10, clans.length))} Geng Terbaik`,
+          "╰────────────────────╯",
+          "",
+          ...lines,
+        ].join("\n"),
+      );
       return;
     }
 
@@ -423,12 +447,21 @@ async function handleGeng(context: CommandContext): Promise<void> {
     const members = parseClanMembers(clan.memberJids);
     await context.reply(
       [
-        `*── [ GENG: ${clan.name.toUpperCase()} ] ──*`,
-        `Ketua   : ${tagOf(clan.leaderJid)}`,
-        `Level   : *Lv.${String(clan.level)}* (${String(clan.warWins)}x Menang War)`,
-        `Kas     : *${formatRupiah(clan.treasuryBalance)}*`,
-        `Anggota : ${String(members.length)} orang`,
-        members.map((m, i) => `${String(i + 1)}. ${tagOf(m)}`).join("\n"),
+        "╭─〔 INFO MARKAS GENG 〕─╮",
+        `│ Nama    : *${clan.name}*`,
+        `│ Ketua   : ${tagOf(clan.leaderJid)}`,
+        `│ Level   : *Lv.${String(clan.level)}* (${String(clan.warWins)}x Menang War)`,
+        `│ Kas     : *${formatCompactRupiah(clan.treasuryBalance)}*`,
+        `│ Anggota : ${String(members.length)} orang`,
+        "╰───────────────────────╯",
+        "",
+        "*Daftar Anggota:*",
+        ...members.map((m, i) => {
+          const branch = i === members.length - 1 ? "└" : "├";
+          return `  ${branch} ${String(i + 1)}. ${tagOf(m)}`;
+        }),
+        "",
+        "*Perintah Cepat:* `.geng donasi <uang>` | `.gengupgrade` | `.gengbuff`",
       ].join("\n"),
       { mentions: members },
     );
@@ -448,14 +481,16 @@ async function handleLelang(context: CommandContext): Promise<void> {
     if (!sub || sub === "help") {
       await context.reply(
         [
-          "*── [ BALAI LELANG GRUP ] ──*",
-          `Harga Awal Min: ${formatRupiah(AUCTION_MIN_START)}`,
+          "╭─〔 BALAI LELANG GRUP 〕─╮",
+          `│ Harga Awal Min : *${formatCompactRupiah(AUCTION_MIN_START)}*`,
+          "╰────────────────────────╯",
           "",
-          "• *.lelang buka <barang> | <harga>* : Buka lelang",
-          "• *.bid <nominal>*                  : Ajukan tawaran",
-          "• *.lelang info*                    : Cek lelang aktif",
-          "• *.lelang tutup*                   : Selesaikan & bayar",
-          "• *.lelang batal*                   : Batalkan lelang",
+          "*Perintah Lelang:*",
+          "  ├ `.lelang buka <barang> | <harga>`",
+          "  ├ `.bid <nominal>` — Ajukan tawaran",
+          "  ├ `.lelang info` — Cek lelang aktif",
+          "  ├ `.lelang tutup` — Selesaikan & bayar",
+          "  └ `.lelang batal` — Batalkan lelang",
         ].join("\n"),
       );
       return;
@@ -509,15 +544,18 @@ async function handleLelang(context: CommandContext): Promise<void> {
         return;
       }
       const bidderLine = session.highestBidderJid
-        ? `Penawar Tertinggi: ${tagOf(session.highestBidderJid)}`
-        : "Penawar Tertinggi: Belum ada";
+        ? `│ Penawar : ${tagOf(session.highestBidderJid)}`
+        : "│ Penawar : _Belum ada_";
       await context.reply(
         [
-          "*── [ INFO LELANG AKTIF ] ──*",
-          `Barang  : *${session.itemName}*`,
-          `Penjual : ${tagOf(session.sellerJid)}`,
-          `Harga   : *${formatRupiah(session.currentBid)}*`,
+          "╭─〔 INFO LELANG AKTIF 〕─╮",
+          `│ Barang  : *${session.itemName}*`,
+          `│ Penjual : ${tagOf(session.sellerJid)}`,
+          `│ Harga   : *${formatCompactRupiah(session.currentBid)}*`,
           bidderLine,
+          "╰────────────────────────╯",
+          "",
+          "*Ikut Menawar:* `.bid <nominal>`",
         ].join("\n"),
         {
           mentions: [

@@ -26,9 +26,12 @@ import { normalizeUserJid } from "../../utils/jid";
 import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
+import { CAREER_SHIFT_COOLDOWN_MS } from "./careerPrestigeCatalog";
+import { PET_EXPEDITION_ZONE_MAP, PET_LABELS } from "./rpgCatalog";
 import {
   getRemainingCooldownMs,
   getRemainingJailMs,
+  getRemainingUgdMs,
   isInsuranceActive,
   parseRpgState,
   serializeRpgState,
@@ -276,9 +279,25 @@ export interface CasinoResult {
   currentMoney: bigint;
 }
 
+export type CooldownCategory = "kerja" | "petualangan" | "kriminal";
+
+export interface CooldownEntry {
+  key: string;
+  label: string;
+  category: CooldownCategory;
+  remainingMs: number;
+}
+
 export interface CooldownSummary {
   jailedRemainingMs: number;
-  entries: { key: string; label: string; remainingMs: number }[];
+  ugdRemainingMs: number;
+  expedition: {
+    petLabel: string;
+    zoneName: string;
+    remainingMs: number;
+    ready: boolean;
+  } | null;
+  entries: CooldownEntry[];
 }
 
 export interface TopWealthTaxMemberEntry {
@@ -1287,26 +1306,54 @@ export class RpgEconomyService {
     const state = parseRpgState(profile.rpgState);
     const nowMs = now.getTime();
 
-    const labels: [string, string][] = [
-      ["mulung", ".mulung"],
-      ["kerja", ".kerja"],
-      ["ojek", ".ojek"],
-      ["nambang", ".nambang"],
-      ["berburu", ".berburu"],
-      ["mancing", ".mancing"],
-      ["korupsi", ".korupsi"],
-      ["megakorupsi", ".megakorupsi"],
-      ["pajak", ".pajak"],
-      ["maling", ".maling"],
-      ["bansos", ".bansos"],
+    const cooldownDefs: [string, string, CooldownCategory, number][] = [
+      // Kerja & Ekonomi
+      ["mulung", ".mulung", "kerja", RPG_COOLDOWNS_MS.mulung ?? 0],
+      ["kerja", ".kerja", "kerja", RPG_COOLDOWNS_MS.kerja ?? 0],
+      ["ojek", ".ojek", "kerja", RPG_COOLDOWNS_MS.ojek ?? 0],
+      ["nambang", ".nambang", "kerja", RPG_COOLDOWNS_MS.nambang ?? 0],
+      ["berburu", ".berburu", "kerja", RPG_COOLDOWNS_MS.berburu ?? 0],
+      ["mancing", ".mancing", "kerja", RPG_COOLDOWNS_MS.mancing ?? 0],
+      ["bansos", ".bansos", "kerja", RPG_COOLDOWNS_MS.bansos ?? 0],
+      ["career_shift", ".shift", "kerja", CAREER_SHIFT_COOLDOWN_MS],
+      ["berbisnis", ".berbisnis", "kerja", 60 * 60 * 1000],
+      // Petualangan & Aktivitas RPG
+      ["adventure", ".adventure", "petualangan", 16 * 60 * 1000],
+      ["nebang", ".nebang", "petualangan", 10 * 60 * 1000],
+      ["berkebon", ".berkebon", "petualangan", 10 * 60 * 1000],
+      ["dungeon", ".dungeon", "petualangan", 40 * 60 * 1000],
+      ["worldboss_hit", ".serangboss", "petualangan", 4 * 60 * 1000],
+      ["sabungpet", ".sabungpet", "petualangan", 4 * 60 * 1000],
+      ["gengbuff", ".gengbuff", "petualangan", 60 * 60 * 1000],
+      ["npc_cocok", ".cocoknpc", "petualangan", 5 * 60 * 1000],
+      // Kriminal & PvP
+      ["korupsi", ".korupsi", "kriminal", RPG_COOLDOWNS_MS.korupsi ?? 0],
+      ["megakorupsi", ".megakorupsi", "kriminal", RPG_COOLDOWNS_MS.megakorupsi ?? 0],
+      ["pajak", ".pajak", "kriminal", RPG_COOLDOWNS_MS.pajak ?? 0],
+      ["maling", ".maling", "kriminal", RPG_COOLDOWNS_MS.maling ?? 0],
+      ["serang", ".serang", "kriminal", 30 * 60 * 1000],
+      ["bounty_hunt", ".burubounty", "kriminal", 20 * 60 * 1000],
     ];
+
+    const exp = state.petExpedition;
+    const expedition = exp
+      ? {
+          petLabel: PET_LABELS[exp.pet],
+          zoneName: PET_EXPEDITION_ZONE_MAP.get(exp.zoneId)?.name ?? exp.zoneId,
+          remainingMs: Math.max(0, exp.endsAt - nowMs),
+          ready: nowMs >= exp.endsAt,
+        }
+      : null;
 
     return {
       jailedRemainingMs: getRemainingJailMs(state, nowMs),
-      entries: labels.map(([key, label]) => ({
+      ugdRemainingMs: getRemainingUgdMs(state, nowMs),
+      expedition,
+      entries: cooldownDefs.map(([key, label, category, durationMs]) => ({
         key,
         label,
-        remainingMs: getRemainingCooldownMs(state, key, RPG_COOLDOWNS_MS[key] ?? 0, nowMs),
+        category,
+        remainingMs: getRemainingCooldownMs(state, key, durationMs, nowMs),
       })),
     };
   }
