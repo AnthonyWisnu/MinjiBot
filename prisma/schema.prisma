@@ -131,6 +131,7 @@ model TenantGroup {
   notes           GroupNote[]
   stickerCommands GroupStickerCommand[]
   clans           GroupClan[]
+  redeemCodes     GroupRedeemCode[]
 
   @@index([ownerJid])
   @@index([status])
@@ -385,4 +386,24 @@ model GroupClan {
   @@unique([groupJid, slug])
   @@index([groupJid])
   @@index([groupJid, treasuryBalance])
+}
+
+model GroupRedeemCode {
+  id            String    @id @default(cuid())
+  groupJid      String
+  code          String
+  rewardLimit   Int       @default(0)
+  rewardMoney   BigInt    @default(0)
+  rewardPoints  Int       @default(0)
+  maxClaims     Int       @default(20)
+  claimedByJids Json      @default("[]")
+  createdBy     String
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenantGroup TenantGroup @relation(fields: [groupJid], references: [groupJid], onDelete: Cascade)
+
+  @@unique([groupJid, code])
+  @@index([groupJid])
 }

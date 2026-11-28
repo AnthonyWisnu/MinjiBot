@@ -120,8 +120,10 @@ export class MenuService {
       const sections: MenuSection[] = [];
       const rpg = this.buildRpgSection(featureSetting);
       const rpgInf = this.buildRpgInfiniteSection(featureSetting);
+      const business = this.buildBusinessExpansionSection(featureSetting);
       if (rpg) sections.push(rpg);
       if (rpgInf) sections.push(rpgInf);
+      if (business) sections.push(business);
       sections.push(this.buildEconomySection());
       return this.renderCategoryPage("*── [ SUB-MENU: RPG ] ──*", groupHeader, sections, footer);
     }
@@ -359,6 +361,9 @@ export class MenuService {
 
     const rpgInf = this.buildRpgInfiniteSection(featureSetting);
     if (rpgInf) sections.push(rpgInf);
+
+    const business = this.buildBusinessExpansionSection(featureSetting);
+    if (business) sections.push(business);
 
     const games = this.buildPureGameSection(featureSetting);
     if (games) sections.push(games);
@@ -676,6 +681,41 @@ export class MenuService {
         ".berbisnis @user",
         ".dungeon [join|mulai]",
         ".serang @user",
+      ],
+    };
+  }
+
+  private buildBusinessExpansionSection(
+    featureSetting: TenantFeatureSetting | null,
+  ): MenuSection | null {
+    if (featureSetting && !featureSetting.gameEnabled) {
+      return null;
+    }
+
+    return {
+      title: "*── [ BISNIS & KOLEKSI ] ──*",
+      items: [
+        ".misi / .quest",
+        ".klaimmisi",
+        ".achievement / .lencana",
+        ".properti",
+        ".beliproperti <kode> [qty]",
+        ".jualproperti <kode> [qty]",
+        ".panen / .collect",
+        ".gaji",
+        ".deposito [jumlah|info]",
+        ".cairdeposito",
+        ".saham",
+        ".belisaham <kode> <lot>",
+        ".jualsaham <kode> <lot|all>",
+        ".portofolio",
+        ".hargakripto [coin]",
+        ".gachakartu / .pullcard",
+        ".koleksi",
+        ".trade @user <item> <qty>",
+        ".buatkode <kode> <lim> <rp>",
+        ".redeem <kode>",
+        ".listkode",
       ],
     };
   }

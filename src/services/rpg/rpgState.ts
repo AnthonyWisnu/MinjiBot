@@ -15,6 +15,22 @@ export interface PetState {
   hunger: number;
 }
 
+export interface DailyQuestProgressState {
+  dateKey: string;
+  claimedIds: string[];
+}
+
+export interface DepositoState {
+  principal: string;
+  depositedAt: number;
+  ratePercent: number;
+}
+
+export interface StockHoldingState {
+  lots: number;
+  avgPrice: string;
+}
+
 export interface MemberRpgState {
   cooldowns: Record<string, number>;
   jailedUntil: number;
@@ -29,6 +45,14 @@ export interface MemberRpgState {
   spouseJid: string | null;
   marriedAt: number;
   dowryAmount: string;
+  dailyQuest: DailyQuestProgressState;
+  achievements: string[];
+  properties: Record<string, number>;
+  lastPropertyHarvestAt: number;
+  lastSalaryDateKey: string;
+  deposito: DepositoState | null;
+  stocks: Record<string, StockHoldingState>;
+  cards: Record<string, number>;
 }
 
 export const MAX_PLAYER_HP = 100;
@@ -92,6 +116,14 @@ export function createDefaultRpgState(): MemberRpgState {
     spouseJid: null,
     marriedAt: 0,
     dowryAmount: "0",
+    dailyQuest: { dateKey: "", claimedIds: [] },
+    achievements: [],
+    properties: {},
+    lastPropertyHarvestAt: 0,
+    lastSalaryDateKey: "",
+    deposito: null,
+    stocks: {},
+    cards: {},
   };
 }
 
@@ -219,6 +251,103 @@ export function parseRpgState(raw: unknown): MemberRpgState {
       ? obj.dowryAmount
       : "0";
 
+  const dailyQuest: DailyQuestProgressState = { dateKey: "", claimedIds: [] };
+  if (obj.dailyQuest && typeof obj.dailyQuest === "object" && !Array.isArray(obj.dailyQuest)) {
+    const rawDq = obj.dailyQuest as Record<string, unknown>;
+    if (typeof rawDq.dateKey === "string") {
+      dailyQuest.dateKey = rawDq.dateKey.slice(0, 16);
+    }
+    if (Array.isArray(rawDq.claimedIds)) {
+      const seen = new Set<string>();
+      for (const id of rawDq.claimedIds) {
+        if (typeof id === "string" && id.trim().length > 0 && !seen.has(id)) {
+          seen.add(id);
+          dailyQuest.claimedIds.push(id);
+        }
+      }
+    }
+  }
+
+  const achievements: string[] = [];
+  if (Array.isArray(obj.achievements)) {
+    const seen = new Set<string>();
+    for (const id of obj.achievements) {
+      if (typeof id === "string" && id.trim().length > 0 && !seen.has(id)) {
+        seen.add(id);
+        achievements.push(id);
+      }
+    }
+  }
+
+  const properties: Record<string, number> = {};
+  if (obj.properties && typeof obj.properties === "object" && !Array.isArray(obj.properties)) {
+    for (const [key, val] of Object.entries(obj.properties as Record<string, unknown>)) {
+      if (typeof val === "number" && Number.isInteger(val) && val > 0) {
+        properties[key.toLowerCase()] = val;
+      }
+    }
+  }
+
+  const lastPropertyHarvestAt =
+    typeof obj.lastPropertyHarvestAt === "number" &&
+    Number.isFinite(obj.lastPropertyHarvestAt) &&
+    obj.lastPropertyHarvestAt > 0
+      ? Math.floor(obj.lastPropertyHarvestAt)
+      : 0;
+
+  const lastSalaryDateKey =
+    typeof obj.lastSalaryDateKey === "string" ? obj.lastSalaryDateKey.slice(0, 16) : "";
+
+  let deposito: DepositoState | null = null;
+  if (obj.deposito && typeof obj.deposito === "object" && !Array.isArray(obj.deposito)) {
+    const rawDep = obj.deposito as Record<string, unknown>;
+    if (
+      typeof rawDep.principal === "string" &&
+      /^\d+$/.test(rawDep.principal) &&
+      rawDep.principal !== "0" &&
+      typeof rawDep.depositedAt === "number" &&
+      Number.isFinite(rawDep.depositedAt) &&
+      rawDep.depositedAt > 0
+    ) {
+      const ratePercent =
+        typeof rawDep.ratePercent === "number" && Number.isFinite(rawDep.ratePercent) && rawDep.ratePercent > 0
+          ? rawDep.ratePercent
+          : 8;
+      deposito = {
+        principal: rawDep.principal,
+        depositedAt: Math.floor(rawDep.depositedAt),
+        ratePercent,
+      };
+    }
+  }
+
+  const stocks: Record<string, StockHoldingState> = {};
+  if (obj.stocks && typeof obj.stocks === "object" && !Array.isArray(obj.stocks)) {
+    for (const [key, val] of Object.entries(obj.stocks as Record<string, unknown>)) {
+      if (val && typeof val === "object" && !Array.isArray(val)) {
+        const rec = val as Record<string, unknown>;
+        if (
+          typeof rec.lots === "number" &&
+          Number.isInteger(rec.lots) &&
+          rec.lots > 0 &&
+          typeof rec.avgPrice === "string" &&
+          /^\d+$/.test(rec.avgPrice)
+        ) {
+          stocks[key.toUpperCase()] = { lots: rec.lots, avgPrice: rec.avgPrice };
+        }
+      }
+    }
+  }
+
+  const cards: Record<string, number> = {};
+  if (obj.cards && typeof obj.cards === "object" && !Array.isArray(obj.cards)) {
+    for (const [key, val] of Object.entries(obj.cards as Record<string, unknown>)) {
+      if (typeof val === "number" && Number.isInteger(val) && val > 0) {
+        cards[key.toLowerCase()] = val;
+      }
+    }
+  }
+
   return {
     cooldowns,
     jailedUntil,
@@ -233,10 +362,23 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     spouseJid,
     marriedAt,
     dowryAmount,
+    dailyQuest,
+    achievements,
+    properties,
+    lastPropertyHarvestAt,
+    lastSalaryDateKey,
+    deposito,
+    stocks,
+    cards,
   };
 }
 
 export function serializeRpgState(state: MemberRpgState): Prisma.InputJsonValue {
+  const serializedStocks: Record<string, { lots: number; avgPrice: string }> = {};
+  for (const [ticker, holding] of Object.entries(state.stocks)) {
+    serializedStocks[ticker] = { lots: holding.lots, avgPrice: holding.avgPrice };
+  }
+
   return {
     cooldowns: state.cooldowns,
     jailedUntil: state.jailedUntil,
@@ -263,6 +405,17 @@ export function serializeRpgState(state: MemberRpgState): Prisma.InputJsonValue 
     spouseJid: state.spouseJid,
     marriedAt: state.marriedAt,
     dowryAmount: state.dowryAmount,
+    dailyQuest: {
+      dateKey: state.dailyQuest.dateKey,
+      claimedIds: [...state.dailyQuest.claimedIds],
+    },
+    achievements: [...state.achievements],
+    properties: { ...state.properties },
+    lastPropertyHarvestAt: state.lastPropertyHarvestAt,
+    lastSalaryDateKey: state.lastSalaryDateKey,
+    deposito: state.deposito ? { ...state.deposito } : null,
+    stocks: serializedStocks,
+    cards: { ...state.cards },
   };
 }
 
@@ -454,5 +607,120 @@ export function withMarriage(
     spouseJid,
     marriedAt: spouseJid ? marriedAt : 0,
     dowryAmount: spouseJid ? dowryAmount : "0",
+  };
+}
+
+export function withDailyQuestClaimed(
+  state: MemberRpgState,
+  dateKey: string,
+  newlyClaimedIds: string[],
+): MemberRpgState {
+  const existing = state.dailyQuest.dateKey === dateKey ? state.dailyQuest.claimedIds : [];
+  const merged = Array.from(new Set([...existing, ...newlyClaimedIds]));
+  return {
+    ...state,
+    dailyQuest: {
+      dateKey,
+      claimedIds: merged,
+    },
+  };
+}
+
+export function withAchievementsAdded(
+  state: MemberRpgState,
+  newIds: string[],
+): MemberRpgState {
+  const merged = Array.from(new Set([...state.achievements, ...newIds]));
+  return {
+    ...state,
+    achievements: merged,
+  };
+}
+
+export function withPropertyDelta(
+  state: MemberRpgState,
+  propertyId: string,
+  delta: number,
+): MemberRpgState {
+  const key = propertyId.toLowerCase();
+  const current = state.properties[key] ?? 0;
+  const nextQty = Math.max(0, Math.floor(current + delta));
+  const nextProps: Record<string, number> = {};
+  for (const [k, v] of Object.entries(state.properties)) {
+    if (k !== key) {
+      nextProps[k] = v;
+    }
+  }
+  if (nextQty > 0) {
+    nextProps[key] = nextQty;
+  }
+  return {
+    ...state,
+    properties: nextProps,
+  };
+}
+
+export function withPropertyHarvestAt(state: MemberRpgState, timestampMs: number): MemberRpgState {
+  return {
+    ...state,
+    lastPropertyHarvestAt: Math.max(0, Math.floor(timestampMs)),
+  };
+}
+
+export function withSalaryDateKey(state: MemberRpgState, dateKey: string): MemberRpgState {
+  return {
+    ...state,
+    lastSalaryDateKey: dateKey,
+  };
+}
+
+export function withDeposito(state: MemberRpgState, deposito: DepositoState | null): MemberRpgState {
+  return {
+    ...state,
+    deposito: deposito ? { ...deposito } : null,
+  };
+}
+
+export function withStockHolding(
+  state: MemberRpgState,
+  ticker: string,
+  holding: StockHoldingState | null,
+): MemberRpgState {
+  const key = ticker.toUpperCase();
+  const nextStocks: Record<string, StockHoldingState> = {};
+  for (const [k, v] of Object.entries(state.stocks)) {
+    if (k !== key) {
+      nextStocks[k] = { ...v };
+    }
+  }
+  if (holding && holding.lots > 0) {
+    nextStocks[key] = { lots: Math.floor(holding.lots), avgPrice: holding.avgPrice };
+  }
+  return {
+    ...state,
+    stocks: nextStocks,
+  };
+}
+
+export function withCardDelta(
+  state: MemberRpgState,
+  cardId: string,
+  delta: number,
+): MemberRpgState {
+  const key = cardId.toLowerCase();
+  const current = state.cards[key] ?? 0;
+  const nextQty = Math.max(0, Math.floor(current + delta));
+  const nextCards: Record<string, number> = {};
+  for (const [k, v] of Object.entries(state.cards)) {
+    if (k !== key) {
+      nextCards[k] = v;
+    }
+  }
+  if (nextQty > 0) {
+    nextCards[key] = nextQty;
+  }
+  return {
+    ...state,
+    cards: nextCards,
   };
 }
