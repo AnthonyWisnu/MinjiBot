@@ -2,6 +2,7 @@ import { type GameMessageResponse, gameService } from "../../services/game/game.
 import { quickQuizService } from "../../services/game/quickQuiz.service";
 import { sambungKataService } from "../../services/game/sambungKata.service";
 import { slotGameService } from "../../services/game/slotGame.service";
+import { sendLiveEditedText } from "../../services/group/baileysNative.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
@@ -60,7 +61,22 @@ export const gameCommands: CommandDefinition[] = [
   },
   {
     name: "slot",
-    execute: (context) => replyGame(context, async () => ({ text: await slotGameService.play(context) })),
+    execute: async (context) => {
+      try {
+        const finalResult = await slotGameService.play(context);
+        await sendLiveEditedText(
+          context,
+          [
+            "*── [ MESIN SLOT BERPUTAR ] ──*\n\n[ 🍒 | 🍇 | 🍋 ]\n_Memutar gulungan..._",
+            "*── [ MESIN SLOT BERPUTAR ] ──*\n\n[ 🍉 | 7️⃣ | 🍊 ]\n_Hampir berhenti..._",
+          ],
+          finalResult,
+          550,
+        );
+      } catch (error: unknown) {
+        await context.reply(formatUserSafeError(error, "Slot gagal diproses. Silakan coba lagi."));
+      }
+    },
   },
   {
     name: "tictactoe",

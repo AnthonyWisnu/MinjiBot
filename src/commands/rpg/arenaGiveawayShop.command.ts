@@ -1,4 +1,5 @@
 import { identityResolverService } from "../../services/identity/identityResolver.service";
+import { sendLiveEditedText } from "../../services/group/baileysNative.service";
 import {
   ARENA_MAX_BET,
   ARENA_MIN_BET,
@@ -459,15 +460,30 @@ async function handleRace(context: CommandContext, kind: "kuda" | "siput"): Prom
       ? `MENANG! Profit *+${formatRupiah(res.netDelta)}* (+${String(res.xpGained)} XP)`
       : `KALAH! Taruhan hangus *-${formatRupiah(absBigInt(res.netDelta))}* (+${String(res.xpGained)} XP)`;
 
-    await context.reply(
+    const midTrackLines = res.lanes.map((l) => {
+      const half = Math.max(1, Math.min(8, Math.floor(l.progress / 2)));
+      const bar = "=".repeat(half) + icon + " ".repeat(Math.max(0, 10 - half));
+      const mark = l.lane === res.pickedLane ? " [PILIHANMU]" : "";
+      return `${String(l.lane)}. [${bar}] ${l.name}${mark}`;
+    });
+
+    const finalBoard = [
+      `*── [ ${title} ] ──*`,
+      ...trackLines,
+      "",
+      `Juara   : Lintasan #${String(res.winnerLane)}`,
+      `Hasil   : ${verdict}`,
+      `Dompet  : ${formatRupiah(res.currentMoney)}`,
+    ].join("\n");
+
+    await sendLiveEditedText(
+      context,
       [
-        `*── [ ${title} ] ──*`,
-        ...trackLines,
-        "",
-        `Juara   : Lintasan #${String(res.winnerLane)}`,
-        `Hasil   : ${verdict}`,
-        `Dompet  : ${formatRupiah(res.currentMoney)}`,
-      ].join("\n"),
+        `*── [ ${title} - START! ] ──*\n${res.lanes.map((l) => `${String(l.lane)}. [${icon}          ] ${l.name}`).join("\n")}\n\n_Lintasan dimulai..._`,
+        `*── [ ${title} - TENGAH LOMBA! ] ──*\n${midTrackLines.join("\n")}\n\n_Saling salip menuju garis finish..._`,
+      ],
+      finalBoard,
+      550,
     );
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, `Gagal menjalankan balap ${kind}.`));

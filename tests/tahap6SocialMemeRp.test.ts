@@ -306,5 +306,5 @@ test("PhotoMemeService & AnimeRoleplayService - renders meme overlays, filters, 
   const rp = await rpSvc.fetchReactionMedia("hug");
   assert.equal(rp.kind, "image");
   assert.equal(rp.animeName, "K-On!");
-  assert.equal(ANIME_ROLEPLAY_SPECS.length, 23);
+  assert.equal(ANIME_ROLEPLAY_SPECS.length, 38);
 });

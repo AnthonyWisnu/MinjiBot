@@ -2,6 +2,7 @@ import {
   MemberTransactionAsset,
   MemberTransactionType,
   type GroupMemberProfile,
+  type Prisma,
   type TenantGroup,
 } from "@prisma/client";
 
@@ -37,6 +38,7 @@ import {
   parseRpgState,
   serializeRpgState,
   SKILL_KEYS,
+  withBossRaidStatsDelta,
   withBuffUntil,
   withCrateDelta,
   withFarm,
@@ -58,6 +60,7 @@ export const WORLD_BOSS_TTL_MS = 3 * 60 * 60 * 1000;
 export const WORLD_BOSS_RESPAWN_COOLDOWN_MS = 60 * 60 * 1000;
 export const WORLD_BOSS_ATTACK_COOLDOWN_MS = 4 * 60 * 1000;
 export const WORLD_BOSS_MIN_HP = 15;
+export const WORLD_BOSS_HISTORY_LIMIT = 5;
 
 export const SKILL_RESET_COST = 5_000_000n;
 
@@ -320,11 +323,33 @@ export interface ActiveWorldBoss {
 }
 
 export interface DefeatedBossRecord {
+  bossId?: string;
   bossName: string;
   maxHp: number;
+  remainingHp?: number;
+  outcome: "defeated" | "escaped";
   defeatedAt: number;
-  finisherJid: string;
+  finisherJid: string | null;
   rankings: { userJid: string; damage: number; sharePercent: number }[];
+}
+
+export interface AllTimeBossDamageEntry {
+  userJid: string;
+  totalDamage: number;
+  bossKills: number;
+  bossMvpCount: number;
+}
+
+export interface TopBossDamageResult {
+  source: "active" | "last" | "alltime";
+  isActive: boolean;
+  bossName: string;
+  outcome?: "defeated" | "escaped";
+  currentHp: number;
+  maxHp: number;
+  activeBossPendingName: string | null;
+  rankings: { userJid: string; damage: number; sharePercent: number }[];
+  allTimeTop: AllTimeBossDamageEntry[];
 }
 
 export interface WorldBossInspectResult {
@@ -346,6 +371,7 @@ export interface WorldBossRewardDistribution {
 }
 
 export interface WorldBossAttackResult {
+  autoSpawned: boolean;
   bossName: string;
   damageDealt: number;
   isCrit: boolean;
@@ -503,6 +529,17 @@ interface RaidProfileStore {
     userJid: string,
     tx?: unknown,
   ): Promise<GroupMemberProfile | null>;
+  listTopByBossDamage?(
+    groupJid: string,
+    limit?: number,
+  ): Promise<
+    {
+      profile: GroupMemberProfile;
+      totalDamage: number;
+      bossKills: number;
+      bossMvpCount: number;
+    }[]
+  >;
 }
 
 interface RaidTxStore {
@@ -548,6 +585,13 @@ interface RaidTx {
 
 interface RaidDb {
   $transaction<T>(fn: (tx: RaidTx) => Promise<T>): Promise<T>;
+  tenantGroup?: {
+    findUnique(args: { where: { groupJid: string } }): Promise<TenantGroup | null>;
+    update(args: {
+      where: { groupJid: string };
+      data: Record<string, unknown>;
+    }): Promise<TenantGroup>;
+  };
 }
 
 function deterministicFloat(epoch: number, seedOffset: number): number {
@@ -607,10 +651,149 @@ function applyXpMultipliers(baseXp: number, intStat: number, hasXpBuff: boolean)
   return Math.max(1, Math.round(baseXp * intMult * buffMult));
 }
 
+const WORLD_BOSS_SPEC_MAP = new Map<string, WorldBossSpec>(
+  WORLD_BOSS_CATALOG.map((spec) => [spec.id, spec]),
+);
+
+function parsePersistedWorldBossState(
+  groupJid: string,
+  raw: unknown,
+): {
+  active: ActiveWorldBoss | null;
+  respawnAt: number;
+  history: DefeatedBossRecord[];
+} {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { active: null, respawnAt: 0, history: [] };
+  }
+  const obj = raw as Record<string, unknown>;
+
+  let active: ActiveWorldBoss | null = null;
+  if (obj.active && typeof obj.active === "object" && !Array.isArray(obj.active)) {
+    const a = obj.active as Record<string, unknown>;
+    const specId = typeof a.specId === "string" ? a.specId : "";
+    const spec = WORLD_BOSS_SPEC_MAP.get(specId);
+    if (
+      spec &&
+      typeof a.currentHp === "number" &&
+      Number.isFinite(a.currentHp) &&
+      typeof a.spawnedAt === "number" &&
+      typeof a.expiresAt === "number"
+    ) {
+      const damageByUser = new Map<string, number>();
+      if (a.damageByUser && typeof a.damageByUser === "object" && !Array.isArray(a.damageByUser)) {
+        for (const [jid, dmg] of Object.entries(a.damageByUser as Record<string, unknown>)) {
+          if (typeof dmg === "number" && Number.isFinite(dmg) && dmg > 0) {
+            damageByUser.set(jid, Math.floor(dmg));
+          }
+        }
+      }
+      active = {
+        groupJid,
+        spec,
+        currentHp: Math.max(0, Math.min(spec.maxHp, Math.floor(a.currentHp))),
+        spawnedAt: Math.floor(a.spawnedAt),
+        expiresAt: Math.floor(a.expiresAt),
+        damageByUser,
+        hitsCount:
+          typeof a.hitsCount === "number" && Number.isFinite(a.hitsCount) && a.hitsCount >= 0
+            ? Math.floor(a.hitsCount)
+            : 0,
+      };
+    }
+  }
+
+  const respawnAt =
+    typeof obj.respawnAt === "number" && Number.isFinite(obj.respawnAt) && obj.respawnAt > 0
+      ? Math.floor(obj.respawnAt)
+      : 0;
+
+  const history: DefeatedBossRecord[] = [];
+  if (Array.isArray(obj.history)) {
+    for (const item of obj.history) {
+      if (history.length >= WORLD_BOSS_HISTORY_LIMIT) break;
+      if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+      const rec = item as Record<string, unknown>;
+      if (typeof rec.bossName !== "string" || typeof rec.maxHp !== "number") continue;
+      const rankings: { userJid: string; damage: number; sharePercent: number }[] = [];
+      if (Array.isArray(rec.rankings)) {
+        for (const r of rec.rankings) {
+          if (!r || typeof r !== "object" || Array.isArray(r)) continue;
+          const rr = r as Record<string, unknown>;
+          if (typeof rr.userJid === "string" && typeof rr.damage === "number") {
+            rankings.push({
+              userJid: rr.userJid,
+              damage: Math.floor(rr.damage),
+              sharePercent: typeof rr.sharePercent === "number" ? rr.sharePercent : 0,
+            });
+          }
+        }
+      }
+      history.push({
+        bossId: typeof rec.bossId === "string" ? rec.bossId : undefined,
+        bossName: rec.bossName,
+        maxHp: Math.floor(rec.maxHp),
+        remainingHp: typeof rec.remainingHp === "number" ? Math.floor(rec.remainingHp) : 0,
+        outcome: rec.outcome === "escaped" ? "escaped" : "defeated",
+        defeatedAt:
+          typeof rec.defeatedAt === "number" && Number.isFinite(rec.defeatedAt)
+            ? Math.floor(rec.defeatedAt)
+            : 0,
+        finisherJid: typeof rec.finisherJid === "string" ? rec.finisherJid : null,
+        rankings,
+      });
+    }
+  }
+
+  return { active, respawnAt, history };
+}
+
+function serializePersistedWorldBossState(
+  active: ActiveWorldBoss | null,
+  respawnAt: number,
+  history: DefeatedBossRecord[],
+): Prisma.InputJsonValue {
+  const damageObj: Record<string, number> = {};
+  if (active) {
+    for (const [jid, dmg] of active.damageByUser.entries()) {
+      if (dmg > 0) damageObj[jid] = dmg;
+    }
+  }
+
+  return {
+    active: active
+      ? {
+          specId: active.spec.id,
+          currentHp: active.currentHp,
+          spawnedAt: active.spawnedAt,
+          expiresAt: active.expiresAt,
+          hitsCount: active.hitsCount,
+          damageByUser: damageObj,
+        }
+      : null,
+    respawnAt: Math.max(0, Math.floor(respawnAt)),
+    history: history.slice(0, WORLD_BOSS_HISTORY_LIMIT).map((h) => ({
+      bossId: h.bossId ?? null,
+      bossName: h.bossName,
+      maxHp: h.maxHp,
+      remainingHp: h.remainingHp ?? 0,
+      outcome: h.outcome,
+      defeatedAt: h.defeatedAt,
+      finisherJid: h.finisherJid,
+      rankings: h.rankings.slice(0, 15).map((r) => ({
+        userJid: r.userJid,
+        damage: r.damage,
+        sharePercent: r.sharePercent,
+      })),
+    })),
+  };
+}
+
 export class RaidFarmBuffBountyService {
   private readonly activeBossByGroup = new Map<string, ActiveWorldBoss>();
-  private readonly lastDefeatedByGroup = new Map<string, DefeatedBossRecord>();
+  private readonly bossHistoryByGroup = new Map<string, DefeatedBossRecord[]>();
   private readonly bossRespawnAtByGroup = new Map<string, number>();
+  private readonly hydratedBossGroups = new Set<string>();
   private readonly bountiesByGroup = new Map<string, Map<string, BountyEntry>>();
 
   constructor(
@@ -620,27 +803,58 @@ export class RaidFarmBuffBountyService {
     private readonly db: RaidDb = prisma,
   ) {}
 
-  // ======================== 1. WORLD BOSS RAID ========================
+  private async hydrateGroupBossState(groupJid: string): Promise<void> {
+    if (this.hydratedBossGroups.has(groupJid)) return;
+    this.hydratedBossGroups.add(groupJid);
 
-  inspectOrSpawnWorldBoss(groupJid: string, nowMs: number = Date.now()): WorldBossInspectResult {
-    this.sweepBosses(nowMs);
-    const existing = this.activeBossByGroup.get(groupJid);
-    if (existing && existing.currentHp > 0 && existing.expiresAt > nowMs) {
-      return {
-        spawned: false,
-        boss: existing,
-        topDamagers: buildDamageRankings(existing.damageByUser),
-        remainingMs: existing.expiresAt - nowMs,
-      };
+    if (!this.db.tenantGroup) return;
+    try {
+      const tenant = await this.db.tenantGroup.findUnique({ where: { groupJid } });
+      if (!tenant?.worldBossState) return;
+      const parsed = parsePersistedWorldBossState(groupJid, tenant.worldBossState);
+      if (parsed.active) {
+        this.activeBossByGroup.set(groupJid, parsed.active);
+        evictOldestIfNeeded(this.activeBossByGroup, MAX_ACTIVE_GROUPS);
+      }
+      if (parsed.respawnAt > 0) {
+        this.bossRespawnAtByGroup.set(groupJid, parsed.respawnAt);
+        evictOldestIfNeeded(this.bossRespawnAtByGroup, MAX_ACTIVE_GROUPS);
+      }
+      if (parsed.history.length > 0) {
+        this.bossHistoryByGroup.set(groupJid, parsed.history);
+        evictOldestIfNeeded(this.bossHistoryByGroup, MAX_ACTIVE_GROUPS);
+      }
+    } catch {
+      // Abaikan jika gagal membaca state boss dari DB; fallback aman ke state in-memory
     }
+  }
 
-    const respawnAt = this.bossRespawnAtByGroup.get(groupJid) ?? 0;
-    if (respawnAt > nowMs) {
-      throw new AppUserError(
-        `World Boss baru saja dikalahkan! Boss berikutnya muncul dalam *${formatRemainingDuration(respawnAt - nowMs)}*.`,
-      );
+  private async persistGroupBossState(groupJid: string, tx?: RaidTx): Promise<void> {
+    const tenantClient = tx?.tenantGroup ?? this.db.tenantGroup;
+    if (!tenantClient) return;
+    const payload = serializePersistedWorldBossState(
+      this.activeBossByGroup.get(groupJid) ?? null,
+      this.bossRespawnAtByGroup.get(groupJid) ?? 0,
+      this.bossHistoryByGroup.get(groupJid) ?? [],
+    );
+    try {
+      await tenantClient.update({
+        where: { groupJid },
+        data: { worldBossState: payload },
+      });
+    } catch {
+      // Abaikan jika tenant mock belum dibuat di unit test
     }
+  }
 
+  private pushBossHistory(groupJid: string, record: DefeatedBossRecord): void {
+    const prev = this.bossHistoryByGroup.get(groupJid) ?? [];
+    const next = [record, ...prev].slice(0, WORLD_BOSS_HISTORY_LIMIT);
+    this.bossHistoryByGroup.set(groupJid, next);
+    evictOldestIfNeeded(this.bossHistoryByGroup, MAX_ACTIVE_GROUPS);
+  }
+
+  private createFreshWorldBoss(groupJid: string, nowMs: number): ActiveWorldBoss {
     const idx = this.random.intBetween(0, WORLD_BOSS_CATALOG.length - 1);
     const spec = WORLD_BOSS_CATALOG[idx] ?? WORLD_BOSS_CATALOG[0];
     if (!spec) {
@@ -658,6 +872,40 @@ export class RaidFarmBuffBountyService {
     };
     this.activeBossByGroup.set(groupJid, boss);
     evictOldestIfNeeded(this.activeBossByGroup, MAX_ACTIVE_GROUPS);
+    return boss;
+  }
+
+  // ======================== 1. WORLD BOSS RAID ========================
+
+  async inspectOrSpawnWorldBoss(
+    groupJid: string,
+    nowMs: number = Date.now(),
+  ): Promise<WorldBossInspectResult> {
+    await this.hydrateGroupBossState(groupJid);
+    const expiredChanged = this.sweepBosses(nowMs);
+    if (expiredChanged) {
+      await this.persistGroupBossState(groupJid);
+    }
+
+    const existing = this.activeBossByGroup.get(groupJid);
+    if (existing && existing.currentHp > 0 && existing.expiresAt > nowMs) {
+      return {
+        spawned: false,
+        boss: existing,
+        topDamagers: buildDamageRankings(existing.damageByUser),
+        remainingMs: existing.expiresAt - nowMs,
+      };
+    }
+
+    const respawnAt = this.bossRespawnAtByGroup.get(groupJid) ?? 0;
+    if (respawnAt > nowMs) {
+      throw new AppUserError(
+        `World Boss baru saja dikalahkan! Boss berikutnya muncul dalam *${formatRemainingDuration(respawnAt - nowMs)}*.`,
+      );
+    }
+
+    const boss = this.createFreshWorldBoss(groupJid, nowMs);
+    await this.persistGroupBossState(groupJid);
 
     return {
       spawned: true,
@@ -667,59 +915,120 @@ export class RaidFarmBuffBountyService {
     };
   }
 
-  getWorldBossStatus(
+  async getWorldBossStatus(
     groupJid: string,
     nowMs: number = Date.now(),
-  ): {
+  ): Promise<{
     active: ActiveWorldBoss | null;
     topDamagers: { userJid: string; damage: number; sharePercent: number }[];
     remainingMs: number;
     respawnRemainingMs: number;
     lastDefeated: DefeatedBossRecord | null;
-  } {
-    this.sweepBosses(nowMs);
+    history: DefeatedBossRecord[];
+  }> {
+    await this.hydrateGroupBossState(groupJid);
+    const expiredChanged = this.sweepBosses(nowMs);
+    if (expiredChanged) {
+      await this.persistGroupBossState(groupJid);
+    }
+
     const active = this.activeBossByGroup.get(groupJid) ?? null;
     const respawnAt = this.bossRespawnAtByGroup.get(groupJid) ?? 0;
+    const history = this.bossHistoryByGroup.get(groupJid) ?? [];
     return {
       active,
       topDamagers: active ? buildDamageRankings(active.damageByUser) : [],
       remainingMs: active ? Math.max(0, active.expiresAt - nowMs) : 0,
       respawnRemainingMs: Math.max(0, respawnAt - nowMs),
-      lastDefeated: this.lastDefeatedByGroup.get(groupJid) ?? null,
+      lastDefeated: history[0] ?? null,
+      history,
     };
   }
 
-  getTopBossDamage(
+  async getAllTimeTopBossDamage(
+    groupJid: string,
+    limit = 10,
+  ): Promise<AllTimeBossDamageEntry[]> {
+    if (!this.profileRepo.listTopByBossDamage) {
+      return [];
+    }
+    const rows = await this.profileRepo.listTopByBossDamage(groupJid, limit);
+    return rows.map((row) => ({
+      userJid: row.profile.userJid,
+      totalDamage: row.totalDamage,
+      bossKills: row.bossKills,
+      bossMvpCount: row.bossMvpCount,
+    }));
+  }
+
+  async getWorldBossHistory(
     groupJid: string,
     nowMs: number = Date.now(),
-  ): {
-    isActive: boolean;
-    bossName: string;
-    currentHp: number;
-    maxHp: number;
-    rankings: { userJid: string; damage: number; sharePercent: number }[];
-  } | null {
-    this.sweepBosses(nowMs);
+  ): Promise<DefeatedBossRecord[]> {
+    await this.hydrateGroupBossState(groupJid);
+    const expiredChanged = this.sweepBosses(nowMs);
+    if (expiredChanged) {
+      await this.persistGroupBossState(groupJid);
+    }
+    return this.bossHistoryByGroup.get(groupJid) ?? [];
+  }
+
+  async getTopBossDamage(
+    groupJid: string,
+    nowMs: number = Date.now(),
+  ): Promise<TopBossDamageResult | null> {
+    await this.hydrateGroupBossState(groupJid);
+    const expiredChanged = this.sweepBosses(nowMs);
+    if (expiredChanged) {
+      await this.persistGroupBossState(groupJid);
+    }
+
     const active = this.activeBossByGroup.get(groupJid);
-    if (active) {
+    const history = this.bossHistoryByGroup.get(groupJid) ?? [];
+    const allTimeTop = await this.getAllTimeTopBossDamage(groupJid, 5);
+
+    if (active && active.damageByUser.size > 0) {
       return {
+        source: "active",
         isActive: true,
         bossName: active.spec.name,
         currentHp: active.currentHp,
         maxHp: active.spec.maxHp,
+        activeBossPendingName: null,
         rankings: buildDamageRankings(active.damageByUser),
+        allTimeTop,
       };
     }
 
-    const last = this.lastDefeatedByGroup.get(groupJid);
-    if (!last) return null;
-    return {
-      isActive: false,
-      bossName: last.bossName,
-      currentHp: 0,
-      maxHp: last.maxHp,
-      rankings: last.rankings,
-    };
+    const last = history[0];
+    if (last && last.rankings.length > 0) {
+      return {
+        source: "last",
+        isActive: false,
+        bossName: last.bossName,
+        outcome: last.outcome,
+        currentHp: last.remainingHp ?? 0,
+        maxHp: last.maxHp,
+        activeBossPendingName: active ? active.spec.name : null,
+        rankings: last.rankings,
+        allTimeTop,
+      };
+    }
+
+    if (allTimeTop.length > 0) {
+      return {
+        source: "alltime",
+        isActive: Boolean(active),
+        bossName: active ? active.spec.name : "All-Time Raid",
+        currentHp: active ? active.currentHp : 0,
+        maxHp: active ? active.spec.maxHp : 0,
+        activeBossPendingName: active ? active.spec.name : null,
+        rankings: [],
+        allTimeTop,
+      };
+    }
+
+    return null;
   }
 
   async attackWorldBoss(
@@ -727,13 +1036,19 @@ export class RaidFarmBuffBountyService {
     userJid: string,
     nowMs: number = Date.now(),
   ): Promise<WorldBossAttackResult> {
-    this.sweepBosses(nowMs);
+    await this.hydrateGroupBossState(groupJid);
+    const expiredChanged = this.sweepBosses(nowMs);
+    if (expiredChanged) {
+      await this.persistGroupBossState(groupJid);
+    }
+
     const normUser = normalizeUserJid(userJid);
     if (!normUser) {
       throw new AppUserError("Identitas pengguna tidak valid.");
     }
 
-    const boss = this.activeBossByGroup.get(groupJid);
+    let boss = this.activeBossByGroup.get(groupJid);
+    let autoSpawned = false;
     if (!boss || boss.currentHp <= 0 || boss.expiresAt <= nowMs) {
       const respawnAt = this.bossRespawnAtByGroup.get(groupJid) ?? 0;
       if (respawnAt > nowMs) {
@@ -741,11 +1056,11 @@ export class RaidFarmBuffBountyService {
           `World Boss sedang istirahat! Boss baru muncul dalam *${formatRemainingDuration(respawnAt - nowMs)}*.`,
         );
       }
-      throw new AppUserError(
-        "Belum ada World Boss aktif di grup ini. Ketik *.worldboss* untuk memunculkan boss!",
-      );
+      boss = this.createFreshWorldBoss(groupJid, nowMs);
+      autoSpawned = true;
     }
 
+    const activeBoss = boss;
     const correlationId = generateCorrelationId();
 
     return this.db.$transaction(async (tx) => {
@@ -784,7 +1099,7 @@ export class RaidFarmBuffBountyService {
       const critMult = isCrit ? 1.6 + state.skills.luk * 0.01 : 1;
 
       const rawDamage = Math.round(((power * variancePct) / 100 + state.skills.str * 15) * critMult);
-      const damageDealt = Math.max(50, Math.min(boss.currentHp, rawDamage));
+      const damageDealt = Math.max(50, Math.min(activeBoss.currentHp, rawDamage));
 
       const rawCounter = this.random.intBetween(8, 18);
       const armorMitigation = Math.min(8, state.tools.armor.level);
@@ -800,7 +1115,9 @@ export class RaidFarmBuffBountyService {
         isBuffActive(state, "ramuanxp", nowMs),
       );
 
-      const updatedState = withUpdatedCooldown(withHp(state, hpAfter), "worldboss_hit", nowMs);
+      let updatedState = withUpdatedCooldown(withHp(state, hpAfter), "worldboss_hit", nowMs);
+      updatedState = withBossRaidStatsDelta(updatedState, { damageDelta: damageDealt });
+
       await tx.groupMemberProfile.update({
         where: { id: profile.id },
         data: {
@@ -809,17 +1126,19 @@ export class RaidFarmBuffBountyService {
         },
       });
 
-      boss.currentHp = Math.max(0, boss.currentHp - damageDealt);
-      boss.hitsCount += 1;
-      boss.damageByUser.set(normUser, (boss.damageByUser.get(normUser) ?? 0) + damageDealt);
+      activeBoss.currentHp = Math.max(0, activeBoss.currentHp - damageDealt);
+      activeBoss.hitsCount += 1;
+      activeBoss.damageByUser.set(normUser, (activeBoss.damageByUser.get(normUser) ?? 0) + damageDealt);
 
-      if (boss.currentHp > 0) {
+      if (activeBoss.currentHp > 0) {
+        await this.persistGroupBossState(groupJid, tx);
         return {
-          bossName: boss.spec.name,
+          autoSpawned,
+          bossName: activeBoss.spec.name,
           damageDealt,
           isCrit,
-          bossHpAfter: boss.currentHp,
-          bossMaxHp: boss.spec.maxHp,
+          bossHpAfter: activeBoss.currentHp,
+          bossMaxHp: activeBoss.spec.maxHp,
           hpLost,
           hpAfter,
           participationXp,
@@ -830,7 +1149,7 @@ export class RaidFarmBuffBountyService {
       }
 
       // Boss defeated! Distribute pool proportionally by damage share
-      const rankings = buildDamageRankings(boss.damageByUser);
+      const rankings = buildDamageRankings(activeBoss.damageByUser);
       const totalDamage = rankings.reduce((acc, r) => acc + r.damage, 0);
       const distributions: WorldBossRewardDistribution[] = [];
       let totalPoolPaid = 0n;
@@ -845,8 +1164,8 @@ export class RaidFarmBuffBountyService {
 
         const baseShare =
           totalDamage > 0
-            ? (boss.spec.rewardPool * BigInt(entry.damage)) / BigInt(totalDamage)
-            : boss.spec.rewardPool;
+            ? (activeBoss.spec.rewardPool * BigInt(entry.damage)) / BigInt(totalDamage)
+            : activeBoss.spec.rewardPool;
         const mvpBonus = isMvp ? percentOfBigInt(baseShare, 15) : 0n;
         const lukBonus =
           memberState.skills.luk > 0
@@ -859,15 +1178,19 @@ export class RaidFarmBuffBountyService {
         const grossMoney = baseShare + mvpBonus + lukBonus + buffBonus;
         const moneyGained = clampMoneyCredit(memberProf.moneyBalance, grossMoney);
 
-        const rawXp = boss.spec.baseXp + (isMvp ? 120 : 0) + (isFinisher ? 150 : 0);
+        const rawXp = activeBoss.spec.baseXp + (isMvp ? 120 : 0) + (isFinisher ? 150 : 0);
         const xpGained = applyXpMultipliers(
           rawXp,
           memberState.skills.int,
           isBuffActive(memberState, "ramuanxp", nowMs),
         );
 
-        const crateGained: CrateType = i < 3 ? boss.spec.crateDrop : "common";
-        const nextMemberState = withCrateDelta(memberState, crateGained, 1);
+        const crateGained: CrateType = i < 3 ? activeBoss.spec.crateDrop : "common";
+        let nextMemberState = withCrateDelta(memberState, crateGained, 1);
+        nextMemberState = withBossRaidStatsDelta(nextMemberState, {
+          killsDelta: 1,
+          mvpDelta: isMvp ? 1 : 0,
+        });
 
         const updatedMember = await tx.groupMemberProfile.update({
           where: { id: memberProf.id },
@@ -891,7 +1214,7 @@ export class RaidFarmBuffBountyService {
               balanceBefore: memberProf.moneyBalance,
               balanceAfter: updatedMember.moneyBalance,
               correlationId,
-              note: `worldboss_${boss.spec.id}`,
+              note: `worldboss_${activeBoss.spec.id}`,
             },
             tx,
           );
@@ -912,22 +1235,26 @@ export class RaidFarmBuffBountyService {
 
       this.activeBossByGroup.delete(groupJid);
       this.bossRespawnAtByGroup.set(groupJid, nowMs + WORLD_BOSS_RESPAWN_COOLDOWN_MS);
-      this.lastDefeatedByGroup.set(groupJid, {
-        bossName: boss.spec.name,
-        maxHp: boss.spec.maxHp,
+      this.pushBossHistory(groupJid, {
+        bossId: activeBoss.spec.id,
+        bossName: activeBoss.spec.name,
+        maxHp: activeBoss.spec.maxHp,
+        remainingHp: 0,
+        outcome: "defeated",
         defeatedAt: nowMs,
         finisherJid: normUser,
         rankings,
       });
-      evictOldestIfNeeded(this.lastDefeatedByGroup, MAX_ACTIVE_GROUPS);
       evictOldestIfNeeded(this.bossRespawnAtByGroup, MAX_ACTIVE_GROUPS);
+      await this.persistGroupBossState(groupJid, tx);
 
       return {
-        bossName: boss.spec.name,
+        autoSpawned,
+        bossName: activeBoss.spec.name,
         damageDealt,
         isCrit,
         bossHpAfter: 0,
-        bossMaxHp: boss.spec.maxHp,
+        bossMaxHp: activeBoss.spec.maxHp,
         hpLost,
         hpAfter,
         participationXp,
@@ -1843,17 +2170,33 @@ export class RaidFarmBuffBountyService {
     });
   }
 
-  private sweepBosses(nowMs: number): void {
+  private sweepBosses(nowMs: number): boolean {
+    let changed = false;
     for (const [gJid, boss] of this.activeBossByGroup.entries()) {
       if (boss.expiresAt <= nowMs || boss.currentHp <= 0) {
+        if (boss.currentHp > 0 && boss.damageByUser.size > 0) {
+          this.pushBossHistory(gJid, {
+            bossId: boss.spec.id,
+            bossName: boss.spec.name,
+            maxHp: boss.spec.maxHp,
+            remainingHp: boss.currentHp,
+            outcome: "escaped",
+            defeatedAt: nowMs,
+            finisherJid: null,
+            rankings: buildDamageRankings(boss.damageByUser),
+          });
+        }
         this.activeBossByGroup.delete(gJid);
+        changed = true;
       }
     }
     for (const [gJid, until] of this.bossRespawnAtByGroup.entries()) {
       if (until <= nowMs) {
         this.bossRespawnAtByGroup.delete(gJid);
+        changed = true;
       }
     }
+    return changed;
   }
 
   private sweepBounties(nowMs: number): void {

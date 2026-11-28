@@ -98,6 +98,9 @@ export interface MemberRpgState {
   skills: Record<SkillKey, number>;
   farm: FarmState;
   buffs: Record<BuffKey, number>;
+  bossDamageTotal: number;
+  bossKills: number;
+  bossMvpCount: number;
 }
 
 export const MAX_PLAYER_HP = 100;
@@ -187,6 +190,9 @@ export function createDefaultRpgState(): MemberRpgState {
     skills: { str: 0, agi: 0, luk: 0, int: 0, cha: 0 },
     farm: { plots: [], harvest: {} },
     buffs: { jamukuat: 0, jimatcuan: 0, ramuanxp: 0, perisaibaja: 0 },
+    bossDamageTotal: 0,
+    bossKills: 0,
+    bossMvpCount: 0,
   };
 }
 
@@ -559,6 +565,25 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     }
   }
 
+  const bossDamageTotal =
+    typeof obj.bossDamageTotal === "number" &&
+    Number.isFinite(obj.bossDamageTotal) &&
+    obj.bossDamageTotal > 0
+      ? Math.floor(obj.bossDamageTotal)
+      : 0;
+
+  const bossKills =
+    typeof obj.bossKills === "number" && Number.isInteger(obj.bossKills) && obj.bossKills > 0
+      ? obj.bossKills
+      : 0;
+
+  const bossMvpCount =
+    typeof obj.bossMvpCount === "number" &&
+    Number.isInteger(obj.bossMvpCount) &&
+    obj.bossMvpCount > 0
+      ? obj.bossMvpCount
+      : 0;
+
   return {
     cooldowns,
     jailedUntil,
@@ -590,6 +615,9 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     skills,
     farm,
     buffs,
+    bossDamageTotal,
+    bossKills,
+    bossMvpCount,
   };
 }
 
@@ -648,6 +676,9 @@ export function serializeRpgState(state: MemberRpgState): Prisma.InputJsonValue 
       harvest: { ...state.farm.harvest },
     },
     buffs: { ...state.buffs },
+    bossDamageTotal: state.bossDamageTotal,
+    bossKills: state.bossKills,
+    bossMvpCount: state.bossMvpCount,
   };
 }
 
@@ -1070,4 +1101,16 @@ export function isBuffActive(
   nowMs: number = Date.now(),
 ): boolean {
   return state.buffs[key] > nowMs;
+}
+
+export function withBossRaidStatsDelta(
+  state: MemberRpgState,
+  delta: { damageDelta?: number; killsDelta?: number; mvpDelta?: number },
+): MemberRpgState {
+  return {
+    ...state,
+    bossDamageTotal: Math.max(0, state.bossDamageTotal + Math.floor(delta.damageDelta ?? 0)),
+    bossKills: Math.max(0, state.bossKills + Math.floor(delta.killsDelta ?? 0)),
+    bossMvpCount: Math.max(0, state.bossMvpCount + Math.floor(delta.mvpDelta ?? 0)),
+  };
 }

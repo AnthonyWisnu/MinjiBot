@@ -354,7 +354,7 @@ void test("Tahap 14: World Boss Raid spawn, multi-player attack, kill distributi
   // Verify jamukuat + STR boost combat power
   assert.ok(calculatePlayerCombatPower(50, strongState, undefined, t0) > 5_000);
 
-  const spawned = service.inspectOrSpawnWorldBoss("120@g.us", t0);
+  const spawned = await service.inspectOrSpawnWorldBoss("120@g.us", t0);
   assert.equal(spawned.spawned, true);
 
   // Attack until defeated (alternating players advancing time past 4m cooldown)
@@ -374,15 +374,17 @@ void test("Tahap 14: World Boss Raid spawn, multi-player attack, kill distributi
   assert.ok(lastResult.totalPoolPaid > 0n);
 
   // Top damage log persists after defeat
-  const log = service.getTopBossDamage("120@g.us", t);
+  const log = await service.getTopBossDamage("120@g.us", t);
   assert.ok(log && !log.isActive && log.rankings.length >= 1);
 
-  // Immediate respawn blocked by 30m respawn cooldown
-  assert.throws(() => service.inspectOrSpawnWorldBoss("120@g.us", t), /muncul dalam/);
+  // Immediate respawn blocked by 60m respawn cooldown
+  await assert.rejects(() => service.inspectOrSpawnWorldBoss("120@g.us", t), /muncul dalam/);
 
-  // Verify winner received money
+  // Verify winner received money & all-time damage recorded
   const p1 = Array.from(profiles.values()).find((p) => p.userJid === "6281@s.whatsapp.net");
   assert.ok(p1 && p1.moneyBalance > 10_000_000n);
+  assert.ok(parseRpgState(p1.rpgState).bossDamageTotal > 0);
+  assert.ok(parseRpgState(p1.rpgState).bossKills >= 1);
 });
 
 void test("Tahap 14: Bounty board escrow, stacking, hunt victory with 5% treasury tax & UGD, and anti-self", async () => {

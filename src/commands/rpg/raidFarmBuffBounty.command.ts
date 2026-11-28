@@ -75,7 +75,7 @@ async function handleWorldBoss(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
 
   try {
-    const res = raidFarmBuffBountyService.inspectOrSpawnWorldBoss(context.chatJid);
+    const res = await raidFarmBuffBountyService.inspectOrSpawnWorldBoss(context.chatJid);
     const topLines =
       res.topDamagers.length > 0
         ? [
@@ -137,19 +137,39 @@ async function handleSerangBoss(context: CommandContext): Promise<void> {
     const res = await raidFarmBuffBountyService.attackWorldBoss(context.chatJid, senderJid);
 
     if (!res.defeated) {
-      await context.reply(
-        [
-          res.isCrit ? "*── [ SERANGAN CRITICAL BOSS! ] ──*" : "*── [ SERANGAN WORLD BOSS ] ──*",
-          `Target   : *${res.bossName}*`,
-          `Damage   : *-${res.damageDealt.toLocaleString("id-ID")} HP*${res.isCrit ? " (CRIT!)" : ""}`,
-          `Sisa HP  : ${res.bossHpAfter.toLocaleString("id-ID")} / ${res.bossMaxHp.toLocaleString("id-ID")}`,
-          `Bar HP   : ${renderHpBar(res.bossHpAfter, res.bossMaxHp)}`,
-          `HP Kamu  : ${String(res.hpAfter)}/100 (-${String(res.hpLost)} serangan balik)`,
-          `Bonus    : +${String(res.participationXp)} XP`,
-          "",
-          "Ajak teman grup ketik *.serangboss* untuk menumbangkan boss!",
-        ].join("\n"),
-      );
+      const hitText = [
+        res.autoSpawned
+          ? "*── [ WORLD BOSS MUNCUL & DISERANG! ] ──*"
+          : res.isCrit
+            ? "*── [ SERANGAN CRITICAL BOSS! ] ──*"
+            : "*── [ SERANGAN WORLD BOSS ] ──*",
+        `Target   : *${res.bossName}*`,
+        `Damage   : *-${res.damageDealt.toLocaleString("id-ID")} HP*${res.isCrit ? " (CRIT!)" : ""}`,
+        `Sisa HP  : ${res.bossHpAfter.toLocaleString("id-ID")} / ${res.bossMaxHp.toLocaleString("id-ID")}`,
+        `Bar HP   : ${renderHpBar(res.bossHpAfter, res.bossMaxHp)}`,
+        `HP Kamu  : ${String(res.hpAfter)}/100 (-${String(res.hpLost)} serangan balik)`,
+        `Bonus    : +${String(res.participationXp)} XP (dicatat ke All-Time Damage!)`,
+        "",
+        "Ajak teman grup ketik *.serangboss* | Cek rekor: *.topdamage [all|riwayat]*",
+      ].join("\n");
+
+      if (res.autoSpawned) {
+        await sendEventBannerOrReply(context, {
+          scene: "world_boss",
+          headline: "WORLD BOSS MUNCUL!",
+          subjectName: res.bossName,
+          targetUserJid: senderJid,
+          details: [
+            `Serangan pembuka: -${res.damageDealt.toLocaleString("id-ID")} HP`,
+            `Sisa HP: ${res.bossHpAfter.toLocaleString("id-ID")} / ${res.bossMaxHp.toLocaleString("id-ID")}`,
+          ],
+          caption: hitText,
+          mentions: [senderJid],
+        });
+        return;
+      }
+
+      await context.reply(hitText);
       return;
     }
 
@@ -190,7 +210,7 @@ async function handleSerangBoss(context: CommandContext): Promise<void> {
 async function handleStatusBoss(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
 
-  const status = raidFarmBuffBountyService.getWorldBossStatus(context.chatJid);
+  const status = await raidFarmBuffBountyService.getWorldBossStatus(context.chatJid);
   if (status.active) {
     const b = status.active;
     const mentions = status.topDamagers.slice(0, 3).map((r) => r.userJid);
@@ -231,46 +251,155 @@ async function handleStatusBoss(context: CommandContext): Promise<void> {
         "*── [ STATUS WORLD BOSS ] ──*",
         "Tidak ada World Boss aktif saat ini.",
         ...(status.lastDefeated
-          ? [`Boss Terakhir : *${status.lastDefeated.bossName}* (Kalah)`]
+          ? [
+              `Boss Terakhir : *${status.lastDefeated.bossName}* (${status.lastDefeated.outcome === "escaped" ? "Kabur" : "Tumbang"})`,
+            ]
           : []),
         `Respawn Dalam : *${formatRemainingDuration(status.respawnRemainingMs)}*`,
+        "",
+        "Cek rekor: *.topdamage* | *.topdamage all* | *.topdamage riwayat*",
       ].join("\n"),
     );
     return;
   }
 
   await context.reply(
-    "Belum ada World Boss yang aktif. Ketik *.worldboss* untuk memunculkan World Boss baru!",
+    "Belum ada World Boss yang aktif. Langsung ketik *.serangboss* (auto-spawn) atau *.worldboss*!",
   );
+}
+
+function formatWibDateTime(timestampMs: number): string {
+  if (timestampMs <= 0) return "-";
+  const parts = new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(timestampMs));
+  const pick = (t: string): string => parts.find((p) => p.type === t)?.value ?? "00";
+  return `${pick("day")}/${pick("month")} ${pick("hour")}:${pick("minute")} WIB`;
 }
 
 async function handleTopDamage(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
+  const sub = (context.args[0] ?? "").trim().toLowerCase();
 
-  const log = raidFarmBuffBountyService.getTopBossDamage(context.chatJid);
-  if (!log || log.rankings.length === 0) {
-    await context.reply(
-      "Belum ada catatan damage World Boss di grup ini. Ketik *.worldboss* lalu *.serangboss*!",
+  if (sub === "all" || sub === "total" || sub === "alltime") {
+    const allTime = await raidFarmBuffBountyService.getAllTimeTopBossDamage(context.chatJid, 10);
+    if (allTime.length === 0) {
+      await context.reply(
+        "Belum ada rekor All-Time Damage World Boss di grup ini. Serang boss sekarang dengan *.serangboss*!",
+      );
+      return;
+    }
+    const mentions = allTime.map((r) => r.userJid);
+    await context.socket.sendMessage(
+      context.chatJid,
+      {
+        text: [
+          "*── [ TOP DAMAGE ALL-TIME ] ──*",
+          "Akumulasi permanen seluruh raid World Boss grup:",
+          "",
+          ...allTime.map(
+            (r, idx) =>
+              `${String(idx + 1)}. ${tagOf(r.userJid)} - *${r.totalDamage.toLocaleString("id-ID")} dmg* (${String(r.bossKills)} kill | ${String(r.bossMvpCount)} MVP)`,
+          ),
+          "",
+          "_Lihat 5 boss terakhir: *.topdamage riwayat*_",
+        ].join("\n"),
+        mentions,
+      },
+      { quoted: context.message },
     );
     return;
   }
 
-  const top = log.rankings.slice(0, 10);
-  const mentions = top.map((r) => r.userJid);
+  if (sub === "riwayat" || sub === "history" || sub === "log") {
+    const history = await raidFarmBuffBountyService.getWorldBossHistory(context.chatJid);
+    if (history.length === 0) {
+      await context.reply(
+        "Belum ada riwayat World Boss yang selesai di grup ini. Mulai raid dengan *.serangboss*!",
+      );
+      return;
+    }
+    const mentionSet = new Set<string>();
+    const lines = history.map((h, idx) => {
+      const mvp = h.rankings[0];
+      if (mvp) mentionSet.add(mvp.userJid);
+      if (h.finisherJid) mentionSet.add(h.finisherJid);
+      const statusLabel = h.outcome === "escaped" ? "KABUR" : "TUMBANG";
+      const mvpText = mvp
+        ? `MVP: ${tagOf(mvp.userJid)} (${mvp.damage.toLocaleString("id-ID")})`
+        : "Tanpa damage";
+      return `${String(idx + 1)}. *${h.bossName}* [${statusLabel}] - ${formatWibDateTime(h.defeatedAt)}\n   ${mvpText}${h.finisherJid ? ` | Finisher: ${tagOf(h.finisherJid)}` : ""}`;
+    });
+    await context.socket.sendMessage(
+      context.chatJid,
+      {
+        text: [
+          "*── [ RIWAYAT 5 WORLD BOSS ] ──*",
+          ...lines,
+          "",
+          "_Lihat peringkat kumulatif: *.topdamage all*_",
+        ].join("\n"),
+        mentions: Array.from(mentionSet),
+      },
+      { quoted: context.message },
+    );
+    return;
+  }
+
+  const log = await raidFarmBuffBountyService.getTopBossDamage(context.chatJid);
+  if (!log) {
+    await context.reply(
+      "Belum ada catatan damage World Boss di grup ini. Langsung ketik *.serangboss* untuk memunculkan & menyerang boss!",
+    );
+    return;
+  }
+
+  const mentionSet = new Set<string>();
+  const lines: string[] = ["*── [ TOP DAMAGE WORLD BOSS ] ──*"];
+
+  if (log.source === "active" || log.source === "last") {
+    const statusText =
+      log.source === "active"
+        ? "AKTIF"
+        : log.outcome === "escaped"
+          ? "BOSS TERAKHIR - KABUR"
+          : "BOSS TERAKHIR - TUMBANG";
+    lines.push(`Boss   : *${log.bossName}* (${statusText})`);
+    lines.push(`HP     : ${log.currentHp.toLocaleString("id-ID")} / ${log.maxHp.toLocaleString("id-ID")}`);
+    if (log.activeBossPendingName) {
+      lines.push(`Info   : *${log.activeBossPendingName}* sedang aktif (belum dipukul, ketik *.serangboss*!)`);
+    }
+    lines.push("");
+    for (const [idx, r] of log.rankings.slice(0, 10).entries()) {
+      mentionSet.add(r.userJid);
+      lines.push(
+        `${String(idx + 1)}. ${tagOf(r.userJid)} - *${r.damage.toLocaleString("id-ID")} dmg* (${String(r.sharePercent)}%)`,
+      );
+    }
+  }
+
+  if (log.allTimeTop.length > 0) {
+    lines.push("", "*Top All-Time Damage Grup:*");
+    for (const [idx, r] of log.allTimeTop.slice(0, 5).entries()) {
+      mentionSet.add(r.userJid);
+      lines.push(
+        `${String(idx + 1)}. ${tagOf(r.userJid)} - *${r.totalDamage.toLocaleString("id-ID")} dmg* (${String(r.bossKills)} kill | ${String(r.bossMvpCount)} MVP)`,
+      );
+    }
+  }
+
+  lines.push("", "_Ketik *.topdamage all* (All-Time) atau *.topdamage riwayat* (5 boss terakhir)._");
+
   await context.socket.sendMessage(
     context.chatJid,
     {
-      text: [
-        "*── [ TOP DAMAGE WORLD BOSS ] ──*",
-        `Boss   : *${log.bossName}* (${log.isActive ? "AKTIF" : "SUDAH KALAH"})`,
-        `HP     : ${log.currentHp.toLocaleString("id-ID")} / ${log.maxHp.toLocaleString("id-ID")}`,
-        "",
-        ...top.map(
-          (r, idx) =>
-            `${String(idx + 1)}. ${tagOf(r.userJid)} - *${r.damage.toLocaleString("id-ID")} dmg* (${String(r.sharePercent)}%)`,
-        ),
-      ].join("\n"),
-      mentions,
+      text: lines.join("\n"),
+      mentions: Array.from(mentionSet),
     },
     { quoted: context.message },
   );

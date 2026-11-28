@@ -442,6 +442,50 @@ export class GroupMemberProfileRepository {
       },
     });
   }
+
+  // Leaderboard All-Time World Boss Damage - untuk .topdamage all
+  async listTopByBossDamage(
+    groupJid: string,
+    limit = 10,
+  ): Promise<
+    {
+      profile: GroupMemberProfile;
+      totalDamage: number;
+      bossKills: number;
+      bossMvpCount: number;
+    }[]
+  > {
+    const profiles = await this.client.groupMemberProfile.findMany({
+      where: { groupJid },
+    });
+
+    const scored: {
+      profile: GroupMemberProfile;
+      totalDamage: number;
+      bossKills: number;
+      bossMvpCount: number;
+    }[] = [];
+
+    for (const profile of profiles) {
+      const state = parseRpgState(profile.rpgState);
+      if (state.bossDamageTotal > 0) {
+        scored.push({
+          profile,
+          totalDamage: state.bossDamageTotal,
+          bossKills: state.bossKills,
+          bossMvpCount: state.bossMvpCount,
+        });
+      }
+    }
+
+    scored.sort((a, b) => {
+      if (b.totalDamage !== a.totalDamage) return b.totalDamage - a.totalDamage;
+      if (b.bossMvpCount !== a.bossMvpCount) return b.bossMvpCount - a.bossMvpCount;
+      return b.bossKills - a.bossKills;
+    });
+
+    return scored.slice(0, limit);
+  }
 }
 
 export const groupMemberProfileRepository = new GroupMemberProfileRepository();

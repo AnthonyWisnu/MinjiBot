@@ -16,6 +16,7 @@ import { safeFetchExternal } from "../../utils/urlValidator";
 export interface AnimeRoleplaySpec {
   command: string;
   endpoint: string;
+  category?: "action" | "character";
   withTarget: (actor: string, target: string) => string;
   solo: (actor: string) => string;
 }
@@ -44,6 +45,23 @@ export const ANIME_ROLEPLAY_SPECS: readonly AnimeRoleplaySpec[] = [
   { command: "facepalm", endpoint: "facepalm", withTarget: (a, t) => `${a} tepok jidat melihat kelakuan ${t}.`, solo: (a) => `${a} tepok jidat pasrah.` },
   { command: "shrug", endpoint: "shrug", withTarget: (a, t) => `${a} cuma angkat bahu ke ${t}: "Entahlah."`, solo: (a) => `${a} mengangkat bahu pasrah.` },
   { command: "thumbsup", endpoint: "thumbsup", withTarget: (a, t) => `${a} kasih jempol mantap buat ${t}!`, solo: (a) => `${a} kasih jempol mantap!` },
+  // Tahap 16: 11 Aksi Interaksi Tag @user (animasi gifPlayback)
+  { command: "gendong", endpoint: "carry", withTarget: (a, t) => `${a} menggendong ${t} biar tidak capek jalan!`, solo: (a) => `${a} siap menggendong satu tim!` },
+  { command: "suapin", endpoint: "feed", withTarget: (a, t) => `${a} menyuapi ${t} dengan penuh perhatian! Aaa~`, solo: (a) => `${a} lagi pengen disuapin.` },
+  { command: "gandeng", endpoint: "handhold", withTarget: (a, t) => `${a} menggandeng tangan ${t} erat-erat!`, solo: (a) => `${a} lagi cari gandengan tangan.` },
+  { command: "salaman", endpoint: "handshake", withTarget: (a, t) => `${a} berjabat tangan resmi dengan ${t}! Deal!`, solo: (a) => `${a} mengulurkan tangan mengajak salaman.` },
+  { command: "kabedon", endpoint: "kabedon", withTarget: (a, t) => `${a} melakukan KABEDON ke ${t} di dinding!`, solo: (a) => `${a} latihan kabedon ke tembok.` },
+  { command: "cium", endpoint: "kiss", withTarget: (a, t) => `${a} mencium manis ${t}!`, solo: (a) => `${a} mengirimkan ciuman manis.` },
+  { command: "kecup", endpoint: "peck", withTarget: (a, t) => `${a} mengecup pipi ${t} sekilas!`, solo: (a) => `${a} kasih kecupan singkat.` },
+  { command: "pangku", endpoint: "lappillow", withTarget: (a, t) => `${a} membiarkan ${t} bersandar santai di pangkuan.`, solo: (a) => `${a} lagi butuh bantal pangkuan.` },
+  { command: "gelitik", endpoint: "tickle", withTarget: (a, t) => `${a} menggelitik ${t} sampai ketawa ngakak!`, solo: (a) => `${a} siap menggelitik siapa saja!` },
+  { command: "tembakdor", endpoint: "shoot", withTarget: (a, t) => `${a} menembak ${t} tepat sasaran! DOR!`, solo: (a) => `${a} beraksi nembak ke udara! DOR!` },
+  { command: "ciumanjauh", endpoint: "blowkiss", withTarget: (a, t) => `${a} melayangkan ciuman jauh untuk ${t}!`, solo: (a) => `${a} melayangkan ciuman jauh ke grup!` },
+  // Tahap 16: 4 Karakter Anime SFW PNG
+  { command: "waifu", endpoint: "waifu", category: "character", withTarget: (_a, t) => `Waifu SFW spesial untuk ${t}!`, solo: () => "Random Anime Waifu (SFW)" },
+  { command: "husbando", endpoint: "husbando", category: "character", withTarget: (_a, t) => `Husbando SFW spesial untuk ${t}!`, solo: () => "Random Anime Husbando (SFW)" },
+  { command: "neko", endpoint: "neko", category: "character", withTarget: (_a, t) => `Karakter Neko SFW spesial untuk ${t}!`, solo: () => "Random Anime Neko (SFW)" },
+  { command: "kitsune", endpoint: "kitsune", category: "character", withTarget: (_a, t) => `Karakter Kitsune SFW spesial untuk ${t}!`, solo: () => "Random Anime Kitsune (SFW)" },
 ] as const;
 
 export interface AnimeRoleplayMedia {
@@ -51,6 +69,7 @@ export interface AnimeRoleplayMedia {
   buffer: Buffer;
   mimetype: "video/mp4" | "image/png";
   animeName: string;
+  artistName?: string;
 }
 
 const MAX_GIF_BYTES = 4 * 1024 * 1024;
@@ -72,7 +91,7 @@ export class AnimeRoleplayService {
     }
 
     const json = (await resp.json()) as {
-      results?: { url?: string; anime_name?: string }[];
+      results?: { url?: string; anime_name?: string; artist_name?: string }[];
     };
     const item = json.results?.[0];
     if (!item?.url) {
@@ -90,11 +109,13 @@ export class AnimeRoleplayService {
 
     const rawBuffer = Buffer.from(await mediaResp.arrayBuffer());
     const animeName = item.anime_name ?? "Anime";
+    const trimmedArtist = item.artist_name?.trim() ?? "";
+    const artistName = trimmedArtist.length > 0 ? trimmedArtist : undefined;
 
     if (item.url.toLowerCase().endsWith(".gif") && rawBuffer.byteLength <= MAX_GIF_BYTES) {
       try {
         const mp4 = await this.convertGifToMp4(rawBuffer);
-        return { kind: "gifVideo", buffer: mp4, mimetype: "video/mp4", animeName };
+        return { kind: "gifVideo", buffer: mp4, mimetype: "video/mp4", animeName, artistName };
       } catch {
         // Fallback aman ke frame PNG tunggal bila FFmpeg gagal
       }
@@ -102,12 +123,12 @@ export class AnimeRoleplayService {
 
     const pngBuffer = await mediaQueueService.imageComputeQueue.run(async () =>
       sharp(rawBuffer, { animated: false, limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
-        .resize(512, 512, { fit: "inside", withoutEnlargement: true })
+        .resize(768, 768, { fit: "inside", withoutEnlargement: true })
         .png()
         .toBuffer(),
     );
 
-    return { kind: "image", buffer: pngBuffer, mimetype: "image/png", animeName };
+    return { kind: "image", buffer: pngBuffer, mimetype: "image/png", animeName, artistName };
   }
 
   private async convertGifToMp4(gifBuffer: Buffer): Promise<Buffer> {

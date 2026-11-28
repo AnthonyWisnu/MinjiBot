@@ -15,6 +15,7 @@ import { quickQuizCommands } from "./game/quickQuiz.command";
 import { sambungUndercoverCommands } from "./game/sambungUndercover.command";
 import { teamWarCommands } from "./game/teamWar.command";
 import { werewolfCommands } from "./game/werewolf.command";
+import { baileysNativeCommands } from "./group/baileysNative.command";
 import { createCustomStickerCommands } from "./group/customStickerCommand.command";
 import { geekNetworkCommands } from "./info/geekNetwork.command";
 import { publicInfoCommands } from "./info/publicInfo.command";
@@ -204,6 +205,7 @@ export const commandRouter = new CommandRouter([
   ...islamiLocalCommands,
   ...publicInfoCommands,
   ...geekNetworkCommands,
+  ...baileysNativeCommands,
   ...createCustomStickerCommands((cmd) => routerRef.current?.has(cmd) ?? false),
   ...createFeatureSearchCommands(() => routerRef.current?.listCommandEntries() ?? []),
 ]);

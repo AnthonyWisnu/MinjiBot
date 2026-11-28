@@ -42,7 +42,11 @@ function createRoleplayHandler(spec: AnimeRoleplaySpec) {
           : spec.solo(tagOf(actorJid));
 
       const media = await animeRoleplayService.fetchReactionMedia(spec.endpoint);
-      const caption = `${actionLine}\n_${media.animeName}_`;
+      const creditLine =
+        spec.category === "character" && media.artistName
+          ? `_Artist: ${media.artistName}_`
+          : `_${media.animeName}_`;
+      const caption = `${actionLine}\n${creditLine}`;
 
       if (media.kind === "gifVideo") {
         await context.socket.sendMessage(

@@ -114,6 +114,7 @@ model TenantGroup {
   expiresAt       DateTime?
   isBlocked       Boolean      @default(false)
   treasuryBalance BigInt       @default(20000000000000)
+  worldBossState  Json?
   approvedAt      DateTime?
   activatedAt     DateTime?
   createdAt       DateTime     @default(now())

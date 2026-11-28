@@ -10,6 +10,7 @@ import {
   customStickerCommandService,
   extractStickerFileSha256,
 } from "../services/group/customStickerCommand.service";
+import { classifyCommandUx } from "../services/group/baileysNative.service";
 import { isGroupJid } from "../utils/jid";
 import { extractSoundStickerMetadata } from "../utils/mediaTarget";
 import { formatUserSafeError } from "../utils/userSafeError";
@@ -160,7 +161,37 @@ async function handleIncomingMessage(
       return;
     }
 
-    await commandRouter.handle(context);
+    const ux = classifyCommandUx(context.commandName);
+    const hasSocketSend = typeof (socket as { sendMessage?: unknown }).sendMessage === "function";
+    const hasPresence = typeof (socket as { sendPresenceUpdate?: unknown }).sendPresenceUpdate === "function";
+    if (ux.autoReact && hasSocketSend && context.message.key.id) {
+      void socket
+        .sendMessage(context.chatJid, { react: { text: "⏳", key: context.message.key } })
+        .catch(() => undefined);
+    }
+    if (ux.presence && hasPresence) {
+      void socket.sendPresenceUpdate(ux.presence, context.chatJid).catch(() => undefined);
+    }
+
+    try {
+      await commandRouter.handle(context);
+      if (ux.autoReact && hasSocketSend && context.message.key.id) {
+        void socket
+          .sendMessage(context.chatJid, { react: { text: "✅", key: context.message.key } })
+          .catch(() => undefined);
+      }
+    } catch (handleErr: unknown) {
+      if (ux.autoReact && hasSocketSend && context.message.key.id) {
+        void socket
+          .sendMessage(context.chatJid, { react: { text: "❌", key: context.message.key } })
+          .catch(() => undefined);
+      }
+      throw handleErr;
+    } finally {
+      if (ux.presence && hasPresence) {
+        void socket.sendPresenceUpdate("paused", context.chatJid).catch(() => undefined);
+      }
+    }
   } catch (error: unknown) {
     logger.error(
       {
