@@ -58,7 +58,7 @@ export const MAX_TAX_PER_ACTION = 25_000_000n;
 export const MAX_ROB_PER_ACTION = 35_000_000n;
 export const MAX_ROB_FINE = 15_000_000n;
 export const BANSOS_POVERTY_THRESHOLD = 5_000_000n;
-export const BANSOS_POVERTY_BONUS = 3_000_000n;
+export const BANSOS_POVERTY_BONUS = 1_800_000n;
 
 interface JobDefinition {
   title: string;
@@ -76,13 +76,13 @@ interface JobDefinition {
 const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   mulung: {
     title: "MULUNG",
-    minMoney: 400_000,
-    maxMoney: 1_200_000,
-    xp: 30,
+    minMoney: 240_000,
+    maxMoney: 720_000,
+    xp: 18,
     rareChance: 0.08,
-    rareMinMoney: 2_500_000,
-    rareMaxMoney: 5_000_000,
-    rareXp: 70,
+    rareMinMoney: 1_500_000,
+    rareMaxMoney: 3_000_000,
+    rareXp: 42,
     stories: [
       "Mengumpulkan kardus bekas dan botol plastik di gang belakang",
       "Menemukan tumpukan kaleng minuman sisa acara warga",
@@ -96,13 +96,13 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   kerja: {
     title: "KERJA SERABUTAN",
-    minMoney: 900_000,
-    maxMoney: 2_800_000,
-    xp: 55,
+    minMoney: 540_000,
+    maxMoney: 1_680_000,
+    xp: 33,
     rareChance: 0.1,
-    rareMinMoney: 5_000_000,
-    rareMaxMoney: 10_000_000,
-    rareXp: 110,
+    rareMinMoney: 3_000_000,
+    rareMaxMoney: 6_000_000,
+    rareXp: 66,
     stories: [
       "Lembur memperbaiki bug server yang error jam 2 pagi",
       "Jadi barista kafe dan berhasil bikin latte art estetik",
@@ -117,13 +117,13 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   ojek: {
     title: "NGOJEK ONLINE",
-    minMoney: 800_000,
-    maxMoney: 2_400_000,
-    xp: 50,
+    minMoney: 480_000,
+    maxMoney: 1_440_000,
+    xp: 30,
     rareChance: 0.1,
-    rareMinMoney: 4_500_000,
-    rareMaxMoney: 8_500_000,
-    rareXp: 100,
+    rareMinMoney: 2_700_000,
+    rareMaxMoney: 5_100_000,
+    rareXp: 60,
     stories: [
       "Mengantar penumpang terburu-buru mengejar kereta pagi",
       "Dapat orderan makanan jarak jauh saat gerimis dengan ongkir tinggi",
@@ -137,13 +137,13 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   nambang: {
     title: "NAMBANG MINERAL",
-    minMoney: 1_500_000,
-    maxMoney: 5_000_000,
-    xp: 85,
+    minMoney: 900_000,
+    maxMoney: 3_000_000,
+    xp: 51,
     rareChance: 0.12,
-    rareMinMoney: 8_000_000,
-    rareMaxMoney: 18_000_000,
-    rareXp: 160,
+    rareMinMoney: 4_800_000,
+    rareMaxMoney: 10_800_000,
+    rareXp: 96,
     stories: [
       "Menambang bijih besi dan batu bara dari gua dalam",
       "Menemukan bongkahan tembaga dan perak berkualitas tinggi",
@@ -157,13 +157,13 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   berburu: {
     title: "BERBURU DI HUTAN",
-    minMoney: 1_500_000,
-    maxMoney: 4_800_000,
-    xp: 85,
+    minMoney: 900_000,
+    maxMoney: 2_880_000,
+    xp: 51,
     rareChance: 0.12,
-    rareMinMoney: 7_500_000,
-    rareMaxMoney: 16_000_000,
-    rareXp: 155,
+    rareMinMoney: 4_500_000,
+    rareMaxMoney: 9_600_000,
+    rareXp: 93,
     stories: [
       "Berhasil menangkap rusa liar di pinggir lembah",
       "Memburu babi hutan besar dan menjual hasil buruan ke pasar",
@@ -177,13 +177,13 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   mancing: {
     title: "MANCING MANIA",
-    minMoney: 1_200_000,
-    maxMoney: 4_500_000,
-    xp: 80,
+    minMoney: 720_000,
+    maxMoney: 2_700_000,
+    xp: 48,
     rareChance: 0.1,
-    rareMinMoney: 9_000_000,
-    rareMaxMoney: 20_000_000,
-    rareXp: 160,
+    rareMinMoney: 5_400_000,
+    rareMaxMoney: 12_000_000,
+    rareXp: 96,
     stories: [
       "Strike ikan kakap merah besar di spot karang tengah",
       "Menarik ikan tuna sirip kuning seberat 18 kg",
@@ -448,10 +448,10 @@ export class RpgEconomyService {
       if (success) {
         const baseGain = BigInt(
           mega
-            ? this.random.intBetween(25_000_000, 120_000_000)
-            : this.random.intBetween(4_000_000, 15_000_000),
+            ? this.random.intBetween(15_000_000, 72_000_000)
+            : this.random.intBetween(2_400_000, 9_000_000),
         );
-        const xpGained = mega ? 260 : 90;
+        const xpGained = mega ? 156 : 54;
         const scaledGain = scaleMoneyByLevel(baseGain, profile.level);
         const moneyGained = clampMoneyCredit(profile.moneyBalance, scaledGain);
         const treasuryDeduction = minBigInt(currentTreasury, moneyGained / 2n);
@@ -520,7 +520,7 @@ export class RpgEconomyService {
         where: { id: profile.id },
         data: {
           moneyBalance: { decrement: fine },
-          experience: { increment: 15 },
+          experience: { increment: 9 },
           rpgState: serializeRpgState(nextState),
         },
       });
@@ -557,7 +557,7 @@ export class RpgEconomyService {
           ? "OTT KPK GRUP! Kamu tertangkap tangan bawa koper uang tunai dan langsung pakai rompi oranye!"
           : "KETANGKAP KPK! Bukti kuitansi palsumu bocor ke grup dan kamu langsung diciduk!",
         amountDelta: -fine,
-        xpGained: 15,
+        xpGained: 9,
         jailMinutes,
         currentMoney: updated.moneyBalance,
         treasuryBalance: nextTreasury,
@@ -662,7 +662,7 @@ export class RpgEconomyService {
         data: {
           moneyBalance: { increment: collectorShare },
           totalMoneyEarned: { increment: collectorShare },
-          experience: { increment: 45 },
+          experience: { increment: 27 },
           rpgState: serializeRpgState(nextCollectorState),
         },
       });
@@ -795,7 +795,7 @@ export class RpgEconomyService {
           data: {
             moneyBalance: { increment: creditToThief },
             totalMoneyEarned: { increment: creditToThief },
-            experience: { increment: 60 },
+            experience: { increment: 36 },
             rpgState: serializeRpgState(nextThiefState),
           },
         });
@@ -923,7 +923,7 @@ export class RpgEconomyService {
   ): Promise<BansosResult> {
     const cooldownMs = RPG_COOLDOWNS_MS.bansos ?? 6 * 60 * 60 * 1000;
     const nowMs = now.getTime();
-    const baseAid = BigInt(this.random.intBetween(2_500_000, 6_000_000));
+    const baseAid = BigInt(this.random.intBetween(1_500_000, 3_600_000));
     const wasSkimmed = this.random.chance(0.15);
     const correlationId = generateCorrelationId();
 
@@ -954,7 +954,7 @@ export class RpgEconomyService {
         data: {
           moneyBalance: { increment: moneyGained },
           totalMoneyEarned: { increment: moneyGained },
-          experience: { increment: 25 },
+          experience: { increment: 15 },
           rpgState: serializeRpgState(nextState),
         },
       });
@@ -1038,22 +1038,22 @@ export class RpgEconomyService {
       const nextState = withUpdatedCooldown(state, "casino", nowMs);
       let outcome: CasinoResult["outcome"];
       let netDelta = 0n;
-      let xpGained = 10;
+      let xpGained = 6;
 
       if (pTotal > dTotal) {
         const isJackpot = p1 === 6 && p2 === 6;
         outcome = isJackpot ? "jackpot" : "win";
         const profit = isJackpot ? (betAmount * 3n) / 2n : betAmount;
         netDelta = clampMoneyCredit(profile.moneyBalance, profit);
-        xpGained = isJackpot ? 75 : 35;
+        xpGained = isJackpot ? 45 : 21;
       } else if (pTotal === dTotal) {
         outcome = "draw";
         netDelta = 0n;
-        xpGained = 10;
+        xpGained = 6;
       } else {
         outcome = "lose";
         netDelta = -betAmount;
-        xpGained = 10;
+        xpGained = 6;
       }
 
       const updateData: Record<string, unknown> = {

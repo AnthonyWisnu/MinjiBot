@@ -72,6 +72,63 @@ async function executeTopWealth(context: CommandContext): Promise<void> {
   await context.reply(text, { mentions });
 }
 
+async function executeTopLevel(context: CommandContext): Promise<void> {
+  if (!context.isGroup || !context.tenantGroup) {
+    await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
+    return;
+  }
+
+  const result = await leaderboardService.getTopLevel(context.chatJid, context.senderUserJid);
+  const { text, mentions } = formatLeaderboard(result, "*─── [ TOP LEVEL GRUP ] ───*", "Level");
+  await context.reply(text, { mentions });
+}
+
+async function executeTopStreak(context: CommandContext): Promise<void> {
+  if (!context.isGroup || !context.tenantGroup) {
+    await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
+    return;
+  }
+
+  const result = await leaderboardService.getTopStreak(context.chatJid, context.senderUserJid);
+  const { text, mentions } = formatLeaderboard(
+    result,
+    "*─── [ TOP STREAK HARIAN ] ───*",
+    "Hari",
+  );
+  await context.reply(text, { mentions });
+}
+
+async function executeTopGamesWon(context: CommandContext): Promise<void> {
+  if (!context.isGroup || !context.tenantGroup) {
+    await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
+    return;
+  }
+
+  const result = await leaderboardService.getTopGamesWon(context.chatJid, context.senderUserJid);
+  const { text, mentions } = formatLeaderboard(
+    result,
+    "*─── [ TOP JUARA GAME ] ───*",
+    "Menang",
+  );
+  await context.reply(text, { mentions });
+}
+
+async function executeTopDonated(context: CommandContext): Promise<void> {
+  if (!context.isGroup || !context.tenantGroup) {
+    await context.reply("Perintah ini hanya bisa digunakan di grup aktif.");
+    return;
+  }
+
+  const result = await leaderboardService.getTopDonated(context.chatJid, context.senderUserJid);
+  const { text, mentions } = formatLeaderboard(
+    result,
+    "*─── [ TOP DERMAWAN GRUP ] ───*",
+    "Total Amal",
+    true,
+  );
+  await context.reply(text, { mentions });
+}
+
 export const leaderboardCommands: CommandDefinition[] = [
   {
     name: "toprank",
@@ -86,5 +143,25 @@ export const leaderboardCommands: CommandDefinition[] = [
     name: "toprich",
     aliases: ["leaderboard", "lb", "topsultan", "topuang"],
     execute: executeTopWealth,
+  },
+  {
+    name: "toplevel",
+    aliases: ["toplvl"],
+    execute: executeTopLevel,
+  },
+  {
+    name: "topstreak",
+    aliases: ["topdaily"],
+    execute: executeTopStreak,
+  },
+  {
+    name: "topmenang",
+    aliases: ["topwin", "topgamer"],
+    execute: executeTopGamesWon,
+  },
+  {
+    name: "topdermawan",
+    aliases: ["topdonatur", "topsedekah"],
+    execute: executeTopDonated,
   },
 ];

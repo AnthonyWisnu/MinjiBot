@@ -193,7 +193,7 @@ export class DuelService {
         where: { id: loserProfile.id, moneyBalance: { gte: bet } },
         data: {
           moneyBalance: { decrement: bet },
-          experience: { increment: 20 },
+          experience: { increment: 12 },
         },
       });
       if (debitLoser.count === 0) {
@@ -206,7 +206,7 @@ export class DuelService {
         data: {
           moneyBalance: { increment: creditAmount },
           totalMoneyEarned: { increment: creditAmount },
-          experience: { increment: 60 },
+          experience: { increment: 36 },
         },
       });
       if (creditWinner.count === 0) {

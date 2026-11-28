@@ -13,15 +13,15 @@ import { generateCorrelationId } from "./memberEconomy.service";
 import { defaultRandom } from "./randomProvider";
 import type { RandomProvider } from "./randomProvider";
 
-const DAILY_XP = 100;
-const DAILY_POINTS_MIN = 50;
-const DAILY_POINTS_MAX = 150;
-const DAILY_MONEY_MIN = 1_500_000;
-const DAILY_MONEY_MAX = 3_500_000;
-const DAILY_STREAK_MONEY_BONUS = 300_000n;
+const DAILY_XP = 60;
+const DAILY_POINTS_MIN = 30;
+const DAILY_POINTS_MAX = 90;
+const DAILY_MONEY_MIN = 900_000;
+const DAILY_MONEY_MAX = 2_100_000;
+const DAILY_STREAK_MONEY_BONUS = 180_000n;
 const DAILY_STREAK_BONUS_CAP = 10;
 const DAILY_BONUS_LIMIT_PROBABILITY = 0.25;
-const DAILY_BONUS_LIMIT_AMOUNT = 3;
+const DAILY_BONUS_LIMIT_AMOUNT = 2;
 
 export interface DailyClaimResult {
   pointsGained: number;

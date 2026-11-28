@@ -29,6 +29,17 @@ interface LeaderboardStore {
   getPositionByPoints(groupJid: string, userJid: string): Promise<number>;
   listTopByWealth?(groupJid: string, limit: number): Promise<GroupMemberProfile[]>;
   getPositionByWealth?(groupJid: string, userJid: string): Promise<number>;
+  listTopByLevel?(groupJid: string, limit: number): Promise<GroupMemberProfile[]>;
+  getPositionByLevel?(groupJid: string, userJid: string): Promise<number>;
+  listTopByStreak?(groupJid: string, limit: number): Promise<GroupMemberProfile[]>;
+  getPositionByStreak?(groupJid: string, userJid: string): Promise<number>;
+  listTopByGamesWon?(groupJid: string, limit: number): Promise<GroupMemberProfile[]>;
+  getPositionByGamesWon?(groupJid: string, userJid: string): Promise<number>;
+  listTopByDonated?(
+    groupJid: string,
+    limit: number,
+  ): Promise<{ profile: GroupMemberProfile; totalDonated: bigint }[]>;
+  getPositionByDonated?(groupJid: string, userJid: string): Promise<number>;
 }
 
 export class LeaderboardService {
@@ -92,6 +103,82 @@ export class LeaderboardService {
       callerPosition = pos > 0 ? pos : null;
     }
 
+    return { entries, callerPosition };
+  }
+
+  async getTopLevel(groupJid: string, callerJid: string): Promise<LeaderboardResult> {
+    const listFn = this.profileRepo.listTopByLevel?.bind(this.profileRepo);
+    const posFn = this.profileRepo.getPositionByLevel?.bind(this.profileRepo);
+    const rawTop = listFn ? await listFn(groupJid, TOP_N + 5) : [];
+    const top = rawTop.filter((p) => !roleGuard.isSuperOwner(p.userJid)).slice(0, TOP_N);
+    const entries = top.map((p, i) => this.toEntry(i + 1, p, Math.max(1, p.level)));
+
+    const isCallerSuperOwner = roleGuard.isSuperOwner(callerJid);
+    const callerInTop = top.some(
+      (p) => normalizeUserJid(p.userJid) === normalizeUserJid(callerJid),
+    );
+    let callerPosition: number | null = null;
+    if (!callerInTop && !isCallerSuperOwner && posFn) {
+      const pos = await posFn(groupJid, callerJid);
+      callerPosition = pos > 0 ? pos : null;
+    }
+    return { entries, callerPosition };
+  }
+
+  async getTopStreak(groupJid: string, callerJid: string): Promise<LeaderboardResult> {
+    const listFn = this.profileRepo.listTopByStreak?.bind(this.profileRepo);
+    const posFn = this.profileRepo.getPositionByStreak?.bind(this.profileRepo);
+    const rawTop = listFn ? await listFn(groupJid, TOP_N + 5) : [];
+    const top = rawTop.filter((p) => !roleGuard.isSuperOwner(p.userJid)).slice(0, TOP_N);
+    const entries = top.map((p, i) => this.toEntry(i + 1, p, p.longestStreak));
+
+    const isCallerSuperOwner = roleGuard.isSuperOwner(callerJid);
+    const callerInTop = top.some(
+      (p) => normalizeUserJid(p.userJid) === normalizeUserJid(callerJid),
+    );
+    let callerPosition: number | null = null;
+    if (!callerInTop && !isCallerSuperOwner && posFn) {
+      const pos = await posFn(groupJid, callerJid);
+      callerPosition = pos > 0 ? pos : null;
+    }
+    return { entries, callerPosition };
+  }
+
+  async getTopGamesWon(groupJid: string, callerJid: string): Promise<LeaderboardResult> {
+    const listFn = this.profileRepo.listTopByGamesWon?.bind(this.profileRepo);
+    const posFn = this.profileRepo.getPositionByGamesWon?.bind(this.profileRepo);
+    const rawTop = listFn ? await listFn(groupJid, TOP_N + 5) : [];
+    const top = rawTop.filter((p) => !roleGuard.isSuperOwner(p.userJid)).slice(0, TOP_N);
+    const entries = top.map((p, i) => this.toEntry(i + 1, p, p.totalGamesWon));
+
+    const isCallerSuperOwner = roleGuard.isSuperOwner(callerJid);
+    const callerInTop = top.some(
+      (p) => normalizeUserJid(p.userJid) === normalizeUserJid(callerJid),
+    );
+    let callerPosition: number | null = null;
+    if (!callerInTop && !isCallerSuperOwner && posFn) {
+      const pos = await posFn(groupJid, callerJid);
+      callerPosition = pos > 0 ? pos : null;
+    }
+    return { entries, callerPosition };
+  }
+
+  async getTopDonated(groupJid: string, callerJid: string): Promise<LeaderboardResult> {
+    const listFn = this.profileRepo.listTopByDonated?.bind(this.profileRepo);
+    const posFn = this.profileRepo.getPositionByDonated?.bind(this.profileRepo);
+    const rawTop = listFn ? await listFn(groupJid, TOP_N + 5) : [];
+    const top = rawTop.filter((r) => !roleGuard.isSuperOwner(r.profile.userJid)).slice(0, TOP_N);
+    const entries = top.map((r, i) => this.toEntry(i + 1, r.profile, r.totalDonated));
+
+    const isCallerSuperOwner = roleGuard.isSuperOwner(callerJid);
+    const callerInTop = top.some(
+      (r) => normalizeUserJid(r.profile.userJid) === normalizeUserJid(callerJid),
+    );
+    let callerPosition: number | null = null;
+    if (!callerInTop && !isCallerSuperOwner && posFn) {
+      const pos = await posFn(groupJid, callerJid);
+      callerPosition = pos > 0 ? pos : null;
+    }
     return { entries, callerPosition };
   }
 

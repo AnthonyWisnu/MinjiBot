@@ -148,7 +148,7 @@ void test("Tahap 2 RpgInfinite: gather, cook, shop buy/sell, craft, upgrade, hea
   const cookRes = await service.cookFood("120@g.us", "628111@s.whatsapp.net", "salad", 2);
   assert.equal(cookRes.quantity, 2);
   const sellRes = await service.shopSell("120@g.us", "628111@s.whatsapp.net", "salad", "all");
-  assert.equal(sellRes.totalMoney, 7_000_000n);
+  assert.equal(sellRes.totalMoney, 4_200_000n);
 
   // 3. Craft & upgrade sword
   const craftRes = await service.craftTool("120@g.us", "628111@s.whatsapp.net", "sword");
@@ -159,7 +159,7 @@ void test("Tahap 2 RpgInfinite: gather, cook, shop buy/sell, craft, upgrade, hea
   // 4. Adventure & gathering (.nebang, .berkebon)
   const now = new Date("2026-11-28T06:00:00Z");
   const adv = await service.runAdventure("120@g.us", "628111@s.whatsapp.net", now);
-  assert.ok(adv.moneyGained >= 2_500_000n);
+  assert.ok(adv.moneyGained >= 1_500_000n);
   assert.ok(adv.crateFound !== null);
 
   const wood = await service.runGathering("120@g.us", "628111@s.whatsapp.net", "nebang", now);
@@ -198,7 +198,7 @@ void test("Tahap 2 RpgInfinite: gacha crate unlocks pet, feed/ramuan levels pet,
 
   // Open mythic crate -> guaranteed pet (chance=true) & Sultan Rupiah
   const gacha = await service.openCrate("120@g.us", "628111@s.whatsapp.net", "mythic", 1);
-  assert.ok(gacha.moneyGained >= 18_000_000n);
+  assert.ok(gacha.moneyGained >= 10_800_000n);
   assert.equal(gacha.petsGained.length, 1);
   const unlockedPet = gacha.petsGained[0]?.pet;
   assert.ok(unlockedPet);
@@ -213,7 +213,7 @@ void test("Tahap 2 RpgInfinite: gacha crate unlocks pet, feed/ramuan levels pet,
   const now = new Date("2026-11-28T06:00:00Z");
   const boss = await service.fightBoss("120@g.us", "628111@s.whatsapp.net", "kucing", now);
   assert.equal(boss.won, true);
-  assert.ok(boss.moneyGained >= 12_000_000n);
+  assert.ok(boss.moneyGained >= 7_200_000n);
   assert.equal(boss.crateGained, "common");
 });
 
@@ -262,7 +262,7 @@ void test("Tahap 2 RpgGroupInteraction: berbisnis, co-op dungeon, and serang wit
   );
   assert.equal(biz.profitable, true);
   assert.equal(biz.participants.length, 2);
-  assert.ok(biz.netDeltaPerPerson >= 5_000_000n);
+  assert.ok(biz.netDeltaPerPerson >= 3_000_000n);
 
   // 2. Co-op dungeon create -> join -> start -> win
   const created = await groupRpg.createOrInspectDungeonLobby(
@@ -275,7 +275,7 @@ void test("Tahap 2 RpgGroupInteraction: berbisnis, co-op dungeon, and serang wit
   const raid = await groupRpg.startDungeonRaid("120@g.us", "628111@s.whatsapp.net", now);
   assert.equal(raid.won, true);
   assert.equal(raid.members.length, 2);
-  assert.ok((raid.members[0]?.moneyGained ?? 0n) >= 22_000_000n);
+  assert.ok((raid.members[0]?.moneyGained ?? 0n) >= 13_200_000n);
 
   // 3. Serang -> victim HP drops to 0 -> sent to UGD 15m -> second attack blocked by UGD anti-bully
   const atk = await groupRpg.attackPlayer(

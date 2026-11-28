@@ -276,9 +276,9 @@ void test("Tahap 9: Daily Quest completion, claim, and double-claim guard", asyn
 
   const claimed = await service.claimDailyQuests("120@g.us", "6281@s.whatsapp.net", now);
   assert.equal(claimed.claimedQuests.length, 4);
-  assert.equal(claimed.totalMoney, 110_000_000n);
-  assert.equal(claimed.totalLimit, 15);
-  assert.equal(claimed.currentLimit, 25);
+  assert.equal(claimed.totalMoney, 66_000_000n);
+  assert.equal(claimed.totalLimit, 9);
+  assert.equal(claimed.currentLimit, 19);
 
   await assert.rejects(
     () => service.claimDailyQuests("120@g.us", "6281@s.whatsapp.net", now),
@@ -327,22 +327,22 @@ void test("Tahap 9: Rank Salary, Deposito interest, and IDX Stock buy/sell/portf
     },
   ]);
 
-  // Salary for Epic = Rp 200jt + 6 Limit
+  // Salary for Epic = Rp 120jt + 4 Limit (60% anti-inflation rebalance)
   const sal = await service.claimSalary("120@g.us", "6281@s.whatsapp.net", day1);
   assert.equal(sal.rank, "Epic");
-  assert.equal(sal.money, 200_000_000n);
-  assert.equal(sal.limit, 6);
+  assert.equal(sal.money, 120_000_000n);
+  assert.equal(sal.limit, 4);
   await assert.rejects(
     () => service.claimSalary("120@g.us", "6281@s.whatsapp.net", day1),
     /sudah diambil/,
   );
 
-  // Deposito Rp 100jt for 3 days @ 8%/day = +24jt interest
+  // Deposito Rp 100jt for 3 days @ 5%/day = +15jt interest
   await service.openDeposito("120@g.us", "6281@s.whatsapp.net", 100_000_000n, day1);
   const depOut = await service.withdrawDeposito("120@g.us", "6281@s.whatsapp.net", day4);
   assert.equal(depOut.daysHeld, 3);
-  assert.equal(depOut.interest, 24_000_000n);
-  assert.equal(depOut.totalReceived, 124_000_000n);
+  assert.equal(depOut.interest, 15_000_000n);
+  assert.equal(depOut.totalReceived, 115_000_000n);
 
   // Stocks buy & sell
   const buyRes = await service.buyStock("120@g.us", "6281@s.whatsapp.net", "BBCA", 5, day4);

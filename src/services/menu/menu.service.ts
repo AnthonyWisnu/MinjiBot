@@ -142,10 +142,12 @@ export class MenuService {
       const rpgInf = this.buildRpgInfiniteSection(featureSetting);
       const business = this.buildBusinessExpansionSection(featureSetting);
       const career = this.buildCareerEmpireSection(featureSetting);
+      const arena = this.buildArenaGiveawaySection(featureSetting);
       if (rpg) sections.push(rpg);
       if (rpgInf) sections.push(rpgInf);
       if (business) sections.push(business);
       if (career) sections.push(career);
+      if (arena) sections.push(arena);
       sections.push(this.buildEconomySection());
       return this.renderCategoryPage("*── [ SUB-MENU: RPG ] ──*", groupHeader, sections, footer);
     }
@@ -154,8 +156,10 @@ export class MenuService {
       const sections: MenuSection[] = [this.buildEconomySection()];
       const business = this.buildBusinessExpansionSection(featureSetting);
       const career = this.buildCareerEmpireSection(featureSetting);
+      const arena = this.buildArenaGiveawaySection(featureSetting);
       if (business) sections.push(business);
       if (career) sections.push(career);
+      if (arena) sections.push(arena);
       return this.renderCategoryPage("*── [ SUB-MENU: BISNIS ] ──*", groupHeader, sections, footer);
     }
 
@@ -183,11 +187,15 @@ export class MenuService {
     }
 
     if (category === "kasino") {
+      const sections: MenuSection[] = [];
       const kasino = this.buildCasinoPackSection(featureSetting);
+      const arena = this.buildArenaGiveawaySection(featureSetting);
+      if (kasino) sections.push(kasino);
+      if (arena) sections.push(arena);
       return this.renderCategoryPage(
         "*── [ SUB-MENU: KASINO ] ──*",
         groupHeader,
-        kasino ? [kasino] : [{ title: "*── [ GAME NONAKTIF ] ──*", items: [] }],
+        sections.length > 0 ? sections : [{ title: "*── [ GAME NONAKTIF ] ──*", items: [] }],
         footer,
       );
     }
@@ -422,6 +430,9 @@ export class MenuService {
 
     const career = this.buildCareerEmpireSection(featureSetting);
     if (career) sections.push(career);
+
+    const arena = this.buildArenaGiveawaySection(featureSetting);
+    if (arena) sections.push(arena);
 
     const games = this.buildPureGameSection(featureSetting);
     if (games) sections.push(games);
@@ -677,6 +688,10 @@ export class MenuService {
         ".leaderboard",
         ".toprank",
         ".toppoint",
+        ".toplevel",
+        ".topstreak",
+        ".topmenang",
+        ".topdermawan",
         ".stats",
         ".topaktif",
         ".deletemydata",
@@ -815,6 +830,41 @@ export class MenuService {
         ".toprebirth",
         ".flex / .sultancard",
         ".networth / .cekaset",
+      ],
+    };
+  }
+
+  private buildArenaGiveawaySection(
+    featureSetting: TenantFeatureSetting | null,
+  ): MenuSection | null {
+    if (featureSetting && !featureSetting.gameEnabled) {
+      return null;
+    }
+
+    return {
+      title: "*── [ ARENA & HADIAH ] ──*",
+      items: [
+        ".danakaget <uang> <kuota>",
+        ".ambilkaget",
+        ".poinkaget <poin> <kuota>",
+        ".ambilpoin",
+        ".traktir <uang>",
+        ".lotere",
+        ".belitiket <00-99>",
+        ".undilotere",
+        ".jackpot",
+        ".balapkuda <1-5> <uang>",
+        ".balapsiput <1-5> <uang>",
+        ".aduayam [sisi] <uang>",
+        ".tebakwarna <warna> <uang>",
+        ".duelpoin @user <poin>",
+        ".terimaduelpoin",
+        ".tolakduelpoin",
+        ".sabungpet @user <uang>",
+        ".tokopoin",
+        ".belixp <poin>",
+        ".belikotak <tier> [qty]",
+        ".sedekah <uang>",
       ],
     };
   }

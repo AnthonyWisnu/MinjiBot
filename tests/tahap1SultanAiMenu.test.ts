@@ -112,8 +112,8 @@ void test("Tahap 1 Economy: MemberEconomyService.creditMoney & GameRewardService
   assert.equal(kuisRes.points, KUIS_REWARD.CORRECT_POINTS);
   assert.equal(kuisRes.xp, KUIS_REWARD.CORRECT_XP);
   assert.equal(kuisRes.levelMultiplier, 2.5);
-  assert.equal(kuisRes.money, 2_500_000n); // Rp 1 Jt * 2.5x Lv.11
-  assert.equal(storedProfile.moneyBalance, 5_002_500_000n);
+  assert.equal(kuisRes.money, 1_500_000n); // Rp 600 Rb * 2.5x Lv.11 (60% rebalance)
+  assert.equal(storedProfile.moneyBalance, 5_001_500_000n);
 
   const tttRes = await gameReward.awardTicTacToeWin(
     "120@g.us",
@@ -122,7 +122,7 @@ void test("Tahap 1 Economy: MemberEconomyService.creditMoney & GameRewardService
     "corr-2",
   );
   assert.equal(tttRes.money, (TICTACTOE_REWARD.WIN_MONEY * 250n) / 100n);
-  assert.ok(ledger.some((entry) => entry.asset === "MONEY" && entry.amount === 2_500_000n));
+  assert.ok(ledger.some((entry) => entry.asset === "MONEY" && entry.amount === 1_500_000n));
 });
 
 void test("Tahap 1 OpenRouter AI: enforces API key, prompt limit, cooldown, daily group quota, and safe errors", async () => {

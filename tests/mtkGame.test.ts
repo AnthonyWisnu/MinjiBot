@@ -7,9 +7,9 @@ import { GameRewardService } from "../src/services/game/gameReward.service";
 import type { CommandContext } from "../src/types/command";
 
 void test("MTK: reward constants are correct", () => {
-  assert.equal(MTK_REWARD.CORRECT_POINTS, 10);
-  assert.equal(MTK_REWARD.CORRECT_XP, 40);
-  assert.equal(MTK_REWARD.WRONG_XP, 5);
+  assert.equal(MTK_REWARD.CORRECT_POINTS, 6);
+  assert.equal(MTK_REWARD.CORRECT_XP, 24);
+  assert.equal(MTK_REWARD.WRONG_XP, 3);
 });
 
 void test("MTK: startOrAnswerQuiz generates a math question", async () => {

@@ -377,8 +377,8 @@ export class RpgInfiniteService {
     const nowMs = now.getTime();
     const zone =
       ADVENTURE_ZONES[this.random.intBetween(0, ADVENTURE_ZONES.length - 1)] ?? ADVENTURE_ZONES[0];
-    const baseMoney = BigInt(this.random.intBetween(2_500_000, 7_500_000));
-    const xpGained = this.random.intBetween(90, 180);
+    const baseMoney = BigInt(this.random.intBetween(1_500_000, 4_500_000));
+    const xpGained = this.random.intBetween(54, 108);
     const rawDamage = this.random.intBetween(15, 32);
     const correlationId = generateCorrelationId();
 
@@ -509,13 +509,13 @@ export class RpgInfiniteService {
       const toolLevel =
         action === "nebang" ? state.tools.pickaxe.level : state.tools.fishingrod.level;
       const toolBonusPercent = toolLevel * 15;
-      const baseMoney = BigInt(this.random.intBetween(1_200_000, 3_200_000));
+      const baseMoney = BigInt(this.random.intBetween(720_000, 1_920_000));
       const boosted = (baseMoney * BigInt(100 + toolBonusPercent)) / 100n;
       const moneyGained = clampMoneyCredit(
         profile.moneyBalance,
         scaleMoneyByLevel(boosted, profile.level),
       );
-      const xpGained = 65 + toolLevel * 5;
+      const xpGained = 39 + toolLevel * 3;
 
       const itemsGained: Record<string, number> = {};
       if (action === "nebang") {
@@ -842,7 +842,7 @@ export class RpgInfiniteService {
         where: { id: profile.id, moneyBalance: { gte: spec.craftCostMoney } },
         data: {
           moneyBalance: { decrement: spec.craftCostMoney },
-          experience: { increment: 120 },
+          experience: { increment: 72 },
           rpgState: serializeRpgState(nextState),
         },
       });
@@ -930,7 +930,7 @@ export class RpgInfiniteService {
         where: { id: profile.id, moneyBalance: { gte: upgradeCost } },
         data: {
           moneyBalance: { decrement: upgradeCost },
-          experience: { increment: 150 * nextLevel },
+          experience: { increment: 90 * nextLevel },
           rpgState: serializeRpgState(nextState),
         },
       });
@@ -1128,7 +1128,7 @@ export class RpgInfiniteService {
       await tx.groupMemberProfile.update({
         where: { id: profile.id },
         data: {
-          experience: { increment: mode === "ramuan" ? 80 : 30 },
+          experience: { increment: mode === "ramuan" ? 48 : 18 },
           rpgState: serializeRpgState(nextState),
         },
       });
@@ -1198,7 +1198,7 @@ export class RpgInfiniteService {
         await tx.groupMemberProfile.update({
           where: { id: profile.id },
           data: {
-            experience: { increment: 35 },
+            experience: { increment: 21 },
             rpgState: serializeRpgState(nextState),
           },
         });
@@ -1212,7 +1212,7 @@ export class RpgInfiniteService {
           hpLost,
           hpAfter,
           moneyGained: 0n,
-          xpGained: 35,
+          xpGained: 21,
           crateGained: null,
           petDropped: false,
           petNewLevel: state.pets[bossId].level,

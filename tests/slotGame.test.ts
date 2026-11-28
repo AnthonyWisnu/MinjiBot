@@ -26,10 +26,10 @@ function makeMockContext(pointsBalance: number, isGroup = true): CommandContext 
 
 void test("SlotGame: config constants are correct", () => {
   assert.equal(SLOT_CONFIG.BET_POINTS, 5);
-  assert.equal(SLOT_CONFIG.MATCH_TWO_POINTS, 10);
-  assert.equal(SLOT_CONFIG.MATCH_TWO_XP, 5);
-  assert.equal(SLOT_CONFIG.JACKPOT_POINTS, 30);
-  assert.equal(SLOT_CONFIG.SUPER_JACKPOT_POINTS, 50);
+  assert.equal(SLOT_CONFIG.MATCH_TWO_POINTS, 6);
+  assert.equal(SLOT_CONFIG.MATCH_TWO_XP, 3);
+  assert.equal(SLOT_CONFIG.JACKPOT_POINTS, 18);
+  assert.equal(SLOT_CONFIG.SUPER_JACKPOT_POINTS, 30);
 });
 
 void test("SlotGame: rejects private chat", async () => {

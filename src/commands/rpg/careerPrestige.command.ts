@@ -9,6 +9,8 @@ import {
   PINJOL_MIN_AMOUNT,
   PRESTIGE_BONUS_PERCENT_PER_STAR,
   PRESTIGE_MIN_PLAYER_LEVEL,
+  PRESTIGE_REWARD_LIMIT,
+  PRESTIGE_REWARD_POINTS,
   STARTUP_CREATE_COST,
   STARTUP_RECRUIT_COST,
   UGD_VIP_RELEASE_COST,
@@ -610,7 +612,7 @@ async function handlePrestige(context: CommandContext): Promise<void> {
         ...(info.nextCost
           ? [
               `Biaya ★${String(info.prestige + 1)}: ${formatRupiah(info.nextCost)}`,
-              `Bonus    : +${String(PRESTIGE_BONUS_PERCENT_PER_STAR)}% permanen, +20 Limit, +500 Poin`,
+              `Bonus    : +${String(PRESTIGE_BONUS_PERCENT_PER_STAR)}% permanen, +${String(PRESTIGE_REWARD_LIMIT)} Limit, +${String(PRESTIGE_REWARD_POINTS)} Poin`,
               "",
               "Naik bintang: *.rebirth*",
             ]

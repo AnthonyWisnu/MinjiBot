@@ -14,21 +14,21 @@ const WEEKLY_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 const MONTHLY_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 
 export const WEEKLY_REWARD_CONFIG = {
-  MONEY_MIN: 12_000_000,
-  MONEY_MAX: 25_000_000,
-  POINTS_MIN: 250,
-  POINTS_MAX: 500,
-  XP: 350,
-  LIMIT: 5,
+  MONEY_MIN: 7_200_000,
+  MONEY_MAX: 15_000_000,
+  POINTS_MIN: 150,
+  POINTS_MAX: 300,
+  XP: 210,
+  LIMIT: 3,
 } as const;
 
 export const MONTHLY_REWARD_CONFIG = {
-  MONEY_MIN: 75_000_000,
-  MONEY_MAX: 150_000_000,
-  POINTS_MIN: 1_000,
-  POINTS_MAX: 2_000,
-  XP: 1_200,
-  LIMIT: 20,
+  MONEY_MIN: 45_000_000,
+  MONEY_MAX: 90_000_000,
+  POINTS_MIN: 600,
+  POINTS_MAX: 1_200,
+  XP: 720,
+  LIMIT: 12,
 } as const;
 
 export class PeriodicCooldownError extends Error {

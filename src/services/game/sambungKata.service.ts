@@ -21,8 +21,8 @@ export interface SambungKataResult {
 }
 
 export const SAMBUNG_KATA_TTL_MS = 3 * 60 * 1000;
-export const SAMBUNG_KATA_REWARD_PER_WORD = 1_000_000n;
-export const SAMBUNG_KATA_COMBO_BONUS = 10_000_000n;
+export const SAMBUNG_KATA_REWARD_PER_WORD = 600_000n;
+export const SAMBUNG_KATA_COMBO_BONUS = 6_000_000n;
 export const SAMBUNG_KATA_COMBO_TARGET = 10;
 const MAX_SAMBUNG_ROOMS = 50;
 
@@ -200,8 +200,8 @@ export class SambungKataService {
     const moneyReward = isComboWin
       ? SAMBUNG_KATA_REWARD_PER_WORD + SAMBUNG_KATA_COMBO_BONUS
       : SAMBUNG_KATA_REWARD_PER_WORD;
-    const xpReward = isComboWin ? 120 : 25;
-    const pointsReward = isComboWin ? 25 : 5;
+    const xpReward = isComboWin ? 72 : 15;
+    const pointsReward = isComboWin ? 15 : 3;
     const correlationId = generateCorrelationId();
 
     await Promise.allSettled([

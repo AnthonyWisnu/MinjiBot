@@ -346,7 +346,7 @@ export function parseRpgState(raw: unknown): MemberRpgState {
       const ratePercent =
         typeof rawDep.ratePercent === "number" && Number.isFinite(rawDep.ratePercent) && rawDep.ratePercent > 0
           ? rawDep.ratePercent
-          : 8;
+          : 5;
       deposito = {
         principal: rawDep.principal,
         depositedAt: Math.floor(rawDep.depositedAt),

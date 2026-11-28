@@ -195,11 +195,11 @@ export class RpgGroupInteractionService {
     const ventureName =
       BUSINESS_VENTURES[this.random.intBetween(0, BUSINESS_VENTURES.length - 1)] ??
       BUSINESS_VENTURES[0];
-    const baseProfit = BigInt(this.random.intBetween(4_000_000, 12_000_000));
+    const baseProfit = BigInt(this.random.intBetween(2_400_000, 7_200_000));
     const synergyBasis = BigInt(100 + uniquePartners.length * 25); // +25% per rekan bisnis!
     const profitEach = (baseProfit * synergyBasis) / 100n;
     const lossEach = percentOfBigInt(BUSINESS_CAPITAL_PER_PERSON, 30); // Rp 600.000 jika rugi
-    const xpGained = profitable ? 120 + uniquePartners.length * 25 : 45;
+    const xpGained = profitable ? 72 + uniquePartners.length * 15 : 27;
     const correlationId = generateCorrelationId();
 
     return this.db.$transaction(async (tx) => {
@@ -417,7 +417,7 @@ export class RpgGroupInteractionService {
       DUNGEON_BOSSES[this.random.intBetween(0, DUNGEON_BOSSES.length - 1)] ?? DUNGEON_BOSSES[0];
     const teamSize = lobby.players.length;
     const bossPower = 55 + teamSize * 45 + this.random.intBetween(0, 40);
-    const baseLootEach = BigInt(this.random.intBetween(22_000_000, 55_000_000));
+    const baseLootEach = BigInt(this.random.intBetween(13_200_000, 33_000_000));
     const teamBonusBasis = BigInt(100 + (teamSize - 1) * 20);
     const correlationId = generateCorrelationId();
 
@@ -443,7 +443,7 @@ export class RpgGroupInteractionService {
         let nextState = withUpdatedCooldown(withHp(state, hpAfter), "dungeon", nowMs);
 
         let moneyGained = 0n;
-        let xpGained = 60;
+        let xpGained = 36;
         let crateGained: CrateType | null = null;
 
         if (won) {
@@ -452,7 +452,7 @@ export class RpgGroupInteractionService {
             profile.moneyBalance,
             scaleMoneyByLevel(boosted, profile.level),
           );
-          xpGained = 250 + teamSize * 40;
+          xpGained = 150 + teamSize * 24;
           crateGained = teamSize >= 3 ? "mythic" : "uncommon";
           nextState = withCrateDelta(nextState, crateGained, 1);
         }
@@ -594,7 +594,7 @@ export class RpgGroupInteractionService {
         await tx.groupMemberProfile.update({
           where: { id: attacker.id },
           data: {
-            experience: { increment: 20 },
+            experience: { increment: 12 },
             rpgState: serializeRpgState(nextAttackerState),
           },
         });
@@ -656,7 +656,7 @@ export class RpgGroupInteractionService {
         data: {
           moneyBalance: { increment: creditAttacker },
           totalMoneyEarned: { increment: creditAttacker },
-          experience: { increment: 80 },
+          experience: { increment: 48 },
           rpgState: serializeRpgState(nextAttackerState),
         },
       });

@@ -73,6 +73,17 @@ const KEYWORD_SYNONYMS: Record<string, readonly string[]> = {
   ugd: ["bebasugd", "heal", "asuransi", "serang", "russian"],
   prestige: ["prestige", "rebirth", "toprebirth", "flex", "networth"],
   flex: ["flex", "networth", "portofolio", "toprich"],
+  danakaget: ["danakaget", "ambilkaget", "poinkaget", "ambilpoin", "traktir", "sedekah"],
+  angpao: ["danakaget", "ambilkaget", "poinkaget", "ambilpoin", "traktir"],
+  traktir: ["traktir", "danakaget", "sedekah", "topdermawan"],
+  lotere: ["lotere", "belitiket", "undilotere", "jackpot"],
+  jackpot: ["jackpot", "lotere", "belitiket", "undilotere", "tebakwarna", "slot", "casino"],
+  balap: ["balapkuda", "balapsiput", "aduayam", "tebakwarna", "sabungpet"],
+  sabung: ["sabungpet", "aduayam", "duelpoin", "duel"],
+  tokopoin: ["tokopoin", "belixp", "belikotak", "buy", "buyall", "tukar"],
+  sedekah: ["sedekah", "topdermawan", "traktir", "danakaget"],
+  dermawan: ["topdermawan", "sedekah", "traktir", "danakaget"],
+  leaderboard: ["toprich", "toprank", "toppoint", "toplevel", "topstreak", "topmenang", "topdermawan", "toprebirth", "topstartup"],
 };
 
 export class FeatureSearchService {

@@ -1,5 +1,6 @@
 import { TenantStatus, type GroupMemberProfile, type Prisma } from "@prisma/client";
 
+import { parseRpgState } from "../services/rpg/rpgState";
 import { prisma, type PrismaTransactionClient } from "./prismaClient";
 
 type Client = typeof prisma | PrismaTransactionClient;
@@ -292,6 +293,136 @@ export class GroupMemberProfileRepository {
     });
 
     return active.map((profile) => profile.userJid);
+  }
+
+  // Leaderboard level tertinggi - untuk .toplevel
+  listTopByLevel(groupJid: string, limit = 10): Promise<GroupMemberProfile[]> {
+    return this.client.groupMemberProfile.findMany({
+      where: { groupJid },
+      orderBy: [{ level: "desc" }, { experience: "desc" }],
+      take: limit,
+    });
+  }
+
+  async getPositionByLevel(groupJid: string, userJid: string): Promise<number> {
+    const profile = await this.findByGroupAndUser(groupJid, userJid);
+    if (!profile) return 0;
+
+    const countAbove = await this.client.groupMemberProfile.count({
+      where: {
+        groupJid,
+        OR: [
+          { level: { gt: profile.level } },
+          { level: profile.level, experience: { gt: profile.experience } },
+        ],
+      },
+    });
+    return countAbove + 1;
+  }
+
+  // Leaderboard daily streak - untuk .topstreak
+  listTopByStreak(groupJid: string, limit = 10): Promise<GroupMemberProfile[]> {
+    return this.client.groupMemberProfile.findMany({
+      where: { groupJid, longestStreak: { gt: 0 } },
+      orderBy: [{ longestStreak: "desc" }, { currentStreak: "desc" }],
+      take: limit,
+    });
+  }
+
+  async getPositionByStreak(groupJid: string, userJid: string): Promise<number> {
+    const profile = await this.findByGroupAndUser(groupJid, userJid);
+    if (!profile || profile.longestStreak <= 0) return 0;
+
+    const countAbove = await this.client.groupMemberProfile.count({
+      where: {
+        groupJid,
+        OR: [
+          { longestStreak: { gt: profile.longestStreak } },
+          { longestStreak: profile.longestStreak, currentStreak: { gt: profile.currentStreak } },
+        ],
+      },
+    });
+    return countAbove + 1;
+  }
+
+  // Leaderboard game menang terbanyak - untuk .topmenang
+  listTopByGamesWon(groupJid: string, limit = 10): Promise<GroupMemberProfile[]> {
+    return this.client.groupMemberProfile.findMany({
+      where: { groupJid, totalGamesWon: { gt: 0 } },
+      orderBy: [{ totalGamesWon: "desc" }, { experience: "desc" }],
+      take: limit,
+    });
+  }
+
+  async getPositionByGamesWon(groupJid: string, userJid: string): Promise<number> {
+    const profile = await this.findByGroupAndUser(groupJid, userJid);
+    if (!profile || profile.totalGamesWon <= 0) return 0;
+
+    const countAbove = await this.client.groupMemberProfile.count({
+      where: { groupJid, totalGamesWon: { gt: profile.totalGamesWon } },
+    });
+    return countAbove + 1;
+  }
+
+  // Leaderboard dermawan (sedekah + danakaget + traktir) - untuk .topdermawan
+  async listTopByDonated(
+    groupJid: string,
+    limit = 10,
+  ): Promise<{ profile: GroupMemberProfile; totalDonated: bigint }[]> {
+    const profiles = await this.client.groupMemberProfile.findMany({
+      where: { groupJid },
+    });
+
+    const scored: { profile: GroupMemberProfile; totalDonated: bigint }[] = [];
+    for (const profile of profiles) {
+      const state = parseRpgState(profile.rpgState);
+      const donated = BigInt(state.totalDonated);
+      if (donated > 0n) {
+        scored.push({ profile, totalDonated: donated });
+      }
+    }
+
+    scored.sort((a, b) => {
+      if (b.totalDonated > a.totalDonated) return 1;
+      if (b.totalDonated < a.totalDonated) return -1;
+      return 0;
+    });
+    return scored.slice(0, limit);
+  }
+
+  async getPositionByDonated(groupJid: string, userJid: string): Promise<number> {
+    const profile = await this.findByGroupAndUser(groupJid, userJid);
+    if (!profile) return 0;
+    const mine = BigInt(parseRpgState(profile.rpgState).totalDonated);
+    if (mine <= 0n) return 0;
+
+    const profiles = await this.client.groupMemberProfile.findMany({
+      where: { groupJid },
+      select: { rpgState: true },
+    });
+    let countAbove = 0;
+    for (const row of profiles) {
+      if (BigInt(parseRpgState(row.rpgState).totalDonated) > mine) {
+        countAbove += 1;
+      }
+    }
+    return countAbove + 1;
+  }
+
+  // Daftar profil member yang terakhir aktif di grup - untuk .traktir
+  listRecentActiveProfiles(
+    groupJid: string,
+    excludeUserJid: string,
+    limit = 10,
+  ): Promise<GroupMemberProfile[]> {
+    return this.client.groupMemberProfile.findMany({
+      where: {
+        groupJid,
+        userJid: { not: excludeUserJid },
+      },
+      orderBy: [{ lastActiveAt: "desc" }, { updatedAt: "desc" }],
+      take: limit,
+    });
   }
 }
 

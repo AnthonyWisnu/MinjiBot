@@ -172,8 +172,8 @@ void test("RpgEconomyService: job run credits Sultan money & XP and enforces coo
 
   const now = new Date("2026-11-28T05:00:00Z");
   const res = await service.runJob("120@g.us", "u1@s.whatsapp.net", "kerja", now);
-  assert.equal(res.moneyGained, 900_000n);
-  assert.equal(res.currentMoney, 1_900_000n);
+  assert.equal(res.moneyGained, 540_000n);
+  assert.equal(res.currentMoney, 1_540_000n);
 
   await assert.rejects(
     () => service.runJob("120@g.us", "u1@s.whatsapp.net", "kerja", new Date(now.getTime() + 10_000)),
@@ -302,12 +302,12 @@ void test("RpgEconomyService: bansos gives poverty bonus and casino settles dice
   const bansos = await service.claimBansos("120@g.us", "628111@s.whatsapp.net", now);
   assert.equal(bansos.povertyBonus, true);
   assert.equal(bansos.wasSkimmed, false);
-  assert.equal(bansos.moneyGained, 5_500_000n); // 2.5jt base + 3jt poverty bonus
+  assert.equal(bansos.moneyGained, 3_300_000n); // 1.5jt base + 1.8jt poverty bonus
 
   const casino = await service.playCasino("120@g.us", "628111@s.whatsapp.net", 1_000_000n, now);
   assert.equal(casino.outcome, "jackpot");
   assert.equal(casino.netDelta, 1_500_000n);
-  assert.equal(casino.currentMoney, 8_000_000n);
+  assert.equal(casino.currentMoney, 5_800_000n);
 });
 
 void test("CryptoMarketService: deterministic prices, buy, portfolio, and sell all with BigInt", async () => {

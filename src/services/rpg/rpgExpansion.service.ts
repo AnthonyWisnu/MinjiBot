@@ -1401,7 +1401,7 @@ export class RpgExpansionService {
     randomValue?: number,
   ): Promise<GachaPullResult> {
     const correlationId = generateCorrelationId();
-    const xpAwarded = 80;
+    const xpAwarded = 48;
 
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);

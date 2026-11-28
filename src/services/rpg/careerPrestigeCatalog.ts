@@ -17,72 +17,72 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     id: "kurir",
     title: "Kurir Paket Express",
     minLevel: 1,
-    basePay: 6_500_000n,
-    baseXp: 70,
-    basePoints: 18,
+    basePay: 3_900_000n,
+    baseXp: 42,
+    basePoints: 11,
     promoteCostPerLevel: 15_000_000n,
   },
   {
     id: "barista",
     title: "Barista Kopi Specialty",
     minLevel: 2,
-    basePay: 12_000_000n,
-    baseXp: 95,
-    basePoints: 25,
+    basePay: 7_200_000n,
+    baseXp: 57,
+    basePoints: 15,
     promoteCostPerLevel: 30_000_000n,
   },
   {
     id: "programmer",
     title: "Senior Fullstack Engineer",
     minLevel: 4,
-    basePay: 25_000_000n,
-    baseXp: 140,
-    basePoints: 35,
+    basePay: 15_000_000n,
+    baseXp: 84,
+    basePoints: 21,
     promoteCostPerLevel: 65_000_000n,
   },
   {
     id: "dokter",
     title: "Dokter Spesialis Bedah",
     minLevel: 6,
-    basePay: 48_000_000n,
-    baseXp: 190,
-    basePoints: 45,
+    basePay: 28_800_000n,
+    baseXp: 114,
+    basePoints: 27,
     promoteCostPerLevel: 120_000_000n,
   },
   {
     id: "pilot",
     title: "Kapten Pilot Internasional",
     minLevel: 9,
-    basePay: 85_000_000n,
-    baseXp: 250,
-    basePoints: 60,
+    basePay: 51_000_000n,
+    baseXp: 150,
+    basePoints: 36,
     promoteCostPerLevel: 250_000_000n,
   },
   {
     id: "ceo",
     title: "CEO Perusahaan Unicorn",
     minLevel: 12,
-    basePay: 165_000_000n,
-    baseXp: 340,
-    basePoints: 80,
+    basePay: 99_000_000n,
+    baseXp: 204,
+    basePoints: 48,
     promoteCostPerLevel: 500_000_000n,
   },
   {
     id: "menteri",
     title: "Menteri Ekonomi Grup",
     minLevel: 16,
-    basePay: 320_000_000n,
-    baseXp: 460,
-    basePoints: 110,
+    basePay: 192_000_000n,
+    baseXp: 276,
+    basePoints: 66,
     promoteCostPerLevel: 1_200_000_000n,
   },
   {
     id: "konglomerat",
     title: "Konglomerat Multinasional",
     minLevel: 20,
-    basePay: 650_000_000n,
-    baseXp: 620,
-    basePoints: 150,
+    basePay: 390_000_000n,
+    baseXp: 372,
+    basePoints: 90,
     promoteCostPerLevel: 2_500_000_000n,
   },
 ] as const;
@@ -112,7 +112,7 @@ export function getStartupValuation(level: number, employees: number): bigint {
 }
 
 export function getStartupDividendPayout(level: number, employees: number): bigint {
-  return 45_000_000n * BigInt(level) + 18_000_000n * BigInt(employees);
+  return 27_000_000n * BigInt(level) + 10_800_000n * BigInt(employees);
 }
 
 export const PINJOL_MAX_BY_RANK: Record<MemberRank, bigint> = {
@@ -173,8 +173,8 @@ export const PRESTIGE_MAX_LEVEL = 10;
 export const PRESTIGE_MIN_PLAYER_LEVEL = 10;
 export const PRESTIGE_BASE_COST = 10_000_000_000n; // Rp 10 Miliar untuk Prestige ★1
 export const PRESTIGE_BONUS_PERCENT_PER_STAR = 25; // +25% uang & XP permanen per bintang
-export const PRESTIGE_REWARD_LIMIT = 20;
-export const PRESTIGE_REWARD_POINTS = 500;
+export const PRESTIGE_REWARD_LIMIT = 12;
+export const PRESTIGE_REWARD_POINTS = 300;
 
 export function getPrestigeCost(currentPrestige: number): bigint {
   return PRESTIGE_BASE_COST * BigInt(currentPrestige + 1);
