@@ -233,8 +233,8 @@ void test("LevelService: XP thresholds and multi-level claim grant Sultan money,
 
   const rewards = computeLevelUpRewards(1, 3);
   assert.equal(rewards.moneyGained, 1_800_000n + 2_700_000n);
-  assert.equal(rewards.pointsGained, 36);
-  assert.equal(rewards.limitGained, 2);
+  assert.equal(rewards.pointsGained, 60);
+  assert.equal(rewards.limitGained, 4);
 
   let currentProfile = buildMemberProfile({
     id: "p-lvl",
@@ -280,8 +280,8 @@ void test("LevelService: XP thresholds and multi-level claim grant Sultan money,
   assert.equal(res.newLevel, 3);
   assert.equal(res.levelsGained, 2);
   assert.equal(res.moneyGained, 4_500_000n);
-  assert.equal(res.pointsGained, 36);
-  assert.equal(res.limitGained, 2);
+  assert.equal(res.pointsGained, 60);
+  assert.equal(res.limitGained, 4);
 
   // Second call with same XP should not level up again
   const second = await service.claimLevelUp("g@g.us", "u@s.net");
@@ -336,8 +336,8 @@ void test("PeriodicRewardService: weekly & monthly rewards enforce cooldown with
   const now = new Date("2026-11-28T05:00:00Z");
   const weekly = await service.claimWeekly("g@g.us", "u@s.net", now);
   assert.equal(weekly.moneyGained, 7_200_000n);
-  assert.equal(weekly.pointsGained, 150);
-  assert.equal(weekly.limitGained, 3);
+  assert.equal(weekly.pointsGained, 250);
+  assert.equal(weekly.limitGained, 5);
 
   await assert.rejects(
     () => service.claimWeekly("g@g.us", "u@s.net", new Date(now.getTime() + 60_000)),
@@ -346,8 +346,8 @@ void test("PeriodicRewardService: weekly & monthly rewards enforce cooldown with
 
   const monthly = await service.claimMonthly("g@g.us", "u@s.net", now);
   assert.equal(monthly.moneyGained, 45_000_000n);
-  assert.equal(monthly.pointsGained, 600);
-  assert.equal(monthly.limitGained, 12);
+  assert.equal(monthly.pointsGained, 1_000);
+  assert.equal(monthly.limitGained, 20);
 });
 
 void test("LimitPurchaseService.buyAllLimits buys maximum affordable limits", async () => {

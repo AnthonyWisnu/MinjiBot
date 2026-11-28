@@ -10,8 +10,8 @@ import { clampMoneyCredit, minBigInt } from "../../utils/currency";
 import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "./memberEconomy.service";
 
 const MAX_MEMBER_LEVEL = 500;
-const LEVEL_UP_POINTS_PER_LEVEL = 18;
-const LEVEL_UP_LIMIT_PER_LEVEL = 1;
+const LEVEL_UP_POINTS_PER_LEVEL = 30;
+const LEVEL_UP_LIMIT_PER_LEVEL = 2;
 const LEVEL_UP_MONEY_PER_LEVEL_UNIT = 900_000n;
 const MAX_LEVEL_UP_MONEY_PER_LEVEL = 30_000_000n;
 

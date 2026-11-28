@@ -18,8 +18,8 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     title: "Kurir Paket Express",
     minLevel: 1,
     basePay: 3_900_000n,
-    baseXp: 42,
-    basePoints: 11,
+    baseXp: 70,
+    basePoints: 18,
     promoteCostPerLevel: 15_000_000n,
   },
   {
@@ -27,8 +27,8 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     title: "Barista Kopi Specialty",
     minLevel: 2,
     basePay: 7_200_000n,
-    baseXp: 57,
-    basePoints: 15,
+    baseXp: 95,
+    basePoints: 25,
     promoteCostPerLevel: 30_000_000n,
   },
   {
@@ -36,8 +36,8 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     title: "Senior Fullstack Engineer",
     minLevel: 4,
     basePay: 15_000_000n,
-    baseXp: 84,
-    basePoints: 21,
+    baseXp: 140,
+    basePoints: 35,
     promoteCostPerLevel: 65_000_000n,
   },
   {
@@ -45,8 +45,8 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     title: "Dokter Spesialis Bedah",
     minLevel: 6,
     basePay: 28_800_000n,
-    baseXp: 114,
-    basePoints: 27,
+    baseXp: 190,
+    basePoints: 45,
     promoteCostPerLevel: 120_000_000n,
   },
   {
@@ -54,8 +54,8 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     title: "Kapten Pilot Internasional",
     minLevel: 9,
     basePay: 51_000_000n,
-    baseXp: 150,
-    basePoints: 36,
+    baseXp: 250,
+    basePoints: 60,
     promoteCostPerLevel: 250_000_000n,
   },
   {
@@ -63,8 +63,8 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     title: "CEO Perusahaan Unicorn",
     minLevel: 12,
     basePay: 99_000_000n,
-    baseXp: 204,
-    basePoints: 48,
+    baseXp: 340,
+    basePoints: 80,
     promoteCostPerLevel: 500_000_000n,
   },
   {
@@ -72,8 +72,8 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     title: "Menteri Ekonomi Grup",
     minLevel: 16,
     basePay: 192_000_000n,
-    baseXp: 276,
-    basePoints: 66,
+    baseXp: 460,
+    basePoints: 110,
     promoteCostPerLevel: 1_200_000_000n,
   },
   {
@@ -81,8 +81,8 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     title: "Konglomerat Multinasional",
     minLevel: 20,
     basePay: 390_000_000n,
-    baseXp: 372,
-    basePoints: 90,
+    baseXp: 620,
+    basePoints: 150,
     promoteCostPerLevel: 2_500_000_000n,
   },
 ] as const;
@@ -173,8 +173,8 @@ export const PRESTIGE_MAX_LEVEL = 10;
 export const PRESTIGE_MIN_PLAYER_LEVEL = 10;
 export const PRESTIGE_BASE_COST = 10_000_000_000n; // Rp 10 Miliar untuk Prestige ★1
 export const PRESTIGE_BONUS_PERCENT_PER_STAR = 25; // +25% uang & XP permanen per bintang
-export const PRESTIGE_REWARD_LIMIT = 12;
-export const PRESTIGE_REWARD_POINTS = 300;
+export const PRESTIGE_REWARD_LIMIT = 20;
+export const PRESTIGE_REWARD_POINTS = 500;
 
 export function getPrestigeCost(currentPrestige: number): bigint {
   return PRESTIGE_BASE_COST * BigInt(currentPrestige + 1);

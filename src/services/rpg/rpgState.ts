@@ -52,6 +52,20 @@ export interface LoanState {
 }
 
 export type InsuranceKey = "brankas" | "bpjs" | "pengacara";
+export type SkillKey = "str" | "agi" | "luk" | "int" | "cha";
+export type BuffKey = "jamukuat" | "jimatcuan" | "ramuanxp" | "perisaibaja";
+
+export interface FarmPlotState {
+  cropId: string;
+  plantedAt: number;
+  readyAt: number;
+  watered: boolean;
+}
+
+export interface FarmState {
+  plots: FarmPlotState[];
+  harvest: Record<string, number>;
+}
 
 export interface MemberRpgState {
   cooldowns: Record<string, number>;
@@ -81,9 +95,21 @@ export interface MemberRpgState {
   insurances: Record<InsuranceKey, number>;
   prestige: number;
   totalDonated: string;
+  skills: Record<SkillKey, number>;
+  farm: FarmState;
+  buffs: Record<BuffKey, number>;
 }
 
 export const MAX_PLAYER_HP = 100;
+export const SKILL_KEYS: readonly SkillKey[] = ["str", "agi", "luk", "int", "cha"] as const;
+export const BUFF_KEYS: readonly BuffKey[] = [
+  "jamukuat",
+  "jimatcuan",
+  "ramuanxp",
+  "perisaibaja",
+] as const;
+export const MAX_SKILL_STAT = 50;
+export const MAX_FARM_PLOTS = 6;
 export const CRATE_TYPES: readonly CrateType[] = [
   "common",
   "uncommon",
@@ -158,6 +184,9 @@ export function createDefaultRpgState(): MemberRpgState {
     insurances: { brankas: 0, bpjs: 0, pengacara: 0 },
     prestige: 0,
     totalDonated: "0",
+    skills: { str: 0, agi: 0, luk: 0, int: 0, cha: 0 },
+    farm: { plots: [], harvest: {} },
+    buffs: { jamukuat: 0, jimatcuan: 0, ramuanxp: 0, perisaibaja: 0 },
   };
 }
 
@@ -468,6 +497,68 @@ export function parseRpgState(raw: unknown): MemberRpgState {
       ? obj.totalDonated
       : "0";
 
+  const skills: Record<SkillKey, number> = { str: 0, agi: 0, luk: 0, int: 0, cha: 0 };
+  if (obj.skills && typeof obj.skills === "object" && !Array.isArray(obj.skills)) {
+    const rec = obj.skills as Record<string, unknown>;
+    for (const key of SKILL_KEYS) {
+      const val = rec[key];
+      if (typeof val === "number" && Number.isInteger(val) && val > 0) {
+        skills[key] = Math.min(MAX_SKILL_STAT, val);
+      }
+    }
+  }
+
+  const farm: FarmState = { plots: [], harvest: {} };
+  if (obj.farm && typeof obj.farm === "object" && !Array.isArray(obj.farm)) {
+    const rec = obj.farm as Record<string, unknown>;
+    if (Array.isArray(rec.plots)) {
+      for (const rawPlot of rec.plots) {
+        if (farm.plots.length >= MAX_FARM_PLOTS) break;
+        if (rawPlot && typeof rawPlot === "object" && !Array.isArray(rawPlot)) {
+          const p = rawPlot as Record<string, unknown>;
+          if (
+            typeof p.cropId === "string" &&
+            p.cropId.trim().length > 0 &&
+            typeof p.plantedAt === "number" &&
+            Number.isFinite(p.plantedAt) &&
+            typeof p.readyAt === "number" &&
+            Number.isFinite(p.readyAt)
+          ) {
+            farm.plots.push({
+              cropId: p.cropId.trim().toLowerCase(),
+              plantedAt: Math.floor(p.plantedAt),
+              readyAt: Math.floor(p.readyAt),
+              watered: p.watered === true,
+            });
+          }
+        }
+      }
+    }
+    if (rec.harvest && typeof rec.harvest === "object" && !Array.isArray(rec.harvest)) {
+      for (const [k, v] of Object.entries(rec.harvest as Record<string, unknown>)) {
+        if (typeof v === "number" && Number.isInteger(v) && v > 0) {
+          farm.harvest[k.toLowerCase()] = v;
+        }
+      }
+    }
+  }
+
+  const buffs: Record<BuffKey, number> = {
+    jamukuat: 0,
+    jimatcuan: 0,
+    ramuanxp: 0,
+    perisaibaja: 0,
+  };
+  if (obj.buffs && typeof obj.buffs === "object" && !Array.isArray(obj.buffs)) {
+    const rec = obj.buffs as Record<string, unknown>;
+    for (const key of BUFF_KEYS) {
+      const val = rec[key];
+      if (typeof val === "number" && Number.isFinite(val) && val > 0) {
+        buffs[key] = Math.floor(val);
+      }
+    }
+  }
+
   return {
     cooldowns,
     jailedUntil,
@@ -496,6 +587,9 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     insurances,
     prestige,
     totalDonated,
+    skills,
+    farm,
+    buffs,
   };
 }
 
@@ -548,6 +642,12 @@ export function serializeRpgState(state: MemberRpgState): Prisma.InputJsonValue 
     insurances: { ...state.insurances },
     prestige: state.prestige,
     totalDonated: state.totalDonated,
+    skills: { ...state.skills },
+    farm: {
+      plots: state.farm.plots.map((p) => ({ ...p })),
+      harvest: { ...state.farm.harvest },
+    },
+    buffs: { ...state.buffs },
   };
 }
 
@@ -902,4 +1002,72 @@ export function withDonatedAdded(state: MemberRpgState, delta: bigint): MemberRp
   const prev = BigInt(state.totalDonated);
   const next = prev + (delta > 0n ? delta : 0n);
   return { ...state, totalDonated: next.toString() };
+}
+
+export function getTotalSkillPointsForLevel(level: number): number {
+  const safeLevel = Math.max(1, Math.floor(level));
+  return safeLevel * 2;
+}
+
+export function getSpentSkillPoints(state: MemberRpgState): number {
+  return (
+    state.skills.str +
+    state.skills.agi +
+    state.skills.luk +
+    state.skills.int +
+    state.skills.cha
+  );
+}
+
+export function withSkills(
+  state: MemberRpgState,
+  nextSkills: Record<SkillKey, number>,
+): MemberRpgState {
+  return {
+    ...state,
+    skills: {
+      str: Math.max(0, Math.min(MAX_SKILL_STAT, Math.floor(nextSkills.str))),
+      agi: Math.max(0, Math.min(MAX_SKILL_STAT, Math.floor(nextSkills.agi))),
+      luk: Math.max(0, Math.min(MAX_SKILL_STAT, Math.floor(nextSkills.luk))),
+      int: Math.max(0, Math.min(MAX_SKILL_STAT, Math.floor(nextSkills.int))),
+      cha: Math.max(0, Math.min(MAX_SKILL_STAT, Math.floor(nextSkills.cha))),
+    },
+  };
+}
+
+export function withFarm(state: MemberRpgState, nextFarm: FarmState): MemberRpgState {
+  const cleanHarvest: Record<string, number> = {};
+  for (const [k, v] of Object.entries(nextFarm.harvest)) {
+    const qty = Math.floor(v);
+    if (qty > 0) cleanHarvest[k.toLowerCase()] = qty;
+  }
+  return {
+    ...state,
+    farm: {
+      plots: nextFarm.plots.slice(0, MAX_FARM_PLOTS).map((p) => ({ ...p })),
+      harvest: cleanHarvest,
+    },
+  };
+}
+
+export function withBuffUntil(
+  state: MemberRpgState,
+  key: BuffKey,
+  untilMs: number,
+): MemberRpgState {
+  return {
+    ...state,
+    buffs: {
+      ...state.buffs,
+      [key]: Math.max(0, Math.floor(untilMs)),
+    },
+  };
+}
+
+export function isBuffActive(
+  state: MemberRpgState,
+  key: BuffKey,
+  nowMs: number = Date.now(),
+): boolean {
+  return state.buffs[key] > nowMs;
 }

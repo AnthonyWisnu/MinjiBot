@@ -142,7 +142,7 @@ void test("CoupleService: propose, accept, checkPartner, breakUp, and pickRandom
   await service.propose("120@g.us", "628111@s.whatsapp.net", "628222@s.whatsapp.net");
   const accepted = await service.acceptProposal("120@g.us", "628222@s.whatsapp.net");
   assert.equal(accepted.proposerJid, "628111@s.whatsapp.net");
-  assert.equal(accepted.bonusMoney, 2_500_000n);
+  assert.equal(accepted.bonusMoney, 1_500_000n);
 
   const status = await service.checkPartner("120@g.us", "628111@s.whatsapp.net");
   assert.equal(status.partnerJid, "628222@s.whatsapp.net");

@@ -915,7 +915,7 @@ export class GameService {
       text: [
         "Game dimulai: Tebak Bom.",
         prompt,
-        "Aman kena poin bertingkat; kena bom tetap aman *0 minus poin* (+3 XP hiburan).",
+        "Aman kena poin bertingkat; kena bom tetap aman *0 minus poin* (+5 XP hiburan).",
         "",
         formatBomBoard(bomState, false),
         "",
@@ -1182,7 +1182,7 @@ export class GameService {
       return {
         text: [
           `BOOM! ${actorM.tag} membuka kotak *${String(outcome.cell)}* dan mengenai bom!`,
-          "Tenang, saldo poin kamu aman (*0 minus*), dan kamu dapat +3 XP hiburan.",
+          "Tenang, saldo poin kamu aman (*0 minus*), dan kamu dapat +5 XP hiburan.",
           "",
           formatBomBoard(bomState, true, outcome.cell),
           "",

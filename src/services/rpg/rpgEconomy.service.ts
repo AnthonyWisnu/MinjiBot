@@ -50,7 +50,7 @@ export const RPG_COOLDOWNS_MS: Record<string, number> = {
   casino: 10 * 1000,
 };
 
-export const DEFAULT_GROUP_TREASURY = 50_000_000n;
+export const DEFAULT_GROUP_TREASURY = 20_000_000_000_000n; // Rp 20 Triliun
 export const CASINO_MIN_BET = 100_000n;
 export const CASINO_MAX_BET = 100_000_000n;
 export const MIN_TARGET_WALLET_FOR_ACTION = 1_000_000n;
@@ -78,11 +78,11 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
     title: "MULUNG",
     minMoney: 240_000,
     maxMoney: 720_000,
-    xp: 18,
+    xp: 30,
     rareChance: 0.08,
     rareMinMoney: 1_500_000,
     rareMaxMoney: 3_000_000,
-    rareXp: 42,
+    rareXp: 70,
     stories: [
       "Mengumpulkan kardus bekas dan botol plastik di gang belakang",
       "Menemukan tumpukan kaleng minuman sisa acara warga",
@@ -98,11 +98,11 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
     title: "KERJA SERABUTAN",
     minMoney: 540_000,
     maxMoney: 1_680_000,
-    xp: 33,
+    xp: 55,
     rareChance: 0.1,
     rareMinMoney: 3_000_000,
     rareMaxMoney: 6_000_000,
-    rareXp: 66,
+    rareXp: 110,
     stories: [
       "Lembur memperbaiki bug server yang error jam 2 pagi",
       "Jadi barista kafe dan berhasil bikin latte art estetik",
@@ -119,11 +119,11 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
     title: "NGOJEK ONLINE",
     minMoney: 480_000,
     maxMoney: 1_440_000,
-    xp: 30,
+    xp: 50,
     rareChance: 0.1,
     rareMinMoney: 2_700_000,
     rareMaxMoney: 5_100_000,
-    rareXp: 60,
+    rareXp: 100,
     stories: [
       "Mengantar penumpang terburu-buru mengejar kereta pagi",
       "Dapat orderan makanan jarak jauh saat gerimis dengan ongkir tinggi",
@@ -139,11 +139,11 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
     title: "NAMBANG MINERAL",
     minMoney: 900_000,
     maxMoney: 3_000_000,
-    xp: 51,
+    xp: 85,
     rareChance: 0.12,
     rareMinMoney: 4_800_000,
     rareMaxMoney: 10_800_000,
-    rareXp: 96,
+    rareXp: 160,
     stories: [
       "Menambang bijih besi dan batu bara dari gua dalam",
       "Menemukan bongkahan tembaga dan perak berkualitas tinggi",
@@ -159,11 +159,11 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
     title: "BERBURU DI HUTAN",
     minMoney: 900_000,
     maxMoney: 2_880_000,
-    xp: 51,
+    xp: 85,
     rareChance: 0.12,
     rareMinMoney: 4_500_000,
     rareMaxMoney: 9_600_000,
-    rareXp: 93,
+    rareXp: 155,
     stories: [
       "Berhasil menangkap rusa liar di pinggir lembah",
       "Memburu babi hutan besar dan menjual hasil buruan ke pasar",
@@ -179,11 +179,11 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
     title: "MANCING MANIA",
     minMoney: 720_000,
     maxMoney: 2_700_000,
-    xp: 48,
+    xp: 80,
     rareChance: 0.1,
     rareMinMoney: 5_400_000,
     rareMaxMoney: 12_000_000,
-    rareXp: 96,
+    rareXp: 160,
     stories: [
       "Strike ikan kakap merah besar di spot karang tengah",
       "Menarik ikan tuna sirip kuning seberat 18 kg",
@@ -451,7 +451,7 @@ export class RpgEconomyService {
             ? this.random.intBetween(15_000_000, 72_000_000)
             : this.random.intBetween(2_400_000, 9_000_000),
         );
-        const xpGained = mega ? 156 : 54;
+        const xpGained = mega ? 260 : 90;
         const scaledGain = scaleMoneyByLevel(baseGain, profile.level);
         const moneyGained = clampMoneyCredit(profile.moneyBalance, scaledGain);
         const treasuryDeduction = minBigInt(currentTreasury, moneyGained / 2n);
@@ -520,7 +520,7 @@ export class RpgEconomyService {
         where: { id: profile.id },
         data: {
           moneyBalance: { decrement: fine },
-          experience: { increment: 9 },
+          experience: { increment: 15 },
           rpgState: serializeRpgState(nextState),
         },
       });
@@ -557,7 +557,7 @@ export class RpgEconomyService {
           ? "OTT KPK GRUP! Kamu tertangkap tangan bawa koper uang tunai dan langsung pakai rompi oranye!"
           : "KETANGKAP KPK! Bukti kuitansi palsumu bocor ke grup dan kamu langsung diciduk!",
         amountDelta: -fine,
-        xpGained: 9,
+        xpGained: 15,
         jailMinutes,
         currentMoney: updated.moneyBalance,
         treasuryBalance: nextTreasury,
@@ -662,7 +662,7 @@ export class RpgEconomyService {
         data: {
           moneyBalance: { increment: collectorShare },
           totalMoneyEarned: { increment: collectorShare },
-          experience: { increment: 27 },
+          experience: { increment: 45 },
           rpgState: serializeRpgState(nextCollectorState),
         },
       });
@@ -795,7 +795,7 @@ export class RpgEconomyService {
           data: {
             moneyBalance: { increment: creditToThief },
             totalMoneyEarned: { increment: creditToThief },
-            experience: { increment: 36 },
+            experience: { increment: 60 },
             rpgState: serializeRpgState(nextThiefState),
           },
         });
@@ -954,7 +954,7 @@ export class RpgEconomyService {
         data: {
           moneyBalance: { increment: moneyGained },
           totalMoneyEarned: { increment: moneyGained },
-          experience: { increment: 15 },
+          experience: { increment: 25 },
           rpgState: serializeRpgState(nextState),
         },
       });
@@ -1038,22 +1038,22 @@ export class RpgEconomyService {
       const nextState = withUpdatedCooldown(state, "casino", nowMs);
       let outcome: CasinoResult["outcome"];
       let netDelta = 0n;
-      let xpGained = 6;
+      let xpGained = 10;
 
       if (pTotal > dTotal) {
         const isJackpot = p1 === 6 && p2 === 6;
         outcome = isJackpot ? "jackpot" : "win";
         const profit = isJackpot ? (betAmount * 3n) / 2n : betAmount;
         netDelta = clampMoneyCredit(profile.moneyBalance, profit);
-        xpGained = isJackpot ? 45 : 21;
+        xpGained = isJackpot ? 75 : 35;
       } else if (pTotal === dTotal) {
         outcome = "draw";
         netDelta = 0n;
-        xpGained = 6;
+        xpGained = 10;
       } else {
         outcome = "lose";
         netDelta = -betAmount;
-        xpGained = 6;
+        xpGained = 10;
       }
 
       const updateData: Record<string, unknown> = {

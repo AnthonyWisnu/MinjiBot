@@ -421,10 +421,10 @@ export class CareerPrestigeService {
       const baseWithJobLvl = (spec.basePay * levelMult) / 100n;
       const grossMoney = applyPrestigeMoneyBoost(baseWithJobLvl, state.prestige);
       const xpEarned = applyPrestigeXpBoost(
-        spec.baseXp + (state.career.level - 1) * 15,
+        spec.baseXp + (state.career.level - 1) * 25,
         state.prestige,
       );
-      const pointsEarned = spec.basePoints + (state.career.level - 1) * 5;
+      const pointsEarned = spec.basePoints + (state.career.level - 1) * 8;
 
       const seized = applyDebtCollectorSeizure(state, grossMoney, nowMs);
       const moneyCredit = clampMoneyCredit(profile.moneyBalance, seized.netIncome);
@@ -813,7 +813,7 @@ export class CareerPrestigeService {
 
       const basePayout = getStartupDividendPayout(state.startup.level, state.startup.employees);
       const grossPayout = applyPrestigeMoneyBoost(basePayout, state.prestige);
-      const xpEarned = applyPrestigeXpBoost(48 + state.startup.level * 12, state.prestige);
+      const xpEarned = applyPrestigeXpBoost(80 + state.startup.level * 20, state.prestige);
       const seized = applyDebtCollectorSeizure(state, grossPayout, nowMs);
       const credit = clampMoneyCredit(profile.moneyBalance, seized.netIncome);
 

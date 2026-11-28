@@ -113,7 +113,7 @@ model TenantGroup {
   ownerJid        String?
   expiresAt       DateTime?
   isBlocked       Boolean      @default(false)
-  treasuryBalance BigInt       @default(50000000)
+  treasuryBalance BigInt       @default(20000000000000)
   approvedAt      DateTime?
   activatedAt     DateTime?
   createdAt       DateTime     @default(now())

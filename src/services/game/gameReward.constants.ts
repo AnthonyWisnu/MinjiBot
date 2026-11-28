@@ -2,114 +2,114 @@
  * Reward table untuk semua game yang menggunakan persistent member economy.
  * Nilai ini adalah sumber kebenaran tunggal. Jangan duplikasi di game.service.ts.
  *
- * Skala Ekonomi Anti-Inflasi (60% dari skala awal):
- * Selain Poin + XP, setiap game mengguyur Uang Rp 300.000 - Rp 3.000.000
+ * Skala Ekonomi Anti-Inflasi (Uang 60% dari skala awal; Poin & XP tetap 100%):
+ * Selain Poin + XP penuh, setiap game mengguyur Uang Rp 300.000 - Rp 3.000.000
  * (masih dikalikan bonus Level pemain hingga 7x).
  */
 
 export const KUIS_REWARD = {
-  CORRECT_POINTS: 6,
-  CORRECT_XP: 24,
+  CORRECT_POINTS: 10,
+  CORRECT_XP: 40,
   CORRECT_MONEY: 600_000n,
-  WRONG_XP: 3,
+  WRONG_XP: 5,
 } as const;
 
 export const MTK_REWARD = {
-  CORRECT_POINTS: 6,
-  CORRECT_XP: 24,
+  CORRECT_POINTS: 10,
+  CORRECT_XP: 40,
   CORRECT_MONEY: 750_000n,
-  WRONG_XP: 3,
+  WRONG_XP: 5,
 } as const;
 
 export const TEBAKKATA_REWARD = {
-  CORRECT_POINTS: 7,
-  CORRECT_XP: 30,
+  CORRECT_POINTS: 12,
+  CORRECT_XP: 50,
   CORRECT_MONEY: 900_000n,
-  SURRENDER_XP: 6,
+  SURRENDER_XP: 10,
 } as const;
 
 export const TEBAKEMOJI_REWARD = {
-  CORRECT_POINTS: 6,
-  CORRECT_XP: 24,
+  CORRECT_POINTS: 10,
+  CORRECT_XP: 40,
   CORRECT_MONEY: 600_000n,
-  SURRENDER_XP: 6,
+  SURRENDER_XP: 10,
 } as const;
 
 export const TEBAKANGKA_REWARD = {
-  BAND_1_3: { POINTS: 12, XP: 48, MONEY: 2_100_000n },
-  BAND_4_7: { POINTS: 9, XP: 36, MONEY: 1_200_000n },
-  BAND_8_PLUS: { POINTS: 6, XP: 24, MONEY: 600_000n },
-  FAIL_XP: 6,
+  BAND_1_3: { POINTS: 20, XP: 80, MONEY: 2_100_000n },
+  BAND_4_7: { POINTS: 15, XP: 60, MONEY: 1_200_000n },
+  BAND_8_PLUS: { POINTS: 10, XP: 40, MONEY: 600_000n },
+  FAIL_XP: 10,
 } as const;
 
 export const FAMILY100_REWARD = {
-  ANSWER_POINTS: 5,
-  ANSWER_XP: 18,
+  ANSWER_POINTS: 8,
+  ANSWER_XP: 30,
   ANSWER_MONEY: 360_000n,
-  FINAL_BONUS_POINTS: 3,
-  FINAL_BONUS_XP: 12,
+  FINAL_BONUS_POINTS: 5,
+  FINAL_BONUS_XP: 20,
   FINAL_BONUS_MONEY: 900_000n,
-  CAP_POINTS: 27,
-  CAP_XP: 108,
+  CAP_POINTS: 45,
+  CAP_XP: 180,
 } as const;
 
 export const KATLA_REWARD = {
-  WIN_1_3_POINTS: 13,
-  WIN_1_3_XP: 51,
+  WIN_1_3_POINTS: 22,
+  WIN_1_3_XP: 85,
   WIN_1_3_MONEY: 2_400_000n,
-  WIN_4_6_POINTS: 9,
-  WIN_4_6_XP: 36,
+  WIN_4_6_POINTS: 15,
+  WIN_4_6_XP: 60,
   WIN_4_6_MONEY: 1_500_000n,
-  PARTICIPANT_XP: 6,
+  PARTICIPANT_XP: 10,
 } as const;
 
 export const CAKLONTONG_REWARD = {
-  CORRECT_POINTS: 9,
-  CORRECT_XP: 33,
+  CORRECT_POINTS: 15,
+  CORRECT_XP: 55,
   CORRECT_MONEY: 1_200_000n,
-  SURRENDER_XP: 5,
+  SURRENDER_XP: 8,
 } as const;
 
 export const BOM_REWARD = {
-  STEP_1_3_POINTS: 3,
-  STEP_1_3_XP: 9,
+  STEP_1_3_POINTS: 5,
+  STEP_1_3_XP: 15,
   STEP_1_3_MONEY: 300_000n,
-  STEP_4_6_POINTS: 5,
-  STEP_4_6_XP: 15,
+  STEP_4_6_POINTS: 8,
+  STEP_4_6_XP: 25,
   STEP_4_6_MONEY: 510_000n,
-  STEP_7_8_POINTS: 7,
-  STEP_7_8_XP: 21,
+  STEP_7_8_POINTS: 12,
+  STEP_7_8_XP: 35,
   STEP_7_8_MONEY: 750_000n,
-  CLEAN_SWEEP_BONUS_POINTS: 9,
-  CLEAN_SWEEP_BONUS_XP: 30,
+  CLEAN_SWEEP_BONUS_POINTS: 15,
+  CLEAN_SWEEP_BONUS_XP: 50,
   CLEAN_SWEEP_BONUS_MONEY: 3_000_000n,
-  BOMB_CONSOLATION_XP: 3,
+  BOMB_CONSOLATION_XP: 5,
 } as const;
 
 export const TICTACTOE_REWARD = {
-  WIN_POINTS: 15,
-  WIN_XP: 60,
+  WIN_POINTS: 25,
+  WIN_XP: 100,
   WIN_MONEY: 2_700_000n,
-  LOSS_POINTS: 3,
-  LOSS_XP: 15,
+  LOSS_POINTS: 5,
+  LOSS_XP: 25,
   LOSS_MONEY: 300_000n,
-  DRAW_POINTS: 6,
-  DRAW_XP: 30,
+  DRAW_POINTS: 10,
+  DRAW_XP: 50,
   DRAW_MONEY: 900_000n,
 } as const;
 
 export const SLOT_CONFIG = {
   BET_POINTS: 5,
-  MATCH_TWO_POINTS: 6,
-  MATCH_TWO_XP: 3,
+  MATCH_TWO_POINTS: 10,
+  MATCH_TWO_XP: 5,
   MATCH_TWO_MONEY: 450_000n,
-  JACKPOT_POINTS: 18,
-  JACKPOT_XP: 9,
+  JACKPOT_POINTS: 30,
+  JACKPOT_XP: 15,
   JACKPOT_MONEY: 1_500_000n,
-  SUPER_JACKPOT_POINTS: 30,
-  SUPER_JACKPOT_XP: 15,
+  SUPER_JACKPOT_POINTS: 50,
+  SUPER_JACKPOT_XP: 25,
   SUPER_JACKPOT_MONEY: 3_000_000n,
-  LOSS_XP: 1,
+  LOSS_XP: 2,
 } as const;
 
 export function getTebakangkaReward(attempts: number): {

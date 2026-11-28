@@ -7,7 +7,7 @@ import { clampMoneyCredit, formatRemainingDuration } from "../../utils/currency"
 import { normalizeUserJid } from "../../utils/jid";
 
 const PROPOSAL_TTL_MS = 10 * 60 * 1000;
-const COUPLE_BONUS_MONEY = 2_500_000n;
+const COUPLE_BONUS_MONEY = 1_500_000n;
 const COUPLE_BONUS_XP = 50;
 
 export interface PendingProposal {

@@ -362,8 +362,8 @@ export class UndercoverService {
       const winners = session.players.filter((p) => p.role === winningTeam);
       const rewardMoneyBase =
         winningTeam === "undercover" ? UNDERCOVER_SPY_REWARD : UNDERCOVER_WARGA_REWARD;
-      const rewardXp = winningTeam === "undercover" ? 150 : 120;
-      const rewardPoints = winningTeam === "undercover" ? 30 : 24;
+      const rewardXp = winningTeam === "undercover" ? 250 : 200;
+      const rewardPoints = winningTeam === "undercover" ? 50 : 40;
       const correlationId = generateCorrelationId();
 
       await Promise.allSettled(

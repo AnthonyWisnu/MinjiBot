@@ -199,7 +199,7 @@ export class RpgGroupInteractionService {
     const synergyBasis = BigInt(100 + uniquePartners.length * 25); // +25% per rekan bisnis!
     const profitEach = (baseProfit * synergyBasis) / 100n;
     const lossEach = percentOfBigInt(BUSINESS_CAPITAL_PER_PERSON, 30); // Rp 600.000 jika rugi
-    const xpGained = profitable ? 72 + uniquePartners.length * 15 : 27;
+    const xpGained = profitable ? 120 + uniquePartners.length * 25 : 45;
     const correlationId = generateCorrelationId();
 
     return this.db.$transaction(async (tx) => {
@@ -443,7 +443,7 @@ export class RpgGroupInteractionService {
         let nextState = withUpdatedCooldown(withHp(state, hpAfter), "dungeon", nowMs);
 
         let moneyGained = 0n;
-        let xpGained = 36;
+        let xpGained = 60;
         let crateGained: CrateType | null = null;
 
         if (won) {
@@ -452,7 +452,7 @@ export class RpgGroupInteractionService {
             profile.moneyBalance,
             scaleMoneyByLevel(boosted, profile.level),
           );
-          xpGained = 150 + teamSize * 24;
+          xpGained = 250 + teamSize * 40;
           crateGained = teamSize >= 3 ? "mythic" : "uncommon";
           nextState = withCrateDelta(nextState, crateGained, 1);
         }
@@ -594,7 +594,7 @@ export class RpgGroupInteractionService {
         await tx.groupMemberProfile.update({
           where: { id: attacker.id },
           data: {
-            experience: { increment: 12 },
+            experience: { increment: 20 },
             rpgState: serializeRpgState(nextAttackerState),
           },
         });
@@ -656,7 +656,7 @@ export class RpgGroupInteractionService {
         data: {
           moneyBalance: { increment: creditAttacker },
           totalMoneyEarned: { increment: creditAttacker },
-          experience: { increment: 48 },
+          experience: { increment: 80 },
           rpgState: serializeRpgState(nextAttackerState),
         },
       });

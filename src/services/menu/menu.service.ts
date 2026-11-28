@@ -143,11 +143,13 @@ export class MenuService {
       const business = this.buildBusinessExpansionSection(featureSetting);
       const career = this.buildCareerEmpireSection(featureSetting);
       const arena = this.buildArenaGiveawaySection(featureSetting);
+      const raidFarm = this.buildRaidFarmBuffBountySection(featureSetting);
       if (rpg) sections.push(rpg);
       if (rpgInf) sections.push(rpgInf);
       if (business) sections.push(business);
       if (career) sections.push(career);
       if (arena) sections.push(arena);
+      if (raidFarm) sections.push(raidFarm);
       sections.push(this.buildEconomySection());
       return this.renderCategoryPage("*── [ SUB-MENU: RPG ] ──*", groupHeader, sections, footer);
     }
@@ -157,9 +159,11 @@ export class MenuService {
       const business = this.buildBusinessExpansionSection(featureSetting);
       const career = this.buildCareerEmpireSection(featureSetting);
       const arena = this.buildArenaGiveawaySection(featureSetting);
+      const raidFarm = this.buildRaidFarmBuffBountySection(featureSetting);
       if (business) sections.push(business);
       if (career) sections.push(career);
       if (arena) sections.push(arena);
+      if (raidFarm) sections.push(raidFarm);
       return this.renderCategoryPage("*── [ SUB-MENU: BISNIS ] ──*", groupHeader, sections, footer);
     }
 
@@ -433,6 +437,9 @@ export class MenuService {
 
     const arena = this.buildArenaGiveawaySection(featureSetting);
     if (arena) sections.push(arena);
+
+    const raidFarm = this.buildRaidFarmBuffBountySection(featureSetting);
+    if (raidFarm) sections.push(raidFarm);
 
     const games = this.buildPureGameSection(featureSetting);
     if (games) sections.push(games);
@@ -865,6 +872,40 @@ export class MenuService {
         ".belixp <poin>",
         ".belikotak <tier> [qty]",
         ".sedekah <uang>",
+      ],
+    };
+  }
+
+  private buildRaidFarmBuffBountySection(
+    featureSetting: TenantFeatureSetting | null,
+  ): MenuSection | null {
+    if (featureSetting && !featureSetting.gameEnabled) {
+      return null;
+    }
+
+    return {
+      title: "*── [ RAID & LADANG ] ──*",
+      items: [
+        ".worldboss",
+        ".serangboss",
+        ".statusboss",
+        ".topdamage",
+        ".skill",
+        ".upskill <stat> [jml]",
+        ".resetskill",
+        ".ladang",
+        ".tanam <bibit> [jml]",
+        ".siram",
+        ".panenladang",
+        ".pasarharga",
+        ".jualsemua",
+        ".blackmarket",
+        ".belibuff <item> [jml]",
+        ".buffaktif",
+        ".gunakan <item>",
+        ".bounty @user <uang>",
+        ".listbounty",
+        ".burubounty @user",
       ],
     };
   }

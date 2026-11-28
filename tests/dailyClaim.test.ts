@@ -64,29 +64,29 @@ void test("isConsecutiveWibDay returns false for gap of 2 days", () => {
 
 // ---- DailyClaimService tests ----
 
-void test("DailyClaimService.claimDaily returns pointsGained between 30 and 90 plus money", async () => {
+void test("DailyClaimService.claimDaily returns pointsGained between 50 and 150 plus money", async () => {
   const results: number[] = [];
-  for (const pts of [30, 45, 60, 75, 90]) {
+  for (const pts of [50, 75, 100, 125, 150]) {
     const service = makeDailyService({ randomPoints: pts, randomBonus: false });
     const result = await service.claimDaily("g@g.us", "u@s.net", new Date("2026-09-03T10:00:00Z"));
     results.push(result.pointsGained);
     assert.ok(result.moneyGained > 0);
   }
   for (const pts of results) {
-    assert.ok(pts >= 30 && pts <= 90, `Expected ${String(pts)} to be between 30 and 90`);
+    assert.ok(pts >= 50 && pts <= 150, `Expected ${String(pts)} to be between 50 and 150`);
   }
 });
 
-void test("DailyClaimService.claimDaily returns xpGained = 60", async () => {
-  const service = makeDailyService({ randomPoints: 90, randomBonus: false });
+void test("DailyClaimService.claimDaily returns xpGained = 100", async () => {
+  const service = makeDailyService({ randomPoints: 150, randomBonus: false });
   const result = await service.claimDaily("g@g.us", "u@s.net", new Date("2026-09-03T10:00:00Z"));
-  assert.equal(result.xpGained, 60);
+  assert.equal(result.xpGained, 100);
 });
 
-void test("DailyClaimService.claimDaily bonus branch adds 2 limits", async () => {
-  const service = makeDailyService({ randomPoints: 90, randomBonus: true });
+void test("DailyClaimService.claimDaily bonus branch adds 3 limits", async () => {
+  const service = makeDailyService({ randomPoints: 150, randomBonus: true });
   const result = await service.claimDaily("g@g.us", "u@s.net", new Date("2026-09-03T10:00:00Z"));
-  assert.equal(result.bonusLimitGained, 2);
+  assert.equal(result.bonusLimitGained, 3);
 });
 
 void test("DailyClaimService.claimDaily non-bonus branch adds 0 limit", async () => {

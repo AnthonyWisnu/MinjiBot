@@ -26,8 +26,8 @@ export interface QuickQuizAnswerResult {
 
 export const QUICK_QUIZ_TTL_MS = 5 * 60 * 1000;
 export const QUICK_QUIZ_REWARD_MONEY = 1_200_000n;
-export const QUICK_QUIZ_REWARD_POINTS = 12;
-export const QUICK_QUIZ_REWARD_XP = 36;
+export const QUICK_QUIZ_REWARD_POINTS = 20;
+export const QUICK_QUIZ_REWARD_XP = 60;
 const MAX_QUICK_QUIZ_ROOMS = 80;
 
 interface QuickQuizEconomy {

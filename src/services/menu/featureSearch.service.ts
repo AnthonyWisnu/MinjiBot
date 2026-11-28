@@ -84,6 +84,17 @@ const KEYWORD_SYNONYMS: Record<string, readonly string[]> = {
   sedekah: ["sedekah", "topdermawan", "traktir", "danakaget"],
   dermawan: ["topdermawan", "sedekah", "traktir", "danakaget"],
   leaderboard: ["toprich", "toprank", "toppoint", "toplevel", "topstreak", "topmenang", "topdermawan", "toprebirth", "topstartup"],
+  worldboss: ["worldboss", "serangboss", "statusboss", "topdamage"],
+  raid: ["worldboss", "serangboss", "statusboss", "topdamage", "dungeon"],
+  boss: ["worldboss", "serangboss", "statusboss", "topdamage", "fightkucing", "fightnaga", "fightphonix"],
+  skill: ["skill", "upskill", "resetskill"],
+  ladang: ["ladang", "tanam", "siram", "panenladang", "pasarharga", "jualsemua"],
+  tanam: ["ladang", "tanam", "siram", "panenladang", "jualsemua"],
+  komoditas: ["pasarharga", "ladang", "tanam", "panenladang", "jualsemua"],
+  blackmarket: ["blackmarket", "belibuff", "buffaktif", "gunakan"],
+  buff: ["blackmarket", "belibuff", "buffaktif", "gunakan"],
+  bounty: ["bounty", "listbounty", "burubounty"],
+  buronan: ["bounty", "listbounty", "burubounty"],
 };
 
 export class FeatureSearchService {

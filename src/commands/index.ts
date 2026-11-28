@@ -49,6 +49,7 @@ import { antiRaidCommands } from "./moderation/antiRaid.command";
 import { reminderCommands } from "./reminder/reminder.command";
 import { arenaGiveawayShopCommands } from "./rpg/arenaGiveawayShop.command";
 import { careerPrestigeCommands } from "./rpg/careerPrestige.command";
+import { raidFarmBuffBountyCommands } from "./rpg/raidFarmBuffBounty.command";
 import { rpgCommands } from "./rpg/rpg.command";
 import { rpgExpansionCommands } from "./rpg/rpgExpansion.command";
 import { rpgInfiniteCommands } from "./rpg/rpgInfinite.command";
@@ -185,6 +186,7 @@ export const commandRouter = new CommandRouter([
   ...rpgExpansionCommands,
   ...careerPrestigeCommands,
   ...arenaGiveawayShopCommands,
+  ...raidFarmBuffBountyCommands,
   dailyCommand,
   ...limitPurchaseCommands,
   ...walletCommands,

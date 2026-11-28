@@ -417,7 +417,7 @@ export class CasinoPackService {
     }
 
     const netDelta = outcome === "win" ? session.bet : outcome === "lose" ? -session.bet : 0n;
-    const xp = outcome === "win" ? 39 : 12;
+    const xp = outcome === "win" ? 65 : 20;
     const { newBalance } = await this.settleMoneyDelta({
       groupJid,
       userJid: normUser,
@@ -435,7 +435,7 @@ export class CasinoPackService {
           : "*── [ BLACKJACK: SERI (PUSH) ] ──*";
     const resultLine =
       outcome === "win"
-        ? `Menang  : *+${formatRupiah(session.bet)}* (+39 XP)`
+        ? `Menang  : *+${formatRupiah(session.bet)}* (+65 XP)`
         : outcome === "lose"
           ? `Kalah   : *-${formatRupiah(session.bet)}*`
           : "Hasil   : Taruhan dikembalikan utuh.";
@@ -529,7 +529,7 @@ export class CasinoPackService {
       userJid: normUser,
       bet: session.bet,
       netDelta,
-      xp: isWin ? 30 : 9,
+      xp: isWin ? 50 : 15,
       note: `hilow_${isPush ? "push" : isWin ? "win" : "lose"}`,
     });
 
@@ -540,7 +540,7 @@ export class CasinoPackService {
       isPush
         ? "Hasil   : Nilai sama, taruhan kembali."
         : isWin
-          ? `Hadiah  : *+${formatRupiah(netDelta)}* (+30 XP)`
+          ? `Hadiah  : *+${formatRupiah(netDelta)}* (+50 XP)`
           : `Kalah   : *-${formatRupiah(session.bet)}*`,
       `Dompet  : ${formatRupiah(newBalance)}`,
     ].join("\n");
@@ -564,7 +564,7 @@ export class CasinoPackService {
       userJid,
       bet,
       netDelta,
-      xp: netDelta > 0n ? 30 : 9,
+      xp: netDelta > 0n ? 50 : 15,
       note: "casino_dice",
     });
 
@@ -597,7 +597,7 @@ export class CasinoPackService {
       userJid,
       bet,
       netDelta,
-      xp: win ? 27 : 9,
+      xp: win ? 45 : 15,
       note: "casino_coinflip",
     });
 
@@ -605,7 +605,7 @@ export class CasinoPackService {
       "*── [ LEMPAR KOIN ] ──*",
       `Pilihanmu : *${pick.toUpperCase()}*`,
       `Hasil     : *${rolled.toUpperCase()}*`,
-      win ? `Menang    : *+${formatRupiah(bet)}* (+27 XP)` : `Kalah     : *-${formatRupiah(bet)}*`,
+      win ? `Menang    : *+${formatRupiah(bet)}* (+45 XP)` : `Kalah     : *-${formatRupiah(bet)}*`,
       `Dompet    : ${formatRupiah(newBalance)}`,
     ].join("\n");
   }
@@ -629,14 +629,14 @@ export class CasinoPackService {
       userJid,
       bet,
       netDelta,
-      xp: win ? 48 : 9,
+      xp: win ? 80 : 15,
       note: "casino_tebakdadu",
     });
 
     return [
       "*── [ TEBAK DADU (5X) ] ──*",
       `Tebakan : *${String(guess)}* | Hasil Dadu: *${String(rolled)}*`,
-      win ? `JACKPOT : *+${formatRupiah(netDelta)}* (+48 XP)` : `Kalah   : *-${formatRupiah(bet)}*`,
+      win ? `JACKPOT : *+${formatRupiah(netDelta)}* (+80 XP)` : `Kalah   : *-${formatRupiah(bet)}*`,
       `Dompet  : ${formatRupiah(newBalance)}`,
     ].join("\n");
   }
@@ -680,7 +680,7 @@ export class CasinoPackService {
       userJid,
       bet,
       netDelta,
-      xp: multiplier > 0n ? 42 : 9,
+      xp: multiplier > 0n ? 70 : 15,
       note: "casino_roulette",
     });
 
@@ -689,7 +689,7 @@ export class CasinoPackService {
       `Bola Berhenti : *${String(rolled)} (${color.toUpperCase()})*`,
       `Taruhanmu     : ${choice.toUpperCase()}`,
       multiplier > 0n
-        ? `MENANG!       : *+${formatRupiah(netDelta)}* (+42 XP)`
+        ? `MENANG!       : *+${formatRupiah(netDelta)}* (+70 XP)`
         : `Kalah         : *-${formatRupiah(bet)}*`,
       `Dompet        : ${formatRupiah(newBalance)}`,
     ].join("\n");
@@ -714,7 +714,7 @@ export class CasinoPackService {
       userJid,
       bet,
       netDelta,
-      xp: verdict === "a" ? 27 : 9,
+      xp: verdict === "a" ? 45 : 15,
       note: "suit_vs_bot",
     });
 
@@ -723,7 +723,7 @@ export class CasinoPackService {
       `Kamu  : *${choice.toUpperCase()}*`,
       `Minji : *${botChoice.toUpperCase()}*`,
       verdict === "a"
-        ? `Menang: *+${formatRupiah(bet)}* (+27 XP)`
+        ? `Menang: *+${formatRupiah(bet)}* (+45 XP)`
         : verdict === "b"
           ? `Kalah : *-${formatRupiah(bet)}*`
           : "Hasil : Seri! Taruhan kembali.",
@@ -840,7 +840,7 @@ export class CasinoPackService {
         where: { id: loser.id },
         data: {
           ...(actualBet > 0n ? { moneyBalance: { decrement: actualBet } } : {}),
-          experience: { increment: 12 },
+          experience: { increment: 20 },
         },
       });
       const updW = await tx.groupMemberProfile.update({
@@ -849,7 +849,7 @@ export class CasinoPackService {
           ...(credit > 0n
             ? { moneyBalance: { increment: credit }, totalMoneyEarned: { increment: credit } }
             : {}),
-          experience: { increment: 45 },
+          experience: { increment: 75 },
         },
       });
 
@@ -897,7 +897,7 @@ export class CasinoPackService {
         text: [
           "*── [ HASIL SUIT PVP ] ──*",
           `${tagA} (${choiceA.toUpperCase()}) vs ${tagB} (${choiceB.toUpperCase()})`,
-          `Pemenang : ${tagWinner} (+${formatRupiah(transferred)} & +45 XP!)`,
+          `Pemenang : ${tagWinner} (+${formatRupiah(transferred)} & +75 XP!)`,
         ].join("\n"),
       },
     };
@@ -965,7 +965,7 @@ export class CasinoPackService {
         data: {
           moneyBalance: { increment: credit },
           totalMoneyEarned: { increment: credit },
-          experience: { increment: 48 },
+          experience: { increment: 80 },
         },
       });
       await this.txRepo.create(
@@ -987,7 +987,7 @@ export class CasinoPackService {
       return [
         "*── [ RUSSIAN ROULETTE: KLIK... SELAMAT! ] ──*",
         `Kamar #${String(chamber)} kosong! Nyalimu berbuah manis!`,
-        `Hadiah : *+${formatRupiah(credit)}* (+48 XP)`,
+        `Hadiah : *+${formatRupiah(credit)}* (+80 XP)`,
         `Dompet : ${formatRupiah(updated.moneyBalance)}`,
       ].join("\n");
     });
@@ -1018,8 +1018,8 @@ export class CasinoPackService {
         moneyPrize = 30_000_000n;
         label = `JACKPOT SULTAN ${formatRupiah(moneyPrize)}!`;
       } else if (roll <= 22) {
-        limitPrize = 2;
-        label = "+2 Limit Gratis!";
+        limitPrize = 3;
+        label = "+3 Limit Gratis!";
       } else if (roll <= 36) {
         nextState = withCrateDelta(nextState, "mythic", 1);
         label = "+1 Peti Gacha MYTHIC (.open mythic)!";
@@ -1027,8 +1027,8 @@ export class CasinoPackService {
         moneyPrize = 12_000_000n;
         label = `Uang Tunai ${formatRupiah(moneyPrize)}!`;
       } else if (roll <= 75) {
-        pointsPrize = 60;
-        label = "+60 Poin Game (bisa buat .belilimit)!";
+        pointsPrize = 100;
+        label = "+100 Poin Game (bisa buat .belilimit)!";
       } else if (roll <= 92) {
         moneyPrize = 3_000_000n;
         label = `Uang Tunai ${formatRupiah(moneyPrize)}!`;
@@ -1050,7 +1050,7 @@ export class CasinoPackService {
           ...(pointsPrize > 0
             ? { pointsBalance: { increment: pointsPrize }, totalPointsEarned: { increment: pointsPrize } }
             : {}),
-          experience: { increment: 36 },
+          experience: { increment: 60 },
           rpgState: serializeRpgState(nextState),
         },
       });
@@ -1076,7 +1076,7 @@ export class CasinoPackService {
       return [
         "*── [ RODA KEBERUNTUNGAN ] ──*",
         `Hadiah : *${label}*`,
-        "Bonus  : +36 XP",
+        "Bonus  : +60 XP",
         `Dompet : ${formatRupiah(updated.moneyBalance)} | Limit: ${String(updated.limitBalance)}`,
       ].join("\n");
     });

@@ -17,25 +17,25 @@ import type { CommandContext } from "../src/types/command";
 
 // ---- Constants ----
 
-void test("Reward constants: kuis correct is 6 pts / 24 XP (60% rebalance)", () => {
-  assert.equal(KUIS_REWARD.CORRECT_POINTS, 6);
-  assert.equal(KUIS_REWARD.CORRECT_XP, 24);
-  assert.equal(KUIS_REWARD.WRONG_XP, 3);
+void test("Reward constants: kuis correct is 10 pts / 40 XP", () => {
+  assert.equal(KUIS_REWARD.CORRECT_POINTS, 10);
+  assert.equal(KUIS_REWARD.CORRECT_XP, 40);
+  assert.equal(KUIS_REWARD.WRONG_XP, 5);
 });
 
-void test("Reward constants: tebakkata correct is 7 pts / 30 XP (60% rebalance)", () => {
-  assert.equal(TEBAKKATA_REWARD.CORRECT_POINTS, 7);
-  assert.equal(TEBAKKATA_REWARD.CORRECT_XP, 30);
-  assert.equal(TEBAKKATA_REWARD.SURRENDER_XP, 6);
+void test("Reward constants: tebakkata correct is 12 pts / 50 XP", () => {
+  assert.equal(TEBAKKATA_REWARD.CORRECT_POINTS, 12);
+  assert.equal(TEBAKKATA_REWARD.CORRECT_XP, 50);
+  assert.equal(TEBAKKATA_REWARD.SURRENDER_XP, 10);
 });
 
-void test("Reward constants: tebakemoji correct is 6 pts / 24 XP (60% rebalance)", () => {
-  assert.equal(TEBAKEMOJI_REWARD.CORRECT_POINTS, 6);
-  assert.equal(TEBAKEMOJI_REWARD.CORRECT_XP, 24);
-  assert.equal(TEBAKEMOJI_REWARD.SURRENDER_XP, 6);
+void test("Reward constants: tebakemoji correct is 10 pts / 40 XP", () => {
+  assert.equal(TEBAKEMOJI_REWARD.CORRECT_POINTS, 10);
+  assert.equal(TEBAKEMOJI_REWARD.CORRECT_XP, 40);
+  assert.equal(TEBAKEMOJI_REWARD.SURRENDER_XP, 10);
 });
 
-void test("Reward constants: tebakangka band 1-3 attempts is 12 pts / 48 XP", () => {
+void test("Reward constants: tebakangka band 1-3 attempts is 20 pts / 80 XP", () => {
   const { points, xp } = getTebakangkaReward(1);
   assert.equal(points, TEBAKANGKA_REWARD.BAND_1_3.POINTS);
   assert.equal(xp, TEBAKANGKA_REWARD.BAND_1_3.XP);
@@ -43,29 +43,29 @@ void test("Reward constants: tebakangka band 1-3 attempts is 12 pts / 48 XP", ()
 
 void test("Reward constants: tebakangka attempt 3 is still band 1-3", () => {
   const { points } = getTebakangkaReward(3);
-  assert.equal(points, 12);
+  assert.equal(points, 20);
 });
 
-void test("Reward constants: tebakangka attempt 4 is band 4-7 (9 pts / 36 XP)", () => {
+void test("Reward constants: tebakangka attempt 4 is band 4-7 (15 pts / 60 XP)", () => {
   const { points, xp } = getTebakangkaReward(4);
-  assert.equal(points, 9);
-  assert.equal(xp, 36);
+  assert.equal(points, 15);
+  assert.equal(xp, 60);
 });
 
 void test("Reward constants: tebakangka attempt 7 is still band 4-7", () => {
   const { points } = getTebakangkaReward(7);
-  assert.equal(points, 9);
+  assert.equal(points, 15);
 });
 
-void test("Reward constants: tebakangka attempt 8+ is band 8+ (6 pts / 24 XP)", () => {
+void test("Reward constants: tebakangka attempt 8+ is band 8+ (10 pts / 40 XP)", () => {
   const { points, xp } = getTebakangkaReward(8);
-  assert.equal(points, 6);
-  assert.equal(xp, 24);
+  assert.equal(points, 10);
+  assert.equal(xp, 40);
 });
 
-void test("Reward constants: family100 cap is 27 pts / 108 XP", () => {
-  assert.equal(FAMILY100_REWARD.CAP_POINTS, 27);
-  assert.equal(FAMILY100_REWARD.CAP_XP, 108);
+void test("Reward constants: family100 cap is 45 pts / 180 XP", () => {
+  assert.equal(FAMILY100_REWARD.CAP_POINTS, 45);
+  assert.equal(FAMILY100_REWARD.CAP_XP, 180);
 });
 
 // ---- GameRewardService ----
@@ -139,8 +139,8 @@ void test("GameRewardService: awardKuisCorrect credits points, XP, and game stat
   const { economy, calls } = makeEconomy();
   const service = new GameRewardService(economy);
   const result = await service.awardKuisCorrect("g@g.us", "u@s.whatsapp.net", "round-1", "corr-1");
-  assert.equal(result.points, 6);
-  assert.equal(result.xp, 24);
+  assert.equal(result.points, 10);
+  assert.equal(result.xp, 40);
   assert.equal(calls.filter((c) => c.method === "creditPoints").length, 1);
   assert.equal(calls.filter((c) => c.method === "creditXp").length, 1);
   assert.equal(calls.filter((c) => c.method === "recordGameResult").length, 1);
@@ -183,9 +183,9 @@ void test("GameRewardService: awardTebakAngkaCorrect uses tiered reward", async 
     2,
     "corr-1",
   );
-  assert.equal(result.points, 12);
-  assert.equal(result.xp, 48);
-  assert.equal(calls.find((c) => c.method === "creditPoints")?.amount, 12);
+  assert.equal(result.points, 20);
+  assert.equal(result.xp, 80);
+  assert.equal(calls.find((c) => c.method === "creditPoints")?.amount, 20);
 });
 
 void test("GameRewardService: awardFamily100Answer respects cap", async () => {
@@ -209,18 +209,18 @@ void test("GameRewardService: awardFamily100Answer respects cap", async () => {
 void test("GameRewardService: awardFamily100Answer awards partial when near cap", async () => {
   const { economy, calls } = makeEconomy();
   const service = new GameRewardService(economy);
-  // User has 24 pts earned (cap is 27), so can only get 3 more pts.
+  // User has 42 pts earned (cap is 45), so can only get 3 more pts.
   const result = await service.awardFamily100Answer(
     "g@g.us",
     "u@s.whatsapp.net",
     "round-1",
     "panci",
     "corr-1",
-    24,
+    42,
     0,
   );
   assert.ok(!result.capped);
-  assert.equal(result.points, 3); // min(5, 27-24) = 3
+  assert.equal(result.points, 3); // min(8, 45-42) = 3
   assert.ok(calls.some((c) => c.method === "creditPoints" && c.amount === 3));
 });
 
@@ -308,9 +308,9 @@ void test("GameService: kuis correct answer awards points and XP", async () => {
   const result = await gameService.startOrAnswerQuiz(answerCtx, "kuis");
 
   assert.match(result, /Benar/);
-  assert.match(result, /6/);
-  assert.ok(spy.creditedPoints.some((c) => c.points === 6));
-  assert.ok(spy.creditedXp.some((c) => c.xp === 24));
+  assert.match(result, /10/);
+  assert.ok(spy.creditedPoints.some((c) => c.points === 10));
+  assert.ok(spy.creditedXp.some((c) => c.xp === 40));
 });
 
 void test("GameService: kuis wrong answer awards wrong XP once per user", async () => {
@@ -358,8 +358,8 @@ void test("GameService: tebakangka tracks attempts and rewards correct tier", as
   );
 
   assert.match(result, /Benar/);
-  assert.match(result, /12/);
-  assert.ok(spy.creditedPoints.some((c) => c.points === 12));
+  assert.match(result, /20/);
+  assert.ok(spy.creditedPoints.some((c) => c.points === 20));
 });
 
 void test("GameService: tebakangka attempt 4 yields band 4-7 reward", async () => {
@@ -380,8 +380,8 @@ void test("GameService: tebakangka attempt 4 yields band 4-7 reward", async () =
     makeGameContext({ argsText: "10", commandName: "tebakangka" }),
     "tebakangka",
   );
-  assert.match(result, /9/);
-  assert.ok(spy.creditedPoints.some((c) => c.points === 9));
+  assert.match(result, /15/);
+  assert.ok(spy.creditedPoints.some((c) => c.points === 15));
 });
 
 void test("GameService: family100 multiple users get independent rewards", async () => {
@@ -674,12 +674,12 @@ void test("TicTacToe: win awards winner and loser correctly", async () => {
   assert.match(result, /menang/);
   assert.ok(
     spy.creditedPoints.some(
-      (c) => c.userJid.toLowerCase() === "playera@s.whatsapp.net" && c.points === 15,
+      (c) => c.userJid.toLowerCase() === "playera@s.whatsapp.net" && c.points === 25,
     ),
   );
   assert.ok(
     spy.creditedPoints.some(
-      (c) => c.userJid.toLowerCase() === "playerb@s.whatsapp.net" && c.points === 3,
+      (c) => c.userJid.toLowerCase() === "playerb@s.whatsapp.net" && c.points === 5,
     ),
   );
 });
@@ -705,12 +705,12 @@ void test("TicTacToe: surrender awards opponent as winner", async () => {
   assert.match(result, /Menyerah/);
   assert.ok(
     spy.creditedPoints.some(
-      (c) => c.userJid.toLowerCase() === "playerb@s.whatsapp.net" && c.points === 15,
+      (c) => c.userJid.toLowerCase() === "playerb@s.whatsapp.net" && c.points === 25,
     ),
   );
   assert.ok(
     spy.creditedPoints.some(
-      (c) => c.userJid.toLowerCase() === "playera@s.whatsapp.net" && c.points === 3,
+      (c) => c.userJid.toLowerCase() === "playera@s.whatsapp.net" && c.points === 5,
     ),
   );
 });
@@ -726,27 +726,27 @@ void test("TicTacToe: draw awards both players via GameRewardService", async () 
     service.awardTicTacToeDraw("g@g.us", "playerB@s.whatsapp.net", roundId, `${correlationId}-b`),
   ]);
 
-  assert.equal(r1.points, 6);
-  assert.equal(r2.points, 6);
+  assert.equal(r1.points, 10);
+  assert.equal(r2.points, 10);
   assert.ok(
     calls.some(
       (c) =>
-        c.method === "creditPoints" && c.userJid === "playerA@s.whatsapp.net" && c.amount === 6,
+        c.method === "creditPoints" && c.userJid === "playerA@s.whatsapp.net" && c.amount === 10,
     ),
   );
   assert.ok(
     calls.some(
       (c) =>
-        c.method === "creditPoints" && c.userJid === "playerB@s.whatsapp.net" && c.amount === 6,
+        c.method === "creditPoints" && c.userJid === "playerB@s.whatsapp.net" && c.amount === 10,
     ),
   );
 });
 
 void test("TicTacToe PvP: reward constants are correct", () => {
-  assert.equal(TICTACTOE_REWARD.WIN_POINTS, 15);
-  assert.equal(TICTACTOE_REWARD.WIN_XP, 60);
-  assert.equal(TICTACTOE_REWARD.LOSS_POINTS, 3);
-  assert.equal(TICTACTOE_REWARD.LOSS_XP, 15);
-  assert.equal(TICTACTOE_REWARD.DRAW_POINTS, 6);
-  assert.equal(TICTACTOE_REWARD.DRAW_XP, 30);
+  assert.equal(TICTACTOE_REWARD.WIN_POINTS, 25);
+  assert.equal(TICTACTOE_REWARD.WIN_XP, 100);
+  assert.equal(TICTACTOE_REWARD.LOSS_POINTS, 5);
+  assert.equal(TICTACTOE_REWARD.LOSS_XP, 25);
+  assert.equal(TICTACTOE_REWARD.DRAW_POINTS, 10);
+  assert.equal(TICTACTOE_REWARD.DRAW_XP, 50);
 });

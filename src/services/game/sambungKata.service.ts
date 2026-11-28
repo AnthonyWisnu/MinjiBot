@@ -200,8 +200,8 @@ export class SambungKataService {
     const moneyReward = isComboWin
       ? SAMBUNG_KATA_REWARD_PER_WORD + SAMBUNG_KATA_COMBO_BONUS
       : SAMBUNG_KATA_REWARD_PER_WORD;
-    const xpReward = isComboWin ? 72 : 15;
-    const pointsReward = isComboWin ? 15 : 3;
+    const xpReward = isComboWin ? 120 : 25;
+    const pointsReward = isComboWin ? 25 : 5;
     const correlationId = generateCorrelationId();
 
     await Promise.allSettled([
