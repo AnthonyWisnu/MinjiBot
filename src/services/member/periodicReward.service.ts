@@ -7,11 +7,11 @@ import {
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { prisma } from "../../repositories/prismaClient";
 import { clampMoneyCredit } from "../../utils/currency";
+import { MONTHLY_COOLDOWN_MS, WEEKLY_COOLDOWN_MS } from "../rpg/cooldownCatalog";
 import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "./memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "./randomProvider";
 
-const WEEKLY_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
-const MONTHLY_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
+export { MONTHLY_COOLDOWN_MS, WEEKLY_COOLDOWN_MS };
 
 export const WEEKLY_REWARD_CONFIG = {
   MONEY_MIN: 1_500_000,

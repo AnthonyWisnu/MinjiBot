@@ -5,8 +5,9 @@ import { GroupMemberProfileRepository } from "../../repositories/groupMemberProf
 import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import { formatRemainingDuration } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
+import { MENFESS_COOLDOWN_MS } from "../rpg/cooldownCatalog";
 
-export const MENFESS_COOLDOWN_MS = 5 * 60 * 1000;
+export { MENFESS_COOLDOWN_MS };
 export const MENFESS_MIN_CHARS = 3;
 export const MENFESS_MAX_CHARS = 500;
 const MAX_COOLDOWN_ENTRIES = 2_000;
@@ -161,6 +162,15 @@ export class MenfessService {
       formattedGroupCard,
       mentions,
     };
+  }
+
+  getRemainingCooldownMs(senderJid: string, nowMs = Date.now()): number {
+    const key = normalizeUserJid(senderJid);
+    if (!key) return 0;
+    const lastSent = this.userCooldowns.get(key);
+    if (lastSent === undefined) return 0;
+    const elapsed = nowMs - lastSent;
+    return elapsed >= MENFESS_COOLDOWN_MS ? 0 : MENFESS_COOLDOWN_MS - elapsed;
   }
 
   recordSent(senderJid: string, nowMs = Date.now()): void {

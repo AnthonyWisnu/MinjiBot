@@ -305,8 +305,8 @@ void test("Tahap 14: Ladang plant, water speedup, harvest, deterministic market,
     /Belum ada tanaman/,
   );
 
-  // Ready after 12 minutes (since watered cut 14m * 0.65 = 9.1m)
-  const tReady = t0 + 12 * 60 * 1000;
+  // Ready after 35 minutes (since 45m Padi watered cut ~44m * 0.65 = 28.6m)
+  const tReady = t0 + 35 * 60 * 1000;
   const harv = await service.harvestFarm("120@g.us", "6281@s.whatsapp.net", tReady);
   assert.equal(harv.harvestedPlots, 2);
   assert.ok((harv.yielded.padi ?? 0) >= 6);
@@ -378,7 +378,7 @@ void test("Tahap 14: World Boss Raid spawn, multi-player attack, kill distributi
     assert.ok(res.hpLost >= 14, "Boss counterattack must deal real HP damage");
     lastResult = res;
     defeated = res.defeated;
-    t += 260_000;
+    t += 750_000;
   }
 
   assert.equal(defeated, true);

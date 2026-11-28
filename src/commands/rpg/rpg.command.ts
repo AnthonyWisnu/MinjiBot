@@ -11,6 +11,7 @@ import {
   rpgEconomyService,
   TOP_WEALTH_TAX_MAX_PERCENT,
   TOP_WEALTH_TAX_MIN_PERCENT,
+  type CooldownSummary,
   type RpgJobType,
 } from "../../services/rpg/rpgEconomy.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
@@ -887,6 +888,28 @@ async function handleCrypto(context: CommandContext): Promise<void> {
   }
 }
 
+function formatCooldownBadge(durationMs: number, durationLabel?: string): string {
+  if (durationLabel) {
+    return durationLabel;
+  }
+  return durationMs > 0 ? formatRemainingDuration(durationMs) : "Dinamis";
+}
+
+async function resolveOptionalTargetUser(
+  context: CommandContext,
+  fallbackUserJid: string,
+): Promise<string> {
+  const rawTarget = context.mentionedJids[0] ?? context.quoted?.participantJid;
+  if (!rawTarget) {
+    return fallbackUserJid;
+  }
+  return identityResolverService.resolveCanonicalUserJid(
+    context.socket,
+    context.chatJid,
+    rawTarget,
+  );
+}
+
 async function handleCooldown(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) {
     return;
@@ -894,58 +917,78 @@ async function handleCooldown(context: CommandContext): Promise<void> {
 
   try {
     const senderJid = await resolveCanonicalSender(context);
-    const summary = await rpgEconomyService.getCooldownSummary(context.chatJid, senderJid);
+    const targetJid = await resolveOptionalTargetUser(context, senderJid);
+    const summary = await rpgEconomyService.getCooldownSummary(context.chatJid, targetJid);
     const activeCds = summary.entries.filter((e) => e.remainingMs > 0);
     const readyCds = summary.entries.filter((e) => e.remainingMs <= 0);
+    const targetTag = `@${targetJid.split("@")[0] ?? targetJid}`;
 
     const headerLines = [
-      "╭─〔 STATUS COOLDOWN RPG 〕─╮",
-      `│ Siap     : *${String(readyCds.length)}* perintah`,
-      `│ Cooldown : *${String(activeCds.length)}* perintah`,
+      "╭─〔 STATUS COOLDOWN LENGKAP 〕─╮",
+      `│ Member   : ${targetTag}`,
+      `│ Total    : *${String(summary.entries.length)}* fitur`,
+      `│ Siap     : *${String(readyCds.length)}* fitur`,
+      `│ Cooldown : *${String(activeCds.length)}* fitur`,
     ];
 
     if (summary.jailedRemainingMs > 0) {
-      headerLines.push(`│ Penjara  : *${formatRemainingDuration(summary.jailedRemainingMs)}* (\`.bebaspenjara\`)`);
+      headerLines.push(
+        `│ Penjara  : *${formatRemainingDuration(summary.jailedRemainingMs)}* (\`.bebaspenjara\`)`,
+      );
     }
     if (summary.ugdRemainingMs > 0) {
       headerLines.push(`│ UGD      : *${formatRemainingDuration(summary.ugdRemainingMs)}* (\`.bebasugd\`)`);
     }
     if (summary.expedition) {
       const expText = summary.expedition.ready
-        ? `*${summary.expedition.petLabel}* siap klaim!`
+        ? `*${summary.expedition.petLabel}* siap \`.ekspedisipet klaim\`!`
         : `${summary.expedition.petLabel} (${formatRemainingDuration(summary.expedition.remainingMs)})`;
       headerLines.push(`│ Ekspedisi: ${expText}`);
     }
-    headerLines.push("╰──────────────────────────╯");
+    if (summary.farmSummary) {
+      const farmText =
+        summary.farmSummary.readyCount > 0
+          ? `*${String(summary.farmSummary.readyCount)}/${String(summary.farmSummary.plantedCount)}* petak siap panen!`
+          : `Panen dalam *${formatRemainingDuration(summary.farmSummary.nextReadyRemainingMs)}*`;
+      headerLines.push(`│ Ladang   : ${farmText}`);
+    }
+    headerLines.push("╰──────────────────────────────╯");
 
     const lines: string[] = [...headerLines];
 
     if (activeCds.length > 0) {
-      lines.push("", "*Sedang Cooldown:*");
+      lines.push("", `⏳ *Sedang Cooldown (${String(activeCds.length)}):*`);
       activeCds.forEach((entry, idx) => {
         const branch = idx === activeCds.length - 1 ? "└" : "├";
-        lines.push(`  ${branch} \`${entry.label}\` : *${formatRemainingDuration(entry.remainingMs)}*`);
+        const cdBadge = formatCooldownBadge(entry.durationMs, entry.durationLabel);
+        lines.push(
+          `  ${branch} \`${entry.label}\` : *${formatRemainingDuration(entry.remainingMs)}* _(CD ${cdBadge})_`,
+        );
       });
     }
 
     if (readyCds.length > 0) {
-      const readyKerja = readyCds.filter((e) => e.category === "kerja");
-      const readyRpg = readyCds.filter((e) => e.category === "petualangan");
-      const readyAksi = readyCds.filter((e) => e.category === "kriminal");
+      const categoryDefs: [CooldownSummary["entries"][number]["category"], string][] = [
+        ["kerja", "Kerja & Bisnis"],
+        ["klaim", "Klaim Berkala"],
+        ["petualangan", "Petualangan & RPG"],
+        ["kriminal", "Kriminal & PvP"],
+        ["arena", "Arena, Sosial & AI"],
+      ];
 
-      lines.push("", "*Siap Dipakai:*");
-      if (readyKerja.length > 0) {
-        lines.push(`• *Kerja:* ${readyKerja.map((e) => `\`${e.label}\``).join(", ")}`);
-      }
-      if (readyRpg.length > 0) {
-        lines.push(`• *RPG:* ${readyRpg.map((e) => `\`${e.label}\``).join(", ")}`);
-      }
-      if (readyAksi.length > 0) {
-        lines.push(`• *Aksi:* ${readyAksi.map((e) => `\`${e.label}\``).join(", ")}`);
+      lines.push("", `✅ *Siap Dipakai (${String(readyCds.length)}):*`);
+      for (const [catKey, catTitle] of categoryDefs) {
+        const items = readyCds.filter((e) => e.category === catKey);
+        if (items.length === 0) continue;
+        const formatted = items
+          .map((e) => `\`${e.label}\` (${formatCooldownBadge(e.durationMs, e.durationLabel)})`)
+          .join(", ");
+        lines.push(`• *${catTitle}:* ${formatted}`);
       }
     }
 
-    await context.reply(lines.join("\n"));
+    lines.push("", "_Tips: Ketik `.cooldown @member` untuk cek CD member lain._");
+    await context.reply(lines.join("\n"), { mentions: [targetJid] });
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Gagal mengambil status cooldown."));
   }

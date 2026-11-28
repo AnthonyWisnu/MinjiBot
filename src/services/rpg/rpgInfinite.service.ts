@@ -18,6 +18,7 @@ import { toWibDateKey } from "../../utils/wibDate";
 import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
+import { INFINITE_RPG_COOLDOWNS_MS } from "./cooldownCatalog";
 import {
   BOSS_FIGHT_SPECS,
   COOK_RECIPES,
@@ -63,18 +64,7 @@ import {
   type ToolType,
 } from "./rpgState";
 
-export const INFINITE_RPG_COOLDOWNS_MS: Record<string, number> = {
-  adventure: 16 * 60 * 1000,
-  nebang: 10 * 60 * 1000,
-  berkebon: 10 * 60 * 1000,
-  fight_boss: 15 * 60 * 1000,
-  fight_kucing: 15 * 60 * 1000,
-  fight_kyubi: 15 * 60 * 1000,
-  fight_centaur: 15 * 60 * 1000,
-  fight_griffin: 15 * 60 * 1000,
-  fight_naga: 15 * 60 * 1000,
-  fight_phonix: 15 * 60 * 1000,
-};
+export { INFINITE_RPG_COOLDOWNS_MS };
 
 const POTION_HEAL_AMOUNT = 40;
 const MIN_HP_FOR_COMBAT = 25;

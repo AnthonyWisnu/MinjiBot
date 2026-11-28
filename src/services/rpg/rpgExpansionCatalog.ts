@@ -1,4 +1,7 @@
 import type { MemberRank } from "../member/rank.service";
+import { PROPERTY_MIN_HARVEST_MS } from "./cooldownCatalog";
+
+export { PROPERTY_MIN_HARVEST_MS };
 
 export interface DailyQuestSpec {
   id: "absen_harian" | "pekerja_keras" | "warga_aktif" | "bonus_semua";
@@ -247,7 +250,6 @@ export const PROPERTY_MAP = new Map<string, PropertySpec>(
 
 export const PROPERTY_SELL_REFUND_PERCENT = 65;
 export const PROPERTY_HARVEST_TAX_PERCENT = 10;
-export const PROPERTY_MIN_HARVEST_MS = 20 * 60 * 1000;
 export const PROPERTY_MAX_ACCUMULATION_HOURS = 24;
 
 export interface RankSalarySpec {

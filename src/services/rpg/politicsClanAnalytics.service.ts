@@ -45,7 +45,15 @@ import {
   STARTUP_MIN_PLAYER_LEVEL,
 } from "./careerPrestigeCatalog";
 import { careerPrestigeService, type TopPrestigeEntry } from "./careerPrestige.service";
+import {
+  BUDGET_COOLDOWN_MS,
+  CLAN_BUFF_COOLDOWN_MS,
+  CLAN_WAR_COOLDOWN_MS,
+  COUP_GROUP_COOLDOWN_MS,
+} from "./cooldownCatalog";
 import { BUFF_MAX_STACK_MS, FARM_CROP_CATALOG } from "./raidFarmBuffBounty.service";
+
+export { BUDGET_COOLDOWN_MS, CLAN_BUFF_COOLDOWN_MS, CLAN_WAR_COOLDOWN_MS, COUP_GROUP_COOLDOWN_MS };
 import { DEFAULT_GROUP_TREASURY } from "./rpgEconomy.service";
 import { PROPERTY_CATALOG } from "./rpgExpansionCatalog";
 import { calculatePlayerCombatPower } from "./rpgInfinite.service";
@@ -77,12 +85,10 @@ export const PRESIDENCY_INAUGURATION_XP = 250;
 export const BUDGET_MIN_AMOUNT = 2_000_000n;
 export const BUDGET_DEFAULT_AMOUNT = 8_000_000n;
 export const BUDGET_MAX_AMOUNT = 30_000_000n;
-export const BUDGET_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 export const BUDGET_MAX_RECIPIENTS = 15;
 
 export const COUP_MIN_LEVEL = 10;
 export const COUP_COST = 15_000_000n;
-export const COUP_GROUP_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 export const COUP_SUCCESS_RATE = 0.35;
 export const COUP_FAIL_JAIL_MS = 15 * 60 * 1000;
 export const COUP_SUCCESS_XP = 200;
@@ -90,8 +96,6 @@ export const COUP_SUCCESS_XP = 200;
 export const CLAN_MAX_LEVEL = 10;
 export const CLAN_UPGRADE_BASE_COST = 25_000_000n;
 export const CLAN_POWER_BONUS_PER_LEVEL_PERCENT = 8;
-export const CLAN_BUFF_COOLDOWN_MS = 60 * 60 * 1000;
-export const CLAN_WAR_COOLDOWN_MS = 30 * 60 * 1000;
 export const CLAN_WAR_LOOT_PERCENT = 12;
 export const CLAN_WAR_MAX_LOOT = 50_000_000n;
 export const CLAN_WAR_WIN_BONUS_MONEY = 1_500_000n;

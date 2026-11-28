@@ -6,6 +6,7 @@ import {
   NPC_MARRY_COST,
   NPC_MARRY_MIN_AFFECTION_LEVEL,
   NPC_PROPOSE_COST,
+  NPC_ROLL_COOLDOWN_MS,
   NPC_SLOT_UPGRADE_COSTS,
   npcRomanceService,
 } from "../../services/fun/npcRomance.service";
@@ -87,7 +88,9 @@ export async function executeNpcCompatibilityRoll(
         `Aksi   : Ketik *.tembaknpc* dalam 15 menit (${formatCompactRupiah(NPC_PROPOSE_COST)})`,
       );
     } else {
-      statusLines.push("Status : Belum tembus 90% (cooldown roll 5 menit)");
+      statusLines.push(
+        `Status : Belum tembus 90% (cooldown roll ${formatRemainingDuration(NPC_ROLL_COOLDOWN_MS)})`,
+      );
     }
 
     const caption = [

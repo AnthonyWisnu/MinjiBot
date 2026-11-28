@@ -1,4 +1,7 @@
+import { PET_EXPEDITION_DURATION_MS } from "./cooldownCatalog";
 import type { CrateType, PetType, ToolType } from "./rpgState";
+
+export { PET_EXPEDITION_DURATION_MS };
 
 export interface ShopItemSpec {
   id: string;
@@ -451,7 +454,6 @@ export const PET_EXPEDITION_ZONE_MAP = new Map<string, PetExpeditionZoneSpec>(
   PET_EXPEDITION_ZONES.map((z) => [z.id, z]),
 );
 
-export const PET_EXPEDITION_DURATION_MS = 30 * 60 * 1000;
 export const PET_EXPEDITION_HUNGER_COST = 20;
 
 export function normalizePetEggTier(raw: string | undefined): PetEggTier | null {

@@ -240,7 +240,7 @@ describe("World Boss Persistence, Auto-Spawn & All-Time TopDamage", () => {
       }
       const res = await svcAfterRestart.attackWorldBoss(GROUP_JID, attacker, t);
       defeated = res.defeated;
-      t += 260_000;
+      t += 750_000;
     }
     assert.equal(defeated, true);
 

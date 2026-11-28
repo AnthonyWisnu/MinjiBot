@@ -20,6 +20,11 @@ import {
 import { normalizeUserJid } from "../../utils/jid";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
+import {
+  ATTACK_COOLDOWN_MS,
+  BUSINESS_COOLDOWN_MS,
+  DUNGEON_COOLDOWN_MS,
+} from "./cooldownCatalog";
 import { calculatePlayerCombatPower } from "./rpgInfinite.service";
 import {
   computeBossHpDamage,
@@ -36,15 +41,14 @@ import {
   type CrateType,
 } from "./rpgState";
 
+export { ATTACK_COOLDOWN_MS, BUSINESS_COOLDOWN_MS, DUNGEON_COOLDOWN_MS };
+
 export const BUSINESS_CAPITAL_PER_PERSON = 1_000_000n;
-const BUSINESS_COOLDOWN_MS = 60 * 60 * 1000;
-const ATTACK_COOLDOWN_MS = 30 * 60 * 1000;
 const UGD_DURATION_MS = 15 * 60 * 1000;
 const UGD_STABILIZED_HP = 30;
 const ATTACK_MIN_TARGET_WALLET = 500_000n;
 const ATTACK_MAX_LOOT = 10_000_000n;
 const DUNGEON_LOBBY_TTL_MS = 10 * 60 * 1000;
-const DUNGEON_COOLDOWN_MS = 40 * 60 * 1000;
 const MAX_DUNGEON_LOBBIES = 100;
 const MAX_DUNGEON_PLAYERS = 4;
 

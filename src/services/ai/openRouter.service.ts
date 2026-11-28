@@ -9,6 +9,7 @@ import { formatRemainingDuration } from "../../utils/currency";
 import { MAX_SAFE_IMAGE_PIXELS } from "../../utils/imageSafety";
 import { isGroupJid } from "../../utils/jid";
 import { toWibDateKey } from "../../utils/wibDate";
+import { AI_COOLDOWN_MS } from "../rpg/cooldownCatalog";
 import {
   extractGroupEventStateObject,
   readGroupEventSection,
@@ -16,11 +17,11 @@ import {
   type GroupEventTenantClient,
 } from "../group/groupEventState.store";
 
+export { AI_COOLDOWN_MS };
 export const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const AI_MAX_PROMPT_CHARS = 600;
 export const AI_MAX_CONTEXT_CHARS = 2_400;
 export const AI_MAX_TOKENS = 450;
-export const AI_COOLDOWN_MS = 15_000;
 const AI_REQUEST_TIMEOUT_MS = 25_000;
 const MAX_COOLDOWN_ENTRIES = 2_000;
 const MAX_QUOTA_ENTRIES = 500;
@@ -442,6 +443,16 @@ export class OpenRouterService {
         count: nextCount,
       });
     }
+  }
+
+  getRemainingCooldownMs(groupJid: string, userJid: string, nowMs = Date.now()): number {
+    const cdKey = `${groupJid}:${userJid}`;
+    const lastUsed = this.userCooldowns.get(cdKey);
+    if (lastUsed === undefined) {
+      return 0;
+    }
+    const elapsed = nowMs - lastUsed;
+    return elapsed >= AI_COOLDOWN_MS ? 0 : AI_COOLDOWN_MS - elapsed;
   }
 }
 

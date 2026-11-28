@@ -8,8 +8,9 @@ import {
 import { AppUserError } from "../../errors/appUserError";
 import { formatRemainingDuration } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
+import { GROUP_STATUS_COOLDOWN_MS } from "../rpg/cooldownCatalog";
 
-const GROUP_STATUS_COOLDOWN_MS = 30 * 1000;
+export { GROUP_STATUS_COOLDOWN_MS };
 
 const STATUS_BG_COLORS = [
   "#0F172A",

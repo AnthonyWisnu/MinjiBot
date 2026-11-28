@@ -27,7 +27,14 @@ import { normalizeUserJid } from "../../utils/jid";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
 import { DEFAULT_GROUP_TREASURY } from "./rpgEconomy.service";
+import {
+  BOUNTY_HUNT_COOLDOWN_MS,
+  WORLD_BOSS_ATTACK_COOLDOWN_MS,
+  WORLD_BOSS_RESPAWN_COOLDOWN_MS,
+} from "./cooldownCatalog";
 import { calculatePlayerCombatPower } from "./rpgInfinite.service";
+
+export { BOUNTY_HUNT_COOLDOWN_MS, WORLD_BOSS_ATTACK_COOLDOWN_MS, WORLD_BOSS_RESPAWN_COOLDOWN_MS };
 import {
   BUFF_KEYS,
   computeBossHpDamage,
@@ -63,9 +70,7 @@ import {
 const MAX_ACTIVE_GROUPS = 100;
 const MAX_BOUNTIES_PER_GROUP = 20;
 
-export const WORLD_BOSS_TTL_MS = 3 * 60 * 60 * 1000;
-export const WORLD_BOSS_RESPAWN_COOLDOWN_MS = 60 * 60 * 1000;
-export const WORLD_BOSS_ATTACK_COOLDOWN_MS = 8 * 60 * 1000;
+export const WORLD_BOSS_TTL_MS = 9 * 60 * 60 * 1000;
 export const WORLD_BOSS_MIN_HP = 25;
 export const WORLD_BOSS_MIN_DAMAGE_PER_HIT = 250;
 export const WORLD_BOSS_MAX_DAMAGE_PER_HIT = 2_800;
@@ -83,7 +88,6 @@ export const BUFF_MAX_STACK_MS = 6 * 60 * 60 * 1000;
 export const BOUNTY_MIN_AMOUNT = 1_000_000n;
 export const BOUNTY_MAX_AMOUNT = 100_000_000n;
 export const BOUNTY_TTL_MS = 24 * 60 * 60 * 1000;
-export const BOUNTY_HUNT_COOLDOWN_MS = 20 * 60 * 1000;
 export const BOUNTY_FAIL_PENALTY = 500_000n;
 export const BOUNTY_UGD_MS = 5 * 60 * 1000;
 export const BOUNTY_TAX_PERCENT = 5;
@@ -207,7 +211,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
     label: "Padi Organik",
     minLevel: 1,
     seedPrice: 150_000n,
-    growMinutes: 15,
+    growMinutes: 45,
     minYield: 3,
     maxYield: 5,
     baseMarketPrice: 80_000n,
@@ -218,7 +222,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
     label: "Jagung Manis",
     minLevel: 1,
     seedPrice: 300_000n,
-    growMinutes: 25,
+    growMinutes: 75,
     minYield: 3,
     maxYield: 5,
     baseMarketPrice: 150_000n,
@@ -229,7 +233,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
     label: "Biji Kopi Gayo",
     minLevel: 5,
     seedPrice: 700_000n,
-    growMinutes: 45,
+    growMinutes: 135,
     minYield: 3,
     maxYield: 6,
     baseMarketPrice: 320_000n,
@@ -240,7 +244,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
     label: "Kakao Premium",
     minLevel: 10,
     seedPrice: 1_500_000n,
-    growMinutes: 60,
+    growMinutes: 180,
     minYield: 3,
     maxYield: 6,
     baseMarketPrice: 650_000n,
@@ -251,7 +255,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
     label: "Sawit Emas",
     minLevel: 18,
     seedPrice: 3_000_000n,
-    growMinutes: 90,
+    growMinutes: 270,
     minYield: 4,
     maxYield: 7,
     baseMarketPrice: 1_100_000n,
@@ -262,7 +266,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
     label: "Truffle Hitam",
     minLevel: 30,
     seedPrice: 6_000_000n,
-    growMinutes: 120,
+    growMinutes: 360,
     minYield: 3,
     maxYield: 6,
     baseMarketPrice: 2_400_000n,

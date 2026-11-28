@@ -33,13 +33,14 @@ import {
   type NpcPartnerEntry,
   type NpcPartnerRelation,
 } from "../rpg/rpgState";
+import { NPC_DATE_COOLDOWN_MS, NPC_ROLL_COOLDOWN_MS } from "../rpg/cooldownCatalog";
 import { findCuratedGameCharacter, renderNpcFallbackAvatar } from "./npcCharacterCatalog";
 
-export const NPC_ROLL_COOLDOWN_MS = 5 * 60 * 1000; // 5 menit per gacha roll kecocokan
+export { NPC_DATE_COOLDOWN_MS, NPC_ROLL_COOLDOWN_MS };
+
 export const NPC_TICKET_TTL_MS = 15 * 60 * 1000; // 15 menit tiket tembak saat >= 90%
 export const NPC_COMPAT_THRESHOLD = 90;
 export const NPC_PROPOSE_COST = 50_000_000n;
-export const NPC_DATE_COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2 jam antar kencan
 export const NPC_DATE_COST = 15_000_000n;
 export const NPC_DATE_XP = 80;
 export const NPC_DATE_AFFECTION_EXP = 50;

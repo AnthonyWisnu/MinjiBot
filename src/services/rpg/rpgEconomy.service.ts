@@ -24,11 +24,37 @@ import {
 } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
 import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
+import { menfessService } from "../fun/menfess.service";
+import { openRouterService } from "../ai/openRouter.service";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
-import { CAREER_SHIFT_COOLDOWN_MS } from "./careerPrestigeCatalog";
+import { msUntilNextWibMidnight, toWibDateKey } from "../../utils/wibDate";
+import {
+  AI_COOLDOWN_MS,
+  ARENA_COOLDOWN_MS,
+  ATTACK_COOLDOWN_MS,
+  BOUNTY_HUNT_COOLDOWN_MS,
+  BUSINESS_COOLDOWN_MS,
+  CAREER_SHIFT_COOLDOWN_MS,
+  CLAN_BUFF_COOLDOWN_MS,
+  DUNGEON_COOLDOWN_MS,
+  INFINITE_RPG_COOLDOWNS_MS,
+  MENFESS_COOLDOWN_MS,
+  MONTHLY_COOLDOWN_MS,
+  NPC_DATE_COOLDOWN_MS,
+  NPC_ROLL_COOLDOWN_MS,
+  PET_ARENA_COOLDOWN_MS,
+  PET_EXPEDITION_DURATION_MS,
+  PROPERTY_MIN_HARVEST_MS,
+  RPG_COOLDOWNS_MS,
+  SEDEKAH_COOLDOWN_MS,
+  STARTUP_DIVIDEND_COOLDOWN_MS,
+  WEEKLY_COOLDOWN_MS,
+  WORLD_BOSS_ATTACK_COOLDOWN_MS,
+} from "./cooldownCatalog";
 import { PET_EXPEDITION_ZONE_MAP, PET_LABELS } from "./rpgCatalog";
 import {
+  getPrimaryNpcPartner,
   getRemainingCooldownMs,
   getRemainingJailMs,
   getRemainingUgdMs,
@@ -41,20 +67,7 @@ import {
 
 export type RpgJobType = "mulung" | "kerja" | "ojek" | "nambang" | "berburu" | "mancing";
 
-export const RPG_COOLDOWNS_MS: Record<string, number> = {
-  mulung: 6 * 60 * 1000,
-  kerja: 10 * 60 * 1000,
-  ojek: 10 * 60 * 1000,
-  nambang: 20 * 60 * 1000,
-  berburu: 20 * 60 * 1000,
-  mancing: 20 * 60 * 1000,
-  korupsi: 30 * 60 * 1000,
-  megakorupsi: 2 * 60 * 60 * 1000,
-  pajak: 60 * 60 * 1000,
-  maling: 40 * 60 * 1000,
-  bansos: 6 * 60 * 60 * 1000,
-  casino: 10 * 1000,
-};
+export { RPG_COOLDOWNS_MS };
 
 export const DEFAULT_GROUP_TREASURY = 20_000_000_000_000n; // Rp 20 Triliun
 export const CASINO_MIN_BET = 100_000n;
@@ -279,12 +292,14 @@ export interface CasinoResult {
   currentMoney: bigint;
 }
 
-export type CooldownCategory = "kerja" | "petualangan" | "kriminal";
+export type CooldownCategory = "kerja" | "klaim" | "petualangan" | "kriminal" | "arena";
 
 export interface CooldownEntry {
   key: string;
   label: string;
   category: CooldownCategory;
+  durationMs: number;
+  durationLabel?: string;
   remainingMs: number;
 }
 
@@ -296,6 +311,11 @@ export interface CooldownSummary {
     zoneName: string;
     remainingMs: number;
     ready: boolean;
+  } | null;
+  farmSummary: {
+    plantedCount: number;
+    readyCount: number;
+    nextReadyRemainingMs: number;
   } | null;
   entries: CooldownEntry[];
 }
@@ -1332,41 +1352,159 @@ export class RpgEconomyService {
     groupJid: string,
     userJid: string,
     now: Date = new Date(),
+    externalRemainingMs?: Partial<Record<"menfess" | "ai", number>>,
   ): Promise<CooldownSummary> {
     const profile = await this.profileRepo.findOrCreate(groupJid, userJid);
     const state = parseRpgState(profile.rpgState);
     const nowMs = now.getTime();
+    const todayWibKey = toWibDateKey(now);
+    const todayWibInt = Number.parseInt(todayWibKey.replace(/-/g, ""), 10);
+    const msUntilWibReset = msUntilNextWibMidnight(now);
 
-    const cooldownDefs: [string, string, CooldownCategory, number][] = [
-      // Kerja & Ekonomi
-      ["mulung", ".mulung", "kerja", RPG_COOLDOWNS_MS.mulung ?? 0],
-      ["kerja", ".kerja", "kerja", RPG_COOLDOWNS_MS.kerja ?? 0],
-      ["ojek", ".ojek", "kerja", RPG_COOLDOWNS_MS.ojek ?? 0],
-      ["nambang", ".nambang", "kerja", RPG_COOLDOWNS_MS.nambang ?? 0],
-      ["berburu", ".berburu", "kerja", RPG_COOLDOWNS_MS.berburu ?? 0],
-      ["mancing", ".mancing", "kerja", RPG_COOLDOWNS_MS.mancing ?? 0],
-      ["bansos", ".bansos", "kerja", RPG_COOLDOWNS_MS.bansos ?? 0],
+    const timestampCooldownDefs: [string, string, CooldownCategory, number][] = [
+      // 1. Kerja, Profesi & Bisnis
+      ["mulung", ".mulung", "kerja", RPG_COOLDOWNS_MS.mulung ?? 18 * 60 * 1000],
+      ["kerja", ".kerja", "kerja", RPG_COOLDOWNS_MS.kerja ?? 30 * 60 * 1000],
+      ["ojek", ".ojek", "kerja", RPG_COOLDOWNS_MS.ojek ?? 30 * 60 * 1000],
+      ["nambang", ".nambang", "kerja", RPG_COOLDOWNS_MS.nambang ?? 60 * 60 * 1000],
+      ["berburu", ".berburu", "kerja", RPG_COOLDOWNS_MS.berburu ?? 60 * 60 * 1000],
+      ["mancing", ".mancing", "kerja", RPG_COOLDOWNS_MS.mancing ?? 60 * 60 * 1000],
+      ["bansos", ".bansos", "kerja", RPG_COOLDOWNS_MS.bansos ?? 18 * 60 * 60 * 1000],
       ["career_shift", ".shift", "kerja", CAREER_SHIFT_COOLDOWN_MS],
-      ["berbisnis", ".berbisnis", "kerja", 60 * 60 * 1000],
-      // Petualangan & Aktivitas RPG
-      ["adventure", ".adventure", "petualangan", 16 * 60 * 1000],
-      ["fight_boss", ".fight* (Boss Solo)", "petualangan", 15 * 60 * 1000],
-      ["nebang", ".nebang", "petualangan", 10 * 60 * 1000],
-      ["berkebon", ".berkebon", "petualangan", 10 * 60 * 1000],
-      ["dungeon", ".dungeon", "petualangan", 40 * 60 * 1000],
-      ["worldboss_hit", ".serangboss", "petualangan", 8 * 60 * 1000],
-      ["sabungpet", ".sabungpet", "petualangan", 4 * 60 * 1000],
-      ["gengbuff", ".gengbuff", "petualangan", 60 * 60 * 1000],
-      ["npc_cocok", ".cocoknpc", "petualangan", 5 * 60 * 1000],
-      // Kriminal & PvP
-      ["korupsi", ".korupsi", "kriminal", RPG_COOLDOWNS_MS.korupsi ?? 0],
-      ["megakorupsi", ".megakorupsi", "kriminal", RPG_COOLDOWNS_MS.megakorupsi ?? 0],
-      ["pajak", ".pajak", "kriminal", RPG_COOLDOWNS_MS.pajak ?? 0],
-      ["maling", ".maling", "kriminal", RPG_COOLDOWNS_MS.maling ?? 0],
-      ["serang", ".serang", "kriminal", 30 * 60 * 1000],
-      ["bounty_hunt", ".burubounty", "kriminal", 20 * 60 * 1000],
+      ["berbisnis", ".berbisnis", "kerja", BUSINESS_COOLDOWN_MS],
+      // 3. Petualangan, Boss & Geng
+      ["adventure", ".adventure", "petualangan", INFINITE_RPG_COOLDOWNS_MS.adventure ?? 48 * 60 * 1000],
+      ["fight_boss", ".fight* (Boss Solo)", "petualangan", INFINITE_RPG_COOLDOWNS_MS.fight_boss ?? 45 * 60 * 1000],
+      ["nebang", ".nebang", "petualangan", INFINITE_RPG_COOLDOWNS_MS.nebang ?? 30 * 60 * 1000],
+      ["berkebon", ".berkebon", "petualangan", INFINITE_RPG_COOLDOWNS_MS.berkebon ?? 30 * 60 * 1000],
+      ["dungeon", ".dungeon", "petualangan", DUNGEON_COOLDOWN_MS],
+      ["worldboss_hit", ".serangboss", "petualangan", WORLD_BOSS_ATTACK_COOLDOWN_MS],
+      ["sabungpet", ".sabungpet", "petualangan", PET_ARENA_COOLDOWN_MS],
+      ["gengbuff", ".gengbuff", "petualangan", CLAN_BUFF_COOLDOWN_MS],
+      // 4. Kriminal, PvP & Bounty
+      ["korupsi", ".korupsi", "kriminal", RPG_COOLDOWNS_MS.korupsi ?? 90 * 60 * 1000],
+      ["megakorupsi", ".megakorupsi", "kriminal", RPG_COOLDOWNS_MS.megakorupsi ?? 6 * 60 * 60 * 1000],
+      ["pajak", ".pajak", "kriminal", RPG_COOLDOWNS_MS.pajak ?? 3 * 60 * 60 * 1000],
+      ["maling", ".maling", "kriminal", RPG_COOLDOWNS_MS.maling ?? 2 * 60 * 60 * 1000],
+      ["serang", ".serang", "kriminal", ATTACK_COOLDOWN_MS],
+      ["bounty_hunt", ".burubounty", "kriminal", BOUNTY_HUNT_COOLDOWN_MS],
+      // 5. Casino, Arena & Sosial
+      ["casino", ".casino", "arena", RPG_COOLDOWNS_MS.casino ?? 30 * 1000],
+      ["balap_kuda", ".balapkuda", "arena", ARENA_COOLDOWN_MS],
+      ["balap_siput", ".balapsiput", "arena", ARENA_COOLDOWN_MS],
+      ["aduayam", ".aduayam", "arena", ARENA_COOLDOWN_MS],
+      ["tebakwarna", ".tebakwarna", "arena", ARENA_COOLDOWN_MS],
+      ["sedekah", ".sedekah", "arena", SEDEKAH_COOLDOWN_MS],
+      ["npc_cocok", ".cocoknpc", "arena", NPC_ROLL_COOLDOWN_MS],
     ];
 
+    const entriesByKey = new Map<string, CooldownEntry>();
+    for (const [key, label, category, durationMs] of timestampCooldownDefs) {
+      entriesByKey.set(key, {
+        key,
+        label,
+        category,
+        durationMs,
+        remainingMs: getRemainingCooldownMs(state, key, durationMs, nowMs),
+      });
+    }
+
+    // Startup Dividen
+    const lastDividendAt = Math.max(
+      state.cooldowns.startup_dividend ?? 0,
+      state.startup?.lastDividendAt ?? 0,
+    );
+    const dividendElapsed = lastDividendAt > 0 ? Math.max(0, nowMs - lastDividendAt) : STARTUP_DIVIDEND_COOLDOWN_MS;
+    const dividendRem =
+      lastDividendAt > 0 && dividendElapsed < STARTUP_DIVIDEND_COOLDOWN_MS
+        ? STARTUP_DIVIDEND_COOLDOWN_MS - dividendElapsed
+        : 0;
+    entriesByKey.set("startup_dividend", {
+      key: "startup_dividend",
+      label: ".dividen",
+      category: "kerja",
+      durationMs: STARTUP_DIVIDEND_COOLDOWN_MS,
+      remainingMs: dividendRem,
+    });
+
+    // Panen Properti
+    const totalOwnedProperties = Object.values(state.properties).reduce((acc, qty) => acc + qty, 0);
+    const lastHarvestAt =
+      totalOwnedProperties > 0
+        ? state.lastPropertyHarvestAt
+        : Math.max(state.lastPropertyHarvestAt, state.cooldowns.panen ?? 0);
+    const harvestElapsed = lastHarvestAt > 0 ? Math.max(0, nowMs - lastHarvestAt) : PROPERTY_MIN_HARVEST_MS;
+    const harvestRem =
+      totalOwnedProperties > 0 && lastHarvestAt > 0 && harvestElapsed < PROPERTY_MIN_HARVEST_MS
+        ? PROPERTY_MIN_HARVEST_MS - harvestElapsed
+        : 0;
+    entriesByKey.set("panen", {
+      key: "panen",
+      label: ".panen",
+      category: "kerja",
+      durationMs: PROPERTY_MIN_HARVEST_MS,
+      remainingMs: harvestRem,
+    });
+
+    // Klaim Harian & Periodik
+    const dailyClaimedToday =
+      profile.lastDailyClaimAt !== null && toWibDateKey(profile.lastDailyClaimAt) === todayWibKey;
+    entriesByKey.set("daily", {
+      key: "daily",
+      label: ".daily",
+      category: "klaim",
+      durationMs: 24 * 60 * 60 * 1000,
+      durationLabel: "Harian WIB",
+      remainingMs: dailyClaimedToday ? msUntilWibReset : 0,
+    });
+
+    entriesByKey.set("gaji", {
+      key: "gaji",
+      label: ".gaji",
+      category: "klaim",
+      durationMs: 24 * 60 * 60 * 1000,
+      durationLabel: "Harian WIB",
+      remainingMs: state.lastSalaryDateKey === todayWibKey ? msUntilWibReset : 0,
+    });
+
+    entriesByKey.set("spin_day", {
+      key: "spin_day",
+      label: ".spin",
+      category: "klaim",
+      durationMs: 24 * 60 * 60 * 1000,
+      durationLabel: "Harian WIB",
+      remainingMs: (state.cooldowns.spin_day ?? 0) === todayWibInt ? msUntilWibReset : 0,
+    });
+
+    const weeklyElapsed =
+      profile.lastWeeklyClaimAt !== null ? Math.max(0, nowMs - profile.lastWeeklyClaimAt.getTime()) : WEEKLY_COOLDOWN_MS;
+    entriesByKey.set("weekly", {
+      key: "weekly",
+      label: ".weekly",
+      category: "klaim",
+      durationMs: WEEKLY_COOLDOWN_MS,
+      remainingMs:
+        profile.lastWeeklyClaimAt !== null && weeklyElapsed < WEEKLY_COOLDOWN_MS
+          ? WEEKLY_COOLDOWN_MS - weeklyElapsed
+          : 0,
+    });
+
+    const monthlyElapsed =
+      profile.lastMonthlyClaimAt !== null
+        ? Math.max(0, nowMs - profile.lastMonthlyClaimAt.getTime())
+        : MONTHLY_COOLDOWN_MS;
+    entriesByKey.set("monthly", {
+      key: "monthly",
+      label: ".monthly",
+      category: "klaim",
+      durationMs: MONTHLY_COOLDOWN_MS,
+      remainingMs:
+        profile.lastMonthlyClaimAt !== null && monthlyElapsed < MONTHLY_COOLDOWN_MS
+          ? MONTHLY_COOLDOWN_MS - monthlyElapsed
+          : 0,
+    });
+
+    // Ekspedisi Pet & Ladang
     const exp = state.petExpedition;
     const expedition = exp
       ? {
@@ -1377,16 +1515,131 @@ export class RpgEconomyService {
         }
       : null;
 
+    entriesByKey.set("pet_expedition", {
+      key: "pet_expedition",
+      label: ".ekspedisipet",
+      category: "petualangan",
+      durationMs: PET_EXPEDITION_DURATION_MS,
+      remainingMs: expedition && !expedition.ready ? expedition.remainingMs : 0,
+    });
+
+    const plots = state.farm.plots;
+    let farmSummary: CooldownSummary["farmSummary"] = null;
+    if (plots.length > 0) {
+      const readyCount = plots.filter((plot) => nowMs >= plot.readyAt).length;
+      const nextReadyRemainingMs =
+        readyCount > 0 ? 0 : Math.min(...plots.map((plot) => Math.max(0, plot.readyAt - nowMs)));
+      farmSummary = {
+        plantedCount: plots.length,
+        readyCount,
+        nextReadyRemainingMs,
+      };
+    }
+
+    entriesByKey.set("panenladang", {
+      key: "panenladang",
+      label: ".panenladang",
+      category: "petualangan",
+      durationMs: 0,
+      durationLabel: "Sesuai Bibit",
+      remainingMs: farmSummary?.readyCount === 0 ? farmSummary.nextReadyRemainingMs : 0,
+    });
+
+    // Kencan NPC (primary partner atau tanggal kencan terakhir)
+    const primaryNpc = getPrimaryNpcPartner(state);
+    const latestNpcDateAt =
+      primaryNpc?.lastDateAt ??
+      state.npcRomance.partners.reduce((maxAt, partner) => Math.max(maxAt, partner.lastDateAt), 0);
+    const npcDateElapsed = latestNpcDateAt > 0 ? Math.max(0, nowMs - latestNpcDateAt) : NPC_DATE_COOLDOWN_MS;
+    entriesByKey.set("npc_date", {
+      key: "npc_date",
+      label: ".kencan",
+      category: "arena",
+      durationMs: NPC_DATE_COOLDOWN_MS,
+      remainingMs:
+        latestNpcDateAt > 0 && npcDateElapsed < NPC_DATE_COOLDOWN_MS
+          ? NPC_DATE_COOLDOWN_MS - npcDateElapsed
+          : 0,
+    });
+
+    // Fitur Sosial & AI (in-memory service cooldowns)
+    entriesByKey.set("menfess", {
+      key: "menfess",
+      label: ".menfess",
+      category: "arena",
+      durationMs: MENFESS_COOLDOWN_MS,
+      remainingMs: externalRemainingMs?.menfess ?? menfessService.getRemainingCooldownMs(userJid, nowMs),
+    });
+
+    entriesByKey.set("ai", {
+      key: "ai",
+      label: ".ai",
+      category: "arena",
+      durationMs: AI_COOLDOWN_MS,
+      remainingMs:
+        externalRemainingMs?.ai ?? openRouterService.getRemainingCooldownMs(groupJid, userJid, nowMs),
+    });
+
+    const orderedKeys = [
+      // Kerja & Bisnis
+      "mulung",
+      "kerja",
+      "ojek",
+      "nambang",
+      "berburu",
+      "mancing",
+      "bansos",
+      "career_shift",
+      "startup_dividend",
+      "panen",
+      "berbisnis",
+      // Klaim Berkala
+      "daily",
+      "gaji",
+      "spin_day",
+      "weekly",
+      "monthly",
+      // Petualangan & RPG
+      "adventure",
+      "fight_boss",
+      "nebang",
+      "berkebon",
+      "dungeon",
+      "worldboss_hit",
+      "sabungpet",
+      "gengbuff",
+      "pet_expedition",
+      "panenladang",
+      // Kriminal & PvP
+      "korupsi",
+      "megakorupsi",
+      "pajak",
+      "maling",
+      "serang",
+      "bounty_hunt",
+      // Arena, Sosial & AI
+      "casino",
+      "balap_kuda",
+      "balap_siput",
+      "aduayam",
+      "tebakwarna",
+      "sedekah",
+      "npc_cocok",
+      "npc_date",
+      "menfess",
+      "ai",
+    ];
+
+    const entries = orderedKeys
+      .map((key) => entriesByKey.get(key))
+      .filter((entry): entry is CooldownEntry => entry !== undefined);
+
     return {
       jailedRemainingMs: getRemainingJailMs(state, nowMs),
       ugdRemainingMs: getRemainingUgdMs(state, nowMs),
       expedition,
-      entries: cooldownDefs.map(([key, label, category, durationMs]) => ({
-        key,
-        label,
-        category,
-        remainingMs: getRemainingCooldownMs(state, key, durationMs, nowMs),
-      })),
+      farmSummary,
+      entries,
     };
   }
 }

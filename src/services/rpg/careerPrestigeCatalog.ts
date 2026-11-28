@@ -1,4 +1,7 @@
 import type { MemberRank } from "../member/rank.service";
+import { CAREER_SHIFT_COOLDOWN_MS, STARTUP_DIVIDEND_COOLDOWN_MS } from "./cooldownCatalog";
+
+export { CAREER_SHIFT_COOLDOWN_MS, STARTUP_DIVIDEND_COOLDOWN_MS };
 
 export type InsuranceType = "brankas" | "bpjs" | "pengacara";
 
@@ -91,14 +94,12 @@ export const CAREER_MAP = new Map<string, CareerSpec>(
   CAREER_CATALOG.map((c) => [c.id, c]),
 );
 
-export const CAREER_SHIFT_COOLDOWN_MS = 60 * 60 * 1000;
 export const CAREER_MAX_LEVEL = 5;
 
 export const STARTUP_MIN_PLAYER_LEVEL = 20;
 export const STARTUP_CREATE_COST = 80_000_000n;
 export const STARTUP_RECRUIT_COST = 20_000_000n;
 export const STARTUP_MAX_LEVEL = 10;
-export const STARTUP_DIVIDEND_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 export function getStartupUpgradeCost(currentLevel: number): bigint {
   return 80_000_000n * BigInt(currentLevel) * BigInt(currentLevel);

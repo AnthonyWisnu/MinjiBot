@@ -30,3 +30,13 @@ export function toYesterdayWibDateKey(date: Date = new Date()): string {
 export function isConsecutiveWibDay(prevDate: Date, nextDate: Date): boolean {
   return toWibDateKey(prevDate) === toYesterdayWibDateKey(nextDate);
 }
+
+/**
+ * Returns milliseconds remaining until the next 00:00:00 WIB (+07:00) reset boundary.
+ */
+export function msUntilNextWibMidnight(date: Date = new Date()): number {
+  const wibKey = toWibDateKey(date);
+  const startOfTodayWibMs = new Date(`${wibKey}T00:00:00+07:00`).getTime();
+  const nextMidnightWibMs = startOfTodayWibMs + 24 * 60 * 60 * 1_000;
+  return Math.max(0, nextMidnightWibMs - date.getTime());
+}

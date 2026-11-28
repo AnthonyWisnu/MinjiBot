@@ -16,6 +16,7 @@ import {
 } from "../src/services/rpg/autoWealthTax";
 import {
   RaidFarmBuffBountyService,
+  WORLD_BOSS_ATTACK_COOLDOWN_MS,
   WORLD_BOSS_MAX_CRIT_DAMAGE_PER_HIT,
   WORLD_BOSS_MAX_DAMAGE_PER_HIT,
 } from "../src/services/rpg/raidFarmBuffBounty.service";
@@ -342,7 +343,11 @@ void test("Boss anti-1-hit & shared cooldown: Solo Boss <=82% win cap, min HP dr
   stNow.hp = 100;
   pA.rpgState = serializeRpgState(stNow) as never;
 
-  const critHit = await raidCrit.attackWorldBoss(GROUP_JID, USER_A, t0 + 9 * 60_000);
+  const critHit = await raidCrit.attackWorldBoss(
+    GROUP_JID,
+    USER_A,
+    t0 + WORLD_BOSS_ATTACK_COOLDOWN_MS + 10_000,
+  );
   assert.ok(
     critHit.damageDealt <= WORLD_BOSS_MAX_CRIT_DAMAGE_PER_HIT,
     `Expected <= ${String(WORLD_BOSS_MAX_CRIT_DAMAGE_PER_HIT)}, got ${String(critHit.damageDealt)}`,

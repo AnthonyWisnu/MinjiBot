@@ -5,6 +5,7 @@ import {
   normalizePetType,
   normalizeToolType,
   PET_EGG_CATALOG,
+  PET_EXPEDITION_DURATION_MS,
   PET_SHOP_CATALOG,
   SHOP_ITEM_MAP,
   TOOL_SPECS,
@@ -405,7 +406,7 @@ async function handleEkspedisiPet(context: CommandContext): Promise<void> {
       await context.reply(
         [
           "╭─〔 EKSPEDISI PET 〕─╮",
-          "│ Durasi : 30 menit",
+          `│ Durasi : ${formatRemainingDuration(PET_EXPEDITION_DURATION_MS)}`,
           "│ Loot   : Pakan, Bahan, Ramuan, Peti",
           "╰────────────────────╯",
           "",
@@ -441,7 +442,7 @@ async function handleEkspedisiPet(context: CommandContext): Promise<void> {
         `• Durasi       : ${formatRemainingDuration(res.durationMs)}`,
         `• Sisa Kenyang : ${String(res.hungerAfter)}%`,
         "",
-        "Ketik *.ekspedisipet klaim* setelah 30 menit untuk memanen hasil bawaannya!",
+        `Ketik *.ekspedisipet klaim* setelah ${formatRemainingDuration(res.durationMs)} untuk memanen hasil bawaannya!`,
       ].join("\n"),
       { mentions: [sender] },
     );

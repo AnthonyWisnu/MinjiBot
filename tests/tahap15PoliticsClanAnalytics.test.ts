@@ -18,6 +18,7 @@ import {
   CLAN_WAR_WIN_BONUS_MONEY,
   CLAN_WAR_WIN_BONUS_XP,
   COUP_COST,
+  COUP_GROUP_COOLDOWN_MS,
   COUP_SUCCESS_XP,
   ELECTION_DURATION_MS,
   getClanUpgradeCost,
@@ -575,9 +576,9 @@ describe("Tahap 15: Politik Grup, Geng War & Analisis Progres", () => {
     const stateB = parseRpgState(h.profileMap.get(USER_B)?.rpgState);
     assert.ok(stateB.jailedUntil > tFail.getTime());
 
-    // Setelah cooldown kudeta (6 jam) & bebas penjara -> roll < 0.35 berhasil!
+    // Setelah cooldown kudeta & bebas penjara -> roll < 0.35 berhasil!
     h.setRandom(0.1);
-    const tSuccess = new Date(tFail.getTime() + 7 * 60 * 60 * 1000);
+    const tSuccess = new Date(tFail.getTime() + COUP_GROUP_COOLDOWN_MS + 60_000);
     const succeeded = await h.service.attemptCoup(GROUP_JID, USER_B, tSuccess);
     assert.equal(succeeded.success, true);
     assert.equal(succeeded.xpGained, COUP_SUCCESS_XP);

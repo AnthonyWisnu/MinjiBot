@@ -12,6 +12,7 @@ import {
   PRESTIGE_REWARD_LIMIT,
   PRESTIGE_REWARD_POINTS,
   STARTUP_CREATE_COST,
+  STARTUP_DIVIDEND_COOLDOWN_MS,
   STARTUP_MIN_PLAYER_LEVEL,
   STARTUP_RECRUIT_COST,
   UGD_VIP_RELEASE_COST,
@@ -246,7 +247,7 @@ async function handleStartup(context: CommandContext): Promise<void> {
         `│ Level    : Lv.${String(s.level)} / 10`,
         `│ Karyawan : ${String(s.employees)} / ${String(s.maxEmployees)} org`,
         `│ Valuasi  : *${formatCompactRupiah(s.valuation)}*`,
-        `│ Dividen  : *${formatCompactRupiah(s.dividendPayout)}* / 6 jam`,
+        `│ Dividen  : *${formatCompactRupiah(s.dividendPayout)}* / ${formatRemainingDuration(STARTUP_DIVIDEND_COOLDOWN_MS)}`,
         `│ Status   : ${s.dividendCooldownMs > 0 ? `CD ${formatRemainingDuration(s.dividendCooldownMs)}` : "*Siap `.dividen`!*"}`,
         ...(s.nextUpgradeCost
           ? [`│ Upgrade  : ${formatCompactRupiah(s.nextUpgradeCost)}`]

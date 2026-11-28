@@ -1,6 +1,7 @@
-import { menfessService } from "../../services/fun/menfess.service";
+import { MENFESS_COOLDOWN_MS, menfessService } from "../../services/fun/menfess.service";
 import { identityResolverService } from "../../services/identity/identityResolver.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
+import { formatRemainingDuration } from "../../utils/currency";
 import { extractContactCandidateJids, type ParticipantOrContactLike } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
@@ -44,7 +45,7 @@ async function handleMenfess(context: CommandContext): Promise<void> {
         `• *.menfess ${code} @628xxx <pesan>* (opsional tag target)`,
         "",
         `Kode Grup ini: *${code}*`,
-        "_Identitas pengirim 100% dirahasiakan. Cooldown 5 menit & anti-link aktif._",
+        `_Identitas pengirim 100% dirahasiakan. Cooldown ${formatRemainingDuration(MENFESS_COOLDOWN_MS)} & anti-link aktif._`,
       ].join("\n"),
     );
     return;
