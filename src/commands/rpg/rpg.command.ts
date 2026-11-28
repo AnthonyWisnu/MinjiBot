@@ -9,11 +9,13 @@ import {
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import {
   absBigInt,
+  formatCompactRupiah,
   formatRemainingDuration,
   formatRupiah,
   parseBigIntAmountOrAll,
   parsePositiveBigIntMoneyInput,
 } from "../../utils/currency";
+import { sendEventBannerOrReply } from "../../utils/eventBannerSender";
 import { isBotUserJid, normalizeUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
@@ -118,19 +120,36 @@ async function handleCorruption(context: CommandContext, mega: boolean): Promise
       return;
     }
 
-    await context.reply(
-      [
-        `*─── [ OTT KPK GRUP ] ───*`,
-        "",
-        `${phoneTag(senderJid)} ${res.story}`,
-        "",
-        `• Denda Disita  : -${formatRupiah(absBigInt(res.amountDelta))}`,
-        `• Masa Tahanan  : ${String(res.jailMinutes)} menit`,
-        `• Sisa Dompet   : ${formatRupiah(res.currentMoney)}`,
-        `• Kas Negara    : ${formatRupiah(res.treasuryBalance)}`,
-      ].join("\n"),
-      { mentions: [senderJid] },
-    );
+    const ottCaption = [
+      `*─── [ OTT KPK GRUP ] ───*`,
+      "",
+      `${phoneTag(senderJid)} ${res.story}`,
+      "",
+      `• Denda Disita  : -${formatRupiah(absBigInt(res.amountDelta))}`,
+      `• Masa Tahanan  : ${String(res.jailMinutes)} menit`,
+      `• Sisa Dompet   : ${formatRupiah(res.currentMoney)}`,
+      `• Kas Negara    : ${formatRupiah(res.treasuryBalance)}`,
+      "",
+      "_Pakai .bebaspenjara atau asuransi Pengacara untuk langsung bebas!_",
+    ].join("\n");
+
+    const pushOffender = context.message.pushName?.trim();
+    const offenderName =
+      pushOffender && pushOffender.length > 0 ? pushOffender : (senderJid.split("@")[0] ?? "Tersangka");
+    await sendEventBannerOrReply(context, {
+      scene: "kpk_ott",
+      headline: mega ? "OTT MEGAKORUPSI!" : "DITANGKAP KPK!",
+      subjectName: offenderName,
+      details: [
+        `Denda Disita: -${formatCompactRupiah(absBigInt(res.amountDelta))}`,
+        `Tahanan Penjara: ${String(res.jailMinutes)} Menit`,
+        `Sisa Dompet: ${formatCompactRupiah(res.currentMoney)}`,
+      ],
+      targetUserJid: senderJid,
+      avatarAltJids: context.senderAltJids,
+      caption: ottCaption,
+      mentions: [senderJid],
+    });
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Gagal memproses aksi korupsi."));
   }
@@ -250,19 +269,34 @@ async function handleRob(context: CommandContext): Promise<void> {
       return;
     }
 
-    await context.reply(
-      [
-        "*─── [ MALING KETANGKAP RONDA ] ───*",
-        "",
-        `${phoneTag(senderJid)} gagal merampok ${phoneTag(targetJid)}!`,
-        res.story,
-        "",
-        `• Denda Dibayar : -${formatRupiah(res.amountMoved)}`,
-        `• Masa Tahanan  : ${String(res.jailMinutes)} menit`,
-        `• Sisa Dompet   : ${formatRupiah(res.thiefMoney)}`,
-      ].join("\n"),
-      { mentions: [senderJid, targetJid] },
-    );
+    const arrestCaption = [
+      "*─── [ MALING KETANGKAP RONDA ] ───*",
+      "",
+      `${phoneTag(senderJid)} gagal merampok ${phoneTag(targetJid)}!`,
+      res.story,
+      "",
+      `• Denda Dibayar : -${formatRupiah(res.amountMoved)}`,
+      `• Masa Tahanan  : ${String(res.jailMinutes)} menit`,
+      `• Sisa Dompet   : ${formatRupiah(res.thiefMoney)}`,
+    ].join("\n");
+
+    const pushThief = context.message.pushName?.trim();
+    const thiefName =
+      pushThief && pushThief.length > 0 ? pushThief : (senderJid.split("@")[0] ?? "Pelaku");
+    await sendEventBannerOrReply(context, {
+      scene: "penjara_ronda",
+      headline: "MALING DITANGKAP!",
+      subjectName: thiefName,
+      details: [
+        `Denda Ronda: -${formatCompactRupiah(res.amountMoved)}`,
+        `Masuk Sel: ${String(res.jailMinutes)} Menit`,
+        "Bebas cepat: .bebaspenjara",
+      ],
+      targetUserJid: senderJid,
+      avatarAltJids: context.senderAltJids,
+      caption: arrestCaption,
+      mentions: [senderJid, targetJid],
+    });
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Gagal memproses aksi maling."));
   }
@@ -330,18 +364,39 @@ async function handleCasino(context: CommandContext): Promise<void> {
             ? "SERI! Uang taruhan kembali utuh."
             : `KALAH! Taruhan hangus -${formatRupiah(absBigInt(res.netDelta))}`;
 
-    await context.reply(
-      [
-        "*─── [ MINJI CASINO ] ───*",
-        "",
-        `• Dadu Kamu   : [${String(res.playerDice[0])}] + [${String(res.playerDice[1])}] = *${String(pSum)}*`,
-        `• Dadu Bandar : [${String(res.dealerDice[0])}] + [${String(res.dealerDice[1])}] = *${String(dSum)}*`,
-        "",
-        `*${verdict}*`,
-        `• XP Didapat  : +${String(res.xpGained)} XP`,
-        `• Dompetmu    : ${formatRupiah(res.currentMoney)}`,
-      ].join("\n"),
-    );
+    const casinoCaption = [
+      "*─── [ MINJI CASINO ] ───*",
+      "",
+      `• Dadu Kamu   : [${String(res.playerDice[0])}] + [${String(res.playerDice[1])}] = *${String(pSum)}*`,
+      `• Dadu Bandar : [${String(res.dealerDice[0])}] + [${String(res.dealerDice[1])}] = *${String(dSum)}*`,
+      "",
+      `*${verdict}*`,
+      `• XP Didapat  : +${String(res.xpGained)} XP`,
+      `• Dompetmu    : ${formatRupiah(res.currentMoney)}`,
+    ].join("\n");
+
+    if (res.outcome === "jackpot") {
+      const pushWinner = context.message.pushName?.trim();
+      const winnerName =
+        pushWinner && pushWinner.length > 0 ? pushWinner : (senderJid.split("@")[0] ?? "Sultan");
+      await sendEventBannerOrReply(context, {
+        scene: "jackpot_sultan",
+        headline: "JACKPOT DOUBLE 6!",
+        subjectName: winnerName,
+        details: [
+          `Profit: +${formatCompactRupiah(res.netDelta)}`,
+          `Dompet: ${formatCompactRupiah(res.currentMoney)}`,
+          `Bonus XP: +${String(res.xpGained)} XP`,
+        ],
+        targetUserJid: senderJid,
+        avatarAltJids: context.senderAltJids,
+        caption: casinoCaption,
+        mentions: [senderJid],
+      });
+      return;
+    }
+
+    await context.reply(casinoCaption);
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Gagal bermain casino."));
   }

@@ -13,7 +13,13 @@ import {
 import { rpgInfiniteService } from "../../services/rpg/rpgInfinite.service";
 import type { PetType } from "../../services/rpg/rpgState";
 import type { CommandContext, CommandDefinition } from "../../types/command";
-import { absBigInt, formatRemainingDuration, formatRupiah } from "../../utils/currency";
+import {
+  absBigInt,
+  formatCompactRupiah,
+  formatRemainingDuration,
+  formatRupiah,
+} from "../../utils/currency";
+import { sendEventBannerOrReply } from "../../utils/eventBannerSender";
 import { getBotCanonicalJids, normalizeUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
@@ -688,23 +694,39 @@ async function handleAttack(context: CommandContext): Promise<void> {
       return;
     }
 
-    await context.reply(
-      [
-        "*── [ SERANGAN BERHASIL! ] ──*",
-        `${tagOf(sender)} menghajar ${tagOf(target)} dan merampas dompetnya!`,
-        `• Power      : ${String(res.attackerPower)} vs Defense ${String(res.defenderPower)}`,
-        `• Damage     : -${String(res.damageDealt)} HP`,
-        `• Rampasan   : +${formatRupiah(res.moneyLooted)}`,
-        `• Dompetmu   : ${formatRupiah(res.attackerMoney)}`,
-        ...(res.sentToUgd
-          ? [
-              "",
-              `Korban tumbang & masuk *UGD ${String(res.ugdMinutes)} menit* (kebal serangan anti-bully sampai pulih).`,
-            ]
-          : [`• Sisa HP Korban : ${String(res.targetHpAfter)}/100`]),
-      ].join("\n"),
-      { mentions: [sender, target] },
-    );
+    const attackCaption = [
+      "*── [ SERANGAN BERHASIL! ] ──*",
+      `${tagOf(sender)} menghajar ${tagOf(target)} dan merampas dompetnya!`,
+      `• Power      : ${String(res.attackerPower)} vs Defense ${String(res.defenderPower)}`,
+      `• Damage     : -${String(res.damageDealt)} HP`,
+      `• Rampasan   : +${formatRupiah(res.moneyLooted)}`,
+      `• Dompetmu   : ${formatRupiah(res.attackerMoney)}`,
+      ...(res.sentToUgd
+        ? [
+            "",
+            `Korban tumbang & masuk *UGD ${String(res.ugdMinutes)} menit* (kebal serangan anti-bully sampai pulih).`,
+          ]
+        : [`• Sisa HP Korban : ${String(res.targetHpAfter)}/100`]),
+    ].join("\n");
+
+    if (res.sentToUgd) {
+      await sendEventBannerOrReply(context, {
+        scene: "masuk_ugd",
+        headline: "KORBAN MASUK UGD!",
+        subjectName: target.split("@")[0] ?? "Korban",
+        details: [
+          `Damage Masuk: -${String(res.damageDealt)} HP`,
+          `Dirawat UGD: ${String(res.ugdMinutes)} Menit`,
+          `Dompet Dirampas: ${formatCompactRupiah(res.moneyLooted)}`,
+        ],
+        targetUserJid: target,
+        caption: attackCaption,
+        mentions: [sender, target],
+      });
+      return;
+    }
+
+    await context.reply(attackCaption, { mentions: [sender, target] });
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Gagal menyerang target."));
   }

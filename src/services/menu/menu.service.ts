@@ -141,9 +141,11 @@ export class MenuService {
       const rpg = this.buildRpgSection(featureSetting);
       const rpgInf = this.buildRpgInfiniteSection(featureSetting);
       const business = this.buildBusinessExpansionSection(featureSetting);
+      const career = this.buildCareerEmpireSection(featureSetting);
       if (rpg) sections.push(rpg);
       if (rpgInf) sections.push(rpgInf);
       if (business) sections.push(business);
+      if (career) sections.push(career);
       sections.push(this.buildEconomySection());
       return this.renderCategoryPage("*── [ SUB-MENU: RPG ] ──*", groupHeader, sections, footer);
     }
@@ -151,7 +153,9 @@ export class MenuService {
     if (category === "bisnis" || category === "ekonomi" || category === "bank") {
       const sections: MenuSection[] = [this.buildEconomySection()];
       const business = this.buildBusinessExpansionSection(featureSetting);
+      const career = this.buildCareerEmpireSection(featureSetting);
       if (business) sections.push(business);
+      if (career) sections.push(career);
       return this.renderCategoryPage("*── [ SUB-MENU: BISNIS ] ──*", groupHeader, sections, footer);
     }
 
@@ -415,6 +419,9 @@ export class MenuService {
 
     const business = this.buildBusinessExpansionSection(featureSetting);
     if (business) sections.push(business);
+
+    const career = this.buildCareerEmpireSection(featureSetting);
+    if (career) sections.push(career);
 
     const games = this.buildPureGameSection(featureSetting);
     if (games) sections.push(games);
@@ -771,6 +778,43 @@ export class MenuService {
         ".buatkode <kode> <lim> <rp>",
         ".redeem <kode>",
         ".listkode",
+      ],
+    };
+  }
+
+  private buildCareerEmpireSection(
+    featureSetting: TenantFeatureSetting | null,
+  ): MenuSection | null {
+    if (featureSetting && !featureSetting.gameEnabled) {
+      return null;
+    }
+
+    return {
+      title: "*── [ KARIR & PRESTIGE ] ──*",
+      items: [
+        ".karir",
+        ".lamar <profesi>",
+        ".shift",
+        ".promosi",
+        ".resign",
+        ".startup",
+        ".buatstartup <nama>",
+        ".rekruit [jumlah]",
+        ".upgradestartup",
+        ".dividen",
+        ".topstartup",
+        ".pinjam <jumlah>",
+        ".bayarutang [jml|all]",
+        ".cekutang",
+        ".asuransi",
+        ".beliasuransi <paket>",
+        ".bebaspenjara",
+        ".bebasugd",
+        ".prestige",
+        ".rebirth",
+        ".toprebirth",
+        ".flex / .sultancard",
+        ".networth / .cekaset",
       ],
     };
   }

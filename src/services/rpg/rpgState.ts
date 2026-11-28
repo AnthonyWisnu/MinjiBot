@@ -31,6 +31,28 @@ export interface StockHoldingState {
   avgPrice: string;
 }
 
+export interface CareerState {
+  jobId: string;
+  level: number;
+  shiftsDone: number;
+}
+
+export interface StartupState {
+  name: string;
+  level: number;
+  employees: number;
+  lastDividendAt: number;
+}
+
+export interface LoanState {
+  principal: string;
+  interest: string;
+  borrowedAt: number;
+  dueAt: number;
+}
+
+export type InsuranceKey = "brankas" | "bpjs" | "pengacara";
+
 export interface MemberRpgState {
   cooldowns: Record<string, number>;
   jailedUntil: number;
@@ -53,6 +75,12 @@ export interface MemberRpgState {
   deposito: DepositoState | null;
   stocks: Record<string, StockHoldingState>;
   cards: Record<string, number>;
+  career: CareerState | null;
+  startup: StartupState | null;
+  loan: LoanState | null;
+  insurances: Record<InsuranceKey, number>;
+  prestige: number;
+  totalDonated: string;
 }
 
 export const MAX_PLAYER_HP = 100;
@@ -124,6 +152,12 @@ export function createDefaultRpgState(): MemberRpgState {
     deposito: null,
     stocks: {},
     cards: {},
+    career: null,
+    startup: null,
+    loan: null,
+    insurances: { brankas: 0, bpjs: 0, pengacara: 0 },
+    prestige: 0,
+    totalDonated: "0",
   };
 }
 
@@ -348,6 +382,92 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     }
   }
 
+  let career: CareerState | null = null;
+  if (obj.career && typeof obj.career === "object" && !Array.isArray(obj.career)) {
+    const rec = obj.career as Record<string, unknown>;
+    if (typeof rec.jobId === "string" && rec.jobId.trim().length > 0) {
+      career = {
+        jobId: rec.jobId.trim().toLowerCase(),
+        level:
+          typeof rec.level === "number" && Number.isInteger(rec.level) && rec.level >= 1
+            ? Math.min(10, rec.level)
+            : 1,
+        shiftsDone:
+          typeof rec.shiftsDone === "number" && Number.isInteger(rec.shiftsDone) && rec.shiftsDone >= 0
+            ? rec.shiftsDone
+            : 0,
+      };
+    }
+  }
+
+  let startup: StartupState | null = null;
+  if (obj.startup && typeof obj.startup === "object" && !Array.isArray(obj.startup)) {
+    const rec = obj.startup as Record<string, unknown>;
+    if (typeof rec.name === "string" && rec.name.trim().length > 0) {
+      startup = {
+        name: rec.name.trim().slice(0, 32),
+        level:
+          typeof rec.level === "number" && Number.isInteger(rec.level) && rec.level >= 1
+            ? Math.min(20, rec.level)
+            : 1,
+        employees:
+          typeof rec.employees === "number" && Number.isInteger(rec.employees) && rec.employees >= 0
+            ? rec.employees
+            : 0,
+        lastDividendAt:
+          typeof rec.lastDividendAt === "number" &&
+          Number.isFinite(rec.lastDividendAt) &&
+          rec.lastDividendAt > 0
+            ? Math.floor(rec.lastDividendAt)
+            : 0,
+      };
+    }
+  }
+
+  let loan: LoanState | null = null;
+  if (obj.loan && typeof obj.loan === "object" && !Array.isArray(obj.loan)) {
+    const rec = obj.loan as Record<string, unknown>;
+    if (
+      typeof rec.principal === "string" &&
+      /^\d+$/.test(rec.principal) &&
+      typeof rec.interest === "string" &&
+      /^\d+$/.test(rec.interest) &&
+      (rec.principal !== "0" || rec.interest !== "0")
+    ) {
+      loan = {
+        principal: rec.principal,
+        interest: rec.interest,
+        borrowedAt:
+          typeof rec.borrowedAt === "number" && Number.isFinite(rec.borrowedAt)
+            ? Math.floor(rec.borrowedAt)
+            : 0,
+        dueAt:
+          typeof rec.dueAt === "number" && Number.isFinite(rec.dueAt) ? Math.floor(rec.dueAt) : 0,
+      };
+    }
+  }
+
+  const insurances: Record<InsuranceKey, number> = { brankas: 0, bpjs: 0, pengacara: 0 };
+  if (obj.insurances && typeof obj.insurances === "object" && !Array.isArray(obj.insurances)) {
+    const rec = obj.insurances as Record<string, unknown>;
+    for (const key of ["brankas", "bpjs", "pengacara"] as const) {
+      const val = rec[key];
+      if (typeof val === "number" && Number.isFinite(val) && val > 0) {
+        insurances[key] = Math.floor(val);
+      }
+    }
+  }
+
+  const prestige =
+    typeof obj.prestige === "number" && Number.isInteger(obj.prestige) && obj.prestige >= 0
+      ? Math.min(10, obj.prestige)
+      : 0;
+
+  const totalDonated =
+    typeof obj.totalDonated === "string" && /^\d+$/.test(obj.totalDonated)
+      ? obj.totalDonated
+      : "0";
+
   return {
     cooldowns,
     jailedUntil,
@@ -370,6 +490,12 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     deposito,
     stocks,
     cards,
+    career,
+    startup,
+    loan,
+    insurances,
+    prestige,
+    totalDonated,
   };
 }
 
@@ -416,6 +542,12 @@ export function serializeRpgState(state: MemberRpgState): Prisma.InputJsonValue 
     deposito: state.deposito ? { ...state.deposito } : null,
     stocks: serializedStocks,
     cards: { ...state.cards },
+    career: state.career ? { ...state.career } : null,
+    startup: state.startup ? { ...state.startup } : null,
+    loan: state.loan ? { ...state.loan } : null,
+    insurances: { ...state.insurances },
+    prestige: state.prestige,
+    totalDonated: state.totalDonated,
   };
 }
 
@@ -723,4 +855,51 @@ export function withCardDelta(
     ...state,
     cards: nextCards,
   };
+}
+
+export function withCareer(state: MemberRpgState, career: CareerState | null): MemberRpgState {
+  return { ...state, career: career ? { ...career } : null };
+}
+
+export function withStartup(state: MemberRpgState, startup: StartupState | null): MemberRpgState {
+  return { ...state, startup: startup ? { ...startup } : null };
+}
+
+export function withLoan(state: MemberRpgState, loan: LoanState | null): MemberRpgState {
+  return { ...state, loan: loan ? { ...loan } : null };
+}
+
+export function withInsuranceUntil(
+  state: MemberRpgState,
+  key: InsuranceKey,
+  untilMs: number,
+): MemberRpgState {
+  return {
+    ...state,
+    insurances: {
+      ...state.insurances,
+      [key]: Math.max(0, Math.floor(untilMs)),
+    },
+  };
+}
+
+export function isInsuranceActive(
+  state: MemberRpgState,
+  key: InsuranceKey,
+  nowMs: number = Date.now(),
+): boolean {
+  return state.insurances[key] > nowMs;
+}
+
+export function withPrestige(state: MemberRpgState, prestige: number): MemberRpgState {
+  return {
+    ...state,
+    prestige: Math.max(0, Math.min(10, Math.floor(prestige))),
+  };
+}
+
+export function withDonatedAdded(state: MemberRpgState, delta: bigint): MemberRpgState {
+  const prev = BigInt(state.totalDonated);
+  const next = prev + (delta > 0n ? delta : 0n);
+  return { ...state, totalDonated: next.toString() };
 }

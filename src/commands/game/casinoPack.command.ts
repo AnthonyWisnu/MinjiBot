@@ -8,6 +8,7 @@ import { identityResolverService } from "../../services/identity/identityResolve
 import { memberEconomyService } from "../../services/member/memberEconomy.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatRupiah, minBigInt, parseBigIntAmountOrAll } from "../../utils/currency";
+import { sendEventBannerOrReply } from "../../utils/eventBannerSender";
 import { isBotUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
@@ -302,7 +303,27 @@ async function handleRussian(context: CommandContext): Promise<void> {
   if (!(await ensureGroup(context))) return;
   try {
     const sender = await resolveSender(context);
-    await context.reply(await casinoPackService.playRussianRoulette(context.chatJid, sender));
+    const out = await casinoPackService.playRussianRoulette(context.chatJid, sender);
+    if (out.includes("UGD") || out.includes("DOR")) {
+      const push = context.message.pushName?.trim();
+      const playerName = push && push.length > 0 ? push : (sender.split("@")[0] ?? "Pemain");
+      await sendEventBannerOrReply(context, {
+        scene: "masuk_ugd",
+        headline: "DOR! MASUK UGD!",
+        subjectName: playerName,
+        details: [
+          "Peluru Russian Roulette Meledak!",
+          "Dirawat di UGD 5 Menit",
+          "Bebas cepat: .bebasugd",
+        ],
+        targetUserJid: sender,
+        avatarAltJids: context.senderAltJids,
+        caption: out,
+        mentions: [sender],
+      });
+      return;
+    }
+    await context.reply(out);
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Gagal memproses Russian Roulette."));
   }

@@ -26,6 +26,7 @@ import { defaultRandom, type RandomProvider } from "../member/randomProvider";
 import {
   getRemainingCooldownMs,
   getRemainingJailMs,
+  isInsuranceActive,
   parseRpgState,
   serializeRpgState,
   withJailUntil,
@@ -607,6 +608,12 @@ export class RpgEconomyService {
         );
       }
 
+      if (isInsuranceActive(parseRpgState(target.rpgState), "brankas", nowMs)) {
+        throw new AppUserError(
+          "Target sedang dilindungi *Asuransi Brankas Anti-Maling*! Tidak bisa dipajaki sementara.",
+        );
+      }
+
       const nextCollectorState = withUpdatedCooldown(collectorState, "pajak", nowMs);
 
       if (!success) {
@@ -754,6 +761,12 @@ export class RpgEconomyService {
       if (!victim || victim.moneyBalance < MIN_TARGET_WALLET_FOR_ACTION) {
         throw new AppUserError(
           `Dompet target hampir kosong (< ${formatRupiah(MIN_TARGET_WALLET_FOR_ACTION)}). Kayaknya uangnya sudah aman di Bank!`,
+        );
+      }
+
+      if (isInsuranceActive(parseRpgState(victim.rpgState), "brankas", nowMs)) {
+        throw new AppUserError(
+          "Brankas target sedang dilindungi *Asuransi Brankas Anti-Maling*! Aksi maling dibatalkan.",
         );
       }
 

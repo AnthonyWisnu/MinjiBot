@@ -64,6 +64,15 @@ const KEYWORD_SYNONYMS: Record<string, readonly string[]> = {
   teks: ["hitungkata", "balik", "kapital", "kecil", "mock", "alay", "hilih", "style", "morse", "biner", "base64enc", "base64dec", "perbaiki", "summarize"],
   hitung: ["calc", "hitungumur", "bmi", "diskon", "splitbill", "kurs", "konversi", "countdown", "jarak"],
   lucu: ["jokes", "pantun", "gombal", "darkjokes", "tebakreceh", "roast", "bacot", "sindir", "pickup"],
+  karir: ["karir", "lamar", "shift", "promosi", "resign", "kerja", "gaji"],
+  startup: ["startup", "buatstartup", "rekruit", "upgradestartup", "dividen", "topstartup"],
+  pinjol: ["pinjam", "bayarutang", "cekutang"],
+  utang: ["pinjam", "bayarutang", "cekutang"],
+  asuransi: ["asuransi", "beliasuransi", "bebaspenjara", "bebasugd"],
+  penjara: ["bebaspenjara", "asuransi", "korupsi", "maling"],
+  ugd: ["bebasugd", "heal", "asuransi", "serang", "russian"],
+  prestige: ["prestige", "rebirth", "toprebirth", "flex", "networth"],
+  flex: ["flex", "networth", "portofolio", "toprich"],
 };
 
 export class FeatureSearchService {
