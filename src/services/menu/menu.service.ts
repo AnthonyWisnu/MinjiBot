@@ -144,12 +144,14 @@ export class MenuService {
       const career = this.buildCareerEmpireSection(featureSetting);
       const arena = this.buildArenaGiveawaySection(featureSetting);
       const raidFarm = this.buildRaidFarmBuffBountySection(featureSetting);
+      const politics = this.buildPoliticsClanAnalyticsSection(featureSetting);
       if (rpg) sections.push(rpg);
       if (rpgInf) sections.push(rpgInf);
       if (business) sections.push(business);
       if (career) sections.push(career);
       if (arena) sections.push(arena);
       if (raidFarm) sections.push(raidFarm);
+      if (politics) sections.push(politics);
       sections.push(this.buildEconomySection());
       return this.renderCategoryPage("*── [ SUB-MENU: RPG ] ──*", groupHeader, sections, footer);
     }
@@ -160,10 +162,12 @@ export class MenuService {
       const career = this.buildCareerEmpireSection(featureSetting);
       const arena = this.buildArenaGiveawaySection(featureSetting);
       const raidFarm = this.buildRaidFarmBuffBountySection(featureSetting);
+      const politics = this.buildPoliticsClanAnalyticsSection(featureSetting);
       if (business) sections.push(business);
       if (career) sections.push(career);
       if (arena) sections.push(arena);
       if (raidFarm) sections.push(raidFarm);
+      if (politics) sections.push(politics);
       return this.renderCategoryPage("*── [ SUB-MENU: BISNIS ] ──*", groupHeader, sections, footer);
     }
 
@@ -205,10 +209,13 @@ export class MenuService {
     }
 
     if (category === "sosial") {
+      const sections: MenuSection[] = [this.buildSocialDramaSection(), this.buildAnimeRpSection()];
+      const politics = this.buildPoliticsClanAnalyticsSection(featureSetting);
+      if (politics) sections.push(politics);
       return this.renderCategoryPage(
         "*── [ SUB-MENU: SOSIAL ] ──*",
         groupHeader,
-        [this.buildSocialDramaSection(), this.buildAnimeRpSection()],
+        sections,
         footer,
       );
     }
@@ -442,6 +449,9 @@ export class MenuService {
 
     const raidFarm = this.buildRaidFarmBuffBountySection(featureSetting);
     if (raidFarm) sections.push(raidFarm);
+
+    const politics = this.buildPoliticsClanAnalyticsSection(featureSetting);
+    if (politics) sections.push(politics);
 
     const games = this.buildPureGameSection(featureSetting);
     if (games) sections.push(games);
@@ -910,6 +920,34 @@ export class MenuService {
         ".bounty @user <uang>",
         ".listbounty",
         ".burubounty @user",
+      ],
+    };
+  }
+
+  private buildPoliticsClanAnalyticsSection(
+    featureSetting: TenantFeatureSetting | null,
+  ): MenuSection | null {
+    if (featureSetting && !featureSetting.gameEnabled) {
+      return null;
+    }
+
+    return {
+      title: "*── [ POLITIK & STATS ] ──*",
+      items: [
+        ".pemilu [lantik]",
+        ".daftarcalon [slogan]",
+        ".coblos <@calon|no>",
+        ".presiden",
+        ".bagianggaran [uang]",
+        ".kudeta",
+        ".gengupgrade",
+        ".gengbuff",
+        ".gengwar <nama>",
+        ".bandingkan @user",
+        ".targetrank",
+        ".riwayat [jumlah]",
+        ".statistik [@user]",
+        ".halloffame",
       ],
     };
   }

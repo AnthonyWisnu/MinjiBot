@@ -404,7 +404,7 @@ async function handleGeng(context: CommandContext): Promise<void> {
       }
       const lines = clans.slice(0, 10).map((c, idx) => {
         const count = parseClanMembers(c.memberJids).length;
-        return `${String(idx + 1)}. *${c.name}* (${String(count)} org) - Kas ${formatCompactRupiah(c.treasuryBalance)}`;
+        return `${String(idx + 1)}. *${c.name}* Lv.${String(c.level)} (${String(count)} org | ${String(c.warWins)}x War) - Kas ${formatCompactRupiah(c.treasuryBalance)}`;
       });
       await context.reply(["*── [ TOP GENG GRUP ] ──*", ...lines].join("\n"));
       return;
@@ -425,6 +425,7 @@ async function handleGeng(context: CommandContext): Promise<void> {
       [
         `*── [ GENG: ${clan.name.toUpperCase()} ] ──*`,
         `Ketua   : ${tagOf(clan.leaderJid)}`,
+        `Level   : *Lv.${String(clan.level)}* (${String(clan.warWins)}x Menang War)`,
         `Kas     : *${formatRupiah(clan.treasuryBalance)}*`,
         `Anggota : ${String(members.length)} orang`,
         members.map((m, i) => `${String(i + 1)}. ${tagOf(m)}`).join("\n"),

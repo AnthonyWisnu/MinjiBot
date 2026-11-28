@@ -409,7 +409,7 @@ export class GroupMemberProfileRepository {
     return countAbove + 1;
   }
 
-  // Daftar profil member yang terakhir aktif di grup - untuk .traktir
+  // Daftar profil member yang terakhir aktif di grup - untuk .traktir / .bagianggaran
   listRecentActiveProfiles(
     groupJid: string,
     excludeUserJid: string,
@@ -422,6 +422,24 @@ export class GroupMemberProfileRepository {
       },
       orderBy: [{ lastActiveAt: "desc" }, { updatedAt: "desc" }],
       take: limit,
+    });
+  }
+
+  // Ambil daftar profil berdasarkan daftar userJid dalam satu grup - untuk .gengwar
+  listByGroupAndUsers(
+    groupJid: string,
+    userJids: string[],
+    tx?: PrismaTransactionClient,
+  ): Promise<GroupMemberProfile[]> {
+    if (userJids.length === 0) {
+      return Promise.resolve([]);
+    }
+    const client = tx ?? this.client;
+    return client.groupMemberProfile.findMany({
+      where: {
+        groupJid,
+        userJid: { in: userJids },
+      },
     });
   }
 }

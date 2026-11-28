@@ -55,7 +55,9 @@ export class GroupClanRepository {
     data: {
       leaderJid?: string;
       memberJids?: string[];
-      treasuryBalance?: bigint | { increment: bigint };
+      treasuryBalance?: bigint | { increment?: bigint; decrement?: bigint };
+      level?: number | { increment: number };
+      warWins?: number | { increment: number };
     },
   ): Promise<GroupClan> {
     return prisma.groupClan.update({
@@ -64,6 +66,8 @@ export class GroupClanRepository {
         ...(data.leaderJid !== undefined ? { leaderJid: data.leaderJid } : {}),
         ...(data.memberJids !== undefined ? { memberJids: data.memberJids } : {}),
         ...(data.treasuryBalance !== undefined ? { treasuryBalance: data.treasuryBalance } : {}),
+        ...(data.level !== undefined ? { level: data.level } : {}),
+        ...(data.warWins !== undefined ? { warWins: data.warWins } : {}),
       },
     });
   }

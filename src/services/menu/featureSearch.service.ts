@@ -47,8 +47,8 @@ const KEYWORD_SYNONYMS: Record<string, readonly string[]> = {
   tebak: ["tebakkata", "tebakemoji", "tebakangka", "susunkata", "tebakbendera", "siapakahaku", "tebakkalimat", "tebaklirik", "tekateki", "asahotak", "tebakkimia", "tebakibukota", "tebakprovinsi", "tebaklagu", "benarsalah", "tebakreceh"],
   nikah: ["nikah", "terimanikah", "tolaknikah", "bukunikah", "cerai", "tembak", "jodoh", "ship", "cekcocok"],
   pacar: ["tembak", "terima", "tolak", "cekpacar", "putus", "jodoh", "ship", "bucin"],
-  geng: ["geng", "war", "attack"],
-  clan: ["geng"],
+  geng: ["geng", "gengupgrade", "gengbuff", "gengwar", "war", "attack"],
+  clan: ["geng", "gengupgrade", "gengbuff", "gengwar"],
   saham: ["saham", "belisaham", "jualsaham", "portofolio"],
   kripto: ["crypto", "hargakripto", "portofolio"],
   crypto: ["crypto", "hargakripto", "portofolio"],
@@ -97,6 +97,17 @@ const KEYWORD_SYNONYMS: Record<string, readonly string[]> = {
   buronan: ["bounty", "listbounty", "burubounty"],
   pajak: ["pajak", "pajaktop", "toprich"],
   pajaktop: ["pajaktop", "pajak", "toprich"],
+  pemilu: ["pemilu", "daftarcalon", "coblos", "presiden", "bagianggaran", "kudeta"],
+  presiden: ["presiden", "pemilu", "daftarcalon", "coblos", "bagianggaran", "kudeta"],
+  kudeta: ["kudeta", "presiden", "pemilu"],
+  politik: ["pemilu", "daftarcalon", "coblos", "presiden", "bagianggaran", "kudeta"],
+  gengwar: ["gengwar", "gengupgrade", "gengbuff", "geng"],
+  bandingkan: ["bandingkan", "statistik", "targetrank", "halloffame"],
+  riwayat: ["riwayat", "statistik", "dompet"],
+  mutasi: ["riwayat", "dompet", "atm"],
+  statistik: ["statistik", "targetrank", "bandingkan", "riwayat", "profile"],
+  halloffame: ["halloffame", "toprich", "toprank", "toplevel", "toprebirth"],
+  tahta: ["halloffame", "presiden", "kudeta"],
 };
 
 export class FeatureSearchService {

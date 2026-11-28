@@ -377,6 +377,8 @@ model GroupClan {
   slug            String
   leaderJid       String
   treasuryBalance BigInt   @default(0)
+  level           Int      @default(1)
+  warWins         Int      @default(0)
   memberJids      Json
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
