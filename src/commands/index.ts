@@ -8,7 +8,10 @@ import { funCommands } from "./fun/fun.command";
 import { menfessCommands } from "./fun/menfess.command";
 import { socialDramaCommands } from "./fun/socialDrama.command";
 import { socialEconomyCommands } from "./fun/socialEconomy.command";
+import { casinoPackCommands } from "./game/casinoPack.command";
 import { gameCommands } from "./game/game.command";
+import { quickQuizCommands } from "./game/quickQuiz.command";
+import { sambungUndercoverCommands } from "./game/sambungUndercover.command";
 import { teamWarCommands } from "./game/teamWar.command";
 import { werewolfCommands } from "./game/werewolf.command";
 import { createCustomStickerCommands } from "./group/customStickerCommand.command";
@@ -148,6 +151,9 @@ export const commandRouter = new CommandRouter([
   ...reminderCommands,
   ...tagAllCommands,
   ...gameCommands,
+  ...quickQuizCommands,
+  ...sambungUndercoverCommands,
+  ...casinoPackCommands,
   ...werewolfCommands,
   ...teamWarCommands,
   ...funCommands,

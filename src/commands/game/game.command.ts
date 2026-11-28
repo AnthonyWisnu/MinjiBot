@@ -1,4 +1,6 @@
 import { type GameMessageResponse, gameService } from "../../services/game/game.service";
+import { quickQuizService } from "../../services/game/quickQuiz.service";
+import { sambungKataService } from "../../services/game/sambungKata.service";
 import { slotGameService } from "../../services/game/slotGame.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import { formatUserSafeError } from "../../utils/userSafeError";
@@ -66,7 +68,20 @@ export const gameCommands: CommandDefinition[] = [
   },
   {
     name: "nyerah",
-    execute: (context) => replyGame(context, () => gameService.surrenderRich(context)),
+    execute: (context) =>
+      replyGame(context, async () => {
+        if (context.isGroup) {
+          const quickGave = quickQuizService.giveUp(context.chatJid);
+          if (quickGave) {
+            return quickGave;
+          }
+          if (sambungKataService.getSession(context.chatJid)) {
+            sambungKataService.stopGame(context.chatJid);
+            return { text: "Sesi Sambung Kata dihentikan." };
+          }
+        }
+        return gameService.surrenderRich(context);
+      }),
   },
 ];
 

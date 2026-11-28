@@ -70,6 +70,8 @@ async function runYtDlp(url: string, outputTemplate: string): Promise<void> {
   const args: string[] = [
     "--no-warnings",
     "--no-playlist",
+    "--remote-components",
+    "ejs:github",
     "--ies",
     "youtube,youtube:clip",
     "--match-filter",

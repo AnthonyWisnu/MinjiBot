@@ -5,7 +5,11 @@ import { logger } from "../../config/logger";
 import { featureGuard } from "../../guards/featureGuard";
 import { roleGuard } from "../../guards/roleGuard";
 import { tenantGuard } from "../../guards/tenantGuard";
+import { casinoPackService } from "../game/casinoPack.service";
 import { gameService } from "../game/game.service";
+import { quickQuizService } from "../game/quickQuiz.service";
+import { sambungKataService } from "../game/sambungKata.service";
+import { identityResolverService } from "../identity/identityResolver.service";
 import { isGroupJid, isStatusBroadcastJid } from "../../utils/jid";
 import type { CommandContext } from "../../types/command";
 import { parseRawMessageContext } from "../../bot/messageParser";
@@ -42,6 +46,18 @@ export class InteractiveReplyService {
     // 2. Cek apakah membalas TicTacToe aktif (accept tantangan atau melangkah 1-9)
     const handledTicTacToe = await this.handleTicTacToeReply(socket, message, rawContext, quoted);
     if (handledTicTacToe) return true;
+
+    // 3. Cek apakah membalas Tebak-Tebakan Cepat (Tahap 7)
+    const handledQuickQuiz = await this.handleQuickQuizReply(socket, message, rawContext, quoted);
+    if (handledQuickQuiz) return true;
+
+    // 4. Cek apakah membalas Sambung Kata (Tahap 7)
+    const handledSambung = await this.handleSambungKataReply(socket, message, rawContext, quoted);
+    if (handledSambung) return true;
+
+    // 5. Cek apakah membalas Blackjack / Hi-Low (Tahap 7)
+    const handledTable = await this.handleCasinoTableReply(socket, message, rawContext, quoted);
+    if (handledTable) return true;
 
     return false;
   }
@@ -252,6 +268,174 @@ export class InteractiveReplyService {
       );
     }
 
+    return false;
+  }
+
+  private async authorizeInteractiveGame(
+    rawContext: CommandContext,
+    commandName: string,
+  ): Promise<boolean> {
+    rawContext.commandName = commandName;
+    rawContext.role = await this.role.resolveRole({
+      chatJid: rawContext.chatJid,
+      senderJid: rawContext.senderJid,
+      senderAltJids: rawContext.senderAltJids,
+      isGroup: rawContext.isGroup,
+    });
+    const tenantAccess = await this.tenant.checkGroupCommandAccess(rawContext);
+    if (!tenantAccess.allowed) return false;
+    if (tenantAccess.tenantGroup) {
+      rawContext.tenantGroup = tenantAccess.tenantGroup;
+    }
+    const featureAccess = await this.feature.checkCommandFeature(rawContext);
+    return featureAccess.allowed;
+  }
+
+  private async handleQuickQuizReply(
+    socket: WASocket,
+    message: WAMessage,
+    rawContext: CommandContext,
+    quoted: NonNullable<CommandContext["quoted"]>,
+  ): Promise<boolean> {
+    const session = quickQuizService.getActiveSession(rawContext.chatJid);
+    if (!session) return false;
+
+    const isQuoting =
+      (session.messageId !== undefined && quoted.id === session.messageId) ||
+      Boolean(quoted.text?.includes(session.question.prompt));
+    if (!isQuoting) return false;
+
+    try {
+      if (!(await this.authorizeInteractiveGame(rawContext, session.kind))) return false;
+      const sender = await identityResolverService.resolveCanonicalUserJid(
+        socket,
+        rawContext.chatJid,
+        rawContext.senderUserJid,
+        rawContext.senderAltJids,
+      );
+      const res = await quickQuizService.submitAnswer(
+        rawContext.chatJid,
+        sender,
+        rawContext.text.trim(),
+      );
+      if (res.matched && res.text) {
+        await socket.sendMessage(
+          rawContext.chatJid,
+          { text: res.text, ...(res.mentions ? { mentions: res.mentions } : {}) },
+          { quoted: message },
+        );
+        return true;
+      }
+    } catch (error: unknown) {
+      logger.error({ error, chatJid: rawContext.chatJid }, "Reply tebak cepat gagal diproses");
+    }
+    return false;
+  }
+
+  private async handleSambungKataReply(
+    socket: WASocket,
+    message: WAMessage,
+    rawContext: CommandContext,
+    quoted: NonNullable<CommandContext["quoted"]>,
+  ): Promise<boolean> {
+    const session = sambungKataService.getSession(rawContext.chatJid);
+    if (!session) return false;
+
+    const isQuoting =
+      (session.messageId !== undefined && quoted.id === session.messageId) ||
+      Boolean(quoted.text?.includes("SAMBUNG KATA"));
+    if (!isQuoting) return false;
+
+    const word = rawContext.text.trim();
+    if (!/^[a-zA-Z]{3,24}$/.test(word)) return false;
+
+    try {
+      if (!(await this.authorizeInteractiveGame(rawContext, "sambungkata"))) return false;
+      const sender = await identityResolverService.resolveCanonicalUserJid(
+        socket,
+        rawContext.chatJid,
+        rawContext.senderUserJid,
+        rawContext.senderAltJids,
+      );
+      const res = await sambungKataService.submitWord(rawContext.chatJid, sender, word);
+      if (res.text) {
+        const sent = await socket.sendMessage(
+          rawContext.chatJid,
+          { text: res.text, ...(res.mentions ? { mentions: res.mentions } : {}) },
+          { quoted: message },
+        );
+        if (sent?.key.id && !res.finished) {
+          sambungKataService.setMessageId(rawContext.chatJid, sent.key.id);
+        }
+        return true;
+      }
+    } catch (error: unknown) {
+      logger.error({ error, chatJid: rawContext.chatJid }, "Reply sambung kata gagal diproses");
+    }
+    return false;
+  }
+
+  private async handleCasinoTableReply(
+    socket: WASocket,
+    message: WAMessage,
+    rawContext: CommandContext,
+    quoted: NonNullable<CommandContext["quoted"]>,
+  ): Promise<boolean> {
+    const lower = rawContext.text.trim().toLowerCase();
+    const isBjWord = lower === "hit" || lower === "stand" || lower === "double";
+    const isHiLowWord =
+      lower === "tinggi" || lower === "high" || lower === "rendah" || lower === "low";
+    if (!isBjWord && !isHiLowWord) return false;
+
+    const sender = await identityResolverService.resolveCanonicalUserJid(
+      socket,
+      rawContext.chatJid,
+      rawContext.senderUserJid,
+      rawContext.senderAltJids,
+    );
+
+    if (isBjWord) {
+      const bj = casinoPackService.getBlackjackSession(rawContext.chatJid, sender);
+      if (!bj) return false;
+      const quoting =
+        (bj.messageId !== undefined && quoted.id === bj.messageId) ||
+        Boolean(quoted.text?.includes("BLACKJACK"));
+      if (!quoting) return false;
+
+      try {
+        if (!(await this.authorizeInteractiveGame(rawContext, "blackjack"))) return false;
+        const res = await casinoPackService.actionBlackjack(rawContext.chatJid, sender, lower);
+        const sent = await socket.sendMessage(
+          rawContext.chatJid,
+          { text: res.text },
+          { quoted: message },
+        );
+        if (sent?.key.id && !res.finished) {
+          casinoPackService.setBlackjackMessageId(rawContext.chatJid, sender, sent.key.id);
+        }
+        return true;
+      } catch (error: unknown) {
+        logger.error({ error, chatJid: rawContext.chatJid }, "Reply Blackjack gagal diproses");
+      }
+      return false;
+    }
+
+    const hl = casinoPackService.getHiLowSession(rawContext.chatJid, sender);
+    if (!hl) return false;
+    const quoting =
+      (hl.messageId !== undefined && quoted.id === hl.messageId) ||
+      Boolean(quoted.text?.includes("HI-LOW"));
+    if (!quoting) return false;
+
+    try {
+      if (!(await this.authorizeInteractiveGame(rawContext, "hilow"))) return false;
+      const guess = lower === "tinggi" || lower === "high" ? "tinggi" : "rendah";
+      const text = await casinoPackService.resolveHiLow(rawContext.chatJid, sender, guess);
+      await socket.sendMessage(rawContext.chatJid, { text }, { quoted: message });
+      return true;
+    } catch (error: unknown) {
+      logger.error({ error, chatJid: rawContext.chatJid }, "Reply Hi-Low gagal diproses");
+    }
     return false;
   }
 }

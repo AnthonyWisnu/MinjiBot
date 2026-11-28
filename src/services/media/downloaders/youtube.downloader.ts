@@ -42,6 +42,8 @@ export async function executeYoutubeDownload(url: string): Promise<DownloadedMed
     const args = [
       "--no-warnings",
       "--no-playlist",
+      "--remote-components",
+      "ejs:github",
       "--ies",
       "youtube,youtube:clip",
       "--max-filesize",

@@ -13,8 +13,9 @@ interface MenuSection {
 const SUB_MENU_NAV_LINES = [
   "*Sub-Menu Cepat:*",
   ".menu ai | .menu rpg | .menu game",
-  ".menu sosial | .menu fun | .menu media",
-  ".menu islami | .menu info | .menu grup",
+  ".menu kasino | .menu sosial | .menu fun",
+  ".menu media | .menu islami | .menu info",
+  ".menu grup",
 ] as const;
 
 const MENU_LEGEND = "_Info: (L) = Pakai Limit | (Admin) = Admin_";
@@ -73,6 +74,7 @@ export class MenuService {
         "ai",
         "rpg",
         "game",
+        "kasino",
         "sosial",
         "fun",
         "media",
@@ -125,11 +127,27 @@ export class MenuService {
     }
 
     if (category === "game") {
+      const sections: MenuSection[] = [];
       const gameSection = this.buildPureGameSection(featureSetting);
-      const sections = gameSection
-        ? [gameSection]
-        : [{ title: "*── [ GAME NONAKTIF ] ──*", items: [] }];
-      return this.renderCategoryPage("*── [ SUB-MENU: GAME ] ──*", groupHeader, sections, footer);
+      const quickQuizSection = this.buildQuickQuizSection(featureSetting);
+      if (gameSection) sections.push(gameSection);
+      if (quickQuizSection) sections.push(quickQuizSection);
+      return this.renderCategoryPage(
+        "*── [ SUB-MENU: GAME ] ──*",
+        groupHeader,
+        sections.length > 0 ? sections : [{ title: "*── [ GAME NONAKTIF ] ──*", items: [] }],
+        footer,
+      );
+    }
+
+    if (category === "kasino") {
+      const kasino = this.buildCasinoPackSection(featureSetting);
+      return this.renderCategoryPage(
+        "*── [ SUB-MENU: KASINO ] ──*",
+        groupHeader,
+        kasino ? [kasino] : [{ title: "*── [ GAME NONAKTIF ] ──*", items: [] }],
+        footer,
+      );
     }
 
     if (category === "sosial") {
@@ -344,6 +362,12 @@ export class MenuService {
 
     const games = this.buildPureGameSection(featureSetting);
     if (games) sections.push(games);
+
+    const quickQuizzes = this.buildQuickQuizSection(featureSetting);
+    if (quickQuizzes) sections.push(quickQuizzes);
+
+    const casinoPack = this.buildCasinoPackSection(featureSetting);
+    if (casinoPack) sections.push(casinoPack);
 
     sections.push(
       this.buildSocialDramaSection(),
@@ -662,10 +686,57 @@ export class MenuService {
         ".slot [taruhan|allin]",
         ".tictactoe @user",
         ".werewolf / .ww",
+        ".undercover / .uc",
+        ".sambungkata",
         ".war [buat|join|mulai]",
         ".attack @user",
         ".clue",
         ".nyerah",
+      ],
+    };
+  }
+
+  private buildQuickQuizSection(featureSetting: TenantFeatureSetting | null): MenuSection | null {
+    if (featureSetting && !featureSetting.gameEnabled) {
+      return null;
+    }
+
+    return {
+      title: "*── [ TEBAK CEPAT ] ──*",
+      items: [
+        ".susunkata",
+        ".tebakbendera",
+        ".siapakahaku",
+        ".tebakkalimat",
+        ".tebaklirik",
+        ".tekateki",
+        ".asahotak",
+        ".tebakkimia",
+        ".tebakibukota",
+        ".tebakprovinsi",
+        ".tebaklagu",
+        ".benarsalah",
+      ],
+    };
+  }
+
+  private buildCasinoPackSection(featureSetting: TenantFeatureSetting | null): MenuSection | null {
+    if (featureSetting && !featureSetting.gameEnabled) {
+      return null;
+    }
+
+    return {
+      title: "*── [ KASINO & KARTU ] ──*",
+      items: [
+        ".blackjack / .bj <uang>",
+        ".hilow <uang>",
+        ".suit <pilih|@user> [uang]",
+        ".dadu [uang|all]",
+        ".koin <gambar|angka> <uang>",
+        ".roulette <pilihan> <uang>",
+        ".tebakdadu <1-6> <uang>",
+        ".russian",
+        ".spin / .wheel",
       ],
     };
   }
