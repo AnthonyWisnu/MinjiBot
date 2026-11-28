@@ -14,9 +14,18 @@ import {
 } from "../../types/memberEconomy";
 import { formatRupiah, MAX_SAFE_MONEY_BIGINT } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
+import { toWibDateKey } from "../../utils/wibDate";
+import { parseRpgState, serializeRpgState, withDailyTransferOut } from "../rpg/rpgState";
 import { generateCorrelationId, MAX_SAFE_ECONOMY_INT } from "./memberEconomy.service";
 
-export const EXCHANGE_MONEY_PER_POINT = 200_000n;
+export const EXCHANGE_MONEY_PER_POINT = 50_000n;
+export const DAILY_TRANSFER_OUT_BASE = 15_000_000n;
+export const DAILY_TRANSFER_OUT_PER_LEVEL = 500_000n;
+
+export function getDailyTransferOutCap(level: number): bigint {
+  const safeLevel = Math.max(1, Math.floor(level));
+  return DAILY_TRANSFER_OUT_BASE + BigInt(safeLevel) * DAILY_TRANSFER_OUT_PER_LEVEL;
+}
 
 export interface BankTransferResult {
   amount: bigint;
@@ -255,6 +264,7 @@ export class WalletBankService {
     senderJid: string,
     targetJid: string,
     amount: bigint,
+    now: Date = new Date(),
   ): Promise<MoneyGiftResult> {
     this.assertPositiveSafeBigInt(amount);
 
@@ -264,16 +274,31 @@ export class WalletBankService {
       throw new InvalidAmountError("Tidak dapat mentransfer uang ke diri sendiri.");
     }
 
+    const todayKey = toWibDateKey(now);
     const correlationId = generateCorrelationId();
 
     return this.db.$transaction(async (tx) => {
       const senderProfile = await this.profileRepo.findOrCreate(groupJid, normalizedSender, tx);
       const targetProfile = await this.profileRepo.findOrCreate(groupJid, normalizedTarget, tx);
 
+      const senderState = parseRpgState(senderProfile.rpgState);
+      const sentToday =
+        senderState.dailyTransferOut.dateKey === todayKey
+          ? BigInt(senderState.dailyTransferOut.amount)
+          : 0n;
+      const dailyCap = getDailyTransferOutCap(senderProfile.level);
+      if (sentToday + amount > dailyCap) {
+        const remaining = dailyCap > sentToday ? dailyCap - sentToday : 0n;
+        throw new InvalidAmountError(
+          `Batas transfer keluar harianmu (${formatRupiah(dailyCap)}/hari WIB untuk Lv.${String(Math.max(1, senderProfile.level))}) tercapai! Sisa kuota transfer hari ini: ${formatRupiah(remaining)}.`,
+        );
+      }
+
       if (targetProfile.moneyBalance + amount > MAX_SAFE_MONEY_BIGINT) {
         throw new InvalidAmountError("Dompet penerima sudah mencapai batas maksimal.");
       }
 
+      const nextSenderState = withDailyTransferOut(senderState, todayKey, sentToday + amount);
       const debitResult = await tx.groupMemberProfile.updateMany({
         where: {
           id: senderProfile.id,
@@ -281,6 +306,7 @@ export class WalletBankService {
         },
         data: {
           moneyBalance: { decrement: amount },
+          rpgState: serializeRpgState(nextSenderState),
         },
       });
 

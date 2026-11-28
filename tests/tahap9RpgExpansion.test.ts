@@ -276,7 +276,7 @@ void test("Tahap 9: Daily Quest completion, claim, and double-claim guard", asyn
 
   const claimed = await service.claimDailyQuests("120@g.us", "6281@s.whatsapp.net", now);
   assert.equal(claimed.claimedQuests.length, 4);
-  assert.equal(claimed.totalMoney, 66_000_000n);
+  assert.equal(claimed.totalMoney, 8_200_000n);
   assert.equal(claimed.totalLimit, 15);
   assert.equal(claimed.currentLimit, 25);
 
@@ -306,15 +306,19 @@ void test("Tahap 9: Properties buy, passive harvest after 2 hours, and 65% sell 
     /Level 55/,
   );
 
-  // Immediately harvesting before 10 min should be rejected
+  // Immediately harvesting before 20 min should be rejected
   await assert.rejects(
     () => service.harvestProperties("120@g.us", "6281@s.whatsapp.net", new Date(t0.getTime() + 60_000)),
     /belum siap dipanen/,
   );
 
-  // After 2 hours: 2 warung * 1.5jt/jam * 2 jam = 6jt
+  // After 2 hours: 2 warung * 90rb/jam * 2 jam = 360rb gross, -10% Pajak Ops = 324rb net
   const harvested = await service.harvestProperties("120@g.us", "6281@s.whatsapp.net", t2h);
-  assert.equal(harvested.harvestedMoney, warung.incomePerHour * 4n);
+  const expectedGross = warung.incomePerHour * 4n;
+  const expectedTax = (expectedGross * 10n) / 100n;
+  assert.equal(harvested.grossMoney, expectedGross);
+  assert.equal(harvested.operationalTax, expectedTax);
+  assert.equal(harvested.harvestedMoney, expectedGross - expectedTax);
 
   const sold = await service.sellProperty("120@g.us", "6281@s.whatsapp.net", "warung", 1, t2h);
   assert.equal(sold.ownedAfter, 1);
@@ -333,22 +337,22 @@ void test("Tahap 9: Rank Salary, Deposito interest, and IDX Stock buy/sell/portf
     },
   ]);
 
-  // Salary for Epic = Rp 120jt (60% money) + 6 Limit (100% non-money)
+  // Salary for Epic = Rp 7.5jt + 6 Limit
   const sal = await service.claimSalary("120@g.us", "6281@s.whatsapp.net", day1);
   assert.equal(sal.rank, "Epic");
-  assert.equal(sal.money, 120_000_000n);
+  assert.equal(sal.money, 7_500_000n);
   assert.equal(sal.limit, 6);
   await assert.rejects(
     () => service.claimSalary("120@g.us", "6281@s.whatsapp.net", day1),
     /sudah diambil/,
   );
 
-  // Deposito Rp 100jt for 3 days @ 2%/day = +6jt interest
+  // Deposito Rp 100jt for 3 days @ 0.5%/day = +1.5jt interest
   await service.openDeposito("120@g.us", "6281@s.whatsapp.net", 100_000_000n, day1);
   const depOut = await service.withdrawDeposito("120@g.us", "6281@s.whatsapp.net", day4);
   assert.equal(depOut.daysHeld, 3);
-  assert.equal(depOut.interest, 6_000_000n);
-  assert.equal(depOut.totalReceived, 106_000_000n);
+  assert.equal(depOut.interest, 1_500_000n);
+  assert.equal(depOut.totalReceived, 101_500_000n);
 
   // Stocks buy & sell
   const buyRes = await service.buyStock("120@g.us", "6281@s.whatsapp.net", "BBCA", 5, day4);

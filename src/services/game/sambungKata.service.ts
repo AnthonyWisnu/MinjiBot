@@ -21,8 +21,8 @@ export interface SambungKataResult {
 }
 
 export const SAMBUNG_KATA_TTL_MS = 3 * 60 * 1000;
-export const SAMBUNG_KATA_REWARD_PER_WORD = 600_000n;
-export const SAMBUNG_KATA_COMBO_BONUS = 6_000_000n;
+export const SAMBUNG_KATA_REWARD_PER_WORD = 250_000n;
+export const SAMBUNG_KATA_COMBO_BONUS = 2_000_000n;
 export const SAMBUNG_KATA_COMBO_TARGET = 10;
 const MAX_SAMBUNG_ROOMS = 50;
 

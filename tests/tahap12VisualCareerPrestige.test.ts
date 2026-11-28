@@ -259,17 +259,17 @@ void test("Tahap 12: Career, Startup, Pinjol Debt Collector, Insurance release, 
     },
   ]);
 
-  // 1. Rebirth Prestige ★1 (+25% permanent boost + 20 Limit + 500 Points)
+  // 1. Rebirth Prestige ★1 (+8% permanent boost + 20 Limit + 500 Points)
   const rebirth = await service.performRebirth("120@g.us", "6281@s.whatsapp.net");
   assert.equal(rebirth.newPrestige, 1);
-  assert.equal(rebirth.newBoostPercent, 25);
+  assert.equal(rebirth.newBoostPercent, 8);
   assert.equal(rebirth.limitBonus, 20);
   assert.equal(rebirth.pointsBonus, 500);
 
   // 2. Career apply, shift, promote
   await service.applyCareer("120@g.us", "6281@s.whatsapp.net", "ceo");
   const shift1 = await service.workShift("120@g.us", "6281@s.whatsapp.net", t0);
-  assert.ok(shift1.moneyEarned > 99_000_000n); // boosted +25% by Prestige ★1!
+  assert.ok(shift1.moneyEarned > 9_000_000n); // boosted +8% by Prestige ★1!
   assert.equal(shift1.debtSeized, 0n);
 
   const promo = await service.promoteCareer("120@g.us", "6281@s.whatsapp.net");
@@ -283,7 +283,7 @@ void test("Tahap 12: Career, Startup, Pinjol Debt Collector, Insurance release, 
   assert.ok(div.dividendGross > 0n);
 
   // 4. Pinjol borrow -> overdue Debt Collector automatic seizure on shift -> full repay
-  await service.borrowLoan("120@g.us", "6281@s.whatsapp.net", 500_000_000n, t0);
+  await service.borrowLoan("120@g.us", "6281@s.whatsapp.net", 100_000_000n, t0);
   const shiftOverdue = await service.workShift("120@g.us", "6281@s.whatsapp.net", tOverdue);
   assert.ok(shiftOverdue.debtSeized > 0n);
   assert.ok(shiftOverdue.remainingDebt > 0n);

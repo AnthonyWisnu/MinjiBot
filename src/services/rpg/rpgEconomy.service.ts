@@ -58,13 +58,13 @@ export const RPG_COOLDOWNS_MS: Record<string, number> = {
 
 export const DEFAULT_GROUP_TREASURY = 20_000_000_000_000n; // Rp 20 Triliun
 export const CASINO_MIN_BET = 100_000n;
-export const CASINO_MAX_BET = 100_000_000n;
-export const MIN_TARGET_WALLET_FOR_ACTION = 1_000_000n;
-export const MAX_TAX_PER_ACTION = 25_000_000n;
-export const MAX_ROB_PER_ACTION = 35_000_000n;
-export const MAX_ROB_FINE = 15_000_000n;
-export const BANSOS_POVERTY_THRESHOLD = 5_000_000n;
-export const BANSOS_POVERTY_BONUS = 1_800_000n;
+export const CASINO_MAX_BET = 15_000_000n;
+export const MIN_TARGET_WALLET_FOR_ACTION = 500_000n;
+export const MAX_TAX_PER_ACTION = 8_000_000n;
+export const MAX_ROB_PER_ACTION = 10_000_000n;
+export const MAX_ROB_FINE = 6_000_000n;
+export const BANSOS_POVERTY_THRESHOLD = 3_000_000n;
+export const BANSOS_POVERTY_BONUS = 600_000n;
 export const TOP_WEALTH_TAX_MIN_PERCENT = 1;
 export const TOP_WEALTH_TAX_MAX_PERCENT = 50;
 export const TOP_WEALTH_TAX_MAX_TARGETS = 10;
@@ -85,12 +85,12 @@ interface JobDefinition {
 const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   mulung: {
     title: "MULUNG",
-    minMoney: 240_000,
-    maxMoney: 720_000,
+    minMoney: 120_000,
+    maxMoney: 350_000,
     xp: 30,
     rareChance: 0.08,
-    rareMinMoney: 1_500_000,
-    rareMaxMoney: 3_000_000,
+    rareMinMoney: 600_000,
+    rareMaxMoney: 1_100_000,
     rareXp: 70,
     stories: [
       "Mengumpulkan kardus bekas dan botol plastik di gang belakang",
@@ -105,12 +105,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   kerja: {
     title: "KERJA SERABUTAN",
-    minMoney: 540_000,
-    maxMoney: 1_680_000,
+    minMoney: 250_000,
+    maxMoney: 750_000,
     xp: 55,
     rareChance: 0.1,
-    rareMinMoney: 3_000_000,
-    rareMaxMoney: 6_000_000,
+    rareMinMoney: 1_200_000,
+    rareMaxMoney: 2_200_000,
     rareXp: 110,
     stories: [
       "Lembur memperbaiki bug server yang error jam 2 pagi",
@@ -126,12 +126,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   ojek: {
     title: "NGOJEK ONLINE",
-    minMoney: 480_000,
-    maxMoney: 1_440_000,
+    minMoney: 220_000,
+    maxMoney: 650_000,
     xp: 50,
     rareChance: 0.1,
-    rareMinMoney: 2_700_000,
-    rareMaxMoney: 5_100_000,
+    rareMinMoney: 1_000_000,
+    rareMaxMoney: 1_900_000,
     rareXp: 100,
     stories: [
       "Mengantar penumpang terburu-buru mengejar kereta pagi",
@@ -146,12 +146,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   nambang: {
     title: "NAMBANG MINERAL",
-    minMoney: 900_000,
-    maxMoney: 3_000_000,
+    minMoney: 400_000,
+    maxMoney: 1_300_000,
     xp: 85,
     rareChance: 0.12,
-    rareMinMoney: 4_800_000,
-    rareMaxMoney: 10_800_000,
+    rareMinMoney: 1_800_000,
+    rareMaxMoney: 3_600_000,
     rareXp: 160,
     stories: [
       "Menambang bijih besi dan batu bara dari gua dalam",
@@ -166,12 +166,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   berburu: {
     title: "BERBURU DI HUTAN",
-    minMoney: 900_000,
-    maxMoney: 2_880_000,
+    minMoney: 400_000,
+    maxMoney: 1_250_000,
     xp: 85,
     rareChance: 0.12,
-    rareMinMoney: 4_500_000,
-    rareMaxMoney: 9_600_000,
+    rareMinMoney: 1_700_000,
+    rareMaxMoney: 3_400_000,
     rareXp: 155,
     stories: [
       "Berhasil menangkap rusa liar di pinggir lembah",
@@ -186,12 +186,12 @@ const JOB_DEFINITIONS: Record<RpgJobType, JobDefinition> = {
   },
   mancing: {
     title: "MANCING MANIA",
-    minMoney: 720_000,
-    maxMoney: 2_700_000,
+    minMoney: 350_000,
+    maxMoney: 1_200_000,
     xp: 80,
     rareChance: 0.1,
-    rareMinMoney: 5_400_000,
-    rareMaxMoney: 12_000_000,
+    rareMinMoney: 2_000_000,
+    rareMaxMoney: 4_000_000,
     rareXp: 160,
     stories: [
       "Strike ikan kakap merah besar di spot karang tengah",
@@ -626,8 +626,8 @@ export class RpgEconomyService {
       if (success) {
         const baseGain = BigInt(
           mega
-            ? this.random.intBetween(15_000_000, 72_000_000)
-            : this.random.intBetween(2_400_000, 9_000_000),
+            ? this.random.intBetween(3_500_000, 12_000_000)
+            : this.random.intBetween(800_000, 2_600_000),
         );
         const xpGained = mega ? 260 : 90;
         const scaledGain = scaleMoneyByLevel(baseGain, profile.level);
@@ -684,9 +684,21 @@ export class RpgEconomyService {
         };
       }
 
-      // Ketangkap OTT KPK
+      // Ketangkap OTT KPK: denda proporsional memotong Dompet + Bank (tutup celah .atmall!)
       const finePercent = mega ? 35 : 20;
-      const fine = minBigInt(profile.moneyBalance, percentOfBigInt(profile.moneyBalance, finePercent));
+      const maxFine = mega ? 40_000_000n : 12_000_000n;
+      const minFineFloor = mega ? 1_500_000n : 400_000n;
+      const totalLiquid = profile.moneyBalance + profile.bankBalance;
+      const rawFine =
+        totalLiquid <= 0n
+          ? 0n
+          : maxBigInt(
+              minBigInt(totalLiquid, minFineFloor),
+              minBigInt(totalLiquid, maxFine, percentOfBigInt(totalLiquid, finePercent)),
+            );
+      const walletDebit = minBigInt(profile.moneyBalance, rawFine);
+      const bankDebit = minBigInt(profile.bankBalance, rawFine - walletDebit);
+      const fine = walletDebit + bankDebit;
       const jailMinutes = mega ? 30 : 10;
       const nextTreasury = minBigInt(MAX_SAFE_MONEY_BIGINT, currentTreasury + fine);
       const nextState = withJailUntil(
@@ -697,7 +709,8 @@ export class RpgEconomyService {
       const updated = await tx.groupMemberProfile.update({
         where: { id: profile.id },
         data: {
-          moneyBalance: { decrement: fine },
+          ...(walletDebit > 0n ? { moneyBalance: { decrement: walletDebit } } : {}),
+          ...(bankDebit > 0n ? { bankBalance: { decrement: bankDebit } } : {}),
           experience: { increment: 15 },
           rpgState: serializeRpgState(nextState),
         },
@@ -710,7 +723,7 @@ export class RpgEconomyService {
         });
       }
 
-      if (fine > 0n) {
+      if (walletDebit > 0n) {
         await this.txRepo.create(
           {
             profileId: profile.id,
@@ -718,11 +731,29 @@ export class RpgEconomyService {
             userJid,
             asset: MemberTransactionAsset.MONEY,
             type: MemberTransactionType.RPG_LOSS,
-            amount: -fine,
+            amount: -walletDebit,
             balanceBefore: profile.moneyBalance,
             balanceAfter: updated.moneyBalance,
             correlationId,
             note: `${actionKey}_ott`,
+          },
+          tx,
+        );
+      }
+
+      if (bankDebit > 0n) {
+        await this.txRepo.create(
+          {
+            profileId: profile.id,
+            groupJid,
+            userJid,
+            asset: MemberTransactionAsset.BANK,
+            type: MemberTransactionType.RPG_LOSS,
+            amount: -bankDebit,
+            balanceBefore: profile.bankBalance,
+            balanceAfter: updated.bankBalance,
+            correlationId,
+            note: `${actionKey}_ott_bank_autodebit`,
           },
           tx,
         );
@@ -1101,7 +1132,7 @@ export class RpgEconomyService {
   ): Promise<BansosResult> {
     const cooldownMs = RPG_COOLDOWNS_MS.bansos ?? 6 * 60 * 60 * 1000;
     const nowMs = now.getTime();
-    const baseAid = BigInt(this.random.intBetween(1_500_000, 3_600_000));
+    const baseAid = BigInt(this.random.intBetween(600_000, 1_400_000));
     const wasSkimmed = this.random.chance(0.15);
     const correlationId = generateCorrelationId();
 
@@ -1319,10 +1350,11 @@ export class RpgEconomyService {
       ["berbisnis", ".berbisnis", "kerja", 60 * 60 * 1000],
       // Petualangan & Aktivitas RPG
       ["adventure", ".adventure", "petualangan", 16 * 60 * 1000],
+      ["fight_boss", ".fight* (Boss Solo)", "petualangan", 15 * 60 * 1000],
       ["nebang", ".nebang", "petualangan", 10 * 60 * 1000],
       ["berkebon", ".berkebon", "petualangan", 10 * 60 * 1000],
       ["dungeon", ".dungeon", "petualangan", 40 * 60 * 1000],
-      ["worldboss_hit", ".serangboss", "petualangan", 4 * 60 * 1000],
+      ["worldboss_hit", ".serangboss", "petualangan", 8 * 60 * 1000],
       ["sabungpet", ".sabungpet", "petualangan", 4 * 60 * 1000],
       ["gengbuff", ".gengbuff", "petualangan", 60 * 60 * 1000],
       ["npc_cocok", ".cocoknpc", "petualangan", 5 * 60 * 1000],

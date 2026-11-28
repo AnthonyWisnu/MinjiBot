@@ -18,6 +18,9 @@ function formatDailyResult(result: DailyClaimResult): string {
   }
 
   lines.push(`• Streak harian  : ${String(result.currentStreak)} hari`);
+  if (result.autoWealthTaxPaid > 0n) {
+    lines.push(`• Auto-Tax (>2M) : -${formatRupiah(result.autoWealthTaxPaid)} (1,5%/hr ke Kas Grup)`);
+  }
   lines.push("");
   lines.push(`• Dompet saat ini : ${formatRupiah(result.currentMoney)}`);
   lines.push(`• Poin saat ini   : ${result.currentPoints.toLocaleString("id-ID")}`);

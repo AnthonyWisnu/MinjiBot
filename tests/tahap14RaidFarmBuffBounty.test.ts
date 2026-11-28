@@ -217,8 +217,8 @@ void test("Tahap 14: all 20 primary commands + aliases registered, 20T default t
 
   // Verify default Kas Negara = 20 Triliun
   assert.equal(DEFAULT_GROUP_TREASURY, 20_000_000_000_000n);
-  // Verify Money = 60% (600k) while Points/XP = 100% (10 pts / 40 XP)
-  assert.equal(KUIS_REWARD.CORRECT_MONEY, 600_000n);
+  // Verify Money scaled down cleanly while Points/XP stay 100% (10 pts / 40 XP)
+  assert.equal(KUIS_REWARD.CORRECT_MONEY, 350_000n);
   assert.equal(KUIS_REWARD.CORRECT_POINTS, 10);
   assert.equal(KUIS_REWARD.CORRECT_XP, 40);
 
@@ -351,22 +351,34 @@ void test("Tahap 14: World Boss Raid spawn, multi-player attack, kill distributi
     { fixedInt: (_min, max) => max, fixedChance: true },
   );
 
-  // Verify jamukuat + STR boost combat power
-  assert.ok(calculatePlayerCombatPower(50, strongState, undefined, t0) > 5_000);
+  // Verify compressed combat power + jamukuat + STR
+  const computedPower = calculatePlayerCombatPower(50, strongState, undefined, t0);
+  assert.ok(computedPower > 900 && computedPower < 1_500);
 
   const spawned = await service.inspectOrSpawnWorldBoss("120@g.us", t0);
   assert.equal(spawned.spawned, true);
 
-  // Attack until defeated (alternating players advancing time past 4m cooldown)
+  // Attack until defeated (alternating players advancing time past 8m cooldown, healing when HP gets low)
   let t = t0;
   let defeated = false;
   let lastResult = null;
-  for (let turn = 0; turn < 10 && !defeated; turn += 1) {
+  for (let turn = 0; turn < 50 && !defeated; turn += 1) {
     const attacker = turn % 2 === 0 ? "6281@s.whatsapp.net" : "6282@s.whatsapp.net";
+    for (const prof of profiles.values()) {
+      if (prof.userJid === attacker) {
+        const st = parseRpgState(prof.rpgState);
+        if (st.hp < 40) {
+          st.hp = 100;
+          prof.rpgState = serializeRpgState(st) as never;
+        }
+      }
+    }
     const res = await service.attackWorldBoss("120@g.us", attacker, t);
+    assert.ok(res.damageDealt <= 3_400, "Per-hit damage must respect crit cap");
+    assert.ok(res.hpLost >= 14, "Boss counterattack must deal real HP damage");
     lastResult = res;
     defeated = res.defeated;
-    t += 250_000;
+    t += 260_000;
   }
 
   assert.equal(defeated, true);

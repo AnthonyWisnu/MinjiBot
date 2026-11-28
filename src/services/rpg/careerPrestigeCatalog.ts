@@ -17,73 +17,73 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
     id: "kurir",
     title: "Kurir Paket Express",
     minLevel: 1,
-    basePay: 3_900_000n,
+    basePay: 600_000n,
     baseXp: 70,
     basePoints: 18,
-    promoteCostPerLevel: 15_000_000n,
+    promoteCostPerLevel: 3_000_000n,
   },
   {
     id: "barista",
     title: "Barista Kopi Specialty",
     minLevel: 6,
-    basePay: 7_200_000n,
+    basePay: 1_100_000n,
     baseXp: 95,
     basePoints: 25,
-    promoteCostPerLevel: 30_000_000n,
+    promoteCostPerLevel: 6_000_000n,
   },
   {
     id: "programmer",
     title: "Senior Fullstack Engineer",
     minLevel: 12,
-    basePay: 15_000_000n,
+    basePay: 2_200_000n,
     baseXp: 140,
     basePoints: 35,
-    promoteCostPerLevel: 65_000_000n,
+    promoteCostPerLevel: 12_000_000n,
   },
   {
     id: "dokter",
     title: "Dokter Spesialis Bedah",
     minLevel: 18,
-    basePay: 28_800_000n,
+    basePay: 3_800_000n,
     baseXp: 190,
     basePoints: 45,
-    promoteCostPerLevel: 120_000_000n,
+    promoteCostPerLevel: 24_000_000n,
   },
   {
     id: "pilot",
     title: "Kapten Pilot Internasional",
     minLevel: 26,
-    basePay: 51_000_000n,
+    basePay: 6_000_000n,
     baseXp: 250,
     basePoints: 60,
-    promoteCostPerLevel: 250_000_000n,
+    promoteCostPerLevel: 45_000_000n,
   },
   {
     id: "ceo",
     title: "CEO Perusahaan Unicorn",
     minLevel: 35,
-    basePay: 99_000_000n,
+    basePay: 9_000_000n,
     baseXp: 340,
     basePoints: 80,
-    promoteCostPerLevel: 500_000_000n,
+    promoteCostPerLevel: 90_000_000n,
   },
   {
     id: "menteri",
     title: "Menteri Ekonomi Grup",
     minLevel: 45,
-    basePay: 192_000_000n,
+    basePay: 14_000_000n,
     baseXp: 460,
     basePoints: 110,
-    promoteCostPerLevel: 1_200_000_000n,
+    promoteCostPerLevel: 180_000_000n,
   },
   {
     id: "konglomerat",
     title: "Konglomerat Multinasional",
     minLevel: 60,
-    basePay: 390_000_000n,
+    basePay: 22_000_000n,
     baseXp: 620,
     basePoints: 150,
-    promoteCostPerLevel: 2_500_000_000n,
+    promoteCostPerLevel: 350_000_000n,
   },
 ] as const;
 
@@ -95,13 +95,13 @@ export const CAREER_SHIFT_COOLDOWN_MS = 60 * 60 * 1000;
 export const CAREER_MAX_LEVEL = 5;
 
 export const STARTUP_MIN_PLAYER_LEVEL = 20;
-export const STARTUP_CREATE_COST = 600_000_000n;
-export const STARTUP_RECRUIT_COST = 150_000_000n;
+export const STARTUP_CREATE_COST = 80_000_000n;
+export const STARTUP_RECRUIT_COST = 20_000_000n;
 export const STARTUP_MAX_LEVEL = 10;
 export const STARTUP_DIVIDEND_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 export function getStartupUpgradeCost(currentLevel: number): bigint {
-  return 600_000_000n * BigInt(currentLevel) * BigInt(currentLevel);
+  return 80_000_000n * BigInt(currentLevel) * BigInt(currentLevel);
 }
 
 export function getStartupMaxEmployees(level: number): number {
@@ -113,21 +113,21 @@ export function getStartupValuation(level: number, employees: number): bigint {
 }
 
 export function getStartupDividendPayout(level: number, employees: number): bigint {
-  return 25_000_000n * BigInt(level) + 10_000_000n * BigInt(employees);
+  return 3_500_000n * BigInt(level) + 1_200_000n * BigInt(employees);
 }
 
 export const PINJOL_MAX_BY_RANK: Record<MemberRank, bigint> = {
-  Warrior: 25_000_000n,
-  Elite: 75_000_000n,
-  Master: 200_000_000n,
-  Grandmaster: 500_000_000n,
-  Epic: 1_500_000_000n,
-  Legend: 4_000_000_000n,
-  Mythic: 10_000_000_000n,
-  "Immortal [MAX]": 25_000_000_000n,
+  Warrior: 5_000_000n,
+  Elite: 12_000_000n,
+  Master: 30_000_000n,
+  Grandmaster: 75_000_000n,
+  Epic: 180_000_000n,
+  Legend: 400_000_000n,
+  Mythic: 800_000_000n,
+  "Immortal [MAX]": 1_500_000_000n,
 };
 
-export const PINJOL_MIN_AMOUNT = 5_000_000n;
+export const PINJOL_MIN_AMOUNT = 1_000_000n;
 export const PINJOL_INTEREST_PERCENT = 15;
 export const PINJOL_DUE_MS = 48 * 60 * 60 * 1000;
 
@@ -143,21 +143,21 @@ export const INSURANCE_CATALOG: readonly InsuranceSpec[] = [
   {
     id: "brankas",
     name: "Asuransi Brankas Anti-Maling",
-    price: 105_000_000n,
+    price: 18_000_000n,
     durationMs: 24 * 60 * 60 * 1000,
     benefit: "Kebal dari aksi .maling dan penagihan .pajak @user selama 24 jam",
   },
   {
     id: "bpjs",
     name: "BPJS Sultan VIP",
-    price: 75_000_000n,
+    price: 12_000_000n,
     durationMs: 24 * 60 * 60 * 1000,
     benefit: "Keluar UGD gratis kapan saja pakai .bebasugd & pulihkan HP penuh",
   },
   {
     id: "pengacara",
     name: "Pengacara Elit 24 Jam",
-    price: 120_000_000n,
+    price: 20_000_000n,
     durationMs: 24 * 60 * 60 * 1000,
     benefit: "Langsung bebas penjara KPK/Ronda gratis pakai .bebaspenjara",
   },
@@ -167,13 +167,13 @@ export const INSURANCE_MAP = new Map<InsuranceType, InsuranceSpec>(
   INSURANCE_CATALOG.map((item) => [item.id, item]),
 );
 
-export const JAIL_BAIL_COST = 45_000_000n;
-export const UGD_VIP_RELEASE_COST = 30_000_000n;
+export const JAIL_BAIL_COST = 8_000_000n;
+export const UGD_VIP_RELEASE_COST = 6_000_000n;
 
 export const PRESTIGE_MAX_LEVEL = 10;
 export const PRESTIGE_MIN_PLAYER_LEVEL = 30;
-export const PRESTIGE_BASE_COST = 10_000_000_000n; // Rp 10 Miliar untuk Prestige ★1
-export const PRESTIGE_BONUS_PERCENT_PER_STAR = 25; // +25% uang & XP permanen per bintang
+export const PRESTIGE_BASE_COST = 500_000_000n; // Rp 500 Juta untuk Prestige ★1
+export const PRESTIGE_BONUS_PERCENT_PER_STAR = 8; // +8% uang & XP permanen per bintang (★10 = +80%)
 export const PRESTIGE_REWARD_LIMIT = 20;
 export const PRESTIGE_REWARD_POINTS = 500;
 

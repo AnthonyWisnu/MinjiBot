@@ -46,16 +46,16 @@ void test("Tahap 1 Currency: BigInt formatting, compact Sultan units (Jt/M/T/Q),
   assert.equal(parsePositiveBigIntMoneyInput("99999999999999999999"), null);
 
   assert.equal(computeLevelMoneyMultiplier(1), 1);
-  assert.equal(computeLevelMoneyMultiplier(11), 1.5);
-  assert.equal(computeLevelMoneyMultiplier(99), 3);
-  assert.equal(scaleMoneyByLevel(1_000_000n, 11), 1_500_000n);
+  assert.equal(computeLevelMoneyMultiplier(11), 1.1);
+  assert.equal(computeLevelMoneyMultiplier(99), 1.4);
+  assert.equal(scaleMoneyByLevel(1_000_000n, 11), 1_100_000n);
   assert.equal(clampMoneyCredit(MAX_SAFE_MONEY_BIGINT - 10n, 100n), 10n);
 });
 
 void test("Tahap 1 Economy: MemberEconomyService.creditMoney & GameRewardService scale rewards by level", async () => {
   let storedProfile: GroupMemberProfile = buildMemberProfile({
     id: "prof-sultan",
-    level: 11, // 1.5x multiplier (max 3x at Lv.41+)
+    level: 11, // 1.1x multiplier (max 1.4x at Lv.41+)
     moneyBalance: 5_000_000_000n, // Rp 5 Miliar (BigInt!)
     totalMoneyEarned: 5_000_000_000n,
   });
@@ -111,9 +111,9 @@ void test("Tahap 1 Economy: MemberEconomyService.creditMoney & GameRewardService
 
   assert.equal(kuisRes.points, KUIS_REWARD.CORRECT_POINTS);
   assert.equal(kuisRes.xp, KUIS_REWARD.CORRECT_XP);
-  assert.equal(kuisRes.levelMultiplier, 1.5);
-  assert.equal(kuisRes.money, 900_000n); // Rp 600 Rb * 1.5x Lv.11 (max 3x rebalance)
-  assert.equal(storedProfile.moneyBalance, 5_000_900_000n);
+  assert.equal(kuisRes.levelMultiplier, 1.1);
+  assert.equal(kuisRes.money, 385_000n); // Rp 350 Rb * 1.1x Lv.11
+  assert.equal(storedProfile.moneyBalance, 5_000_385_000n);
 
   const tttRes = await gameReward.awardTicTacToeWin(
     "120@g.us",
@@ -121,8 +121,8 @@ void test("Tahap 1 Economy: MemberEconomyService.creditMoney & GameRewardService
     "r-2",
     "corr-2",
   );
-  assert.equal(tttRes.money, (TICTACTOE_REWARD.WIN_MONEY * 150n) / 100n);
-  assert.ok(ledger.some((entry) => entry.asset === "MONEY" && entry.amount === 900_000n));
+  assert.equal(tttRes.money, (TICTACTOE_REWARD.WIN_MONEY * 110n) / 100n);
+  assert.ok(ledger.some((entry) => entry.asset === "MONEY" && entry.amount === 385_000n));
 });
 
 void test("Tahap 1 OpenRouter AI: enforces API key, prompt limit, cooldown, daily group quota, and safe errors", async () => {

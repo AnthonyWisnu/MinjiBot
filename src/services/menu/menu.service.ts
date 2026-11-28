@@ -773,6 +773,7 @@ export class MenuService {
         ".shop <list|buy|sell>",
         ".craft <alat>",
         ".upgrade <alat>",
+        ".repair <alat|all>",
         ".open <crate>",
         ".feed <pet>",
         ".ramuan <pet>",

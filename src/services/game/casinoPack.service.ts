@@ -21,10 +21,10 @@ import {
 } from "../rpg/rpgState";
 
 export const CASINO_MIN_BET = 100_000n;
-export const CASINO_MAX_BET = 250_000_000n;
-export const CASINO_DEFAULT_BET = 1_000_000n;
-export const RUSSIAN_SURVIVE_REWARD = 9_000_000n;
-export const RUSSIAN_HIT_PENALTY = 5_000_000n;
+export const CASINO_MAX_BET = 15_000_000n;
+export const CASINO_DEFAULT_BET = 500_000n;
+export const RUSSIAN_SURVIVE_REWARD = 2_000_000n;
+export const RUSSIAN_HIT_PENALTY = 3_000_000n;
 export const RUSSIAN_UGD_MS = 5 * 60 * 1000;
 const SESSION_TTL_MS = 5 * 60 * 1000;
 const MAX_ACTIVE_TABLES = 200;
@@ -1015,7 +1015,7 @@ export class CasinoPackService {
       let label = "";
 
       if (roll <= 8) {
-        moneyPrize = 30_000_000n;
+        moneyPrize = 8_000_000n;
         label = `JACKPOT SULTAN ${formatRupiah(moneyPrize)}!`;
       } else if (roll <= 22) {
         limitPrize = 3;
@@ -1024,16 +1024,16 @@ export class CasinoPackService {
         nextState = withCrateDelta(nextState, "mythic", 1);
         label = "+1 Peti Gacha MYTHIC (.open mythic)!";
       } else if (roll <= 55) {
-        moneyPrize = 12_000_000n;
+        moneyPrize = 3_500_000n;
         label = `Uang Tunai ${formatRupiah(moneyPrize)}!`;
       } else if (roll <= 75) {
         pointsPrize = 100;
         label = "+100 Poin Game (bisa buat .belilimit)!";
       } else if (roll <= 92) {
-        moneyPrize = 3_000_000n;
+        moneyPrize = 1_200_000n;
         label = `Uang Tunai ${formatRupiah(moneyPrize)}!`;
       } else {
-        moneyPrize = 300_000n;
+        moneyPrize = 250_000n;
         label = `Hiburan ${formatRupiah(moneyPrize)} (nyaris zonk!)`;
       }
 

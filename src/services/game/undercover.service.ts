@@ -44,8 +44,8 @@ export interface UndercoverVoteResolution {
 export const UNDERCOVER_MIN_PLAYERS = 4;
 export const UNDERCOVER_MAX_PLAYERS = 10;
 export const UNDERCOVER_TTL_MS = 15 * 60 * 1000;
-export const UNDERCOVER_WARGA_REWARD = 12_000_000n;
-export const UNDERCOVER_SPY_REWARD = 18_000_000n;
+export const UNDERCOVER_WARGA_REWARD = 3_500_000n;
+export const UNDERCOVER_SPY_REWARD = 5_000_000n;
 const MAX_UNDERCOVER_ROOMS = 50;
 
 const WORD_PAIRS: readonly [string, string][] = [

@@ -30,14 +30,14 @@ import {
   withMarriage,
 } from "../rpg/rpgState";
 
-export const CUSTOM_TITLE_PRICE = 300_000_000n;
-export const MARRIAGE_DEFAULT_DOWRY = 100_000_000n;
-export const MARRIAGE_MIN_DOWRY = 25_000_000n;
-export const MARRIAGE_MAX_DOWRY = 5_000_000_000n;
+export const CUSTOM_TITLE_PRICE = 50_000_000n;
+export const MARRIAGE_DEFAULT_DOWRY = 20_000_000n;
+export const MARRIAGE_MIN_DOWRY = 5_000_000n;
+export const MARRIAGE_MAX_DOWRY = 500_000_000n;
 export const MARRIAGE_PROPOSAL_TTL_MS = 10 * 60 * 1000;
 export const MARRIAGE_XP_BONUS = 300;
 
-export const CLAN_CREATE_PRICE = 250_000_000n;
+export const CLAN_CREATE_PRICE = 40_000_000n;
 export const CLAN_MAX_PER_GROUP = 15;
 export const CLAN_MAX_MEMBERS = 15;
 export const CLAN_MIN_DONATION = 100_000n;

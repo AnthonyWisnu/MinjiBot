@@ -86,6 +86,7 @@ const KEYWORD_SYNONYMS: Record<string, readonly string[]> = {
   leaderboard: ["toprich", "toprank", "toppoint", "toplevel", "topstreak", "topmenang", "topdermawan", "toprebirth", "topstartup"],
   worldboss: ["worldboss", "serangboss", "statusboss", "topdamage"],
   raid: ["worldboss", "serangboss", "statusboss", "topdamage", "dungeon"],
+  repair: ["repair", "perbaikialat", "durability", "perbaiki", "sword", "armor", "pickaxe", "rod"],
   boss: ["worldboss", "serangboss", "statusboss", "topdamage", "fightkucing", "fightnaga", "fightphonix"],
   skill: ["skill", "upskill", "resetskill"],
   ladang: ["ladang", "tanam", "siram", "panenladang", "pasarharga", "jualsemua"],

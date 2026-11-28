@@ -37,6 +37,7 @@ import {
   GACHA_PULL_PRICE,
   getStockQuotesAt,
   PROPERTY_CATALOG,
+  PROPERTY_HARVEST_TAX_PERCENT,
   PROPERTY_MAP,
   PROPERTY_MAX_ACCUMULATION_HOURS,
   PROPERTY_MIN_HARVEST_MS,
@@ -50,6 +51,7 @@ import {
   type PropertySpec,
   type StockQuote,
 } from "./rpgExpansionCatalog";
+import { applyDailyAutoWealthTaxInTx, creditTreasuryInTx } from "./autoWealthTax";
 import {
   CRATE_TYPES,
   parseRpgState,
@@ -134,7 +136,10 @@ export interface PropertyTradeResult {
 }
 
 export interface PropertyHarvestResult {
+  grossMoney: bigint;
+  operationalTax: bigint;
   harvestedMoney: bigint;
+  autoWealthTaxPaid: bigint;
   elapsedMs: number;
   totalOwned: number;
   currentMoney: bigint;
@@ -144,6 +149,7 @@ export interface SalaryClaimResult {
   dateKey: string;
   rank: MemberRank;
   money: bigint;
+  autoWealthTaxPaid: bigint;
   limit: number;
   xp: number;
   currentMoney: bigint;
@@ -313,6 +319,13 @@ interface ExpansionTx {
       data: Record<string, unknown>;
     }): Promise<GroupMemberProfile>;
   };
+  tenantGroup?: {
+    findUnique(args: { where: { groupJid: string } }): Promise<{ treasuryBalance: bigint } | null>;
+    update(args: {
+      where: { groupJid: string };
+      data: { treasuryBalance: bigint };
+    }): Promise<unknown>;
+  };
 }
 
 interface ExpansionDb {
@@ -438,14 +451,15 @@ function resolveDepositoBreakdown(
   const principal = BigInt(state.deposito.principal);
   const elapsedMs = Math.max(0, nowMs - state.deposito.depositedAt);
   const daysHeld = Math.min(DEPOSITO_MAX_INTEREST_DAYS, Math.floor(elapsedMs / MS_PER_DAY));
-  const totalPercent = daysHeld * state.deposito.ratePercent;
+  const effectiveRate = Math.min(DEPOSITO_DAILY_INTEREST_PERCENT, state.deposito.ratePercent);
+  const totalPercent = daysHeld * effectiveRate;
   const accruedInterest = percentOfBigInt(principal, totalPercent);
   return {
     active: true,
     principal,
     depositedAt: state.deposito.depositedAt,
     daysHeld,
-    ratePercent: state.deposito.ratePercent,
+    ratePercent: effectiveRate,
     accruedInterest,
     totalWithdrawValue: principal + accruedInterest,
   };
@@ -901,7 +915,10 @@ export class RpgExpansionService {
         );
       }
 
-      const credit = clampMoneyCredit(profile.moneyBalance, pending.pendingMoney);
+      const grossMoney = pending.pendingMoney;
+      const operationalTax = percentOfBigInt(grossMoney, PROPERTY_HARVEST_TAX_PERCENT);
+      const netMoney = grossMoney > operationalTax ? grossMoney - operationalTax : 0n;
+      const credit = clampMoneyCredit(profile.moneyBalance, netMoney);
       let nextState = withPropertyHarvestAt(state, nowMs);
       nextState = withUpdatedCooldown(nextState, "panen", nowMs);
 
@@ -914,6 +931,10 @@ export class RpgExpansionService {
         },
       });
 
+      if (operationalTax > 0n) {
+        await creditTreasuryInTx(tx, groupJid, operationalTax);
+      }
+
       await this.txRepo.create(
         {
           profileId: profile.id,
@@ -925,16 +946,32 @@ export class RpgExpansionService {
           balanceBefore: profile.moneyBalance,
           balanceAfter: updated.moneyBalance,
           correlationId,
-          note: `harvest_properties:${String(pending.totalOwned)}`,
+          note: `harvest_properties:${String(pending.totalOwned)}:tax_${String(operationalTax)}`,
         },
         tx,
       );
 
+      const wealthTax = await applyDailyAutoWealthTaxInTx({
+        tx,
+        profileId: profile.id,
+        groupJid,
+        userJid,
+        currentWallet: updated.moneyBalance,
+        currentBank: updated.bankBalance,
+        state: nextState,
+        todayKey: toWibDateKey(now),
+        correlationId,
+        txRepo: this.txRepo,
+      });
+
       return {
+        grossMoney,
+        operationalTax,
         harvestedMoney: credit,
+        autoWealthTaxPaid: wealthTax.taxPaid,
         elapsedMs: pending.elapsedMs,
         totalOwned: pending.totalOwned,
-        currentMoney: updated.moneyBalance,
+        currentMoney: wealthTax.walletAfter,
       };
     });
   }
@@ -989,13 +1026,27 @@ export class RpgExpansionService {
         tx,
       );
 
+      const wealthTax = await applyDailyAutoWealthTaxInTx({
+        tx,
+        profileId: profile.id,
+        groupJid,
+        userJid,
+        currentWallet: updated.moneyBalance,
+        currentBank: updated.bankBalance,
+        state: nextState,
+        todayKey,
+        correlationId,
+        txRepo: this.txRepo,
+      });
+
       return {
         dateKey: todayKey,
         rank,
         money: moneyCredit,
+        autoWealthTaxPaid: wealthTax.taxPaid,
         limit: spec.limit,
         xp: spec.xp,
-        currentMoney: updated.moneyBalance,
+        currentMoney: wealthTax.walletAfter,
         currentLimit: updated.limitBalance,
       };
     });

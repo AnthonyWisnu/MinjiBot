@@ -78,7 +78,7 @@ export const WEREWOLF_MAX_PLAYERS = 12;
 export const WEREWOLF_TTL_MS = 20 * 60 * 1000;
 const MAX_WEREWOLF_ROOMS = 50;
 
-export const WEREWOLF_WIN_MONEY = 15_000_000n;
+export const WEREWOLF_WIN_MONEY = 4_500_000n;
 export const WEREWOLF_WIN_XP = 250;
 export const WEREWOLF_WIN_POINTS = 50;
 export const WEREWOLF_LOSE_XP = 50;

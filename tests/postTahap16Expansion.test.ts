@@ -361,7 +361,7 @@ void describe("Prioritas 1: Persistensi Event Jangka Panjang (Pemilu/Presiden, L
     assert.equal(lotteryAfterRestart.tickets.length, 2);
     assert.equal(lotteryAfterRestart.tickets[0]?.number, 42);
     assert.equal(lotteryAfterRestart.tickets[1]?.number, 77);
-    assert.equal(lotteryAfterRestart.jackpotPool, 10_000_000n);
+    assert.equal(lotteryAfterRestart.jackpotPool, 5_000_000n);
 
     const raid2 = new RaidFarmBuffBountyService(
       h.profileRepo,
@@ -400,7 +400,7 @@ void describe("Prioritas 3: Pengayaan Sistem Pet (.petshop, .telurpet, .ekspedis
     // 1. Adopsi langsung kucing
     const adopted = await rpg.adoptPet(GROUP_JID, USER_A, "kucing");
     assert.equal(adopted.pet, "kucing");
-    assert.equal(adopted.pricePaid, 60_000_000n);
+    assert.equal(adopted.pricePaid, 10_000_000n);
 
     // Tolak adopsi ulang kucing
     await assert.rejects(() => rpg.adoptPet(GROUP_JID, USER_A, "kucing"), /sudah memiliki pet/i);

@@ -49,12 +49,12 @@ export function percentOfBigInt(value: bigint, percent: number): bigint {
 }
 
 /**
- * Pengali bonus hadiah uang berdasarkan Level pemain:
- * Lv. 1 = 1.00x, Lv. 2 = 1.05x, Lv. 11 = 1.50x, Lv. 21 = 2.00x, Lv. 41+ = 3.00x (maks).
+ * Pengali bonus hadiah uang berdasarkan Level pemain (kompresi anti-inflasi):
+ * Lv. 1 = 1.00x, Lv. 11 = 1.10x, Lv. 21 = 1.20x, Lv. 41+ = 1.40x (maks).
  */
 export function computeLevelMoneyMultiplier(level: number): number {
   const clampedStep = Math.min(Math.max(0, Math.floor(level) - 1), 40);
-  return Math.round((1 + clampedStep * 0.05) * 100) / 100;
+  return Math.round((1 + clampedStep * 0.01) * 100) / 100;
 }
 
 export function scaleMoneyByLevel(baseAmount: bigint, level: number): bigint {

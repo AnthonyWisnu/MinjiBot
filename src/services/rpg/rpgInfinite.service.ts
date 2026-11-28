@@ -37,6 +37,7 @@ import {
   type PetEggTier,
 } from "./rpgCatalog";
 import {
+  computeBossHpDamage,
   CRATE_TYPES,
   getFeaturedPet,
   getRemainingCooldownMs,
@@ -53,6 +54,7 @@ import {
   withItemsDelta,
   withPetExpedition,
   withPetState,
+  withToolsDurabilityDelta,
   withToolState,
   withUpdatedCooldown,
   type CrateType,
@@ -65,21 +67,23 @@ export const INFINITE_RPG_COOLDOWNS_MS: Record<string, number> = {
   adventure: 16 * 60 * 1000,
   nebang: 10 * 60 * 1000,
   berkebon: 10 * 60 * 1000,
-  fight_kucing: 24 * 60 * 1000,
-  fight_kyubi: 30 * 60 * 1000,
-  fight_centaur: 30 * 60 * 1000,
-  fight_griffin: 36 * 60 * 1000,
-  fight_naga: 40 * 60 * 1000,
-  fight_phonix: 50 * 60 * 1000,
+  fight_boss: 15 * 60 * 1000,
+  fight_kucing: 15 * 60 * 1000,
+  fight_kyubi: 15 * 60 * 1000,
+  fight_centaur: 15 * 60 * 1000,
+  fight_griffin: 15 * 60 * 1000,
+  fight_naga: 15 * 60 * 1000,
+  fight_phonix: 15 * 60 * 1000,
 };
 
 const POTION_HEAL_AMOUNT = 40;
-const MIN_HP_FOR_COMBAT = 20;
+const MIN_HP_FOR_COMBAT = 25;
 const MAX_TOOL_LEVEL = 10;
 const MAX_PET_LEVEL = 20;
-const MAX_OPEN_CRATE_BATCH = 20;
+const MAX_OPEN_CRATE_BATCH = 10;
 const MAX_SHOP_QTY = 500;
-export const MAX_DAILY_SHOP_CRATE_BUY = 10;
+export const MAX_DAILY_SHOP_CRATE_BUY = 5;
+export const SHARED_BOSS_COOLDOWN_KEY = "fight_boss";
 
 const ADVENTURE_ZONES = [
   "Hutan Kristal Abadi",
@@ -250,6 +254,23 @@ export interface PetCareResult {
   remainingSupply: number;
 }
 
+export interface ToolRepairEntry {
+  toolId: ToolType;
+  toolLabel: string;
+  level: number;
+  durabilityBefore: number;
+  durabilityAfter: number;
+  moneyCost: bigint;
+  materialsUsed: Record<string, number>;
+}
+
+export interface ToolRepairResult {
+  repaired: ToolRepairEntry[];
+  totalMoneyCost: bigint;
+  totalMaterialsUsed: Record<string, number>;
+  currentMoney: bigint;
+}
+
 export interface BossFightResult {
   bossId: PetType;
   bossName: string;
@@ -264,6 +285,8 @@ export interface BossFightResult {
   petDropped: boolean;
   petNewLevel: number;
   currentMoney: bigint;
+  swordDurabilityAfter: number;
+  armorDurabilityAfter: number;
 }
 
 interface InfiniteProfileStore {
@@ -312,24 +335,51 @@ export function calculatePlayerCombatPower(
   matchingPet?: PetType,
   nowMs: number = Date.now(),
 ): number {
-  const base = Math.max(1, level) * 12;
-  const swordBonus = state.tools.sword.level * 28;
-  const armorBonus = state.tools.armor.level * 16;
+  const safeLevel = Math.max(1, Math.floor(level));
+  const base = Math.min(35, safeLevel) * 4 + Math.max(0, safeLevel - 35) * 2;
+  const swordBonus =
+    state.tools.sword.level > 0 && state.tools.sword.durability > 0
+      ? state.tools.sword.level * 18
+      : 0;
+  const armorBonus =
+    state.tools.armor.level > 0 && state.tools.armor.durability > 0
+      ? state.tools.armor.level * 12
+      : 0;
 
   let bestPetPower = 0;
   for (const petKey of PET_TYPES) {
     const pet = state.pets[petKey];
     if (pet.level > 0) {
-      const weight = matchingPet === petKey ? 32 : 18;
-      const pwr = pet.level * weight;
+      const weight = matchingPet === petKey ? 16 : 10;
+      const pwr = Math.min(12, pet.level) * weight;
       if (pwr > bestPetPower) bestPetPower = pwr;
     }
   }
 
   const rawPower = base + swordBonus + armorBonus + bestPetPower;
-  const strMult = 1 + state.skills.str * 0.06;
-  const buffMult = state.buffs.jamukuat > nowMs ? 1.35 : 1;
+  const strMult = 1 + state.skills.str * 0.015;
+  const buffMult = state.buffs.jamukuat > nowMs ? 1.25 : 1;
   return Math.round(rawPower * strMult * buffMult);
+}
+
+export function calculateToolRepairQuote(
+  toolId: ToolType,
+  level: number,
+  durability: number,
+): { moneyCost: bigint; materials: Record<string, number> } {
+  const deficit = Math.max(0, 100 - Math.max(0, Math.min(100, Math.floor(durability))));
+  if (level <= 0 || deficit === 0) {
+    return { moneyCost: 0n, materials: {} };
+  }
+  const moneyCost = BigInt(Math.max(150_000, level * deficit * 4_500));
+  const matQty = Math.max(1, Math.ceil(deficit / 25));
+  const matId =
+    toolId === "pickaxe" || toolId === "fishingrod"
+      ? "kayu"
+      : level >= 4
+        ? "besi"
+        : "batu";
+  return { moneyCost, materials: { [matId]: matQty } };
 }
 
 export class RpgInfiniteService {
@@ -773,19 +823,19 @@ export class RpgInfiniteService {
       }
 
       let crateFound: CrateType | null = null;
-      const crateRollChance = Math.min(0.55, 0.18 + tier * 0.05 + petOldLevel * 0.01);
+      const crateRollChance = Math.min(0.4, 0.14 + tier * 0.04 + petOldLevel * 0.01);
       if (this.random.chance(crateRollChance)) {
-        if (tier >= 5 && this.random.chance(0.3)) {
+        if (tier >= 5 && this.random.chance(0.22)) {
           crateFound = "mythic";
-        } else if (tier >= 3 && this.random.chance(0.45)) {
+        } else if (tier >= 3 && this.random.chance(0.4)) {
           crateFound = "uncommon";
         } else {
           crateFound = "common";
         }
       }
 
-      const basePocket = BigInt(this.random.intBetween(1_000_000, 2_000_000));
-      const petFactorPct = BigInt(100 + tier * 25 + petOldLevel * 5);
+      const basePocket = BigInt(this.random.intBetween(350_000, 700_000));
+      const petFactorPct = BigInt(100 + tier * 15 + Math.min(10, petOldLevel) * 4);
       const scaledMoney = (basePocket * petFactorPct) / 100n;
       const moneyGained = clampMoneyCredit(profile.moneyBalance, scaledMoney);
       const xpGained = applyGroupXpEvent(groupJid, 75 + tier * 15);
@@ -900,9 +950,9 @@ export class RpgInfiniteService {
     const nowMs = now.getTime();
     const zone =
       ADVENTURE_ZONES[this.random.intBetween(0, ADVENTURE_ZONES.length - 1)] ?? ADVENTURE_ZONES[0];
-    const baseMoney = BigInt(this.random.intBetween(1_500_000, 4_500_000));
+    const baseMoney = BigInt(this.random.intBetween(450_000, 1_200_000));
     const xpGained = applyGroupXpEvent(groupJid, this.random.intBetween(90, 180), nowMs);
-    const rawDamage = this.random.intBetween(15, 32);
+    const rawDamage = this.random.intBetween(18, 34);
     const correlationId = generateCorrelationId();
 
     return this.db.$transaction(async (tx) => {
@@ -929,11 +979,12 @@ export class RpgInfiniteService {
         );
       }
 
-      const armorReduction = Math.min(20, state.tools.armor.level * 2);
-      const hpLost = Math.max(5, rawDamage - armorReduction);
+      const hpLost = computeBossHpDamage(rawDamage, state, 12);
       const hpAfter = Math.max(0, state.hp - hpLost);
 
-      const swordBonusPct = state.tools.sword.level * 12;
+      const effectiveSwordLevel =
+        state.tools.sword.durability > 0 ? state.tools.sword.level : 0;
+      const swordBonusPct = effectiveSwordLevel * 8;
       const boostedBase = (baseMoney * BigInt(100 + swordBonusPct)) / 100n;
       const moneyGained = clampMoneyCredit(
         profile.moneyBalance,
@@ -956,15 +1007,16 @@ export class RpgInfiniteService {
       }
 
       let crateFound: CrateType | null = null;
-      if (this.random.chance(0.1)) {
+      if (this.random.chance(0.05)) {
         crateFound = "mythic";
-      } else if (this.random.chance(0.3)) {
+      } else if (this.random.chance(0.2)) {
         crateFound = "uncommon";
-      } else if (this.random.chance(0.65)) {
+      } else if (this.random.chance(0.45)) {
         crateFound = "common";
       }
 
       let nextState = withUpdatedCooldown(withHp(state, hpAfter), "adventure", nowMs);
+      nextState = withToolsDurabilityDelta(nextState, { sword: -3, armor: -3 });
       nextState = withItemsDelta(nextState, itemsFound);
       if (crateFound) {
         nextState = withCrateDelta(nextState, crateFound, 1);
@@ -1029,10 +1081,11 @@ export class RpgInfiniteService {
         );
       }
 
-      const toolLevel =
-        action === "nebang" ? state.tools.pickaxe.level : state.tools.fishingrod.level;
+      const toolKey: ToolType = action === "nebang" ? "pickaxe" : "fishingrod";
+      const toolState = state.tools[toolKey];
+      const toolLevel = toolState.durability > 0 ? toolState.level : 0;
       const toolBonusPercent = toolLevel * 15;
-      const baseMoney = BigInt(this.random.intBetween(720_000, 1_920_000));
+      const baseMoney = BigInt(this.random.intBetween(280_000, 680_000));
       const boosted = (baseMoney * BigInt(100 + toolBonusPercent)) / 100n;
       const moneyGained = clampMoneyCredit(
         profile.moneyBalance,
@@ -1057,9 +1110,9 @@ export class RpgInfiniteService {
         }
       }
 
-      const nextState = withItemsDelta(
-        withUpdatedCooldown(state, action, nowMs),
-        itemsGained,
+      const nextState = withToolsDurabilityDelta(
+        withItemsDelta(withUpdatedCooldown(state, action, nowMs), itemsGained),
+        { [toolKey]: -4 },
       );
 
       const updated = await tx.groupMemberProfile.update({
@@ -1509,6 +1562,116 @@ export class RpgInfiniteService {
     });
   }
 
+  async repairTools(
+    groupJid: string,
+    userJid: string,
+    target: ToolType | "all" = "all",
+  ): Promise<ToolRepairResult> {
+    const correlationId = generateCorrelationId();
+    const targetTools: readonly ToolType[] = target === "all" ? TOOL_TYPES : [target];
+
+    return this.db.$transaction(async (tx) => {
+      const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
+      const state = parseRpgState(profile.rpgState);
+
+      const entries: ToolRepairEntry[] = [];
+      let totalMoneyCost = 0n;
+      const totalMaterials: Record<string, number> = {};
+      let nextState = state;
+
+      for (const toolId of targetTools) {
+        const cur = state.tools[toolId];
+        if (cur.level <= 0 || cur.durability >= 100) {
+          continue;
+        }
+        const quote = calculateToolRepairQuote(toolId, cur.level, cur.durability);
+        totalMoneyCost += quote.moneyCost;
+        for (const [mat, qty] of Object.entries(quote.materials)) {
+          totalMaterials[mat] = (totalMaterials[mat] ?? 0) + qty;
+        }
+        nextState = withToolState(nextState, toolId, { level: cur.level, durability: 100 });
+        entries.push({
+          toolId,
+          toolLabel: TOOL_SPECS[toolId].label,
+          level: cur.level,
+          durabilityBefore: cur.durability,
+          durabilityAfter: 100,
+          moneyCost: quote.moneyCost,
+          materialsUsed: quote.materials,
+        });
+      }
+
+      if (entries.length === 0) {
+        const ownedAny = targetTools.some((t) => state.tools[t].level > 0);
+        throw new AppUserError(
+          ownedAny
+            ? "Semua alat yang dipilih masih dalam kondisi prima (Durability 100%)."
+            : target === "all"
+              ? "Kamu belum memiliki alat apapun. Buat dulu dengan *.craft <alat>*!"
+              : `Kamu belum memiliki ${TOOL_SPECS[target].label}. Buat dulu dengan *.craft ${target}*!`,
+        );
+      }
+
+      if (profile.moneyBalance < totalMoneyCost) {
+        throw new AppUserError(
+          `Biaya perbaikan adalah ${formatRupiah(totalMoneyCost)}, dompetmu: ${formatRupiah(profile.moneyBalance)}.`,
+        );
+      }
+
+      const missing: string[] = [];
+      const matDeltas: Record<string, number> = {};
+      for (const [mat, reqQty] of Object.entries(totalMaterials)) {
+        const owned = state.items[mat] ?? 0;
+        if (owned < reqQty) {
+          missing.push(`${mat} (${String(owned)}/${String(reqQty)})`);
+        }
+        matDeltas[mat] = -reqQty;
+      }
+      if (missing.length > 0) {
+        throw new AppUserError(`Bahan kurang untuk perbaikan alat: ${missing.join(", ")}.`);
+      }
+
+      nextState = withItemsDelta(nextState, matDeltas);
+
+      const debitRes = await tx.groupMemberProfile.updateMany({
+        where: { id: profile.id, moneyBalance: { gte: totalMoneyCost } },
+        data: {
+          moneyBalance: { decrement: totalMoneyCost },
+          rpgState: serializeRpgState(nextState),
+        },
+      });
+      if (debitRes.count === 0) {
+        throw new AppUserError("Saldo dompet tidak cukup saat memperbaiki alat.");
+      }
+
+      const updated = await tx.groupMemberProfile.findUniqueOrThrow({ where: { id: profile.id } });
+      if (totalMoneyCost > 0n) {
+        await this.txRepo.create(
+          {
+            profileId: profile.id,
+            groupJid,
+            userJid,
+            asset: MemberTransactionAsset.MONEY,
+            type: MemberTransactionType.RPG_LOSS,
+            amount: -totalMoneyCost,
+            balanceBefore: profile.moneyBalance,
+            balanceAfter: updated.moneyBalance,
+            correlationId,
+            note: `repair_${target}`,
+          },
+          tx,
+        );
+      }
+
+      return {
+        repaired: entries,
+        totalMoneyCost,
+        totalMaterialsUsed: totalMaterials,
+        currentMoney: updated.moneyBalance,
+      };
+    });
+  }
+
   async openCrate(
     groupJid: string,
     userJid: string,
@@ -1697,8 +1860,7 @@ export class RpgInfiniteService {
     now: Date = new Date(),
   ): Promise<BossFightResult> {
     const spec = BOSS_FIGHT_SPECS[bossId];
-    const cdKey = `fight_${bossId}`;
-    const cooldownMs = INFINITE_RPG_COOLDOWNS_MS[cdKey] ?? 15 * 60 * 1000;
+    const cooldownMs = INFINITE_RPG_COOLDOWNS_MS[SHARED_BOSS_COOLDOWN_KEY] ?? 15 * 60 * 1000;
     const nowMs = now.getTime();
     const correlationId = generateCorrelationId();
 
@@ -1719,24 +1881,30 @@ export class RpgInfiniteService {
         );
       }
 
-      const cdRem = getRemainingCooldownMs(state, cdKey, cooldownMs, nowMs);
+      const cdRem = getRemainingCooldownMs(state, SHARED_BOSS_COOLDOWN_KEY, cooldownMs, nowMs);
       if (cdRem > 0) {
         throw new AppUserError(
-          `${spec.bossName} sedang bersembunyi. Bisa ditantang lagi dalam *${formatRemainingDuration(cdRem)}*.`,
+          `Tenagamu masih pulih dari pertarungan boss! Bisa menantang boss lagi dalam *${formatRemainingDuration(cdRem)}*.`,
         );
       }
 
-      const playerPower =
-        calculatePlayerCombatPower(profile.level, state, bossId) + this.random.intBetween(10, 50);
-      const bossPower = spec.power + this.random.intBetween(0, 35);
-      const won = playerPower >= bossPower;
+      const rawPlayerPower = calculatePlayerCombatPower(profile.level, state, bossId, nowMs);
+      const playerPower = rawPlayerPower + this.random.intBetween(8, 35);
+      // Boss ikut beradaptasi terhadap player kuat + win chance di-cap 82% agar mustahil 100% auto-win
+      const bossPower =
+        spec.power + Math.round(rawPlayerPower * 0.22) + this.random.intBetween(0, 45);
+      const rawWinProb =
+        0.55 + ((playerPower - bossPower) / Math.max(120, playerPower + bossPower)) * 0.65;
+      const winProbability = Math.max(0.1, Math.min(0.82, rawWinProb));
+      const won = this.random.chance(winProbability);
 
-      const armorReduction = Math.min(18, state.tools.armor.level * 2);
-      const rawDamage = won ? spec.hpDamageOnWin : spec.hpDamageOnLose;
-      const hpLost = Math.max(5, rawDamage - armorReduction);
+      const rawDamage =
+        (won ? spec.hpDamageOnWin : spec.hpDamageOnLose) + this.random.intBetween(0, 6);
+      const hpLost = computeBossHpDamage(rawDamage, state, won ? 14 : 24);
       const hpAfter = Math.max(0, state.hp - hpLost);
 
-      let nextState = withUpdatedCooldown(withHp(state, hpAfter), cdKey, nowMs);
+      let nextState = withUpdatedCooldown(withHp(state, hpAfter), SHARED_BOSS_COOLDOWN_KEY, nowMs);
+      nextState = withToolsDurabilityDelta(nextState, { sword: -4, armor: -4 });
 
       if (!won) {
         await tx.groupMemberProfile.update({
@@ -1761,6 +1929,8 @@ export class RpgInfiniteService {
           petDropped: false,
           petNewLevel: state.pets[bossId].level,
           currentMoney: profile.moneyBalance,
+          swordDurabilityAfter: nextState.tools.sword.durability,
+          armorDurabilityAfter: nextState.tools.armor.durability,
         };
       }
 
@@ -1769,7 +1939,12 @@ export class RpgInfiniteService {
         profile.moneyBalance,
         scaleMoneyByLevel(rawMoney, profile.level),
       );
-      nextState = withCrateDelta(nextState, spec.crateDrop, 1);
+
+      let crateGained: CrateType | null = null;
+      if (this.random.chance(spec.crateDropChance)) {
+        crateGained = spec.crateDrop;
+        nextState = withCrateDelta(nextState, spec.crateDrop, 1);
+      }
 
       let petDropped = false;
       let petNewLevel = state.pets[bossId].level;
@@ -1820,10 +1995,12 @@ export class RpgInfiniteService {
         hpAfter,
         moneyGained,
         xpGained,
-        crateGained: spec.crateDrop,
+        crateGained,
         petDropped,
         petNewLevel,
         currentMoney: updated.moneyBalance,
+        swordDurabilityAfter: nextState.tools.sword.durability,
+        armorDurabilityAfter: nextState.tools.armor.durability,
       };
     });
   }

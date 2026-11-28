@@ -95,6 +95,8 @@ const COMMAND_FEATURE_MAP = new Map<string, TenantFeatureKey>([
   ["toko", "game"],
   ["craft", "game"],
   ["upgrade", "game"],
+  ["repair", "game"],
+  ["perbaikialat", "game"],
   ["open", "game"],
   ["gacha", "game"],
   ["bukapeti", "game"],

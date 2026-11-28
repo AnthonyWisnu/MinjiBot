@@ -122,6 +122,11 @@ export interface DailyShopCrateBuyState {
   count: number;
 }
 
+export interface DailyTransferOutState {
+  dateKey: string;
+  amount: string;
+}
+
 export const MAX_NPC_PARTNER_SLOTS = 4;
 
 export interface MemberRpgState {
@@ -162,6 +167,8 @@ export interface MemberRpgState {
   profileTheme: ProfileThemeId;
   ownedThemes: ProfileThemeId[];
   dailyShopCrateBuy: DailyShopCrateBuyState;
+  dailyTransferOut: DailyTransferOutState;
+  autoWealthTaxDay: string;
   npcRomance: NpcRomanceState;
 }
 
@@ -259,6 +266,8 @@ export function createDefaultRpgState(): MemberRpgState {
     profileTheme: "midnight",
     ownedThemes: ["midnight"],
     dailyShopCrateBuy: { dateKey: "", count: 0 },
+    dailyTransferOut: { dateKey: "", amount: "0" },
+    autoWealthTaxDay: "",
     npcRomance: {
       maxSlots: 1,
       primaryKey: null,
@@ -708,6 +717,24 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     }
   }
 
+  const dailyTransferOut: DailyTransferOutState = { dateKey: "", amount: "0" };
+  if (
+    obj.dailyTransferOut &&
+    typeof obj.dailyTransferOut === "object" &&
+    !Array.isArray(obj.dailyTransferOut)
+  ) {
+    const rawTf = obj.dailyTransferOut as Record<string, unknown>;
+    if (typeof rawTf.dateKey === "string") {
+      dailyTransferOut.dateKey = rawTf.dateKey.slice(0, 16);
+    }
+    if (typeof rawTf.amount === "string" && /^\d+$/.test(rawTf.amount)) {
+      dailyTransferOut.amount = rawTf.amount;
+    }
+  }
+
+  const autoWealthTaxDay =
+    typeof obj.autoWealthTaxDay === "string" ? obj.autoWealthTaxDay.slice(0, 16) : "";
+
   const npcRomance: NpcRomanceState = {
     maxSlots: 1,
     primaryKey: null,
@@ -881,6 +908,8 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     profileTheme,
     ownedThemes,
     dailyShopCrateBuy,
+    dailyTransferOut,
+    autoWealthTaxDay,
     npcRomance,
   };
 }
@@ -947,6 +976,8 @@ export function serializeRpgState(state: MemberRpgState): Prisma.InputJsonValue 
     profileTheme: state.profileTheme,
     ownedThemes: [...state.ownedThemes],
     dailyShopCrateBuy: { ...state.dailyShopCrateBuy },
+    dailyTransferOut: { ...state.dailyTransferOut },
+    ...(state.autoWealthTaxDay ? { autoWealthTaxDay: state.autoWealthTaxDay } : {}),
     npcRomance: {
       maxSlots: state.npcRomance.maxSlots,
       primaryKey: state.npcRomance.primaryKey,
@@ -1473,6 +1504,64 @@ export function withDailyShopCrateBuy(
     ...state,
     dailyShopCrateBuy: { dateKey, count: Math.max(0, Math.floor(count)) },
   };
+}
+
+export function withDailyTransferOut(
+  state: MemberRpgState,
+  dateKey: string,
+  amount: bigint,
+): MemberRpgState {
+  return {
+    ...state,
+    dailyTransferOut: {
+      dateKey,
+      amount: (amount > 0n ? amount : 0n).toString(),
+    },
+  };
+}
+
+export function withAutoWealthTaxDay(state: MemberRpgState, dateKey: string): MemberRpgState {
+  return {
+    ...state,
+    autoWealthTaxDay: dateKey.slice(0, 16),
+  };
+}
+
+export function withToolsDurabilityDelta(
+  state: MemberRpgState,
+  deltas: Partial<Record<ToolType, number>>,
+): MemberRpgState {
+  let next = state;
+  for (const toolKey of TOOL_TYPES) {
+    const delta = deltas[toolKey];
+    if (delta === undefined || delta === 0) continue;
+    const cur = next.tools[toolKey];
+    if (cur.level <= 0) continue;
+    next = withToolState(next, toolKey, {
+      level: cur.level,
+      durability: Math.max(0, Math.min(100, cur.durability + Math.trunc(delta))),
+    });
+  }
+  return next;
+}
+
+export function computeArmorDamageReductionRate(state: MemberRpgState): number {
+  const armor = state.tools.armor;
+  if (armor.level <= 0 || armor.durability <= 0) {
+    return 0;
+  }
+  return Math.min(0.4, armor.level * 0.04);
+}
+
+export function computeBossHpDamage(
+  rawDamage: number,
+  state: MemberRpgState,
+  minDamage = 12,
+  extraFactor = 1,
+): number {
+  const mitRate = computeArmorDamageReductionRate(state);
+  const mitigated = Math.round(rawDamage * (1 - mitRate) * extraFactor);
+  return Math.max(minDamage, mitigated);
 }
 
 export function withNpcRomance(

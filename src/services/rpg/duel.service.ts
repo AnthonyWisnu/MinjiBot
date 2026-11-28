@@ -14,7 +14,7 @@ import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
 
 export const DUEL_MIN_BET = 250_000n;
-export const DUEL_MAX_BET = 250_000_000n;
+export const DUEL_MAX_BET = 25_000_000n;
 const DUEL_TTL_MS = 3 * 60 * 1000;
 
 export interface PendingDuel {

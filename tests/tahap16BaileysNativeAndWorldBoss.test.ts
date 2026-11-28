@@ -214,11 +214,30 @@ describe("World Boss Persistence, Auto-Spawn & All-Time TopDamage", () => {
     assert.equal(topWhileNewBossZeroHits.activeBossPendingName, spawnedFresh.boss.spec.name);
     assert.ok(topWhileNewBossZeroHits.allTimeTop.length >= 1);
 
-    // 5. Kalahkan boss baru hingga tumbang -> history bertambah & respawn cooldown 1 jam aktif
+    // 5. Kalahkan boss baru hingga tumbang (simulasi multi-serang + heal berkala) -> history bertambah & respawn cooldown 1 jam aktif
+    for (const uid of [USER_1, USER_2]) {
+      const p = h.profiles.get(uid);
+      if (p) {
+        const st = parseRpgState(p.rpgState);
+        st.tools.sword = { level: 10, durability: 100 };
+        st.tools.armor = { level: 10, durability: 100 };
+        st.skills.str = 50;
+        p.level = 40;
+        p.rpgState = serializeRpgState(st) as never;
+      }
+    }
     let t = tExpired + 3_000;
     let defeated = false;
-    for (let i = 0; i < 12 && !defeated; i += 1) {
+    for (let i = 0; i < 60 && !defeated; i += 1) {
       const attacker = i % 2 === 0 ? USER_1 : USER_2;
+      const p = h.profiles.get(attacker);
+      if (p) {
+        const st = parseRpgState(p.rpgState);
+        if (st.hp < 35) {
+          st.hp = 100;
+          p.rpgState = serializeRpgState(st) as never;
+        }
+      }
       const res = await svcAfterRestart.attackWorldBoss(GROUP_JID, attacker, t);
       defeated = res.defeated;
       t += 260_000;

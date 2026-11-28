@@ -10,6 +10,8 @@ import { DuplicateOperationError } from "../../types/memberEconomy";
 import { clampMoneyCredit } from "../../utils/currency";
 import { isConsecutiveWibDay, toWibDateKey } from "../../utils/wibDate";
 import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
+import { applyDailyAutoWealthTaxInTx } from "../rpg/autoWealthTax";
+import { parseRpgState } from "../rpg/rpgState";
 import { generateCorrelationId } from "./memberEconomy.service";
 import { defaultRandom } from "./randomProvider";
 import type { RandomProvider } from "./randomProvider";
@@ -29,6 +31,7 @@ export interface DailyClaimResult {
   moneyGained: bigint;
   xpGained: number;
   bonusLimitGained: number;
+  autoWealthTaxPaid: bigint;
   currentPoints: number;
   currentMoney: bigint;
   currentLimit: number;
@@ -84,6 +87,13 @@ interface DailyTx {
       data: Record<string, unknown>;
     }) => Promise<{ count: number }>;
   };
+  tenantGroup?: {
+    findUnique: (args: { where: { groupJid: string } }) => Promise<{ treasuryBalance: bigint } | null>;
+    update: (args: {
+      where: { groupJid: string };
+      data: { treasuryBalance: bigint };
+    }) => Promise<unknown>;
+  };
   groupMemberTransaction?: {
     createMany: (args: {
       data: {
@@ -96,7 +106,8 @@ interface DailyTx {
         balanceBefore: number | bigint;
         balanceAfter: number | bigint;
         correlationId: string;
-        idempotencyKey: string;
+        idempotencyKey?: string;
+        note?: string;
       }[];
     }) => Promise<{ count: number }>;
   };
@@ -252,13 +263,27 @@ export class DailyClaimService {
         await tx.groupMemberTransaction.createMany({ data: txEntries });
       }
 
+      const state = parseRpgState(profile.rpgState);
+      const wealthTax = await applyDailyAutoWealthTaxInTx({
+        tx,
+        profileId: profile.id,
+        groupJid,
+        userJid,
+        currentWallet: profile.moneyBalance + moneyGained,
+        currentBank: profile.bankBalance,
+        state,
+        todayKey: wibDateKey,
+        correlationId,
+      });
+
       return {
         pointsGained,
         moneyGained,
         xpGained,
         bonusLimitGained,
+        autoWealthTaxPaid: wealthTax.taxPaid,
         currentPoints: profile.pointsBalance + pointsGained,
-        currentMoney: profile.moneyBalance + moneyGained,
+        currentMoney: wealthTax.walletAfter,
         currentLimit: profile.limitBalance + bonusLimitGained,
         currentXp: profile.experience + xpGained,
         currentStreak: newStreak,

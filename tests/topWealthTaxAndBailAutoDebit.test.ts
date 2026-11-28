@@ -53,15 +53,13 @@ function makeProfile(overrides: Partial<GroupMemberProfile> = {}): GroupMemberPr
   };
 }
 
-void test("3x price rebalance: only Jail Bail, UGD VIP, and 3 Insurances tripled; other sinks unchanged", () => {
-  assert.equal(JAIL_BAIL_COST, 45_000_000n);
-  assert.equal(UGD_VIP_RELEASE_COST, 30_000_000n);
-  assert.equal(INSURANCE_MAP.get("brankas")?.price, 105_000_000n);
-  assert.equal(INSURANCE_MAP.get("bpjs")?.price, 75_000_000n);
-  assert.equal(INSURANCE_MAP.get("pengacara")?.price, 120_000_000n);
-  // Skill reset sink updated in economy rebalance
-  assert.equal(SKILL_RESET_COST, 25_000_000n);
-  // Commands registered
+void test("Economy rebalance sinks: Jail Bail, UGD VIP, 3 Insurances, and Skill Reset scaled consistently", () => {
+  assert.equal(JAIL_BAIL_COST, 8_000_000n);
+  assert.equal(UGD_VIP_RELEASE_COST, 6_000_000n);
+  assert.equal(INSURANCE_MAP.get("brankas")?.price, 18_000_000n);
+  assert.equal(INSURANCE_MAP.get("bpjs")?.price, 12_000_000n);
+  assert.equal(INSURANCE_MAP.get("pengacara")?.price, 20_000_000n);
+  assert.equal(SKILL_RESET_COST, 5_000_000n);
   assert.equal(commandRouter.has("pajaktop"), true);
   assert.equal(commandRouter.has("pajaksultan"), true);
   assert.equal(commandRouter.has("taxtop"), true);
@@ -76,8 +74,8 @@ void test("Auto-debit Dompet + ATM works for .bebaspenjara and .bebasugd when wa
 
   let profile = makeProfile({
     id: "p_auto",
-    moneyBalance: 10_000_000n, // wallet only 10jt
-    bankBalance: 100_000_000n, // bank has 100jt
+    moneyBalance: 5_000_000n, // wallet only 5jt
+    bankBalance: 12_000_000n, // bank has 12jt
     rpgState: serializeRpgState(st) as never,
   });
   const txLogs: { amount: bigint; note?: string }[] = [];
@@ -143,30 +141,30 @@ void test("Auto-debit Dompet + ATM works for .bebaspenjara and .bebasugd when wa
     },
   );
 
-  // 1. Jail bail = 45jt -> takes 10jt from wallet + 35jt auto-debit from bank!
+  // 1. Jail bail = 8jt -> takes 5jt from wallet + 3jt auto-debit from bank!
   const jailRes = await service.releaseFromJail("120@g.us", "6281@s.whatsapp.net", now);
   assert.equal(jailRes.coveredByInsurance, false);
-  assert.equal(jailRes.costPaid, 45_000_000n);
-  assert.equal(jailRes.walletPaid, 10_000_000n);
-  assert.equal(jailRes.bankPaid, 35_000_000n);
+  assert.equal(jailRes.costPaid, 8_000_000n);
+  assert.equal(jailRes.walletPaid, 5_000_000n);
+  assert.equal(jailRes.bankPaid, 3_000_000n);
   assert.equal(jailRes.currentMoney, 0n);
-  assert.equal(jailRes.currentBank, 65_000_000n);
+  assert.equal(jailRes.currentBank, 9_000_000n);
   assert.equal(parseRpgState(profile.rpgState).jailedUntil, 0);
 
-  // 2. UGD VIP = 30jt -> wallet is 0, takes full 30jt from bank!
+  // 2. UGD VIP = 6jt -> wallet is 0, takes full 6jt from bank!
   const ugdRes = await service.releaseFromUgd("120@g.us", "6281@s.whatsapp.net", now);
   assert.equal(ugdRes.coveredByInsurance, false);
-  assert.equal(ugdRes.costPaid, 30_000_000n);
+  assert.equal(ugdRes.costPaid, 6_000_000n);
   assert.equal(ugdRes.walletPaid, 0n);
-  assert.equal(ugdRes.bankPaid, 30_000_000n);
+  assert.equal(ugdRes.bankPaid, 6_000_000n);
   assert.equal(ugdRes.currentMoney, 0n);
-  assert.equal(ugdRes.currentBank, 35_000_000n);
+  assert.equal(ugdRes.currentBank, 3_000_000n);
   assert.equal(parseRpgState(profile.rpgState).ugdUntil, 0);
   assert.equal(parseRpgState(profile.rpgState).hp, 100);
-  assert.ok(txLogs.some((t) => t.note === "jail_bail_bank_autodebit" && t.amount === -35_000_000n));
-  assert.ok(txLogs.some((t) => t.note === "ugd_vip_release_bank_autodebit" && t.amount === -30_000_000n));
+  assert.ok(txLogs.some((t) => t.note === "jail_bail_bank_autodebit" && t.amount === -3_000_000n));
+  assert.ok(txLogs.some((t) => t.note === "ugd_vip_release_bank_autodebit" && t.amount === -6_000_000n));
 
-  // 3. Put back in jail with only 35jt combined -> must reject (< 45jt)
+  // 3. Put back in jail with only 3jt combined -> must reject (< 8jt)
   const st2 = parseRpgState(profile.rpgState);
   st2.jailedUntil = now.getTime() + 600_000;
   profile = { ...profile, rpgState: serializeRpgState(st2) as never };

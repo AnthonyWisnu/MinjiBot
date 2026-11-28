@@ -22,25 +22,27 @@ import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
 import { calculatePlayerCombatPower } from "./rpgInfinite.service";
 import {
+  computeBossHpDamage,
   getRemainingCooldownMs,
   getRemainingUgdMs,
   parseRpgState,
   serializeRpgState,
   withCrateDelta,
   withHp,
+  withToolsDurabilityDelta,
   withToolState,
   withUgdUntil,
   withUpdatedCooldown,
   type CrateType,
 } from "./rpgState";
 
-export const BUSINESS_CAPITAL_PER_PERSON = 2_000_000n;
+export const BUSINESS_CAPITAL_PER_PERSON = 1_000_000n;
 const BUSINESS_COOLDOWN_MS = 60 * 60 * 1000;
 const ATTACK_COOLDOWN_MS = 30 * 60 * 1000;
 const UGD_DURATION_MS = 15 * 60 * 1000;
 const UGD_STABILIZED_HP = 30;
-const ATTACK_MIN_TARGET_WALLET = 1_000_000n;
-const ATTACK_MAX_LOOT = 40_000_000n;
+const ATTACK_MIN_TARGET_WALLET = 500_000n;
+const ATTACK_MAX_LOOT = 10_000_000n;
 const DUNGEON_LOBBY_TTL_MS = 10 * 60 * 1000;
 const DUNGEON_COOLDOWN_MS = 40 * 60 * 1000;
 const MAX_DUNGEON_LOBBIES = 100;
@@ -195,10 +197,10 @@ export class RpgGroupInteractionService {
     const ventureName =
       BUSINESS_VENTURES[this.random.intBetween(0, BUSINESS_VENTURES.length - 1)] ??
       BUSINESS_VENTURES[0];
-    const baseProfit = BigInt(this.random.intBetween(2_400_000, 7_200_000));
-    const synergyBasis = BigInt(100 + uniquePartners.length * 25); // +25% per rekan bisnis!
+    const baseProfit = BigInt(this.random.intBetween(1_200_000, 2_800_000));
+    const synergyBasis = BigInt(100 + uniquePartners.length * 20); // +20% per rekan bisnis!
     const profitEach = (baseProfit * synergyBasis) / 100n;
-    const lossEach = percentOfBigInt(BUSINESS_CAPITAL_PER_PERSON, 30); // Rp 600.000 jika rugi
+    const lossEach = percentOfBigInt(BUSINESS_CAPITAL_PER_PERSON, 30); // Rp 300.000 jika rugi
     const xpGained = profitable ? 120 + uniquePartners.length * 25 : 45;
     const correlationId = generateCorrelationId();
 
@@ -416,9 +418,8 @@ export class RpgGroupInteractionService {
     const bossName =
       DUNGEON_BOSSES[this.random.intBetween(0, DUNGEON_BOSSES.length - 1)] ?? DUNGEON_BOSSES[0];
     const teamSize = lobby.players.length;
-    const bossPower = 55 + teamSize * 45 + this.random.intBetween(0, 40);
-    const baseLootEach = BigInt(this.random.intBetween(13_200_000, 33_000_000));
-    const teamBonusBasis = BigInt(100 + (teamSize - 1) * 20);
+    const baseLootEach = BigInt(this.random.intBetween(1_800_000, 4_200_000));
+    const teamBonusBasis = BigInt(100 + (teamSize - 1) * 18);
     const correlationId = generateCorrelationId();
 
     return this.db.$transaction(async (tx) => {
@@ -428,19 +429,23 @@ export class RpgGroupInteractionService {
       for (const jid of lobby.players) {
         const profile = await this.profileRepo.findOrCreate(groupJid, jid, tx);
         const state = parseRpgState(profile.rpgState);
-        teamPower += calculatePlayerCombatPower(profile.level, state) + this.random.intBetween(10, 35);
+        teamPower += calculatePlayerCombatPower(profile.level, state) + this.random.intBetween(8, 28);
         loaded.push({ profile, state });
       }
 
-      const won = teamPower >= bossPower;
+      const avgPower = Math.round(teamPower / Math.max(1, teamSize));
+      const bossPower = 75 + teamSize * 38 + Math.round(avgPower * 0.3) + this.random.intBetween(0, 45);
+      const rawWinProb =
+        0.55 + ((teamPower - bossPower) / Math.max(120, teamPower + bossPower)) * 0.65;
+      const winProb = Math.max(0.15, Math.min(0.82, rawWinProb));
+      const won = this.random.chance(winProb);
       const members: DungeonRunResult["members"] = [];
 
       for (const { profile, state } of loaded) {
-        const armorRed = Math.min(18, state.tools.armor.level * 2);
-        const rawDmg = won ? 18 : 34;
-        const hpLost = Math.max(5, rawDmg - armorRed);
+        const hpLost = computeBossHpDamage(won ? 28 : 48, state, won ? 14 : 24);
         const hpAfter = Math.max(0, state.hp - hpLost);
         let nextState = withUpdatedCooldown(withHp(state, hpAfter), "dungeon", nowMs);
+        nextState = withToolsDurabilityDelta(nextState, { sword: -5, armor: -5 });
 
         let moneyGained = 0n;
         let xpGained = 60;
@@ -453,8 +458,10 @@ export class RpgGroupInteractionService {
             scaleMoneyByLevel(boosted, profile.level),
           );
           xpGained = 250 + teamSize * 40;
-          crateGained = teamSize >= 3 ? "mythic" : "uncommon";
-          nextState = withCrateDelta(nextState, crateGained, 1);
+          if (this.random.chance(0.35)) {
+            crateGained = teamSize >= 3 ? "mythic" : "uncommon";
+            nextState = withCrateDelta(nextState, crateGained, 1);
+          }
         }
 
         const updated = await tx.groupMemberProfile.update({
@@ -572,10 +579,17 @@ export class RpgGroupInteractionService {
         );
       }
 
+      const effectiveAttackerSword =
+        attackerState.tools.sword.durability > 0 ? attackerState.tools.sword.level : 0;
+      const effectiveTargetArmor =
+        targetState.tools.armor.durability > 0 ? targetState.tools.armor.level : 0;
       const attackerPower =
-        attacker.level * 10 + attackerState.tools.sword.level * 30 + attackerRoll;
+        Math.min(40, Math.max(1, attacker.level)) * 4 +
+        effectiveAttackerSword * 18 +
+        attackerState.skills.str +
+        attackerRoll;
       const defenderPower =
-        target.level * 10 + targetState.tools.armor.level * 32 + defenderRoll;
+        Math.min(40, Math.max(1, target.level)) * 4 + effectiveTargetArmor * 20 + defenderRoll;
 
       let nextAttackerState = withUpdatedCooldown(attackerState, "serang", nowMs);
       if (nextAttackerState.tools.sword.level > 0) {

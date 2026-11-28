@@ -14,7 +14,7 @@ export const DAILY_QUEST_SPECS: readonly DailyQuestSpec[] = [
     id: "absen_harian",
     title: "Absen Harian",
     description: "Klaim .daily hari ini",
-    rewardMoney: 9_000_000n,
+    rewardMoney: 1_200_000n,
     rewardLimit: 3,
     rewardXp: 100,
   },
@@ -22,7 +22,7 @@ export const DAILY_QUEST_SPECS: readonly DailyQuestSpec[] = [
     id: "pekerja_keras",
     title: "Pekerja Keras",
     description: "Lakukan minimal 2 aksi RPG hari ini (.kerja/.nambang/.adventure/dll)",
-    rewardMoney: 15_000_000n,
+    rewardMoney: 2_000_000n,
     rewardLimit: 4,
     rewardXp: 150,
   },
@@ -30,7 +30,7 @@ export const DAILY_QUEST_SPECS: readonly DailyQuestSpec[] = [
     id: "warga_aktif",
     title: "Warga Tongkrongan",
     description: "Aktif chat di grup hari ini (min. 5 pesan) atau punya investasi/aset",
-    rewardMoney: 12_000_000n,
+    rewardMoney: 1_500_000n,
     rewardLimit: 3,
     rewardXp: 120,
   },
@@ -38,7 +38,7 @@ export const DAILY_QUEST_SPECS: readonly DailyQuestSpec[] = [
     id: "bonus_semua",
     title: "Sapubersih Misi",
     description: "Selesaikan ketiga misi harian di atas",
-    rewardMoney: 30_000_000n,
+    rewardMoney: 3_500_000n,
     rewardLimit: 5,
     rewardXp: 300,
   },
@@ -59,8 +59,8 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     id: "jutawan",
     badge: "[JUTAWAN]",
     title: "Jutawan Grup",
-    requirement: "Total kekayaan (Dompet+Bank) >= Rp 100 Juta",
-    rewardMoney: 9_000_000n,
+    requirement: "Total kekayaan (Dompet+Bank) >= Rp 25 Juta",
+    rewardMoney: 2_000_000n,
     rewardLimit: 3,
     rewardXp: 200,
   },
@@ -69,7 +69,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[MILIARDER]",
     title: "Miliarder Tongkrongan",
     requirement: "Total kekayaan (Dompet+Bank) >= Rp 1 Miliar",
-    rewardMoney: 60_000_000n,
+    rewardMoney: 15_000_000n,
     rewardLimit: 8,
     rewardXp: 600,
   },
@@ -78,7 +78,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[TRILIUNER]",
     title: "Crazy Rich Triliuner",
     requirement: "Total kekayaan (Dompet+Bank) >= Rp 1 Triliun",
-    rewardMoney: 1_500_000_000n,
+    rewardMoney: 150_000_000n,
     rewardLimit: 25,
     rewardXp: 2_500,
   },
@@ -87,7 +87,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[PETUALANG]",
     title: "Petualang Tangguh",
     requirement: "Mencapai Level 5 ke atas (.levelup)",
-    rewardMoney: 18_000_000n,
+    rewardMoney: 3_000_000n,
     rewardLimit: 4,
     rewardXp: 300,
   },
@@ -96,7 +96,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[EPIC+]",
     title: "Sepuh Berpengalaman",
     requirement: "Mencapai Rank Epic (40.000+ XP)",
-    rewardMoney: 45_000_000n,
+    rewardMoney: 8_000_000n,
     rewardLimit: 10,
     rewardXp: 500,
   },
@@ -105,7 +105,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[JURAGAN]",
     title: "Juragan Properti",
     requirement: "Memiliki minimal 3 unit properti",
-    rewardMoney: 24_000_000n,
+    rewardMoney: 4_000_000n,
     rewardLimit: 5,
     rewardXp: 350,
   },
@@ -114,7 +114,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[INVESTOR]",
     title: "Investor Bursa",
     requirement: "Memiliki saham (.belisaham) atau kripto (.crypto)",
-    rewardMoney: 15_000_000n,
+    rewardMoney: 2_500_000n,
     rewardLimit: 4,
     rewardXp: 250,
   },
@@ -123,7 +123,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[KOLEKTOR]",
     title: "Kolektor Kartu",
     requirement: "Mengoleksi minimal 5 kartu gacha unik",
-    rewardMoney: 27_000_000n,
+    rewardMoney: 5_000_000n,
     rewardLimit: 6,
     rewardXp: 400,
   },
@@ -132,7 +132,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[UR HUNTER]",
     title: "Pemburu Kartu Ultra Rare",
     requirement: "Mendapatkan minimal 1 kartu tier UR (.gachakartu)",
-    rewardMoney: 90_000_000n,
+    rewardMoney: 15_000_000n,
     rewardLimit: 15,
     rewardXp: 1_000,
   },
@@ -141,7 +141,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[SAH]",
     title: "Pasangan Resmi Grup",
     requirement: "Menikah secara resmi lewat .nikah",
-    rewardMoney: 21_000_000n,
+    rewardMoney: 3_500_000n,
     rewardLimit: 5,
     rewardXp: 300,
   },
@@ -150,7 +150,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[GELAR]",
     title: "Sultan Bergelar",
     requirement: "Memiliki gelar custom lewat .beligelar",
-    rewardMoney: 18_000_000n,
+    rewardMoney: 3_000_000n,
     rewardLimit: 4,
     rewardXp: 250,
   },
@@ -159,7 +159,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
     badge: "[RAMAI]",
     title: "Penghidup Suasana",
     requirement: "Mengirim minimal 100 pesan di grup",
-    rewardMoney: 12_000_000n,
+    rewardMoney: 2_000_000n,
     rewardLimit: 5,
     rewardXp: 350,
   },
@@ -179,65 +179,65 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
     id: "warung",
     name: "Warung Kopi Tongkrongan",
     minLevel: 1,
-    price: 75_000_000n,
-    incomePerHour: 1_000_000n,
-    maxOwned: 10,
+    price: 15_000_000n,
+    incomePerHour: 90_000n,
+    maxOwned: 5,
   },
   {
     id: "kosan",
     name: "Kos-Kosan 10 Pintu",
     minLevel: 1,
-    price: 300_000_000n,
-    incomePerHour: 3_800_000n,
-    maxOwned: 10,
+    price: 50_000_000n,
+    incomePerHour: 280_000n,
+    maxOwned: 5,
   },
   {
     id: "cafe",
     name: "Cafe Estetik 24 Jam",
     minLevel: 5,
-    price: 900_000_000n,
-    incomePerHour: 11_000_000n,
-    maxOwned: 10,
+    price: 150_000_000n,
+    incomePerHour: 800_000n,
+    maxOwned: 5,
   },
   {
     id: "spbu",
     name: "SPBU Pasti Pas",
     minLevel: 10,
-    price: 2_800_000_000n,
-    incomePerHour: 32_000_000n,
-    maxOwned: 10,
+    price: 450_000_000n,
+    incomePerHour: 2_200_000n,
+    maxOwned: 4,
   },
   {
     id: "hotel",
     name: "Hotel Bintang 5",
     minLevel: 18,
-    price: 9_000_000_000n,
-    incomePerHour: 96_000_000n,
-    maxOwned: 10,
+    price: 1_400_000_000n,
+    incomePerHour: 6_500_000n,
+    maxOwned: 3,
   },
   {
     id: "mall",
     name: "Mall Pusat Kota",
     minLevel: 28,
-    price: 30_000_000_000n,
-    incomePerHour: 300_000_000n,
-    maxOwned: 10,
+    price: 4_500_000_000n,
+    incomePerHour: 19_000_000n,
+    maxOwned: 3,
   },
   {
     id: "maskapai",
     name: "Maskapai Jet Pribadi",
     minLevel: 40,
-    price: 120_000_000_000n,
-    incomePerHour: 1_100_000_000n,
-    maxOwned: 10,
+    price: 15_000_000_000n,
+    incomePerHour: 60_000_000n,
+    maxOwned: 2,
   },
   {
     id: "pulau",
     name: "Pulau Resort Pribadi",
     minLevel: 55,
-    price: 450_000_000_000n,
-    incomePerHour: 3_750_000_000n,
-    maxOwned: 5,
+    price: 50_000_000_000n,
+    incomePerHour: 180_000_000n,
+    maxOwned: 1,
   },
 ] as const;
 
@@ -246,6 +246,7 @@ export const PROPERTY_MAP = new Map<string, PropertySpec>(
 );
 
 export const PROPERTY_SELL_REFUND_PERCENT = 65;
+export const PROPERTY_HARVEST_TAX_PERCENT = 10;
 export const PROPERTY_MIN_HARVEST_MS = 20 * 60 * 1000;
 export const PROPERTY_MAX_ACCUMULATION_HOURS = 24;
 
@@ -256,19 +257,19 @@ export interface RankSalarySpec {
 }
 
 export const RANK_SALARY_TABLE: Record<MemberRank, RankSalarySpec> = {
-  Warrior: { money: 6_000_000n, limit: 2, xp: 60 },
-  Elite: { money: 15_000_000n, limit: 3, xp: 90 },
-  Master: { money: 30_000_000n, limit: 4, xp: 120 },
-  Grandmaster: { money: 60_000_000n, limit: 5, xp: 160 },
-  Epic: { money: 120_000_000n, limit: 6, xp: 200 },
-  Legend: { money: 240_000_000n, limit: 8, xp: 260 },
-  Mythic: { money: 480_000_000n, limit: 10, xp: 340 },
-  "Immortal [MAX]": { money: 900_000_000n, limit: 12, xp: 450 },
+  Warrior: { money: 800_000n, limit: 2, xp: 60 },
+  Elite: { money: 1_800_000n, limit: 3, xp: 90 },
+  Master: { money: 3_200_000n, limit: 4, xp: 120 },
+  Grandmaster: { money: 5_000_000n, limit: 5, xp: 160 },
+  Epic: { money: 7_500_000n, limit: 6, xp: 200 },
+  Legend: { money: 11_000_000n, limit: 8, xp: 260 },
+  Mythic: { money: 15_000_000n, limit: 10, xp: 340 },
+  "Immortal [MAX]": { money: 22_000_000n, limit: 12, xp: 450 },
 };
 
-export const DEPOSITO_MIN_AMOUNT = 25_000_000n;
-export const DEPOSITO_MAX_PRINCIPAL = 50_000_000_000n; // Maks pokok deposito Rp 50 Miliar anti cetak bunga liar
-export const DEPOSITO_DAILY_INTEREST_PERCENT = 2;
+export const DEPOSITO_MIN_AMOUNT = 5_000_000n;
+export const DEPOSITO_MAX_PRINCIPAL = 1_000_000_000n; // Maks pokok deposito Rp 1 Miliar anti cetak bunga liar
+export const DEPOSITO_DAILY_INTEREST_PERCENT = 0.5;
 export const DEPOSITO_MAX_INTEREST_DAYS = 7;
 
 export interface StockSpec {
@@ -411,7 +412,7 @@ export interface GachaCardSpec {
   duplicateCashback: bigint;
 }
 
-export const GACHA_PULL_PRICE = 60_000_000n;
+export const GACHA_PULL_PRICE = 10_000_000n;
 
 export const GACHA_CARDS: readonly GachaCardSpec[] = [
   // R (55% rate) - 8 cards
@@ -423,7 +424,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 120,
     quote: "Online terus tapi cuma baca doang.",
-    duplicateCashback: 8_000_000n,
+    duplicateCashback: 1_500_000n,
   },
   {
     id: "r_tukang_kopi",
@@ -433,7 +434,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 135,
     quote: "Begadang demi push rank sampe subuh.",
-    duplicateCashback: 8_000_000n,
+    duplicateCashback: 1_500_000n,
   },
   {
     id: "r_ojol_ngebut",
@@ -443,7 +444,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 150,
     quote: "Sesuai titik ya kak, jangan geser.",
-    duplicateCashback: 8_000_000n,
+    duplicateCashback: 1_500_000n,
   },
   {
     id: "r_pemburu_wifi",
@@ -453,7 +454,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 145,
     quote: "Mas, password WiFi-nya apa ya?",
-    duplicateCashback: 8_000_000n,
+    duplicateCashback: 1_500_000n,
   },
   {
     id: "r_anak_indomie",
@@ -463,7 +464,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 160,
     quote: "Satu kurang, dua kebanyakan.",
-    duplicateCashback: 8_000_000n,
+    duplicateCashback: 1_500_000n,
   },
   {
     id: "r_kolektor_stiker",
@@ -473,7 +474,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 170,
     quote: "Semua muka kaget sudah aman di galeri.",
-    duplicateCashback: 8_000_000n,
+    duplicateCashback: 1_500_000n,
   },
   {
     id: "r_tukang_tidur",
@@ -483,7 +484,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 155,
     quote: "Lima menit lagi, beneran deh.",
-    duplicateCashback: 8_000_000n,
+    duplicateCashback: 1_500_000n,
   },
   {
     id: "r_kucing_oren",
@@ -493,7 +494,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "R",
     power: 180,
     quote: "Tidak ada rasa takut, hanya gaspol.",
-    duplicateCashback: 8_000_000n,
+    duplicateCashback: 1_500_000n,
   },
   // SR (30% rate) - 6 cards
   {
@@ -504,7 +505,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 320,
     quote: "Share link sembarangan langsung auto terbang.",
-    duplicateCashback: 22_000_000n,
+    duplicateCashback: 4_000_000n,
   },
   {
     id: "sr_trader_santai",
@@ -514,7 +515,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 350,
     quote: "Tenang, ini cuma koreksi sehat.",
-    duplicateCashback: 22_000_000n,
+    duplicateCashback: 4_000_000n,
   },
   {
     id: "sr_bandar_slot",
@@ -524,7 +525,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 380,
     quote: "All-in sekarang, nangis belakangan.",
-    duplicateCashback: 22_000_000n,
+    duplicateCashback: 4_000_000n,
   },
   {
     id: "sr_sepuh_coding",
@@ -534,7 +535,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 410,
     quote: "Di laptop saya jalan kok.",
-    duplicateCashback: 22_000_000n,
+    duplicateCashback: 4_000_000n,
   },
   {
     id: "sr_wibu_elit",
@@ -544,7 +545,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 390,
     quote: "Manga-nya jauh lebih bagus bro.",
-    duplicateCashback: 22_000_000n,
+    duplicateCashback: 4_000_000n,
   },
   {
     id: "sr_juragan_kos",
@@ -554,7 +555,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SR",
     power: 430,
     quote: "Halo dek, kosan bulan ini belum ya.",
-    duplicateCashback: 22_000_000n,
+    duplicateCashback: 4_000_000n,
   },
   // SSR (12% rate) - 4 cards
   {
@@ -565,7 +566,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SSR",
     power: 680,
     quote: "Uang bukan masalah, yang penting rame.",
-    duplicateCashback: 75_000_000n,
+    duplicateCashback: 12_000_000n,
   },
   {
     id: "ssr_naga_emas",
@@ -575,7 +576,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SSR",
     power: 720,
     quote: "Hanya petualang terkuat yang selamat.",
-    duplicateCashback: 75_000_000n,
+    duplicateCashback: 12_000_000n,
   },
   {
     id: "ssr_raja_bursa",
@@ -585,7 +586,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SSR",
     power: 750,
     quote: "Sekali borong langsung auto ARA.",
-    duplicateCashback: 75_000_000n,
+    duplicateCashback: 12_000_000n,
   },
   {
     id: "ssr_detektif_uc",
@@ -595,7 +596,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "SSR",
     power: 710,
     quote: "Percaya aku, bukan aku impostor-nya.",
-    duplicateCashback: 75_000_000n,
+    duplicateCashback: 12_000_000n,
   },
   // UR (3% rate) - 2 cards
   {
@@ -606,7 +607,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "UR",
     power: 999,
     quote: "Seluruh server dan takdir ada di genggamanku.",
-    duplicateCashback: 180_000_000n,
+    duplicateCashback: 28_000_000n,
   },
   {
     id: "ur_emperor_sultan",
@@ -616,7 +617,7 @@ export const GACHA_CARDS: readonly GachaCardSpec[] = [
     rarity: "UR",
     power: 980,
     quote: "Membeli grup beserta isinya tanpa berkedip.",
-    duplicateCashback: 180_000_000n,
+    duplicateCashback: 28_000_000n,
   },
 ] as const;
 
@@ -647,7 +648,7 @@ export function rollGachaCard(randomValue: number = Math.random()): GachaCardSpe
     rarity: "R",
     power: 120,
     quote: "Online terus tapi cuma baca doang.",
-    duplicateCashback: 8_000_000n,
+    duplicateCashback: 1_500_000n,
   };
   return pool[index] ?? GACHA_CARDS[0] ?? fallback;
 }

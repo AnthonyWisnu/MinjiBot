@@ -159,11 +159,12 @@ function createTestHarness() {
 }
 
 void describe("Rebalance Ekonomi Anti-Exploit & Anti-Spam Crate", () => {
-  void it("Pengali level dibatasi maks 3.0x (Lv.1=1x, Lv.21=2x, Lv.41+=3x)", () => {
+  void it("Pengali level terkompresi maks 1.4x (Lv.1=1x, Lv.11=1.1x, Lv.21=1.2x, Lv.41+=1.4x)", () => {
     assert.equal(computeLevelMoneyMultiplier(1), 1);
-    assert.equal(computeLevelMoneyMultiplier(21), 2);
-    assert.equal(computeLevelMoneyMultiplier(41), 3);
-    assert.equal(computeLevelMoneyMultiplier(99), 3);
+    assert.equal(computeLevelMoneyMultiplier(11), 1.1);
+    assert.equal(computeLevelMoneyMultiplier(21), 1.2);
+    assert.equal(computeLevelMoneyMultiplier(41), 1.4);
+    assert.equal(computeLevelMoneyMultiplier(99), 1.4);
   });
 
   void it("Crate realistis & aman: uang tunai < harga beli, EV cair ~75-83% (<100%), tapi nilai pakai/utility >100% + 2 item di Mythic/Legendary", async () => {
@@ -255,13 +256,14 @@ void describe("Rebalance Ekonomi Anti-Exploit & Anti-Spam Crate", () => {
     assert.equal(boughtNextDay.quantity, 2);
   });
 
-  void it("Properti memiliki ROI sehat (>= 72 jam) dan Deposito dibatasi 2%/hari + maks pokok Rp 50 Miliar", async () => {
+  void it("Properti memiliki ROI sehat (>= 72 jam) dan Deposito dibatasi 0,5%/hari + maks pokok Rp 1 Miliar", async () => {
     for (const prop of PROPERTY_CATALOG) {
       const roiHours = Number(prop.price / prop.incomePerHour);
       assert.ok(roiHours >= 72, `ROI properti ${prop.id} (${String(roiHours)}j) harus >= 72 jam`);
     }
 
-    assert.equal(DEPOSITO_DAILY_INTEREST_PERCENT, 2);
+    assert.equal(DEPOSITO_DAILY_INTEREST_PERCENT, 0.5);
+    assert.equal(DEPOSITO_MAX_PRINCIPAL, 1_000_000_000n);
     const h = createTestHarness();
     h.seedProfile(USER_A, { moneyBalance: 100_000_000_000n });
     const exp = new RpgExpansionService(

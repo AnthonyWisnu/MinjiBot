@@ -50,9 +50,9 @@ export interface WarAttackOutcome {
 }
 
 export const WAR_MIN_BET = 250_000n;
-export const WAR_MAX_BET = 100_000_000n;
-export const WAR_DEFAULT_BET = 1_000_000n;
-export const WAR_VICTORY_BONUS_PER_WINNER = 9_000_000n;
+export const WAR_MAX_BET = 15_000_000n;
+export const WAR_DEFAULT_BET = 500_000n;
+export const WAR_VICTORY_BONUS_PER_WINNER = 2_500_000n;
 export const WAR_WIN_XP = 180;
 export const WAR_LOSE_XP = 40;
 export const WAR_TTL_MS = 15 * 60 * 1000;

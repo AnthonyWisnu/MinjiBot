@@ -30,6 +30,7 @@ import { DEFAULT_GROUP_TREASURY } from "./rpgEconomy.service";
 import { calculatePlayerCombatPower } from "./rpgInfinite.service";
 import {
   BUFF_KEYS,
+  computeBossHpDamage,
   getRemainingCooldownMs,
   getRemainingJailMs,
   getRemainingUgdMs,
@@ -50,6 +51,7 @@ import {
   withHp,
   withItemDelta,
   withSkills,
+  withToolsDurabilityDelta,
   withUgdUntil,
   withUpdatedCooldown,
   type BuffKey,
@@ -63,11 +65,14 @@ const MAX_BOUNTIES_PER_GROUP = 20;
 
 export const WORLD_BOSS_TTL_MS = 3 * 60 * 60 * 1000;
 export const WORLD_BOSS_RESPAWN_COOLDOWN_MS = 60 * 60 * 1000;
-export const WORLD_BOSS_ATTACK_COOLDOWN_MS = 4 * 60 * 1000;
-export const WORLD_BOSS_MIN_HP = 15;
+export const WORLD_BOSS_ATTACK_COOLDOWN_MS = 8 * 60 * 1000;
+export const WORLD_BOSS_MIN_HP = 25;
+export const WORLD_BOSS_MIN_DAMAGE_PER_HIT = 250;
+export const WORLD_BOSS_MAX_DAMAGE_PER_HIT = 2_800;
+export const WORLD_BOSS_MAX_CRIT_DAMAGE_PER_HIT = 3_400;
 export const WORLD_BOSS_HISTORY_LIMIT = 5;
 
-export const SKILL_RESET_COST = 25_000_000n;
+export const SKILL_RESET_COST = 5_000_000n;
 
 export const FARM_WATER_SPEEDUP_PERCENT = 35;
 export const COMMODITY_EPOCH_MS = 15 * 60 * 1000;
@@ -75,8 +80,8 @@ export const COMMODITY_EPOCH_MS = 15 * 60 * 1000;
 export const BUFF_DURATION_MS = 60 * 60 * 1000;
 export const BUFF_MAX_STACK_MS = 6 * 60 * 60 * 1000;
 
-export const BOUNTY_MIN_AMOUNT = 2_000_000n;
-export const BOUNTY_MAX_AMOUNT = 500_000_000n;
+export const BOUNTY_MIN_AMOUNT = 1_000_000n;
+export const BOUNTY_MAX_AMOUNT = 100_000_000n;
 export const BOUNTY_TTL_MS = 24 * 60 * 60 * 1000;
 export const BOUNTY_HUNT_COOLDOWN_MS = 20 * 60 * 1000;
 export const BOUNTY_FAIL_PENALTY = 500_000n;
@@ -98,8 +103,8 @@ export const WORLD_BOSS_CATALOG: readonly WorldBossSpec[] = [
     id: "naga_obsidian",
     name: "Naga Obsidian Purba",
     title: "Penguasa Kawah Gelap",
-    maxHp: 12_000,
-    rewardPool: 75_000_000n,
+    maxHp: 30_000,
+    rewardPool: 16_000_000n,
     baseXp: 300,
     crateDrop: "mythic",
   },
@@ -107,8 +112,8 @@ export const WORLD_BOSS_CATALOG: readonly WorldBossSpec[] = [
     id: "titan_petir",
     name: "Titan Petir Langit",
     title: "Penjaga Badai Abadi",
-    maxHp: 16_000,
-    rewardPool: 105_000_000n,
+    maxHp: 40_000,
+    rewardPool: 22_000_000n,
     baseXp: 400,
     crateDrop: "mythic",
   },
@@ -116,8 +121,8 @@ export const WORLD_BOSS_CATALOG: readonly WorldBossSpec[] = [
     id: "leviathan_palung",
     name: "Leviathan Palung Gelap",
     title: "Monster Samudra Dalam",
-    maxHp: 20_000,
-    rewardPool: 135_000_000n,
+    maxHp: 52_000,
+    rewardPool: 28_000_000n,
     baseXp: 500,
     crateDrop: "mythic",
   },
@@ -125,8 +130,8 @@ export const WORLD_BOSS_CATALOG: readonly WorldBossSpec[] = [
     id: "kaisar_iblis",
     name: "Kaisar Iblis Kawah Merah",
     title: "Tiran Neraka Api",
-    maxHp: 25_000,
-    rewardPool: 180_000_000n,
+    maxHp: 65_000,
+    rewardPool: 36_000_000n,
     baseXp: 650,
     crateDrop: "legendary",
   },
@@ -134,8 +139,8 @@ export const WORLD_BOSS_CATALOG: readonly WorldBossSpec[] = [
     id: "mecha_kraken",
     name: "Mecha Kraken Cyber",
     title: "Mesin Penghancur Kota",
-    maxHp: 30_000,
-    rewardPool: 225_000_000n,
+    maxHp: 78_000,
+    rewardPool: 44_000_000n,
     baseXp: 800,
     crateDrop: "legendary",
   },
@@ -143,8 +148,8 @@ export const WORLD_BOSS_CATALOG: readonly WorldBossSpec[] = [
     id: "dewa_phoenix",
     name: "Dewa Phoenix Abadi",
     title: "Burung Api Legendaris",
-    maxHp: 40_000,
-    rewardPool: 300_000_000n,
+    maxHp: 95_000,
+    rewardPool: 55_000_000n,
     baseXp: 1_000,
     crateDrop: "legendary",
   },
@@ -160,7 +165,7 @@ export const SKILL_SPECS: Record<SkillKey, SkillSpec> = {
   str: {
     key: "str",
     label: "Strength (STR)",
-    effect: "+6% Power tempur & damage World Boss per poin",
+    effect: "+1,5% Power tempur & +6 damage World Boss per poin",
   },
   agi: {
     key: "agi",
@@ -201,66 +206,66 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
     id: "padi",
     label: "Padi Organik",
     minLevel: 1,
-    seedPrice: 300_000n,
+    seedPrice: 150_000n,
     growMinutes: 15,
     minYield: 3,
     maxYield: 5,
-    baseMarketPrice: 180_000n,
+    baseMarketPrice: 80_000n,
     seedOffset: 101,
   },
   {
     id: "jagung",
     label: "Jagung Manis",
     minLevel: 1,
-    seedPrice: 600_000n,
+    seedPrice: 300_000n,
     growMinutes: 25,
     minYield: 3,
     maxYield: 5,
-    baseMarketPrice: 340_000n,
+    baseMarketPrice: 150_000n,
     seedOffset: 211,
   },
   {
     id: "kopi",
     label: "Biji Kopi Gayo",
     minLevel: 5,
-    seedPrice: 1_500_000n,
+    seedPrice: 700_000n,
     growMinutes: 45,
     minYield: 3,
     maxYield: 6,
-    baseMarketPrice: 750_000n,
+    baseMarketPrice: 320_000n,
     seedOffset: 307,
   },
   {
     id: "kakao",
     label: "Kakao Premium",
     minLevel: 10,
-    seedPrice: 3_000_000n,
+    seedPrice: 1_500_000n,
     growMinutes: 60,
     minYield: 3,
     maxYield: 6,
-    baseMarketPrice: 1_450_000n,
+    baseMarketPrice: 650_000n,
     seedOffset: 409,
   },
   {
     id: "sawit",
     label: "Sawit Emas",
     minLevel: 18,
-    seedPrice: 6_000_000n,
+    seedPrice: 3_000_000n,
     growMinutes: 90,
     minYield: 4,
     maxYield: 7,
-    baseMarketPrice: 2_600_000n,
+    baseMarketPrice: 1_100_000n,
     seedOffset: 521,
   },
   {
     id: "truffle",
     label: "Truffle Hitam",
     minLevel: 30,
-    seedPrice: 15_000_000n,
+    seedPrice: 6_000_000n,
     growMinutes: 120,
     minYield: 3,
     maxYield: 6,
-    baseMarketPrice: 6_500_000n,
+    baseMarketPrice: 2_400_000n,
     seedOffset: 631,
   },
 ] as const;
@@ -283,15 +288,15 @@ export const BLACK_MARKET_CATALOG: readonly BlackMarketBuffSpec[] = [
     id: "jamukuat",
     itemKey: "bm_jamukuat",
     label: "Jamu Kuat Sakti",
-    price: 25_000_000n,
+    price: 4_500_000n,
     durationMinutes: 60,
-    effect: "+35% Combat Power & damage World Boss selama 60 menit",
+    effect: "+25% Combat Power & damage World Boss selama 60 menit",
   },
   {
     id: "jimatcuan",
     itemKey: "bm_jimatcuan",
     label: "Jimat Cuan Maut",
-    price: 35_000_000n,
+    price: 6_000_000n,
     durationMinutes: 60,
     effect: "+25% uang hadiah World Boss & jual panen ladang selama 60 menit",
   },
@@ -299,7 +304,7 @@ export const BLACK_MARKET_CATALOG: readonly BlackMarketBuffSpec[] = [
     id: "ramuanxp",
     itemKey: "bm_ramuanxp",
     label: "Ramuan Fokus XP",
-    price: 30_000_000n,
+    price: 5_000_000n,
     durationMinutes: 60,
     effect: "+50% bonus XP dari World Boss, Ladang & Bounty selama 60 menit",
   },
@@ -307,9 +312,9 @@ export const BLACK_MARKET_CATALOG: readonly BlackMarketBuffSpec[] = [
     id: "perisaibaja",
     itemKey: "bm_perisaibaja",
     label: "Perisai Baja Hitam",
-    price: 28_000_000n,
+    price: 5_000_000n,
     durationMinutes: 60,
-    effect: "-40% damage HP saat Raid Boss & +25% pertahanan saat diburu Bounty",
+    effect: "-35% damage HP saat Raid Boss & +25% pertahanan saat diburu Bounty",
   },
 ] as const;
 
@@ -1184,20 +1189,24 @@ export class RaidFarmBuffBountyService {
       }
 
       const power = calculatePlayerCombatPower(profile.level, state, undefined, nowMs);
-      const variancePct = this.random.intBetween(180, 260);
-      const critChance = Math.min(0.45, 0.1 + state.skills.agi * 0.015);
+      const variancePct = this.random.intBetween(150, 210);
+      const critChance = Math.min(0.4, 0.1 + state.skills.agi * 0.015);
       const isCrit = this.random.chance(critChance);
-      const critMult = isCrit ? 1.6 + state.skills.luk * 0.01 : 1;
+      const critMult = isCrit ? 1.45 + state.skills.luk * 0.008 : 1;
 
-      const rawDamage = Math.round(((power * variancePct) / 100 + state.skills.str * 15) * critMult);
-      const damageDealt = Math.max(50, Math.min(activeBoss.currentHp, rawDamage));
+      const rawUncapped = Math.round(((power * variancePct) / 100 + state.skills.str * 6) * critMult);
+      const perHitCap = isCrit ? WORLD_BOSS_MAX_CRIT_DAMAGE_PER_HIT : WORLD_BOSS_MAX_DAMAGE_PER_HIT;
+      const cappedHit = Math.max(WORLD_BOSS_MIN_DAMAGE_PER_HIT, Math.min(perHitCap, rawUncapped));
+      const damageDealt = Math.min(activeBoss.currentHp, cappedHit);
 
-      const rawCounter = this.random.intBetween(8, 18);
-      const armorMitigation = Math.min(8, state.tools.armor.level);
-      const afterArmor = Math.max(3, rawCounter - armorMitigation);
-      const hpLost = isBuffActive(state, "perisaibaja", nowMs)
-        ? Math.max(2, Math.round(afterArmor * 0.6))
-        : afterArmor;
+      const rawCounter = this.random.intBetween(20, 34);
+      const shieldFactor = isBuffActive(state, "perisaibaja", nowMs) ? 0.65 : 1;
+      const hpLost = computeBossHpDamage(
+        rawCounter,
+        state,
+        isBuffActive(state, "perisaibaja", nowMs) ? 10 : 14,
+        shieldFactor,
+      );
       const hpAfter = Math.max(1, state.hp - hpLost);
 
       const participationXp = applyXpMultipliers(
@@ -1209,6 +1218,7 @@ export class RaidFarmBuffBountyService {
       );
 
       let updatedState = withUpdatedCooldown(withHp(state, hpAfter), "worldboss_hit", nowMs);
+      updatedState = withToolsDurabilityDelta(updatedState, { sword: -5, armor: -5 });
       updatedState = withBossRaidStatsDelta(updatedState, { damageDelta: damageDealt });
 
       await tx.groupMemberProfile.update({
@@ -1241,11 +1251,13 @@ export class RaidFarmBuffBountyService {
         };
       }
 
-      // Boss defeated! Distribute pool proportionally by damage share
+      // Boss defeated! Distribute pool proportionally with single-attacker anti-monopoly cap
       const rankings = buildDamageRankings(activeBoss.damageByUser);
       const totalDamage = rankings.reduce((acc, r) => acc + r.damage, 0);
       const distributions: WorldBossRewardDistribution[] = [];
       let totalPoolPaid = 0n;
+      const maxSharePercent = rankings.length <= 1 ? 55 : 45;
+      const maxPoolPerUser = percentOfBigInt(activeBoss.spec.rewardPool, maxSharePercent);
 
       for (let i = 0; i < rankings.length; i += 1) {
         const entry = rankings[i];
@@ -1255,10 +1267,11 @@ export class RaidFarmBuffBountyService {
         const isMvp = i === 0;
         const isFinisher = entry.userJid === normUser;
 
-        const baseShare =
+        const rawShare =
           totalDamage > 0
             ? (activeBoss.spec.rewardPool * BigInt(entry.damage)) / BigInt(totalDamage)
-            : activeBoss.spec.rewardPool;
+            : maxPoolPerUser;
+        const baseShare = minBigInt(rawShare, maxPoolPerUser);
         const mvpBonus = isMvp ? percentOfBigInt(baseShare, 15) : 0n;
         const lukBonus =
           memberState.skills.luk > 0
@@ -1280,7 +1293,7 @@ export class RaidFarmBuffBountyService {
           nowMs,
         );
 
-        const crateGained: CrateType = i < 3 ? activeBoss.spec.crateDrop : "common";
+        const crateGained: CrateType = i < 2 ? activeBoss.spec.crateDrop : "common";
         let nextMemberState = withCrateDelta(memberState, crateGained, 1);
         nextMemberState = withBossRaidStatsDelta(nextMemberState, {
           killsDelta: 1,

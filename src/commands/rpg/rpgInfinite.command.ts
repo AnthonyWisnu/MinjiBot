@@ -17,7 +17,7 @@ import {
   MAX_DAILY_SHOP_CRATE_BUY,
   rpgInfiniteService,
 } from "../../services/rpg/rpgInfinite.service";
-import type { PetType } from "../../services/rpg/rpgState";
+import type { PetType, ToolType } from "../../services/rpg/rpgState";
 import type { CommandContext, CommandDefinition } from "../../types/command";
 import {
   absBigInt,
@@ -747,6 +747,44 @@ async function handleForge(context: CommandContext, mode: "craft" | "upgrade"): 
   }
 }
 
+async function handleRepair(context: CommandContext): Promise<void> {
+  if (!(await ensureActiveGroup(context))) return;
+  const rawArg = (context.args[0] ?? "").trim().toLowerCase();
+  let target: ToolType | "all" = "all";
+  if (rawArg && rawArg !== "all" && rawArg !== "semua") {
+    const parsedTool = normalizeToolType(rawArg);
+    if (!parsedTool) {
+      await context.reply(
+        "Format salah.\nGunakan: .repair [sword|armor|pickaxe|fishingrod|all]\nContoh: .repair all atau .repair sword",
+      );
+      return;
+    }
+    target = parsedTool;
+  }
+
+  try {
+    const sender = await resolveSender(context);
+    const res = await rpgInfiniteService.repairTools(context.chatJid, sender, target);
+    const entryLines = res.repaired.map(
+      (e) =>
+        `• *${e.toolLabel}* Lv.${String(e.level)}: ${String(e.durabilityBefore)}% -> *${String(e.durabilityAfter)}%* (${formatRupiah(e.moneyCost)}, ${formatItemList(e.materialsUsed)})`,
+    );
+
+    await context.reply(
+      [
+        "*── [ BENGKEL PERBAIKAN ALAT ] ──*",
+        ...entryLines,
+        "",
+        `• Total Biaya : -${formatRupiah(res.totalMoneyCost)}`,
+        `• Total Bahan : ${formatItemList(res.totalMaterialsUsed)}`,
+        `• Dompetmu    : ${formatRupiah(res.currentMoney)}`,
+      ].join("\n"),
+    );
+  } catch (error: unknown) {
+    await context.reply(formatUserSafeError(error, "Gagal memperbaiki alat."));
+  }
+}
+
 async function handleOpenCrate(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
   const crate = normalizeCrateType(context.args[0]);
@@ -829,15 +867,20 @@ async function handleBossFight(context: CommandContext, bossId: PetType): Promis
     const res = await rpgInfiniteService.fightBoss(context.chatJid, sender, bossId);
 
     if (!res.won) {
+      const lowDurTip =
+        res.swordDurabilityAfter <= 20 || res.armorDurabilityAfter <= 20
+          ? "_⚠️ Durability alat menipis/habis! Segera .repair all agar bonus ATK/DEF aktif kembali._"
+          : "_Tips: .craft/.upgrade sword & armor lalu .heal sebelum menantang ulang!_";
       await context.reply(
         [
           "*── [ KALAH LAWAN BOSS ] ──*",
           `${tagOf(sender)} kalah melawan *${res.bossName}*!`,
           `• Power Kamu : ${String(res.playerPower)} vs Boss ${String(res.bossPower)}`,
           `• HP Berkurang: -${String(res.hpLost)} (Sisa ${String(res.hpAfter)}/100)`,
+          `• Durability  : Sword ${String(res.swordDurabilityAfter)}% | Armor ${String(res.armorDurabilityAfter)}%`,
           `• XP Hiburan : +${String(res.xpGained)} XP`,
           "",
-          "_Tips: .craft/.upgrade sword & armor lalu .heal sebelum menantang ulang!_",
+          lowDurTip,
         ].join("\n"),
         { mentions: [sender] },
       );
@@ -852,11 +895,15 @@ async function handleBossFight(context: CommandContext, bossId: PetType): Promis
         "",
         `• Hadiah Uang : +${formatRupiah(res.moneyGained)}`,
         `• XP Didapat  : +${String(res.xpGained)} XP`,
-        `• Bonus Peti  : 1x ${res.crateGained ?? "-"} crate`,
+        `• Bonus Peti  : ${res.crateGained ? `1x ${res.crateGained} crate` : "Tidak drop"}`,
         ...(res.petDropped
           ? [`• RARE DROP! Pet *${bossId.toUpperCase()}* kini Lv.${String(res.petNewLevel)}!`]
           : []),
         `• Sisa HP     : ${String(res.hpAfter)}/100`,
+        `• Durability  : Sword ${String(res.swordDurabilityAfter)}% | Armor ${String(res.armorDurabilityAfter)}%`,
+        ...(res.swordDurabilityAfter <= 20 || res.armorDurabilityAfter <= 20
+          ? ["_⚠️ Alat mulai aus — gunakan .repair all sebelum rusak total (0%)!_"]
+          : []),
         `• Dompetmu    : ${formatRupiah(res.currentMoney)}`,
       ].join("\n"),
       { mentions: [sender] },
@@ -1105,6 +1152,7 @@ export const rpgInfiniteCommands: CommandDefinition[] = [
   { name: "shop", aliases: ["toko"], execute: handleShop },
   { name: "craft", execute: (ctx) => handleForge(ctx, "craft") },
   { name: "upgrade", execute: (ctx) => handleForge(ctx, "upgrade") },
+  { name: "repair", aliases: ["perbaikialat"], execute: handleRepair },
   { name: "open", aliases: ["gacha", "bukapeti"], execute: handleOpenCrate },
   { name: "feed", execute: (ctx) => handlePetCare(ctx, "feed") },
   { name: "ramuan", execute: (ctx) => handlePetCare(ctx, "ramuan") },

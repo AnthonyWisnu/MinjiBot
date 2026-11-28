@@ -302,7 +302,16 @@ async function handlePanen(context: CommandContext): Promise<void> {
         `Juragan : ${tagOf(sender)}`,
         `Properti: ${String(res.totalOwned)} unit`,
         `Durasi  : ${formatRemainingDuration(res.elapsedMs)}`,
+        ...(res.operationalTax > 0n
+          ? [
+              `Kotor   : ${formatRupiah(res.grossMoney)}`,
+              `PajakOps: -${formatRupiah(res.operationalTax)} (10% ke Kas Grup)`,
+            ]
+          : []),
         `Hasil   : +${formatRupiah(res.harvestedMoney)}`,
+        ...(res.autoWealthTaxPaid > 0n
+          ? [`AutoTax : -${formatRupiah(res.autoWealthTaxPaid)} (>2M 1,5%/hr ke Kas Grup)`]
+          : []),
         `Dompet  : ${formatRupiah(res.currentMoney)}`,
       ].join("\n"),
       { mentions: [sender] },
@@ -325,6 +334,9 @@ async function handleGaji(context: CommandContext): Promise<void> {
         `Uang    : +${formatRupiah(res.money)}`,
         `Limit   : +${String(res.limit)}`,
         `XP      : +${String(res.xp)}`,
+        ...(res.autoWealthTaxPaid > 0n
+          ? [`AutoTax : -${formatRupiah(res.autoWealthTaxPaid)} (>2M 1,5%/hr ke Kas Grup)`]
+          : []),
         "",
         `Dompet  : ${formatRupiah(res.currentMoney)}`,
         `Limit   : ${String(res.currentLimit)}`,

@@ -210,12 +210,12 @@ void test("WalletBankService: deposit, withdraw, transfer, and exchange are atom
     InvalidAmountError,
   );
 
-  // Exchange 10 poin (10 * 200k = 2jt) agar cocok dengan saldo tersisa 10jt
+  // Exchange 10 poin (10 * 50k = 500rb) agar cocok dengan saldo tersisa 10jt
   const ex = await service.exchangeMoneyToPoints("g@g.us", "628111@s.whatsapp.net", 10);
   assert.equal(ex.moneySpent, 10n * EXCHANGE_MONEY_PER_POINT);
   assert.equal(ex.pointsGained, 10);
   assert.equal(ex.pointsBalance, 60);
-  assert.equal(ex.moneyBalance, 8_000_000n);
+  assert.equal(ex.moneyBalance, 9_500_000n);
 
   await assert.rejects(
     () => service.exchangeMoneyToPoints("g@g.us", "628111@s.whatsapp.net", 999_999),
@@ -233,7 +233,7 @@ void test("LevelService: XP thresholds and multi-level claim grant Sultan money,
   assert.equal(calculateReachableLevel(350), 3);
 
   const rewards = computeLevelUpRewards(1, 3);
-  assert.equal(rewards.moneyGained, 1_800_000n + 2_700_000n);
+  assert.equal(rewards.moneyGained, 500_000n + 750_000n);
   assert.equal(rewards.pointsGained, 60);
   assert.equal(rewards.limitGained, 4);
 
@@ -280,7 +280,7 @@ void test("LevelService: XP thresholds and multi-level claim grant Sultan money,
   assert.equal(res.oldLevel, 1);
   assert.equal(res.newLevel, 3);
   assert.equal(res.levelsGained, 2);
-  assert.equal(res.moneyGained, 4_500_000n);
+  assert.equal(res.moneyGained, 1_250_000n);
   assert.equal(res.pointsGained, 60);
   assert.equal(res.limitGained, 4);
 
@@ -336,7 +336,7 @@ void test("PeriodicRewardService: weekly & monthly rewards enforce cooldown with
 
   const now = new Date("2026-11-28T05:00:00Z");
   const weekly = await service.claimWeekly("g@g.us", "u@s.net", now);
-  assert.equal(weekly.moneyGained, 7_200_000n);
+  assert.equal(weekly.moneyGained, 1_500_000n);
   assert.equal(weekly.pointsGained, 250);
   assert.equal(weekly.limitGained, 5);
 
@@ -346,7 +346,7 @@ void test("PeriodicRewardService: weekly & monthly rewards enforce cooldown with
   );
 
   const monthly = await service.claimMonthly("g@g.us", "u@s.net", now);
-  assert.equal(monthly.moneyGained, 45_000_000n);
+  assert.equal(monthly.moneyGained, 6_000_000n);
   assert.equal(monthly.pointsGained, 1_000);
   assert.equal(monthly.limitGained, 20);
 });

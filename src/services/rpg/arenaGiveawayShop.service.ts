@@ -41,8 +41,8 @@ import {
   type PetType,
 } from "./rpgState";
 
-export const DANA_KAGET_MIN_AMOUNT = 1_000_000n;
-export const DANA_KAGET_MAX_AMOUNT = 5_000_000_000n;
+export const DANA_KAGET_MIN_AMOUNT = 500_000n;
+export const DANA_KAGET_MAX_AMOUNT = 200_000_000n;
 export const DANA_KAGET_MIN_QUOTA = 2;
 export const DANA_KAGET_MAX_QUOTA = 30;
 export const DANA_KAGET_TTL_MS = 30 * 60 * 1000;
@@ -50,16 +50,16 @@ export const DANA_KAGET_TTL_MS = 30 * 60 * 1000;
 export const POIN_KAGET_MIN_AMOUNT = 50;
 export const POIN_KAGET_MAX_AMOUNT = 100_000;
 
-export const TRAKTIR_MIN_AMOUNT = 1_000_000n;
-export const TRAKTIR_MAX_AMOUNT = 5_000_000_000n;
+export const TRAKTIR_MIN_AMOUNT = 500_000n;
+export const TRAKTIR_MAX_AMOUNT = 200_000_000n;
 export const TRAKTIR_MAX_RECIPIENTS = 10;
 
-export const LOTTERY_TICKET_PRICE = 2_000_000n;
-export const LOTTERY_BASE_SEED_POOL = 6_000_000n;
+export const LOTTERY_TICKET_PRICE = 1_000_000n;
+export const LOTTERY_BASE_SEED_POOL = 3_000_000n;
 export const LOTTERY_MAX_TICKETS_PER_USER = 3;
 
 export const ARENA_MIN_BET = 100_000n;
-export const ARENA_MAX_BET = 100_000_000n;
+export const ARENA_MAX_BET = 15_000_000n;
 export const ARENA_COOLDOWN_MS = 10_000;
 
 export const POINT_DUEL_MIN_BET = 10;
@@ -67,7 +67,7 @@ export const POINT_DUEL_MAX_BET = 5_000;
 export const POINT_DUEL_TTL_MS = 3 * 60 * 1000;
 
 export const PET_ARENA_MIN_BET = 500_000n;
-export const PET_ARENA_MAX_BET = 50_000_000n;
+export const PET_ARENA_MAX_BET = 15_000_000n;
 export const PET_ARENA_COOLDOWN_MS = 4 * 60 * 1000;
 const MAX_PET_LEVEL = 20;
 
@@ -75,13 +75,13 @@ export const POINT_SHOP_XP_PER_POINT = 3;
 export const POINT_SHOP_MIN_XP_POINTS = 10;
 export const POINT_SHOP_MAX_XP_POINTS = 10_000;
 export const POINT_SHOP_CRATE_PRICES: Record<"common" | "uncommon" | "mythic", number> = {
-  common: 120,
-  uncommon: 350,
-  mythic: 1_100,
+  common: 60,
+  uncommon: 180,
+  mythic: 500,
 };
 
 export const SEDEKAH_MIN_AMOUNT = 500_000n;
-export const SEDEKAH_MAX_AMOUNT = 5_000_000_000n;
+export const SEDEKAH_MAX_AMOUNT = 200_000_000n;
 export const SEDEKAH_COOLDOWN_MS = 20 * 60 * 1000;
 
 const MAX_ACTIVE_GROUPS = 100;
