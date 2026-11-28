@@ -42,9 +42,8 @@ jobs:
             nice -n 10 npm run build
 
             echo "=== 5. Reloading MinjiBot in PM2 ==="
-            pm2 describe minjibot > /dev/null \
-              && pm2 restart minjibot --update-env \
-              || pm2 start dist/index.js --name minjibot
+            pm2 delete minjibot > /dev/null 2>&1 || true
+            pm2 start ecosystem.config.cjs --update-env
 
             pm2 save
             echo "=== Deployment MinjiBot Completed Successfully ==="

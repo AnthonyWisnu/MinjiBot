@@ -1,9 +1,10 @@
 import type { ConnectionState, WASocket } from "@whiskeysockets/baileys";
 
 import { logger } from "../../config/logger";
+import { identityResolverService } from "../../services/identity/identityResolver.service";
 import { reminderScheduler } from "../../services/reminder/reminderScheduler";
 import { levelUpNotifierService } from "../../services/member/levelUpNotifier.service";
-import { groupMetadataCache } from "../connection";
+import { groupMetadataCacheManager } from "../connection";
 import { handleMessagesUpsert } from "../messageHandler";
 import { cacheMessageForRetry } from "../messageRetryStore";
 import { handleGroupParticipantsUpdate } from "./groupParticipants.subscriber";
@@ -101,14 +102,16 @@ export function registerEventSubscribers(socket: WASocket, options: EventSubscri
   socket.ev.on("groups.update", (updates) => {
     for (const update of updates) {
       if (update.id) {
-        groupMetadataCache.delete(update.id);
+        groupMetadataCacheManager.invalidate(update.id);
+        identityResolverService.invalidateGroup(update.id);
       }
     }
   });
 
   socket.ev.on("group-participants.update", (event) => {
     if (event.id) {
-      groupMetadataCache.delete(event.id);
+      groupMetadataCacheManager.invalidate(event.id);
+      identityResolverService.invalidateGroup(event.id);
     }
     handleGroupParticipantsUpdate(socket, event).catch((error: unknown) => {
       logger.error({ err: error }, "Update peserta grup gagal diproses");

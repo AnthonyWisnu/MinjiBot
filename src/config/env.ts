@@ -7,6 +7,11 @@ const optionalPathSchema = z
   .transform((value) => (value.length > 0 ? value : undefined))
   .optional();
 
+const booleanStringSchema = z
+  .enum(["true", "false", "1", "0"])
+  .default("false")
+  .transform((value) => value === "true" || value === "1");
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().min(1),
@@ -50,6 +55,10 @@ export const envSchema = z.object({
   OPENROUTER_API_KEY: optionalPathSchema,
   OPENROUTER_MODEL: z.string().trim().min(1).default("google/gemini-2.5-flash-lite"),
   AI_DAILY_QUOTA_PER_GROUP: z.coerce.number().int().positive().default(80),
+  QR_WEB_ENABLED: booleanStringSchema,
+  QR_WEB_HOST: z.string().trim().min(1).default("127.0.0.1"),
+  QR_WEB_PORT: z.coerce.number().int().min(1).max(65535).default(3004),
+  QR_WEB_TOKEN: optionalPathSchema,
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -13,7 +13,9 @@ import path from "node:path";
 
 import { env } from "../config/env";
 import { logger } from "../config/logger";
+import { normalizeJid } from "../utils/jid";
 import { LruCache } from "../utils/lruCache";
+import { GroupMetadataCacheManager } from "./groupMetadataCache";
 import { messageRetryStore } from "./messageRetryStore";
 import {
   installAudioStickerCodecHooks,
@@ -30,6 +32,7 @@ export interface BotSocket {
  * Mencegah query metadata berulang ke server WhatsApp.
  */
 export const groupMetadataCache = new LruCache<string, GroupMetadata>(500, 5 * 60 * 1000);
+export const groupMetadataCacheManager = new GroupMetadataCacheManager(groupMetadataCache);
 
 export async function createBotSocket(): Promise<BotSocket> {
   const sessionDir = path.resolve(env.SESSION_DIR);
@@ -69,6 +72,8 @@ export async function createBotSocket(): Promise<BotSocket> {
 
   installAudioStickerCodecHooks();
 
+  let fetchGroupMetadataCached: ((jid: string) => Promise<GroupMetadata>) | null = null;
+
   const socket = makeWASocket({
     auth: state,
     version,
@@ -80,13 +85,20 @@ export async function createBotSocket(): Promise<BotSocket> {
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
     retryRequestDelayMs: 500,
-    cachedGroupMetadata: (jid) => Promise.resolve(groupMetadataCache.get(jid)),
+    cachedGroupMetadata: async (jid) => {
+      if (fetchGroupMetadataCached) {
+        return fetchGroupMetadataCached(jid).catch(() => undefined);
+      }
+      return groupMetadataCache.get(normalizeJid(jid));
+    },
     getMessage: (key) => {
       if (!key.id) return Promise.resolve(undefined);
       return Promise.resolve(messageRetryStore.get(key.id));
     },
     patchMessageBeforeSending: (msg) => patchAudioStickerBeforeSending(msg),
   });
+
+  fetchGroupMetadataCached = groupMetadataCacheManager.installOnSocket(socket);
 
   return {
     socket,
