@@ -142,21 +142,21 @@ export const INSURANCE_CATALOG: readonly InsuranceSpec[] = [
   {
     id: "brankas",
     name: "Asuransi Brankas Anti-Maling",
-    price: 35_000_000n,
+    price: 105_000_000n,
     durationMs: 24 * 60 * 60 * 1000,
-    benefit: "Kebal dari aksi .maling dan penagihan .pajak selama 24 jam",
+    benefit: "Kebal dari aksi .maling dan penagihan .pajak @user selama 24 jam",
   },
   {
     id: "bpjs",
     name: "BPJS Sultan VIP",
-    price: 25_000_000n,
+    price: 75_000_000n,
     durationMs: 24 * 60 * 60 * 1000,
     benefit: "Keluar UGD gratis kapan saja pakai .bebasugd & pulihkan HP penuh",
   },
   {
     id: "pengacara",
     name: "Pengacara Elit 24 Jam",
-    price: 40_000_000n,
+    price: 120_000_000n,
     durationMs: 24 * 60 * 60 * 1000,
     benefit: "Langsung bebas penjara KPK/Ronda gratis pakai .bebaspenjara",
   },
@@ -166,8 +166,8 @@ export const INSURANCE_MAP = new Map<InsuranceType, InsuranceSpec>(
   INSURANCE_CATALOG.map((item) => [item.id, item]),
 );
 
-export const JAIL_BAIL_COST = 15_000_000n;
-export const UGD_VIP_RELEASE_COST = 10_000_000n;
+export const JAIL_BAIL_COST = 45_000_000n;
+export const UGD_VIP_RELEASE_COST = 30_000_000n;
 
 export const PRESTIGE_MAX_LEVEL = 10;
 export const PRESTIGE_MIN_PLAYER_LEVEL = 10;

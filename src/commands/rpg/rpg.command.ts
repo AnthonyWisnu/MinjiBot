@@ -1,9 +1,16 @@
+import { TenantStatus, type TenantGroup } from "@prisma/client";
+
+import { roleGuard } from "../../guards/roleGuard";
 import { identityResolverService } from "../../services/identity/identityResolver.service";
+import { avatarService } from "../../services/media/avatar.service";
+import { eventBannerService } from "../../services/media/eventBanner.service";
 import { cryptoMarketService } from "../../services/rpg/cryptoMarket.service";
 import { duelService } from "../../services/rpg/duel.service";
 import {
   BANSOS_POVERTY_BONUS,
   rpgEconomyService,
+  TOP_WEALTH_TAX_MAX_PERCENT,
+  TOP_WEALTH_TAX_MIN_PERCENT,
   type RpgJobType,
 } from "../../services/rpg/rpgEconomy.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
@@ -16,7 +23,7 @@ import {
   parsePositiveBigIntMoneyInput,
 } from "../../utils/currency";
 import { sendEventBannerOrReply } from "../../utils/eventBannerSender";
-import { isBotUserJid, normalizeUserJid } from "../../utils/jid";
+import { getIdentityCandidateJids, isBotUserJid, normalizeUserJid } from "../../utils/jid";
 import { formatUserSafeError } from "../../utils/userSafeError";
 
 async function ensureActiveGroup(context: CommandContext): Promise<boolean> {
@@ -155,7 +162,231 @@ async function handleCorruption(context: CommandContext, mega: boolean): Promise
   }
 }
 
+function parseTaxPercent(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const cleaned = raw.trim().replace(/%$/, "");
+  if (!/^\d+$/.test(cleaned)) return null;
+  const parsed = Number.parseInt(cleaned, 10);
+  if (!Number.isInteger(parsed)) return null;
+  return parsed;
+}
+
+async function sendTopTaxBroadcastToGroup(
+  context: CommandContext,
+  targetGroupJid: string,
+  options: {
+    percent: number;
+    totalCollected: bigint;
+    taxedCount: number;
+    topUserJid: string;
+    caption: string;
+    mentions: string[];
+  },
+): Promise<void> {
+  const sendOpts = targetGroupJid === context.chatJid ? { quoted: context.message } : undefined;
+  try {
+    const avatarBuffer = await avatarService
+      .getAvatarWithFallback(context.socket, options.topUserJid, [])
+      .catch(() => null);
+    const imageBuffer = await eventBannerService.renderEventBanner({
+      scene: "istana_presiden",
+      headline: "PAJAK SULTAN TOP 10!",
+      subjectName: `TARIF ${String(options.percent)}% KEKAYAAN`,
+      details: [
+        `Total Terkumpul: ${formatCompactRupiah(options.totalCollected)}`,
+        `Terkena: ${String(options.taxedCount)} Sultan (Dompet + ATM)`,
+      ],
+      avatarBuffer,
+    });
+    await context.socket.sendMessage(
+      targetGroupJid,
+      {
+        image: imageBuffer,
+        caption: options.caption,
+        mentions: options.mentions,
+      },
+      sendOpts,
+    );
+    return;
+  } catch {
+    // Fallback halus ke teks jika pengiriman gambar gagal
+  }
+
+  await context.socket.sendMessage(
+    targetGroupJid,
+    { text: options.caption, mentions: options.mentions },
+    sendOpts,
+  );
+}
+
+export async function handleTopWealthTax(context: CommandContext): Promise<void> {
+  const senderCandidates = getIdentityCandidateJids(context.senderUserJid, context.senderAltJids);
+  const canonicalSender = context.isGroup
+    ? await resolveCanonicalSender(context)
+    : normalizeUserJid(context.senderUserJid);
+  if (canonicalSender && !senderCandidates.includes(canonicalSender)) {
+    senderCandidates.push(canonicalSender);
+  }
+
+  const isSuperOwner =
+    context.role === "SUPER_OWNER" || senderCandidates.some((jid) => roleGuard.isSuperOwner(jid));
+
+  let tenantCode: string | null = null;
+  let percent: number | null = null;
+
+  if (!context.isGroup) {
+    if (context.args.length < 2) {
+      await context.reply(
+        `Format: *.pajak <kode grup> <persen>* atau *.pajaktop <kode grup> <persen>*\nRentang pajak: ${String(TOP_WEALTH_TAX_MIN_PERCENT)}% - ${String(TOP_WEALTH_TAX_MAX_PERCENT)}%\nContoh: *.pajak GRP01 15*`,
+      );
+      return;
+    }
+    tenantCode = (context.args[0] ?? "").trim().toUpperCase();
+    percent = parseTaxPercent(context.args[1]);
+  } else if (context.args.length === 1) {
+    percent = parseTaxPercent(context.args[0]);
+  } else if (context.args.length >= 2) {
+    const secondAsPct = parseTaxPercent(context.args[1]);
+    if (secondAsPct !== null) {
+      tenantCode = (context.args[0] ?? "").trim().toUpperCase();
+      percent = secondAsPct;
+    } else {
+      percent = parseTaxPercent(context.args[0]);
+    }
+  } else {
+    await context.reply(
+      `Format: *.pajaktop <persen>* (di grup) atau *.pajaktop <kode grup> <persen>*\nRentang pajak: ${String(TOP_WEALTH_TAX_MIN_PERCENT)}% - ${String(TOP_WEALTH_TAX_MAX_PERCENT)}%\nContoh: *.pajaktop 15*`,
+    );
+    return;
+  }
+
+  if (
+    percent === null ||
+    percent < TOP_WEALTH_TAX_MIN_PERCENT ||
+    percent > TOP_WEALTH_TAX_MAX_PERCENT
+  ) {
+    await context.reply(
+      `Persentase pajak harus bilangan bulat antara *${String(TOP_WEALTH_TAX_MIN_PERCENT)}%* sampai *${String(TOP_WEALTH_TAX_MAX_PERCENT)}%*.\nContoh: *.pajaktop 15*`,
+    );
+    return;
+  }
+
+  let targetTenant: TenantGroup | null = null;
+  if (tenantCode) {
+    targetTenant = await rpgEconomyService.resolveTenantGroup(tenantCode);
+    if (!targetTenant) {
+      await context.reply(`Grup dengan kode "${tenantCode}" tidak ditemukan.`);
+      return;
+    }
+  } else {
+    targetTenant =
+      context.tenantGroup ?? (await rpgEconomyService.resolveTenantGroup(context.chatJid));
+    if (!targetTenant) {
+      await context.reply("Grup ini belum terdaftar sebagai tenant aktif.");
+      return;
+    }
+  }
+
+  const normalizedOwner = targetTenant.ownerJid ? normalizeUserJid(targetTenant.ownerJid) : "";
+  const isTargetTenantOwner =
+    (targetTenant.groupJid === context.chatJid && context.role === "TENANT_OWNER") ||
+    (normalizedOwner.length > 0 &&
+      senderCandidates.some((jid) => normalizeUserJid(jid) === normalizedOwner));
+
+  if (!isSuperOwner && !isTargetTenantOwner) {
+    await context.reply(
+      "Perintah pajak kekayaan Top 10 hanya dapat digunakan oleh Super Owner atau Owner Grup.",
+    );
+    return;
+  }
+
+  if (
+    targetTenant.status === TenantStatus.REMOVED ||
+    targetTenant.status === TenantStatus.BLOCKED ||
+    targetTenant.isBlocked
+  ) {
+    await context.reply("Grup target tidak aktif / sedang diblokir.");
+    return;
+  }
+
+  try {
+    const res = await rpgEconomyService.collectTopWealthTax(
+      targetTenant.groupJid,
+      percent,
+      canonicalSender || context.senderUserJid,
+    );
+
+    const mentions = res.taxedMembers.map((m) => m.userJid);
+    const memberLines = res.taxedMembers.map((m) => {
+      const breakdownParts: string[] = [];
+      if (m.walletTax > 0n) breakdownParts.push(`Dompet ${formatCompactRupiah(m.walletTax)}`);
+      if (m.bankTax > 0n) breakdownParts.push(`ATM ${formatCompactRupiah(m.bankTax)}`);
+      const detail = breakdownParts.length > 0 ? ` (${breakdownParts.join(" + ")})` : "";
+      return `${String(m.rank)}. ${phoneTag(m.userJid)} : *-${formatCompactRupiah(m.totalTax)}*${detail}`;
+    });
+
+    const groupName = targetTenant.name ?? targetTenant.tenantCode;
+    const broadcastCaption = [
+      "*── [ PAJAK SULTAN TOP 10 ] ──*",
+      `Grup  : ${groupName}`,
+      `Tarif : *${String(res.percent)}%* (Dompet + Bank/ATM, tembus asuransi)`,
+      "",
+      "*Daftar Sultan Terkena Pajak:*",
+      ...memberLines,
+      "",
+      `Total Terkumpul : *${formatRupiah(res.totalCollected)}*`,
+      `Kas Negara Baru : ${formatRupiah(res.treasuryBalance)}`,
+    ].join("\n");
+
+    const topUserJid = res.taxedMembers[0]?.userJid ?? canonicalSender;
+    await sendTopTaxBroadcastToGroup(context, targetTenant.groupJid, {
+      percent: res.percent,
+      totalCollected: res.totalCollected,
+      taxedCount: res.taxedMembers.length,
+      topUserJid,
+      caption: broadcastCaption,
+      mentions,
+    });
+
+    if (!context.isGroup || targetTenant.groupJid !== context.chatJid) {
+      await context.reply(
+        [
+          "*── [ PAJAK TOP 10 TERKIRIM ] ──*",
+          `Grup Target     : ${groupName} (${targetTenant.tenantCode})`,
+          `Tarif Pajak     : ${String(res.percent)}%`,
+          `Jumlah Sultan   : ${String(res.taxedMembers.length)} member ditag di grup`,
+          `Total Terkumpul : *${formatRupiah(res.totalCollected)}*`,
+          `Kas Negara Baru : ${formatRupiah(res.treasuryBalance)}`,
+        ].join("\n"),
+      );
+    }
+  } catch (error: unknown) {
+    await context.reply(formatUserSafeError(error, "Gagal memproses pajak Top 10."));
+  }
+}
+
 async function handleTax(context: CommandContext): Promise<void> {
+  // Private chat (.pajak <kode> <persen>) selalu diarahkan ke Pajak Top 10 Owner/Super Owner
+  if (!context.isGroup) {
+    await handleTopWealthTax(context);
+    return;
+  }
+
+  // Di dalam grup: jika tanpa @mention/reply & argumen berbentuk persentase / <kode> <persen> -> Pajak Top 10
+  const hasExplicitTarget =
+    context.mentionedJids.length > 0 || Boolean(context.quoted?.participantJid);
+  if (!hasExplicitTarget && context.args.length > 0) {
+    const firstPct = parseTaxPercent(context.args[0]);
+    const secondPct = parseTaxPercent(context.args[1]);
+    const looksLikeSinglePct = context.args.length === 1 && firstPct !== null && firstPct <= 100;
+    const looksLikeCodeAndPct =
+      context.args.length >= 2 && secondPct !== null && !/^\d{8,15}$/.test(context.args[0] ?? "");
+    if (looksLikeSinglePct || looksLikeCodeAndPct) {
+      await handleTopWealthTax(context);
+      return;
+    }
+  }
+
   if (!(await ensureActiveGroup(context))) {
     return;
   }
@@ -676,6 +907,7 @@ export const rpgCommands: CommandDefinition[] = [
   { name: "korupsi", execute: (context) => handleCorruption(context, false) },
   { name: "megakorupsi", execute: (context) => handleCorruption(context, true) },
   { name: "pajak", aliases: ["kas"], execute: handleTax },
+  { name: "pajaktop", aliases: ["pajaksultan", "taxtop"], execute: handleTopWealthTax },
   { name: "maling", aliases: ["rob", "merampok"], execute: handleRob },
   { name: "bansos", execute: handleBansos },
   { name: "casino", aliases: ["judi"], execute: handleCasino },

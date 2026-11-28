@@ -6,9 +6,11 @@ import {
 } from "@prisma/client";
 
 import { AppUserError } from "../../errors/appUserError";
+import { roleGuard } from "../../guards/roleGuard";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../../repositories/groupMemberTransaction.repository";
 import { prisma } from "../../repositories/prismaClient";
+import { TenantGroupRepository } from "../../repositories/tenantGroup.repository";
 import {
   absBigInt,
   clampMoneyCredit,
@@ -59,6 +61,9 @@ export const MAX_ROB_PER_ACTION = 35_000_000n;
 export const MAX_ROB_FINE = 15_000_000n;
 export const BANSOS_POVERTY_THRESHOLD = 5_000_000n;
 export const BANSOS_POVERTY_BONUS = 1_800_000n;
+export const TOP_WEALTH_TAX_MIN_PERCENT = 1;
+export const TOP_WEALTH_TAX_MAX_PERCENT = 50;
+export const TOP_WEALTH_TAX_MAX_TARGETS = 10;
 
 interface JobDefinition {
   title: string;
@@ -275,6 +280,24 @@ export interface CooldownSummary {
   entries: { key: string; label: string; remainingMs: number }[];
 }
 
+export interface TopWealthTaxMemberEntry {
+  rank: number;
+  userJid: string;
+  wealthBefore: bigint;
+  walletTax: bigint;
+  bankTax: bigint;
+  totalTax: bigint;
+  wealthAfter: bigint;
+}
+
+export interface TopWealthTaxResult {
+  groupJid: string;
+  percent: number;
+  taxedMembers: TopWealthTaxMemberEntry[];
+  totalCollected: bigint;
+  treasuryBalance: bigint;
+}
+
 interface RpgProfileStore {
   findOrCreate(groupJid: string, userJid: string, tx?: unknown): Promise<GroupMemberProfile>;
   findByGroupAndUser(
@@ -282,6 +305,12 @@ interface RpgProfileStore {
     userJid: string,
     tx?: unknown,
   ): Promise<GroupMemberProfile | null>;
+  listTopByWealth?(groupJid: string, limit?: number): Promise<GroupMemberProfile[]>;
+}
+
+interface RpgTenantStore {
+  findByTenantCode(tenantCode: string): Promise<TenantGroup | null>;
+  findByGroupJid(groupJid: string): Promise<TenantGroup | null>;
 }
 
 interface RpgTxStore {
@@ -338,7 +367,136 @@ export class RpgEconomyService {
     private readonly txRepo: RpgTxStore = new GroupMemberTransactionRepository(),
     private readonly random: RandomProvider = defaultRandom,
     private readonly db: RpgDb = prisma,
+    private readonly tenantRepo: RpgTenantStore = new TenantGroupRepository(),
   ) {}
+
+  async resolveTenantGroup(codeOrGroupJid: string): Promise<TenantGroup | null> {
+    const trimmed = codeOrGroupJid.trim();
+    if (!trimmed) return null;
+    if (trimmed.endsWith("@g.us")) {
+      return this.tenantRepo.findByGroupJid(trimmed);
+    }
+    return this.tenantRepo.findByTenantCode(trimmed.toUpperCase());
+  }
+
+  async collectTopWealthTax(
+    groupJid: string,
+    percent: number,
+    actorJid: string,
+  ): Promise<TopWealthTaxResult> {
+    if (
+      !Number.isInteger(percent) ||
+      percent < TOP_WEALTH_TAX_MIN_PERCENT ||
+      percent > TOP_WEALTH_TAX_MAX_PERCENT
+    ) {
+      throw new AppUserError(
+        `Persentase pajak harus bilangan bulat antara ${String(TOP_WEALTH_TAX_MIN_PERCENT)}% sampai ${String(TOP_WEALTH_TAX_MAX_PERCENT)}%.`,
+      );
+    }
+
+    const normActor = normalizeUserJid(actorJid);
+    const listTopFn = this.profileRepo.listTopByWealth?.bind(this.profileRepo);
+    const rawCandidates = listTopFn
+      ? await listTopFn(groupJid, TOP_WEALTH_TAX_MAX_TARGETS + 15)
+      : [];
+
+    const targets = rawCandidates
+      .filter((p) => !roleGuard.isSuperOwner(p.userJid) && p.moneyBalance + p.bankBalance > 0n)
+      .slice(0, TOP_WEALTH_TAX_MAX_TARGETS);
+
+    if (targets.length === 0) {
+      throw new AppUserError(
+        "Belum ada member di Top 10 kekayaan grup ini yang memiliki saldo Dompet/ATM untuk dipajaki.",
+      );
+    }
+
+    const correlationId = generateCorrelationId();
+
+    return this.db.$transaction(async (tx) => {
+      const tenant = await tx.tenantGroup.findUnique({ where: { groupJid } });
+      const currentTreasury = tenant?.treasuryBalance ?? DEFAULT_GROUP_TREASURY;
+      const taxedMembers: TopWealthTaxMemberEntry[] = [];
+      let totalCollected = 0n;
+
+      for (const candidate of targets) {
+        const fresh = await tx.groupMemberProfile.findUniqueOrThrow({
+          where: { id: candidate.id },
+        });
+        const walletTax = minBigInt(fresh.moneyBalance, percentOfBigInt(fresh.moneyBalance, percent));
+        const bankTax = minBigInt(fresh.bankBalance, percentOfBigInt(fresh.bankBalance, percent));
+        const totalTax = walletTax + bankTax;
+        if (totalTax <= 0n) {
+          continue;
+        }
+
+        const debitRes = await tx.groupMemberProfile.updateMany({
+          where: {
+            id: fresh.id,
+            ...(walletTax > 0n ? { moneyBalance: { gte: walletTax } } : {}),
+            ...(bankTax > 0n ? { bankBalance: { gte: bankTax } } : {}),
+          },
+          data: {
+            ...(walletTax > 0n ? { moneyBalance: { decrement: walletTax } } : {}),
+            ...(bankTax > 0n ? { bankBalance: { decrement: bankTax } } : {}),
+          },
+        });
+        if (debitRes.count === 0) {
+          continue;
+        }
+
+        const wealthBefore = fresh.moneyBalance + fresh.bankBalance;
+        const wealthAfter = wealthBefore - totalTax;
+
+        await this.txRepo.create(
+          {
+            profileId: fresh.id,
+            groupJid,
+            userJid: fresh.userJid,
+            actorJid: normActor,
+            asset: MemberTransactionAsset.MONEY,
+            type: MemberTransactionType.TAX_DEBIT,
+            amount: -totalTax,
+            balanceBefore: wealthBefore,
+            balanceAfter: wealthAfter,
+            correlationId,
+            note: `top10_wealth_tax_${String(percent)}pct`,
+          },
+          tx,
+        );
+
+        totalCollected += totalTax;
+        taxedMembers.push({
+          rank: taxedMembers.length + 1,
+          userJid: fresh.userJid,
+          wealthBefore,
+          walletTax,
+          bankTax,
+          totalTax,
+          wealthAfter,
+        });
+      }
+
+      if (taxedMembers.length === 0) {
+        throw new AppUserError("Tidak ada saldo yang cukup untuk dipotong pajak saat ini.");
+      }
+
+      const nextTreasury = minBigInt(MAX_SAFE_MONEY_BIGINT, currentTreasury + totalCollected);
+      if (tenant && totalCollected > 0n) {
+        await tx.tenantGroup.update({
+          where: { groupJid },
+          data: { treasuryBalance: nextTreasury },
+        });
+      }
+
+      return {
+        groupJid,
+        percent,
+        taxedMembers,
+        totalCollected,
+        treasuryBalance: nextTreasury,
+      };
+    });
+  }
 
   async runJob(
     groupJid: string,

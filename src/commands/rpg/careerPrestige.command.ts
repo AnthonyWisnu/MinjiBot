@@ -556,15 +556,19 @@ async function handleBebasPenjara(context: CommandContext): Promise<void> {
   try {
     const sender = await resolveSender(context);
     const res = await careerPrestigeService.releaseFromJail(context.chatJid, sender);
+    const sourceDetail =
+      res.bankPaid > 0n
+        ? ` (Dompet: ${formatCompactRupiah(res.walletPaid)} + Auto-debit ATM: ${formatCompactRupiah(res.bankPaid)})`
+        : "";
     const note = res.coveredByInsurance
       ? "Ditanggung penuh oleh *Pengacara Elit* (Gratis!)"
-      : `Uang tebusan dibayar: -${formatRupiah(res.costPaid)}`;
+      : `Uang tebusan dibayar: -${formatRupiah(res.costPaid)}${sourceDetail}`;
     await context.reply(
       [
         "*── [ BEBAS DARI PENJARA ] ──*",
         `${tagOf(sender)} resmi keluar dari sel tahanan!`,
         note,
-        `Dompet: ${formatRupiah(res.currentMoney)}`,
+        `Dompet: ${formatRupiah(res.currentMoney)} | ATM: ${formatRupiah(res.currentBank)}`,
       ].join("\n"),
       { mentions: [sender] },
     );
@@ -578,15 +582,19 @@ async function handleBebasUgd(context: CommandContext): Promise<void> {
   try {
     const sender = await resolveSender(context);
     const res = await careerPrestigeService.releaseFromUgd(context.chatJid, sender);
+    const sourceDetail =
+      res.bankPaid > 0n
+        ? ` (Dompet: ${formatCompactRupiah(res.walletPaid)} + Auto-debit ATM: ${formatCompactRupiah(res.bankPaid)})`
+        : "";
     const note = res.coveredByInsurance
       ? "Ditanggung penuh oleh *BPJS Sultan VIP* (Gratis!)"
-      : `Biaya perawatan VIP: -${formatRupiah(res.costPaid)}`;
+      : `Biaya perawatan VIP: -${formatRupiah(res.costPaid)}${sourceDetail}`;
     await context.reply(
       [
         "*── [ PULIH DARI UGD ] ──*",
         `${tagOf(sender)} sembuh total (HP 100/100) dan keluar dari UGD!`,
         note,
-        `Dompet: ${formatRupiah(res.currentMoney)}`,
+        `Dompet: ${formatRupiah(res.currentMoney)} | ATM: ${formatRupiah(res.currentBank)}`,
       ].join("\n"),
       { mentions: [sender] },
     );

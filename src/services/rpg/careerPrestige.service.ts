@@ -148,7 +148,10 @@ export interface ReleaseStatusResult {
   kind: "jail" | "ugd";
   coveredByInsurance: boolean;
   costPaid: bigint;
+  walletPaid: bigint;
+  bankPaid: bigint;
   currentMoney: bigint;
+  currentBank: bigint;
 }
 
 export interface PrestigeOverview {
@@ -1160,23 +1163,33 @@ export class CareerPrestigeService {
 
       const hasLawyer = isInsuranceActive(state, "pengacara", nowMs);
       const cost = hasLawyer ? 0n : JAIL_BAIL_COST;
-      if (cost > 0n && profile.moneyBalance < cost) {
+      const totalFunds = profile.moneyBalance + profile.bankBalance;
+      if (cost > 0n && totalFunds < cost) {
         throw new AppUserError(
-          `Uang tebusan penjara ${formatRupiah(cost)}, dompetmu: ${formatRupiah(profile.moneyBalance)}.`,
+          `Uang tebusan penjara ${formatRupiah(cost)}, total saldo (Dompet ${formatRupiah(profile.moneyBalance)} + ATM ${formatRupiah(profile.bankBalance)}) hanya ${formatRupiah(totalFunds)}.`,
         );
       }
+
+      const walletPaid =
+        cost > 0n ? (profile.moneyBalance >= cost ? cost : profile.moneyBalance) : 0n;
+      const bankPaid = cost - walletPaid;
 
       const nextState: MemberRpgState = { ...state, jailedUntil: 0 };
       if (cost > 0n) {
         const res = await tx.groupMemberProfile.updateMany({
-          where: { id: profile.id, moneyBalance: { gte: cost } },
+          where: {
+            id: profile.id,
+            ...(walletPaid > 0n ? { moneyBalance: { gte: walletPaid } } : {}),
+            ...(bankPaid > 0n ? { bankBalance: { gte: bankPaid } } : {}),
+          },
           data: {
-            moneyBalance: { decrement: cost },
+            ...(walletPaid > 0n ? { moneyBalance: { decrement: walletPaid } } : {}),
+            ...(bankPaid > 0n ? { bankBalance: { decrement: bankPaid } } : {}),
             rpgState: serializeRpgState(nextState),
           },
         });
         if (res.count === 0) {
-          throw new AppUserError("Saldo dompet tidak cukup membayar tebusan.");
+          throw new AppUserError("Saldo dompet/ATM tidak cukup membayar tebusan.");
         }
       } else {
         await tx.groupMemberProfile.update({
@@ -1186,7 +1199,7 @@ export class CareerPrestigeService {
       }
 
       const updated = await tx.groupMemberProfile.findUniqueOrThrow({ where: { id: profile.id } });
-      if (cost > 0n) {
+      if (walletPaid > 0n) {
         await this.txRepo.create(
           {
             profileId: profile.id,
@@ -1194,11 +1207,28 @@ export class CareerPrestigeService {
             userJid,
             asset: MemberTransactionAsset.MONEY,
             type: MemberTransactionType.RPG_LOSS,
-            amount: -cost,
+            amount: -walletPaid,
             balanceBefore: profile.moneyBalance,
             balanceAfter: updated.moneyBalance,
             correlationId,
             note: "jail_bail",
+          },
+          tx,
+        );
+      }
+      if (bankPaid > 0n) {
+        await this.txRepo.create(
+          {
+            profileId: profile.id,
+            groupJid,
+            userJid,
+            asset: MemberTransactionAsset.MONEY,
+            type: MemberTransactionType.RPG_LOSS,
+            amount: -bankPaid,
+            balanceBefore: profile.bankBalance,
+            balanceAfter: updated.bankBalance,
+            correlationId,
+            note: "jail_bail_bank_autodebit",
           },
           tx,
         );
@@ -1208,7 +1238,10 @@ export class CareerPrestigeService {
         kind: "jail",
         coveredByInsurance: hasLawyer,
         costPaid: cost,
+        walletPaid,
+        bankPaid,
         currentMoney: updated.moneyBalance,
+        currentBank: updated.bankBalance,
       };
     });
   }
@@ -1230,23 +1263,33 @@ export class CareerPrestigeService {
 
       const hasBpjs = isInsuranceActive(state, "bpjs", nowMs);
       const cost = hasBpjs ? 0n : UGD_VIP_RELEASE_COST;
-      if (cost > 0n && profile.moneyBalance < cost) {
+      const totalFunds = profile.moneyBalance + profile.bankBalance;
+      if (cost > 0n && totalFunds < cost) {
         throw new AppUserError(
-          `Biaya rawat VIP keluar UGD ${formatRupiah(cost)}, dompetmu: ${formatRupiah(profile.moneyBalance)}.`,
+          `Biaya rawat VIP keluar UGD ${formatRupiah(cost)}, total saldo (Dompet ${formatRupiah(profile.moneyBalance)} + ATM ${formatRupiah(profile.bankBalance)}) hanya ${formatRupiah(totalFunds)}.`,
         );
       }
+
+      const walletPaid =
+        cost > 0n ? (profile.moneyBalance >= cost ? cost : profile.moneyBalance) : 0n;
+      const bankPaid = cost - walletPaid;
 
       const nextState: MemberRpgState = withHp({ ...state, ugdUntil: 0 }, MAX_PLAYER_HP);
       if (cost > 0n) {
         const res = await tx.groupMemberProfile.updateMany({
-          where: { id: profile.id, moneyBalance: { gte: cost } },
+          where: {
+            id: profile.id,
+            ...(walletPaid > 0n ? { moneyBalance: { gte: walletPaid } } : {}),
+            ...(bankPaid > 0n ? { bankBalance: { gte: bankPaid } } : {}),
+          },
           data: {
-            moneyBalance: { decrement: cost },
+            ...(walletPaid > 0n ? { moneyBalance: { decrement: walletPaid } } : {}),
+            ...(bankPaid > 0n ? { bankBalance: { decrement: bankPaid } } : {}),
             rpgState: serializeRpgState(nextState),
           },
         });
         if (res.count === 0) {
-          throw new AppUserError("Saldo dompet tidak cukup membayar biaya UGD VIP.");
+          throw new AppUserError("Saldo dompet/ATM tidak cukup membayar biaya UGD VIP.");
         }
       } else {
         await tx.groupMemberProfile.update({
@@ -1256,7 +1299,7 @@ export class CareerPrestigeService {
       }
 
       const updated = await tx.groupMemberProfile.findUniqueOrThrow({ where: { id: profile.id } });
-      if (cost > 0n) {
+      if (walletPaid > 0n) {
         await this.txRepo.create(
           {
             profileId: profile.id,
@@ -1264,11 +1307,28 @@ export class CareerPrestigeService {
             userJid,
             asset: MemberTransactionAsset.MONEY,
             type: MemberTransactionType.RPG_LOSS,
-            amount: -cost,
+            amount: -walletPaid,
             balanceBefore: profile.moneyBalance,
             balanceAfter: updated.moneyBalance,
             correlationId,
             note: "ugd_vip_release",
+          },
+          tx,
+        );
+      }
+      if (bankPaid > 0n) {
+        await this.txRepo.create(
+          {
+            profileId: profile.id,
+            groupJid,
+            userJid,
+            asset: MemberTransactionAsset.MONEY,
+            type: MemberTransactionType.RPG_LOSS,
+            amount: -bankPaid,
+            balanceBefore: profile.bankBalance,
+            balanceAfter: updated.bankBalance,
+            correlationId,
+            note: "ugd_vip_release_bank_autodebit",
           },
           tx,
         );
@@ -1278,7 +1338,10 @@ export class CareerPrestigeService {
         kind: "ugd",
         coveredByInsurance: hasBpjs,
         costPaid: cost,
+        walletPaid,
+        bankPaid,
         currentMoney: updated.moneyBalance,
+        currentBank: updated.bankBalance,
       };
     });
   }

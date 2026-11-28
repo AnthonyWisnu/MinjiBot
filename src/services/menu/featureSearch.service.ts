@@ -95,6 +95,8 @@ const KEYWORD_SYNONYMS: Record<string, readonly string[]> = {
   buff: ["blackmarket", "belibuff", "buffaktif", "gunakan"],
   bounty: ["bounty", "listbounty", "burubounty"],
   buronan: ["bounty", "listbounty", "burubounty"],
+  pajak: ["pajak", "pajaktop", "toprich"],
+  pajaktop: ["pajaktop", "pajak", "toprich"],
 };
 
 export class FeatureSearchService {

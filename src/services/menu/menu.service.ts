@@ -293,6 +293,7 @@ export class MenuService {
             ".removetenant <kode>",
             ".purgetenant <kode>",
             ".addlimitall <kode> <jumlah>",
+            ".pajaktop <kode> <persen>",
           ],
         },
         {
@@ -318,6 +319,7 @@ export class MenuService {
             ".addtenantadmin <nomor>",
             ".removetenantadmin <nomor>",
             ".listtenantadmin",
+            ".pajaktop <kode> <persen>",
           ],
         },
         {
@@ -490,6 +492,7 @@ export class MenuService {
           ".removetenant <kode>",
           ".purgetenant <kode>",
           ".addlimitall <kode> <jumlah>",
+          ".pajaktop <persen>",
           ".transferowner @user",
           ".addtenantadmin <nomor>",
           ".removetenantadmin <nomor>",
@@ -548,6 +551,7 @@ export class MenuService {
           ".addtenantadmin <nomor>",
           ".removetenantadmin <nomor>",
           ".listtenantadmin",
+          ".pajaktop <persen>",
         ],
       },
       this.buildModerationSection(true),
