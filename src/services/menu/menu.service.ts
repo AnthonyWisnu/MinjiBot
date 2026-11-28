@@ -165,7 +165,7 @@ export class MenuService {
       return this.renderCategoryPage(
         "*── [ SUB-MENU: FUN ] ──*",
         groupHeader,
-        [this.buildFunSection()],
+        [this.buildFunSection(), this.buildLocalFunBankSection()],
         footer,
       );
     }
@@ -197,7 +197,11 @@ export class MenuService {
       return this.renderCategoryPage(
         "*── [ SUB-MENU: INFO ] ──*",
         groupHeader,
-        [this.buildPublicInfoSection()],
+        [
+          this.buildPublicInfoSection(),
+          this.buildDailyUtilitySection(),
+          this.buildGeekNetworkSection(),
+        ],
         footer,
       );
     }
@@ -377,6 +381,7 @@ export class MenuService {
     sections.push(
       this.buildSocialDramaSection(),
       this.buildFunSection(),
+      this.buildLocalFunBankSection(),
       this.buildAnimeRpSection(),
       this.buildMediaCreativeSection(),
       this.buildPhotoMemeSection(),
@@ -384,6 +389,8 @@ export class MenuService {
       this.buildDownloaderSection(),
       this.buildIslamiSection(),
       this.buildPublicInfoSection(),
+      this.buildDailyUtilitySection(),
+      this.buildGeekNetworkSection(),
       this.buildInteractiveToolsSection(),
     );
 
@@ -916,6 +923,29 @@ export class MenuService {
     };
   }
 
+  private buildLocalFunBankSection(): MenuSection {
+    return {
+      title: "*── [ HIBURAN LOKAL ] ──*",
+      items: [
+        ".pantun",
+        ".gombal",
+        ".jokes / .receh",
+        ".faktaunik",
+        ".quotes",
+        ".motivasi",
+        ".bucin",
+        ".galau",
+        ".bijak",
+        ".sindir",
+        ".katakata",
+        ".bacot",
+        ".darkjokes",
+        ".tebakreceh",
+        ".pickup",
+      ],
+    };
+  }
+
   private buildMediaCreativeSection(): MenuSection {
     return {
       title: "*── [ MEDIA & STIKER ] ──*",
@@ -994,6 +1024,12 @@ export class MenuService {
         ".jadwalshalat <kota>",
         ".asmaulhusna [1-99]",
         ".ayatkursi",
+        ".doaharian [nama]",
+        ".niatshalat [waktu]",
+        ".dzikir",
+        ".hadits [nomor]",
+        ".kisahnabi [nama]",
+        ".kalenderhijriah [tgl]",
       ],
     };
   }
@@ -1012,6 +1048,59 @@ export class MenuService {
         ".npmsearch <paket>",
         ".whois <domain>",
         ".tinyurl <url>",
+      ],
+    };
+  }
+
+  private buildDailyUtilitySection(): MenuSection {
+    return {
+      title: "*── [ UTILITAS HARIAN ] ──*",
+      items: [
+        ".kurs <jml> <dari> <ke>",
+        ".berita [kategori]",
+        ".kamusen <kata>",
+        ".hitungumur <tgl>",
+        ".bmi <kg> <cm>",
+        ".diskon <harga> <%>",
+        ".splitbill <total> <org>",
+        ".random [min] [max]",
+        ".pilih <a|b|c>",
+        ".acakurutan <a|b|c>",
+        ".tim <n> <nama,...>",
+        ".countdown <tgl> [acara]",
+        ".jamdunia [kota]",
+        ".konversi <n> <u1> <u2>",
+        ".hitungkata <teks>",
+        ".balik <teks>",
+        ".kapital <teks>",
+        ".kecil <teks>",
+        ".mock <teks>",
+        ".morse <teks>",
+        ".unmorse <sandi>",
+        ".biner <teks>",
+        ".unbiner <biner>",
+        ".base64enc <teks>",
+        ".base64dec <b64>",
+        ".hash <algo> <teks>",
+        ".passgen [panjang]",
+        ".uuid",
+        ".color <#hex>",
+      ],
+    };
+  }
+
+  private buildGeekNetworkSection(): MenuSection {
+    return {
+      title: "*── [ ANIME & GEEK ] ──*",
+      items: [
+        ".anime <judul>",
+        ".manga <judul>",
+        ".karakter <nama>",
+        ".pokemon <nama/id>",
+        ".gamegratis [pc|browser]",
+        ".anjing / .dog",
+        ".httpcat <kode>",
+        ".cekip <ip/domain>",
       ],
     };
   }

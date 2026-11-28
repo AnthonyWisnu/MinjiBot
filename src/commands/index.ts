@@ -5,6 +5,7 @@ import { afkCommands } from "./afk/afk.command";
 import { aiCommands } from "./ai/ai.command";
 import { animeRoleplayCommands } from "./fun/animeRoleplay.command";
 import { funCommands } from "./fun/fun.command";
+import { localFunBankCommands } from "./fun/localFunBank.command";
 import { menfessCommands } from "./fun/menfess.command";
 import { socialDramaCommands } from "./fun/socialDrama.command";
 import { socialEconomyCommands } from "./fun/socialEconomy.command";
@@ -15,8 +16,10 @@ import { sambungUndercoverCommands } from "./game/sambungUndercover.command";
 import { teamWarCommands } from "./game/teamWar.command";
 import { werewolfCommands } from "./game/werewolf.command";
 import { createCustomStickerCommands } from "./group/customStickerCommand.command";
+import { geekNetworkCommands } from "./info/geekNetwork.command";
 import { publicInfoCommands } from "./info/publicInfo.command";
 import { islamiCommands } from "./islami/islami.command";
+import { islamiLocalCommands } from "./islami/islamiLocal.command";
 import { dailyCommand } from "./member/daily.command";
 import { giftCommands } from "./member/gift.command";
 import { leaderboardCommands } from "./member/leaderboard.command";
@@ -54,6 +57,7 @@ import { tenantOwnerCommands } from "./tenant/tenantOwner.command";
 import { tenantPanelCommands } from "./tenant/tenantPanel.command";
 import { transferOwnerCommands } from "./tenant/transferOwner.command";
 import { superOwnerTenantCommands } from "./tenant/superOwnerTenant.command";
+import { dailyUtilityCommands } from "./tools/dailyUtility.command";
 import { groupToolCommands } from "./tools/tools.command";
 import { welcomeCommands } from "./welcome/welcome.command";
 import { groupStatsCommands } from "./stats/groupStats.command";
@@ -158,6 +162,7 @@ export const commandRouter = new CommandRouter([
   ...werewolfCommands,
   ...teamWarCommands,
   ...funCommands,
+  ...localFunBankCommands,
   ...menfessCommands,
   ...socialDramaCommands,
   ...socialEconomyCommands,
@@ -175,8 +180,11 @@ export const commandRouter = new CommandRouter([
   ...leaderboardCommands,
   ...groupStatsCommands,
   ...groupToolCommands,
+  ...dailyUtilityCommands,
   ...islamiCommands,
+  ...islamiLocalCommands,
   ...publicInfoCommands,
+  ...geekNetworkCommands,
   ...createCustomStickerCommands((cmd) => routerRef.current?.has(cmd) ?? false),
 ]);
 
