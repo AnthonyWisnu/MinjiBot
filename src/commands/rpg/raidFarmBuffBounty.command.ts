@@ -399,7 +399,7 @@ async function handleLadang(context: CommandContext): Promise<void> {
 
     const seedLines = FARM_CROP_CATALOG.map(
       (c) =>
-        `• *${c.id}* (${c.label}) - Bibit ${formatCompactRupiah(c.seedPrice)} | ${String(c.growMinutes)}m`,
+        `• *${c.id}* (${c.label}) [Lv.${String(c.minLevel)}+] - Bibit ${formatCompactRupiah(c.seedPrice)} | ${String(c.growMinutes)}m`,
     );
 
     await context.reply(

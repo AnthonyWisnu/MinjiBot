@@ -174,7 +174,7 @@ async function handleProperti(context: CommandContext): Promise<void> {
 
     const listLines = overview.items.map(
       (item) =>
-        `- *${item.spec.id}* (${item.spec.name})\n  Harga: ${formatCompactRupiah(item.spec.price)} | Sewa: ${formatCompactRupiah(item.spec.incomePerHour)}/jam | Punya: ${String(item.owned)}/${String(item.spec.maxOwned)}`,
+        `- *${item.spec.id}* (${item.spec.name}) [Min Lv.${String(item.spec.minLevel)}]\n  Harga: ${formatCompactRupiah(item.spec.price)} | Sewa: ${formatCompactRupiah(item.spec.incomePerHour)}/jam | Punya: ${String(item.owned)}/${String(item.spec.maxOwned)}`,
     );
 
     await context.reply(

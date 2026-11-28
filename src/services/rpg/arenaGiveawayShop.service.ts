@@ -55,7 +55,7 @@ export const LOTTERY_MAX_TICKETS_PER_USER = 3;
 
 export const ARENA_MIN_BET = 100_000n;
 export const ARENA_MAX_BET = 100_000_000n;
-export const ARENA_COOLDOWN_MS = 20_000;
+export const ARENA_COOLDOWN_MS = 10_000;
 
 export const POINT_DUEL_MIN_BET = 10;
 export const POINT_DUEL_MAX_BET = 5_000;

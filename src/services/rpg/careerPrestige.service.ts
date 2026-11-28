@@ -43,6 +43,7 @@ import {
   STARTUP_CREATE_COST,
   STARTUP_DIVIDEND_COOLDOWN_MS,
   STARTUP_MAX_LEVEL,
+  STARTUP_MIN_PLAYER_LEVEL,
   STARTUP_RECRUIT_COST,
   UGD_VIP_RELEASE_COST,
   type CareerSpec,
@@ -399,6 +400,12 @@ export class CareerPrestigeService {
           "Kamu belum punya profesi! Lihat daftar lowongan di .karir lalu lamar dengan .lamar <profesi>.",
         );
       }
+      const playerLevel = Math.max(1, profile.level);
+      if (playerLevel < spec.minLevel) {
+        throw new AppUserError(
+          `Profesi *${spec.title}* membutuhkan minimal *Level ${String(spec.minLevel)}* (levelmu saat ini Lv.${String(playerLevel)}). Naikkan level via *.levelup* atau *.resign* untuk melamar profesi sesuai levelmu!`,
+        );
+      }
 
       const jailMs = getRemainingJailMs(state, nowMs);
       if (jailMs > 0) {
@@ -493,6 +500,12 @@ export class CareerPrestigeService {
       const spec = state.career ? CAREER_MAP.get(state.career.jobId) : undefined;
       if (!state.career || !spec) {
         throw new AppUserError("Kamu belum punya profesi. Lamar dulu di .karir!");
+      }
+      const playerLevel = Math.max(1, profile.level);
+      if (playerLevel < spec.minLevel) {
+        throw new AppUserError(
+          `Promosi *${spec.title}* membutuhkan minimal *Level ${String(spec.minLevel)}* (levelmu saat ini Lv.${String(playerLevel)}). Naikkan level via *.levelup* dulu!`,
+        );
       }
       if (state.career.level >= CAREER_MAX_LEVEL) {
         throw new AppUserError(
@@ -613,6 +626,12 @@ export class CareerPrestigeService {
       if (state.startup) {
         throw new AppUserError(`Kamu sudah memiliki startup *${state.startup.name}*!`);
       }
+      const playerLevel = Math.max(1, profile.level);
+      if (playerLevel < STARTUP_MIN_PLAYER_LEVEL) {
+        throw new AppUserError(
+          `Mendirikan startup membutuhkan minimal *Level ${String(STARTUP_MIN_PLAYER_LEVEL)}* (levelmu saat ini Lv.${String(playerLevel)}). Naikkan lewat *.levelup*!`,
+        );
+      }
       if (profile.moneyBalance < STARTUP_CREATE_COST) {
         throw new AppUserError(
           `Modal pendirian startup ${formatRupiah(STARTUP_CREATE_COST)}, dompetmu: ${formatRupiah(profile.moneyBalance)}.`,
@@ -673,6 +692,12 @@ export class CareerPrestigeService {
       const state = parseRpgState(profile.rpgState);
       if (!state.startup) {
         throw new AppUserError("Kamu belum punya startup. Buat dulu dengan .buatstartup <nama>.");
+      }
+      const playerLevel = Math.max(1, profile.level);
+      if (playerLevel < STARTUP_MIN_PLAYER_LEVEL) {
+        throw new AppUserError(
+          `Mengelola startup membutuhkan minimal *Level ${String(STARTUP_MIN_PLAYER_LEVEL)}* (levelmu saat ini Lv.${String(playerLevel)}). Naikkan lewat *.levelup*!`,
+        );
       }
 
       const maxEmp = getStartupMaxEmployees(state.startup.level);
@@ -740,6 +765,12 @@ export class CareerPrestigeService {
       if (!state.startup) {
         throw new AppUserError("Kamu belum punya startup. Buat dulu dengan .buatstartup <nama>.");
       }
+      const playerLevel = Math.max(1, profile.level);
+      if (playerLevel < STARTUP_MIN_PLAYER_LEVEL) {
+        throw new AppUserError(
+          `Mengelola startup membutuhkan minimal *Level ${String(STARTUP_MIN_PLAYER_LEVEL)}* (levelmu saat ini Lv.${String(playerLevel)}). Naikkan lewat *.levelup*!`,
+        );
+      }
       if (state.startup.level >= STARTUP_MAX_LEVEL) {
         throw new AppUserError(`Startup *${state.startup.name}* sudah di level maksimal (Lv.${String(STARTUP_MAX_LEVEL)})!`);
       }
@@ -804,6 +835,12 @@ export class CareerPrestigeService {
       const state = parseRpgState(profile.rpgState);
       if (!state.startup) {
         throw new AppUserError("Kamu belum punya startup. Buat dulu lewat .buatstartup <nama>.");
+      }
+      const playerLevel = Math.max(1, profile.level);
+      if (playerLevel < STARTUP_MIN_PLAYER_LEVEL) {
+        throw new AppUserError(
+          `Menarik dividen startup membutuhkan minimal *Level ${String(STARTUP_MIN_PLAYER_LEVEL)}* (levelmu saat ini Lv.${String(playerLevel)}). Naikkan lewat *.levelup* dulu!`,
+        );
       }
 
       const elapsed = Math.max(0, nowMs - state.startup.lastDividendAt);

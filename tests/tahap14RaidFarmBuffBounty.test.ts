@@ -284,6 +284,12 @@ void test("Tahap 14: Ladang plant, water speedup, harvest, deterministic market,
   const used = await service.useBlackMarketBuff("120@g.us", "6281@s.whatsapp.net", "jimatcuan", t0);
   assert.ok(used.activeRemainingMs > 0);
 
+  // Verify crop level gate (Lv.10 cannot plant Lv.30 truffle)
+  await assert.rejects(
+    () => service.plantCrop("120@g.us", "6281@s.whatsapp.net", "truffle", 1, t0),
+    /Level 30/,
+  );
+
   const planted = await service.plantCrop("120@g.us", "6281@s.whatsapp.net", "padi", 2, t0);
   assert.equal(planted.plantedCount, 2);
   assert.equal(planted.usedPlots, 2);

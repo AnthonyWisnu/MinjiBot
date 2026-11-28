@@ -300,6 +300,12 @@ void test("Tahap 9: Properties buy, passive harvest after 2 hours, and 65% sell 
   assert.equal(bought.ownedAfter, 2);
   assert.equal(bought.totalMoney, warung.price * 2n);
 
+  // Lv.1 cannot buy Lv.55 Pulau Resort
+  await assert.rejects(
+    () => service.buyProperty("120@g.us", "6281@s.whatsapp.net", "pulau", 1, t0),
+    /Level 55/,
+  );
+
   // Immediately harvesting before 10 min should be rejected
   await assert.rejects(
     () => service.harvestProperties("120@g.us", "6281@s.whatsapp.net", new Date(t0.getTime() + 60_000)),

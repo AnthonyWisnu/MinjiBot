@@ -179,6 +179,7 @@ export const SKILL_SPECS: Record<SkillKey, SkillSpec> = {
 export interface FarmCropSpec {
   id: string;
   label: string;
+  minLevel: number;
   seedPrice: bigint;
   growMinutes: number;
   minYield: number;
@@ -191,6 +192,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
   {
     id: "padi",
     label: "Padi Organik",
+    minLevel: 1,
     seedPrice: 300_000n,
     growMinutes: 15,
     minYield: 3,
@@ -201,6 +203,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
   {
     id: "jagung",
     label: "Jagung Manis",
+    minLevel: 1,
     seedPrice: 600_000n,
     growMinutes: 25,
     minYield: 3,
@@ -211,6 +214,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
   {
     id: "kopi",
     label: "Biji Kopi Gayo",
+    minLevel: 5,
     seedPrice: 1_500_000n,
     growMinutes: 45,
     minYield: 3,
@@ -221,6 +225,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
   {
     id: "kakao",
     label: "Kakao Premium",
+    minLevel: 10,
     seedPrice: 3_000_000n,
     growMinutes: 60,
     minYield: 3,
@@ -231,6 +236,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
   {
     id: "sawit",
     label: "Sawit Emas",
+    minLevel: 18,
     seedPrice: 6_000_000n,
     growMinutes: 90,
     minYield: 4,
@@ -241,6 +247,7 @@ export const FARM_CROP_CATALOG: readonly FarmCropSpec[] = [
   {
     id: "truffle",
     label: "Truffle Hitam",
+    minLevel: 30,
     seedPrice: 15_000_000n,
     growMinutes: 120,
     minYield: 3,
@@ -1136,6 +1143,12 @@ export class RaidFarmBuffBountyService {
 
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
+      const playerLevel = Math.max(1, profile.level);
+      if (playerLevel < crop.minLevel) {
+        throw new AppUserError(
+          `Menanam *${crop.label}* membutuhkan minimal *Level ${String(crop.minLevel)}* (levelmu saat ini Lv.${String(playerLevel)}). Naikkan lewat *.levelup*!`,
+        );
+      }
       const state = parseRpgState(profile.rpgState);
       const freeSlots = MAX_FARM_PLOTS - state.farm.plots.length;
 

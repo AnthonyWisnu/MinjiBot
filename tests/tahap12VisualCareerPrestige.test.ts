@@ -253,7 +253,7 @@ void test("Tahap 12: Career, Startup, Pinjol Debt Collector, Insurance release, 
     {
       groupJid: "120@g.us",
       userJid: "6281@s.whatsapp.net",
-      level: 15,
+      level: 35,
       experience: 50_000, // Epic
       moneyBalance: 25_000_000_000n,
     },
@@ -330,4 +330,27 @@ void test("Tahap 12: Career, Startup, Pinjol Debt Collector, Insurance release, 
   const fresh = parseRpgState(createDefaultRpgState());
   assert.equal(fresh.prestige, 0);
   assert.equal(fresh.career, null);
+});
+
+void test("Opsi B strict level gates block under-leveled .shift, .promosi, .dividen, .buatstartup & .rebirth", async () => {
+  const t0 = new Date("2026-11-28T01:00:00.000Z");
+  const legacyState = createDefaultRpgState();
+  // Legacy player Lv.15 who previously applied for CEO (now minLevel 35) & owned Startup (now minLevel 20)
+  legacyState.career = { jobId: "ceo", level: 1, shiftsDone: 0 };
+  legacyState.startup = { name: "PT Lama", level: 1, employees: 1, lastDividendAt: 0 };
+
+  const { service } = createHarness([
+    {
+      groupJid: "120@g.us",
+      userJid: "6289@s.whatsapp.net",
+      level: 15,
+      moneyBalance: 20_000_000_000n,
+      rpgState: serializeRpgState(legacyState) as never,
+    },
+  ]);
+
+  await assert.rejects(() => service.workShift("120@g.us", "6289@s.whatsapp.net", t0), /Level 35/);
+  await assert.rejects(() => service.promoteCareer("120@g.us", "6289@s.whatsapp.net"), /Level 35/);
+  await assert.rejects(() => service.claimDividend("120@g.us", "6289@s.whatsapp.net", t0), /Level 20/);
+  await assert.rejects(() => service.performRebirth("120@g.us", "6289@s.whatsapp.net"), /Level 30/);
 });

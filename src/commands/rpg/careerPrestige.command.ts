@@ -12,6 +12,7 @@ import {
   PRESTIGE_REWARD_LIMIT,
   PRESTIGE_REWARD_POINTS,
   STARTUP_CREATE_COST,
+  STARTUP_MIN_PLAYER_LEVEL,
   STARTUP_RECRUIT_COST,
   UGD_VIP_RELEASE_COST,
 } from "../../services/rpg/careerPrestigeCatalog";
@@ -216,6 +217,7 @@ async function handleStartup(context: CommandContext): Promise<void> {
           "*── [ STARTUP & PERUSAHAAN ] ──*",
           `Founder : ${tagOf(sender)}`,
           `Status  : Belum memiliki perusahaan`,
+          `Syarat  : Minimal Level ${String(STARTUP_MIN_PLAYER_LEVEL)}`,
           `Modal   : ${formatRupiah(STARTUP_CREATE_COST)}`,
           `Dompet  : ${formatRupiah(info.moneyBalance)}`,
           "",
@@ -235,7 +237,7 @@ async function handleStartup(context: CommandContext): Promise<void> {
         `Level     : Lv.${String(s.level)} / 10`,
         `Karyawan  : ${String(s.employees)} / ${String(s.maxEmployees)} orang (.rekruit)`,
         `Valuasi   : ${formatRupiah(s.valuation)}`,
-        `Dividen   : ${formatRupiah(s.dividendPayout)} / 12 jam`,
+        `Dividen   : ${formatRupiah(s.dividendPayout)} / 6 jam`,
         `Status    : ${s.dividendCooldownMs > 0 ? `Tersedia ${formatRemainingDuration(s.dividendCooldownMs)} lagi` : "Siap ditarik (.dividen)!"}`,
         ...(s.nextUpgradeCost
           ? [`Upgrade   : ${formatCompactRupiah(s.nextUpgradeCost)} (.upgradestartup)`]

@@ -711,6 +711,12 @@ export class RpgExpansionService {
 
     return this.db.$transaction(async (tx) => {
       const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
+      const playerLevel = Math.max(1, profile.level);
+      if (playerLevel < spec.minLevel) {
+        throw new AppUserError(
+          `Membeli *${spec.name}* membutuhkan minimal *Level ${String(spec.minLevel)}* (levelmu saat ini Lv.${String(playerLevel)}). Naikkan lewat *.levelup*!`,
+        );
+      }
       const state = parseRpgState(profile.rpgState);
       const currentOwned = state.properties[spec.id] ?? 0;
       if (currentOwned + quantity > spec.maxOwned) {

@@ -25,7 +25,7 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
   {
     id: "barista",
     title: "Barista Kopi Specialty",
-    minLevel: 2,
+    minLevel: 6,
     basePay: 7_200_000n,
     baseXp: 95,
     basePoints: 25,
@@ -34,7 +34,7 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
   {
     id: "programmer",
     title: "Senior Fullstack Engineer",
-    minLevel: 4,
+    minLevel: 12,
     basePay: 15_000_000n,
     baseXp: 140,
     basePoints: 35,
@@ -43,7 +43,7 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
   {
     id: "dokter",
     title: "Dokter Spesialis Bedah",
-    minLevel: 6,
+    minLevel: 18,
     basePay: 28_800_000n,
     baseXp: 190,
     basePoints: 45,
@@ -52,7 +52,7 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
   {
     id: "pilot",
     title: "Kapten Pilot Internasional",
-    minLevel: 9,
+    minLevel: 26,
     basePay: 51_000_000n,
     baseXp: 250,
     basePoints: 60,
@@ -61,7 +61,7 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
   {
     id: "ceo",
     title: "CEO Perusahaan Unicorn",
-    minLevel: 12,
+    minLevel: 35,
     basePay: 99_000_000n,
     baseXp: 340,
     basePoints: 80,
@@ -70,7 +70,7 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
   {
     id: "menteri",
     title: "Menteri Ekonomi Grup",
-    minLevel: 16,
+    minLevel: 45,
     basePay: 192_000_000n,
     baseXp: 460,
     basePoints: 110,
@@ -79,7 +79,7 @@ export const CAREER_CATALOG: readonly CareerSpec[] = [
   {
     id: "konglomerat",
     title: "Konglomerat Multinasional",
-    minLevel: 20,
+    minLevel: 60,
     basePay: 390_000_000n,
     baseXp: 620,
     basePoints: 150,
@@ -94,10 +94,11 @@ export const CAREER_MAP = new Map<string, CareerSpec>(
 export const CAREER_SHIFT_COOLDOWN_MS = 60 * 60 * 1000;
 export const CAREER_MAX_LEVEL = 5;
 
+export const STARTUP_MIN_PLAYER_LEVEL = 20;
 export const STARTUP_CREATE_COST = 150_000_000n;
 export const STARTUP_RECRUIT_COST = 35_000_000n;
 export const STARTUP_MAX_LEVEL = 10;
-export const STARTUP_DIVIDEND_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+export const STARTUP_DIVIDEND_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 export function getStartupUpgradeCost(currentLevel: number): bigint {
   return 200_000_000n * BigInt(currentLevel) * BigInt(currentLevel);
@@ -170,7 +171,7 @@ export const JAIL_BAIL_COST = 45_000_000n;
 export const UGD_VIP_RELEASE_COST = 30_000_000n;
 
 export const PRESTIGE_MAX_LEVEL = 10;
-export const PRESTIGE_MIN_PLAYER_LEVEL = 10;
+export const PRESTIGE_MIN_PLAYER_LEVEL = 30;
 export const PRESTIGE_BASE_COST = 10_000_000_000n; // Rp 10 Miliar untuk Prestige ★1
 export const PRESTIGE_BONUS_PERCENT_PER_STAR = 25; // +25% uang & XP permanen per bintang
 export const PRESTIGE_REWARD_LIMIT = 20;

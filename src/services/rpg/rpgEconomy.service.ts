@@ -45,11 +45,11 @@ export const RPG_COOLDOWNS_MS: Record<string, number> = {
   berburu: 20 * 60 * 1000,
   mancing: 20 * 60 * 1000,
   korupsi: 30 * 60 * 1000,
-  megakorupsi: 4 * 60 * 60 * 1000,
+  megakorupsi: 2 * 60 * 60 * 1000,
   pajak: 60 * 60 * 1000,
   maling: 40 * 60 * 1000,
-  bansos: 12 * 60 * 60 * 1000,
-  casino: 20 * 1000,
+  bansos: 6 * 60 * 60 * 1000,
+  casino: 10 * 1000,
 };
 
 export const DEFAULT_GROUP_TREASURY = 20_000_000_000_000n; // Rp 20 Triliun

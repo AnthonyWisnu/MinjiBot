@@ -168,6 +168,7 @@ export const ACHIEVEMENT_SPECS: readonly AchievementSpec[] = [
 export interface PropertySpec {
   id: string;
   name: string;
+  minLevel: number;
   price: bigint;
   incomePerHour: bigint;
   maxOwned: number;
@@ -177,6 +178,7 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
   {
     id: "warung",
     name: "Warung Kopi Tongkrongan",
+    minLevel: 1,
     price: 15_000_000n,
     incomePerHour: 900_000n,
     maxOwned: 10,
@@ -184,6 +186,7 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
   {
     id: "kosan",
     name: "Kos-Kosan 10 Pintu",
+    minLevel: 1,
     price: 60_000_000n,
     incomePerHour: 3_900_000n,
     maxOwned: 10,
@@ -191,6 +194,7 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
   {
     id: "cafe",
     name: "Cafe Estetik 24 Jam",
+    minLevel: 5,
     price: 180_000_000n,
     incomePerHour: 12_600_000n,
     maxOwned: 10,
@@ -198,6 +202,7 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
   {
     id: "spbu",
     name: "SPBU Pasti Pas",
+    minLevel: 10,
     price: 500_000_000n,
     incomePerHour: 37_200_000n,
     maxOwned: 10,
@@ -205,6 +210,7 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
   {
     id: "hotel",
     name: "Hotel Bintang 5",
+    minLevel: 18,
     price: 1_500_000_000n,
     incomePerHour: 117_000_000n,
     maxOwned: 10,
@@ -212,6 +218,7 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
   {
     id: "mall",
     name: "Mall Pusat Kota",
+    minLevel: 28,
     price: 5_000_000_000n,
     incomePerHour: 408_000_000n,
     maxOwned: 10,
@@ -219,6 +226,7 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
   {
     id: "maskapai",
     name: "Maskapai Jet Pribadi",
+    minLevel: 40,
     price: 18_000_000_000n,
     incomePerHour: 1_560_000_000n,
     maxOwned: 10,
@@ -226,6 +234,7 @@ export const PROPERTY_CATALOG: readonly PropertySpec[] = [
   {
     id: "pulau",
     name: "Pulau Resort Pribadi",
+    minLevel: 55,
     price: 75_000_000_000n,
     incomePerHour: 6_900_000_000n,
     maxOwned: 5,
