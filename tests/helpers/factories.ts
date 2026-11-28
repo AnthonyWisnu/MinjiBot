@@ -20,6 +20,8 @@ export function buildTenantGroup(overrides: Partial<TenantGroup> = {}): TenantGr
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     isBlocked: false,
     treasuryBalance: 50_000_000n,
+    worldBossState: null,
+    groupEventState: null,
     approvedAt: new Date(),
     activatedAt: new Date(),
     createdAt: new Date(),

@@ -1,8 +1,20 @@
 import type { Prisma } from "@prisma/client";
 
+import {
+  normalizeProfileThemeId,
+  type ProfileThemeId,
+} from "../member/profileThemes";
+
 export type CrateType = "common" | "uncommon" | "mythic" | "legendary";
 export type ToolType = "sword" | "armor" | "pickaxe" | "fishingrod";
 export type PetType = "kucing" | "kyubi" | "centaur" | "griffin" | "naga" | "phonix";
+
+export interface PetExpeditionState {
+  pet: PetType;
+  zoneId: string;
+  startedAt: number;
+  endsAt: number;
+}
 
 export interface ToolState {
   level: number;
@@ -101,6 +113,9 @@ export interface MemberRpgState {
   bossDamageTotal: number;
   bossKills: number;
   bossMvpCount: number;
+  petExpedition: PetExpeditionState | null;
+  profileTheme: ProfileThemeId;
+  ownedThemes: ProfileThemeId[];
 }
 
 export const MAX_PLAYER_HP = 100;
@@ -193,6 +208,9 @@ export function createDefaultRpgState(): MemberRpgState {
     bossDamageTotal: 0,
     bossKills: 0,
     bossMvpCount: 0,
+    petExpedition: null,
+    profileTheme: "midnight",
+    ownedThemes: ["midnight"],
   };
 }
 
@@ -584,6 +602,43 @@ export function parseRpgState(raw: unknown): MemberRpgState {
       ? obj.bossMvpCount
       : 0;
 
+  let petExpedition: PetExpeditionState | null = null;
+  if (obj.petExpedition && typeof obj.petExpedition === "object" && !Array.isArray(obj.petExpedition)) {
+    const expObj = obj.petExpedition as Record<string, unknown>;
+    const rawPet = typeof expObj.pet === "string" ? expObj.pet.toLowerCase() : "";
+    if (
+      (PET_TYPES as readonly string[]).includes(rawPet) &&
+      typeof expObj.zoneId === "string" &&
+      expObj.zoneId.trim().length > 0 &&
+      typeof expObj.startedAt === "number" &&
+      Number.isFinite(expObj.startedAt) &&
+      typeof expObj.endsAt === "number" &&
+      Number.isFinite(expObj.endsAt)
+    ) {
+      petExpedition = {
+        pet: rawPet as PetType,
+        zoneId: expObj.zoneId.trim().slice(0, 32),
+        startedAt: Math.floor(expObj.startedAt),
+        endsAt: Math.floor(expObj.endsAt),
+      };
+    }
+  }
+
+  const ownedThemesSet = new Set<ProfileThemeId>(["midnight"]);
+  if (Array.isArray(obj.ownedThemes)) {
+    for (const rawTheme of obj.ownedThemes) {
+      if (typeof rawTheme === "string") {
+        const norm = normalizeProfileThemeId(rawTheme);
+        if (norm) ownedThemesSet.add(norm);
+      }
+    }
+  }
+  const parsedTheme =
+    typeof obj.profileTheme === "string" ? normalizeProfileThemeId(obj.profileTheme) : null;
+  const profileTheme: ProfileThemeId =
+    parsedTheme && ownedThemesSet.has(parsedTheme) ? parsedTheme : "midnight";
+  const ownedThemes = Array.from(ownedThemesSet);
+
   return {
     cooldowns,
     jailedUntil,
@@ -618,6 +673,9 @@ export function parseRpgState(raw: unknown): MemberRpgState {
     bossDamageTotal,
     bossKills,
     bossMvpCount,
+    petExpedition,
+    profileTheme,
+    ownedThemes,
   };
 }
 
@@ -679,6 +737,9 @@ export function serializeRpgState(state: MemberRpgState): Prisma.InputJsonValue 
     bossDamageTotal: state.bossDamageTotal,
     bossKills: state.bossKills,
     bossMvpCount: state.bossMvpCount,
+    petExpedition: state.petExpedition ? { ...state.petExpedition } : null,
+    profileTheme: state.profileTheme,
+    ownedThemes: [...state.ownedThemes],
   };
 }
 
@@ -1113,4 +1174,79 @@ export function withBossRaidStatsDelta(
     bossKills: Math.max(0, state.bossKills + Math.floor(delta.killsDelta ?? 0)),
     bossMvpCount: Math.max(0, state.bossMvpCount + Math.floor(delta.mvpDelta ?? 0)),
   };
+}
+
+export function withPetExpedition(
+  state: MemberRpgState,
+  expedition: PetExpeditionState | null,
+): MemberRpgState {
+  return {
+    ...state,
+    petExpedition: expedition ? { ...expedition } : null,
+  };
+}
+
+export function withProfileTheme(
+  state: MemberRpgState,
+  themeId: ProfileThemeId,
+): MemberRpgState {
+  const owned = Array.from(new Set<ProfileThemeId>(["midnight", ...state.ownedThemes, themeId]));
+  return {
+    ...state,
+    profileTheme: themeId,
+    ownedThemes: owned,
+  };
+}
+
+export function withOwnedThemeAdded(
+  state: MemberRpgState,
+  themeId: ProfileThemeId,
+): MemberRpgState {
+  const owned = Array.from(new Set<ProfileThemeId>(["midnight", ...state.ownedThemes, themeId]));
+  return {
+    ...state,
+    ownedThemes: owned,
+  };
+}
+
+const PET_RARITY_ORDER: Record<PetType, number> = {
+  kucing: 1,
+  kyubi: 2,
+  centaur: 3,
+  griffin: 4,
+  naga: 5,
+  phonix: 6,
+};
+
+export interface FeaturedPetSummary {
+  id: PetType;
+  level: number;
+  exp: number;
+  hunger: number;
+  power: number;
+}
+
+export function getFeaturedPet(state: MemberRpgState): FeaturedPetSummary | null {
+  let best: FeaturedPetSummary | null = null;
+  for (const petKey of PET_TYPES) {
+    const p = state.pets[petKey];
+    if (p.level <= 0) continue;
+    if (
+      !best ||
+      p.level > best.level ||
+      (p.level === best.level && PET_RARITY_ORDER[petKey] > PET_RARITY_ORDER[best.id]) ||
+      (p.level === best.level &&
+        PET_RARITY_ORDER[petKey] === PET_RARITY_ORDER[best.id] &&
+        p.exp > best.exp)
+    ) {
+      best = {
+        id: petKey,
+        level: p.level,
+        exp: p.exp,
+        hunger: p.hunger,
+        power: p.level * 25,
+      };
+    }
+  }
+  return best;
 }

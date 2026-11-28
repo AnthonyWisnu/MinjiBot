@@ -14,7 +14,9 @@ import {
   formatRupiah,
   percentOfBigInt,
 } from "../../utils/currency";
+import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { generateCorrelationId } from "../member/memberEconomy.service";
+import type { ProfileThemeId } from "../member/profileThemes";
 import { resolveRank, type MemberRank } from "../member/rank.service";
 import {
   applyPrestigeMoneyBoost,
@@ -50,8 +52,10 @@ import {
   type InsuranceSpec,
   type InsuranceType,
 } from "./careerPrestigeCatalog";
+import { PET_LABELS } from "./rpgCatalog";
 import { RpgExpansionService } from "./rpgExpansion.service";
 import {
+  getFeaturedPet,
   getRemainingCooldownMs,
   getRemainingJailMs,
   getRemainingUgdMs,
@@ -208,6 +212,8 @@ export interface AssetSummary {
   grossAssets: bigint;
   netWorth: bigint;
   wealthPosition: number;
+  profileTheme: ProfileThemeId;
+  featuredPet: { id: string; label: string; level: number; power: number } | null;
 }
 
 interface CareerProfileStore {
@@ -430,9 +436,10 @@ export class CareerPrestigeService {
       const levelMult = BigInt(100 + (state.career.level - 1) * 35);
       const baseWithJobLvl = (spec.basePay * levelMult) / 100n;
       const grossMoney = applyPrestigeMoneyBoost(baseWithJobLvl, state.prestige);
-      const xpEarned = applyPrestigeXpBoost(
-        spec.baseXp + (state.career.level - 1) * 25,
-        state.prestige,
+      const xpEarned = applyGroupXpEvent(
+        groupJid,
+        applyPrestigeXpBoost(spec.baseXp + (state.career.level - 1) * 25, state.prestige),
+        nowMs,
       );
       const pointsEarned = spec.basePoints + (state.career.level - 1) * 8;
 
@@ -1522,6 +1529,7 @@ export class CareerPrestigeService {
     const grossAssets = pf.netWorth + startupValuation;
     const netWorth = grossAssets > loanDebt ? grossAssets - loanDebt : 0n;
     const wealthPosition = await this.profileRepo.getPositionByWealth(groupJid, userJid);
+    const featured = getFeaturedPet(state);
 
     return {
       userJid,
@@ -1541,6 +1549,15 @@ export class CareerPrestigeService {
       grossAssets,
       netWorth,
       wealthPosition,
+      profileTheme: state.profileTheme,
+      featuredPet: featured
+        ? {
+            id: featured.id,
+            label: PET_LABELS[featured.id],
+            level: featured.level,
+            power: featured.power,
+          }
+        : null,
     };
   }
 }

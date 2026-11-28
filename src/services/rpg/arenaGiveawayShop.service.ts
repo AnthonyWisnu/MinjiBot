@@ -2,11 +2,16 @@ import {
   MemberTransactionAsset,
   MemberTransactionType,
   type GroupMemberProfile,
+  type Prisma,
   type TenantGroup,
 } from "@prisma/client";
 
 import { AppUserError } from "../../errors/appUserError";
 import { roleGuard } from "../../guards/roleGuard";
+import {
+  readGroupEventSection,
+  writeGroupEventSection,
+} from "../group/groupEventState.store";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../../repositories/groupMemberTransaction.repository";
 import { prisma } from "../../repositories/prismaClient";
@@ -336,6 +341,13 @@ interface ArenaTx {
 
 interface ArenaDb {
   $transaction<T>(fn: (tx: ArenaTx) => Promise<T>): Promise<T>;
+  tenantGroup?: {
+    findUnique(args: { where: { groupJid: string } }): Promise<TenantGroup | null>;
+    update?(args: {
+      where: { groupJid: string };
+      data: Record<string, unknown>;
+    }): Promise<TenantGroup>;
+  };
 }
 
 function evictOldestIfNeeded<K, V>(map: Map<K, V>, maxEntries: number): void {
@@ -359,10 +371,94 @@ function getStrongestPet(state: MemberRpgState): { id: PetType; level: number; e
   return best;
 }
 
+function parsePersistedLotterySection(
+  groupJid: string,
+  raw: unknown,
+): GroupLotteryState | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return null;
+  }
+  const obj = raw as Record<string, unknown>;
+  const roundNumber =
+    typeof obj.roundNumber === "number" && Number.isInteger(obj.roundNumber) && obj.roundNumber >= 1
+      ? obj.roundNumber
+      : 1;
+  const jackpotPool =
+    typeof obj.jackpotPool === "string" && /^\d+$/.test(obj.jackpotPool)
+      ? BigInt(obj.jackpotPool)
+      : LOTTERY_BASE_SEED_POOL;
+  const tickets: LotteryTicketEntry[] = [];
+  if (Array.isArray(obj.tickets)) {
+    for (const item of obj.tickets) {
+      if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+      const t = item as Record<string, unknown>;
+      if (
+        typeof t.userJid === "string" &&
+        t.userJid.length > 0 &&
+        typeof t.number === "number" &&
+        Number.isInteger(t.number) &&
+        t.number >= 0 &&
+        t.number <= 99
+      ) {
+        tickets.push({ userJid: t.userJid, number: t.number });
+      }
+    }
+  }
+  const lastWinningNumber =
+    typeof obj.lastWinningNumber === "number" &&
+    Number.isInteger(obj.lastWinningNumber) &&
+    obj.lastWinningNumber >= 0 &&
+    obj.lastWinningNumber <= 99
+      ? obj.lastWinningNumber
+      : null;
+  const lastWinners: string[] = [];
+  if (Array.isArray(obj.lastWinners)) {
+    for (const w of obj.lastWinners) {
+      if (typeof w === "string" && w.length > 0) {
+        lastWinners.push(w);
+      }
+    }
+  }
+  const lastPayoutEach =
+    typeof obj.lastPayoutEach === "string" && /^\d+$/.test(obj.lastPayoutEach)
+      ? BigInt(obj.lastPayoutEach)
+      : 0n;
+  const lastOutcome: GroupLotteryState["lastOutcome"] =
+    obj.lastOutcome === "jackpot" ||
+    obj.lastOutcome === "consolation" ||
+    obj.lastOutcome === "rollover"
+      ? obj.lastOutcome
+      : null;
+
+  return {
+    groupJid,
+    roundNumber,
+    jackpotPool,
+    tickets,
+    lastWinningNumber,
+    lastWinners,
+    lastPayoutEach,
+    lastOutcome,
+  };
+}
+
+function serializePersistedLotterySection(state: GroupLotteryState): Prisma.InputJsonValue {
+  return {
+    roundNumber: state.roundNumber,
+    jackpotPool: state.jackpotPool.toString(),
+    tickets: state.tickets.map((t) => ({ userJid: t.userJid, number: t.number })),
+    lastWinningNumber: state.lastWinningNumber,
+    lastWinners: state.lastWinners.slice(0, 20),
+    lastPayoutEach: state.lastPayoutEach.toString(),
+    lastOutcome: state.lastOutcome,
+  };
+}
+
 export class ArenaGiveawayShopService {
   private readonly danaDrops = new Map<string, ActiveDanaKaget>();
   private readonly poinDrops = new Map<string, ActivePoinKaget>();
   private readonly lotteries = new Map<string, GroupLotteryState>();
+  private readonly hydratedLotteryGroups = new Set<string>();
   private readonly pendingPointDuels = new Map<string, PendingPointDuel>();
 
   constructor(
@@ -371,6 +467,30 @@ export class ArenaGiveawayShopService {
     private readonly random: RandomProvider = defaultRandom,
     private readonly db: ArenaDb = prisma,
   ) {}
+
+  private async hydrateLotteryState(groupJid: string): Promise<void> {
+    if (this.hydratedLotteryGroups.has(groupJid)) return;
+    this.hydratedLotteryGroups.add(groupJid);
+
+    const raw = await readGroupEventSection(this.db.tenantGroup, groupJid, "lottery");
+    if (!raw) return;
+    const parsed = parsePersistedLotterySection(groupJid, raw);
+    if (parsed) {
+      evictOldestIfNeeded(this.lotteries, MAX_ACTIVE_GROUPS);
+      this.lotteries.set(groupJid, parsed);
+    }
+  }
+
+  private async persistLotteryState(groupJid: string): Promise<void> {
+    const state = this.lotteries.get(groupJid);
+    if (!state) return;
+    await writeGroupEventSection(
+      this.db.tenantGroup,
+      groupJid,
+      "lottery",
+      serializePersistedLotterySection(state),
+    );
+  }
 
   // ======================== 1. DANA KAGET, POIN KAGET & TRAKTIR ========================
 
@@ -845,6 +965,11 @@ export class ArenaGiveawayShopService {
     };
   }
 
+  async loadLotteryOverview(groupJid: string): Promise<GroupLotteryState> {
+    await this.hydrateLotteryState(groupJid);
+    return this.getLotteryOverview(groupJid);
+  }
+
   async buyLotteryTicket(
     groupJid: string,
     userJid: string,
@@ -854,6 +979,7 @@ export class ArenaGiveawayShopService {
       throw new AppUserError("Pilih nomor lotere 2 digit antara *00* sampai *99*! Contoh: .belitiket 42");
     }
 
+    await this.hydrateLotteryState(groupJid);
     const normUser = normalizeUserJid(userJid);
     const lottery = this.getOrCreateLottery(groupJid);
     const myTickets = lottery.tickets.filter((t) => t.userJid === normUser);
@@ -910,6 +1036,7 @@ export class ArenaGiveawayShopService {
       MAX_SAFE_MONEY_BIGINT,
       lottery.jackpotPool + LOTTERY_TICKET_PRICE,
     );
+    await this.persistLotteryState(groupJid);
 
     return {
       roundNumber: lottery.roundNumber,
@@ -927,6 +1054,7 @@ export class ArenaGiveawayShopService {
     actorJid: string,
     isAdminOrOwner: boolean,
   ): Promise<LotteryDrawResult> {
+    await this.hydrateLotteryState(groupJid);
     const lottery = this.getOrCreateLottery(groupJid);
     const normActor = normalizeUserJid(actorJid);
     const minTickets = isAdminOrOwner ? 1 : 2;
@@ -1027,6 +1155,7 @@ export class ArenaGiveawayShopService {
     lottery.lastWinners = winners.map((w) => w.userJid);
     lottery.lastPayoutEach = winners[0]?.payout ?? 0n;
     lottery.lastOutcome = outcome;
+    await this.persistLotteryState(groupJid);
 
     return {
       roundNumber,

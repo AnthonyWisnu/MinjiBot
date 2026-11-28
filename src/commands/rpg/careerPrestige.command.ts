@@ -726,6 +726,10 @@ async function handleFlex(context: CommandContext): Promise<void> {
         summary.stocksValue + summary.cryptoValue + summary.propertyValue + summary.startupValuation,
       wealthPosition: summary.wealthPosition,
       avatarBuffer,
+      themeId: summary.profileTheme,
+      featuredPet: summary.featuredPet
+        ? { label: summary.featuredPet.label, level: summary.featuredPet.level }
+        : null,
     });
 
     const caption = [
@@ -733,6 +737,11 @@ async function handleFlex(context: CommandContext): Promise<void> {
       `Pemilik  : ${tagOf(target)}`,
       `Net Worth: *${formatRupiah(summary.netWorth)}*`,
       `Rank     : *${summary.rank}* (Lv.${String(summary.level)} | Prestige ★${String(summary.prestige)})`,
+      ...(summary.featuredPet
+        ? [
+            `Pet      : *${summary.featuredPet.label}* (Lv.${String(summary.featuredPet.level)} | Power ${String(summary.featuredPet.power)})`,
+          ]
+        : []),
       ...(summary.wealthPosition > 0
         ? [`Peringkat: Top #${String(summary.wealthPosition)} Terkaya di Grup`]
         : []),

@@ -4,10 +4,16 @@ import {
   type GroupClan,
   type GroupMemberProfile,
   type GroupMemberTransaction,
+  type Prisma,
   type TenantGroup,
 } from "@prisma/client";
 
 import { AppUserError } from "../../errors/appUserError";
+import {
+  readGroupEventSection,
+  writeGroupEventSection,
+} from "../group/groupEventState.store";
+import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import {
   GroupClanRepository,
   parseClanMembers,
@@ -455,6 +461,10 @@ interface PoliticsDb {
   $transaction<T>(fn: (tx: PoliticsTx) => Promise<T>): Promise<T>;
   tenantGroup?: {
     findUnique(args: { where: { groupJid: string } }): Promise<TenantGroup | null>;
+    update?(args: {
+      where: { groupJid: string };
+      data: Record<string, unknown>;
+    }): Promise<TenantGroup>;
   };
 }
 
@@ -577,10 +587,157 @@ function summarizeElectionCandidates(session: GroupElectionSession): ElectionCan
     .map(({ registeredAt: _ignored, ...rest }) => rest);
 }
 
+function parsePersistedPoliticsSection(
+  groupJid: string,
+  raw: unknown,
+): {
+  election: GroupElectionSession | null;
+  presidency: GroupPresidency | null;
+  lastCoupAt: number;
+} {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { election: null, presidency: null, lastCoupAt: 0 };
+  }
+  const obj = raw as Record<string, unknown>;
+
+  let election: GroupElectionSession | null = null;
+  if (obj.election && typeof obj.election === "object" && !Array.isArray(obj.election)) {
+    const e = obj.election as Record<string, unknown>;
+    if (
+      typeof e.startedByJid === "string" &&
+      typeof e.startedAt === "number" &&
+      Number.isFinite(e.startedAt) &&
+      typeof e.endsAt === "number" &&
+      Number.isFinite(e.endsAt)
+    ) {
+      const candidates: ElectionCandidate[] = [];
+      if (Array.isArray(e.candidates)) {
+        for (const item of e.candidates) {
+          if (candidates.length >= ELECTION_MAX_CANDIDATES) break;
+          if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+          const c = item as Record<string, unknown>;
+          if (typeof c.userJid === "string" && typeof c.slogan === "string") {
+            candidates.push({
+              userJid: c.userJid,
+              slogan: c.slogan.slice(0, 60),
+              registeredAt:
+                typeof c.registeredAt === "number" && Number.isFinite(c.registeredAt)
+                  ? Math.floor(c.registeredAt)
+                  : Math.floor(e.startedAt),
+            });
+          }
+        }
+      }
+      const votes = new Map<string, string>();
+      if (e.votes && typeof e.votes === "object" && !Array.isArray(e.votes)) {
+        for (const [voter, cand] of Object.entries(e.votes as Record<string, unknown>)) {
+          if (typeof cand === "string" && cand.length > 0) {
+            votes.set(voter, cand);
+          }
+        }
+      }
+      election = {
+        groupJid,
+        startedByJid: e.startedByJid,
+        startedAt: Math.floor(e.startedAt),
+        endsAt: Math.floor(e.endsAt),
+        candidates,
+        votes,
+      };
+    }
+  }
+
+  let presidency: GroupPresidency | null = null;
+  if (obj.presidency && typeof obj.presidency === "object" && !Array.isArray(obj.presidency)) {
+    const p = obj.presidency as Record<string, unknown>;
+    if (
+      typeof p.presidentJid === "string" &&
+      p.presidentJid.length > 0 &&
+      typeof p.termEndsAt === "number" &&
+      Number.isFinite(p.termEndsAt)
+    ) {
+      const totalDistributed =
+        typeof p.totalDistributed === "string" && /^\d+$/.test(p.totalDistributed)
+          ? BigInt(p.totalDistributed)
+          : 0n;
+      presidency = {
+        groupJid,
+        presidentJid: p.presidentJid,
+        slogan: typeof p.slogan === "string" ? p.slogan.slice(0, 60) : "",
+        electedAt:
+          typeof p.electedAt === "number" && Number.isFinite(p.electedAt)
+            ? Math.floor(p.electedAt)
+            : 0,
+        termEndsAt: Math.floor(p.termEndsAt),
+        totalDistributed,
+        lastBudgetAt:
+          typeof p.lastBudgetAt === "number" && Number.isFinite(p.lastBudgetAt)
+            ? Math.floor(p.lastBudgetAt)
+            : 0,
+        coupsRepelled:
+          typeof p.coupsRepelled === "number" && Number.isInteger(p.coupsRepelled) && p.coupsRepelled >= 0
+            ? p.coupsRepelled
+            : 0,
+        viaCoup: p.viaCoup === true,
+      };
+    }
+  }
+
+  const lastCoupAt =
+    typeof obj.lastCoupAt === "number" && Number.isFinite(obj.lastCoupAt) && obj.lastCoupAt > 0
+      ? Math.floor(obj.lastCoupAt)
+      : 0;
+
+  return { election, presidency, lastCoupAt };
+}
+
+function serializePersistedPoliticsSection(
+  election: GroupElectionSession | null,
+  presidency: GroupPresidency | null,
+  lastCoupAt: number,
+): Prisma.InputJsonValue {
+  const votesObj: Record<string, string> = {};
+  if (election) {
+    for (const [voter, cand] of election.votes.entries()) {
+      votesObj[voter] = cand;
+    }
+  }
+
+  return {
+    election: election
+      ? {
+          startedByJid: election.startedByJid,
+          startedAt: election.startedAt,
+          endsAt: election.endsAt,
+          candidates: election.candidates.map((c) => ({
+            userJid: c.userJid,
+            slogan: c.slogan,
+            registeredAt: c.registeredAt,
+          })),
+          votes: votesObj,
+        }
+      : null,
+    presidency: presidency
+      ? {
+          presidentJid: presidency.presidentJid,
+          slogan: presidency.slogan,
+          electedAt: presidency.electedAt,
+          termEndsAt: presidency.termEndsAt,
+          totalDistributed: presidency.totalDistributed.toString(),
+          lastBudgetAt: presidency.lastBudgetAt,
+          coupsRepelled: presidency.coupsRepelled,
+          viaCoup: presidency.viaCoup,
+        }
+      : null,
+    lastCoupAt: Math.max(0, Math.floor(lastCoupAt)),
+  };
+}
+
 export class PoliticsClanAnalyticsService {
   private readonly elections = new Map<string, GroupElectionSession>();
   private readonly presidencies = new Map<string, GroupPresidency>();
   private readonly coupCooldowns = new Map<string, number>();
+  private readonly hydratedPoliticsGroups = new Set<string>();
   private readonly clanWarCooldowns = new Map<string, number>();
 
   constructor(
@@ -596,7 +753,39 @@ export class PoliticsClanAnalyticsService {
     this.elections.clear();
     this.presidencies.clear();
     this.coupCooldowns.clear();
+    this.hydratedPoliticsGroups.clear();
     this.clanWarCooldowns.clear();
+  }
+
+  private async hydratePoliticsState(groupJid: string): Promise<void> {
+    if (this.hydratedPoliticsGroups.has(groupJid)) return;
+    this.hydratedPoliticsGroups.add(groupJid);
+
+    const raw = await readGroupEventSection(this.db.tenantGroup, groupJid, "politics");
+    if (!raw) return;
+
+    const parsed = parsePersistedPoliticsSection(groupJid, raw);
+    if (parsed.election) {
+      this.elections.set(groupJid, parsed.election);
+      pruneMapOldest(this.elections, MAX_POLITICS_GROUPS);
+    }
+    if (parsed.presidency) {
+      this.presidencies.set(groupJid, parsed.presidency);
+      pruneMapOldest(this.presidencies, MAX_POLITICS_GROUPS);
+    }
+    if (parsed.lastCoupAt > 0) {
+      this.coupCooldowns.set(groupJid, parsed.lastCoupAt);
+      pruneMapOldest(this.coupCooldowns, MAX_POLITICS_GROUPS);
+    }
+  }
+
+  private async persistPoliticsState(groupJid: string): Promise<void> {
+    const payload = serializePersistedPoliticsSection(
+      this.elections.get(groupJid) ?? null,
+      this.presidencies.get(groupJid) ?? null,
+      this.coupCooldowns.get(groupJid) ?? 0,
+    );
+    await writeGroupEventSection(this.db.tenantGroup, groupJid, "politics", payload);
   }
 
   getActivePresident(groupJid: string, now: Date = new Date()): GroupPresidency | null {
@@ -646,10 +835,11 @@ export class PoliticsClanAnalyticsService {
     note: string,
     correlationId: string,
   ): Promise<GroupMemberProfile> {
+    const effectiveXp = applyGroupXpEvent(groupJid, xpAmount);
     const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
     const updated = await tx.groupMemberProfile.update({
       where: { id: profile.id },
-      data: { experience: { increment: xpAmount } },
+      data: { experience: { increment: effectiveXp } },
     });
     await this.txRepo.create(
       {
@@ -658,7 +848,7 @@ export class PoliticsClanAnalyticsService {
         userJid,
         asset: MemberTransactionAsset.EXPERIENCE,
         type: MemberTransactionType.GAME_REWARD,
-        amount: xpAmount,
+        amount: effectiveXp,
         balanceBefore: profile.experience,
         balanceAfter: updated.experience,
         correlationId,
@@ -676,6 +866,7 @@ export class PoliticsClanAnalyticsService {
     actorJid: string,
     now: Date = new Date(),
   ): Promise<ElectionInspectResult> {
+    await this.hydratePoliticsState(groupJid);
     const nowMs = now.getTime();
     const activeElection = this.elections.get(groupJid);
 
@@ -730,6 +921,7 @@ export class PoliticsClanAnalyticsService {
     };
     this.elections.set(groupJid, session);
     pruneMapOldest(this.elections, MAX_POLITICS_GROUPS);
+    await this.persistPoliticsState(groupJid);
 
     return {
       mode: "started",
@@ -749,6 +941,7 @@ export class PoliticsClanAnalyticsService {
     rawSlogan?: string,
     now: Date = new Date(),
   ): Promise<RegisterCandidateResult> {
+    await this.hydratePoliticsState(groupJid);
     const normUser = normalizeUserJid(userJid);
     const nowMs = now.getTime();
     const session = this.elections.get(groupJid);
@@ -821,6 +1014,7 @@ export class PoliticsClanAnalyticsService {
       slogan,
       registeredAt: nowMs,
     });
+    await this.persistPoliticsState(groupJid);
 
     return {
       candidateJid: normUser,
@@ -839,6 +1033,7 @@ export class PoliticsClanAnalyticsService {
     targetCandidateJidOrNumber: string | number,
     now: Date = new Date(),
   ): Promise<CastVoteResult> {
+    await this.hydratePoliticsState(groupJid);
     const normVoter = normalizeUserJid(voterJid);
     const nowMs = now.getTime();
     const session = this.elections.get(groupJid);
@@ -882,6 +1077,7 @@ export class PoliticsClanAnalyticsService {
     });
 
     session.votes.set(normVoter, candidate.userJid);
+    await this.persistPoliticsState(groupJid);
     let candidateVotes = 0;
     for (const v of session.votes.values()) {
       if (v === candidate.userJid) candidateVotes += 1;
@@ -901,6 +1097,7 @@ export class PoliticsClanAnalyticsService {
     isPrivileged: boolean,
     now: Date = new Date(),
   ): Promise<ElectionFinalizeResult> {
+    await this.hydratePoliticsState(groupJid);
     const nowMs = now.getTime();
     const session = this.elections.get(groupJid);
     if (!session) {
@@ -918,6 +1115,7 @@ export class PoliticsClanAnalyticsService {
 
     const winner = ranking[0];
     if (!winner) {
+      await this.persistPoliticsState(groupJid);
       return {
         winnerJid: null,
         winnerSlogan: "",
@@ -954,6 +1152,7 @@ export class PoliticsClanAnalyticsService {
     };
     this.presidencies.set(groupJid, presidency);
     pruneMapOldest(this.presidencies, MAX_POLITICS_GROUPS);
+    await this.persistPoliticsState(groupJid);
 
     return {
       winnerJid: winner.userJid,
@@ -967,8 +1166,13 @@ export class PoliticsClanAnalyticsService {
   }
 
   async getPresidentStatus(groupJid: string, now: Date = new Date()): Promise<PresidentStatusSnapshot> {
+    await this.hydratePoliticsState(groupJid);
+    const hadPresident = this.presidencies.has(groupJid);
     const nowMs = now.getTime();
     const president = this.getActivePresident(groupJid, now);
+    if (hadPresident && !president) {
+      await this.persistPoliticsState(groupJid);
+    }
     const treasuryBalance = await this.getTreasuryBalance(groupJid);
     const election = this.elections.get(groupJid);
     const electionRemainingMs = election && election.endsAt > nowMs ? election.endsAt - nowMs : 0;
@@ -1002,6 +1206,7 @@ export class PoliticsClanAnalyticsService {
     amount: bigint = BUDGET_DEFAULT_AMOUNT,
     now: Date = new Date(),
   ): Promise<DistributeBudgetResult> {
+    await this.hydratePoliticsState(groupJid);
     const normActor = normalizeUserJid(actorJid);
     const nowMs = now.getTime();
     const president = this.getActivePresident(groupJid, now);
@@ -1113,6 +1318,7 @@ export class PoliticsClanAnalyticsService {
 
     president.lastBudgetAt = nowMs;
     president.totalDistributed += txRes.distributedActual;
+    await this.persistPoliticsState(groupJid);
 
     return {
       presidentJid: normActor,
@@ -1130,6 +1336,7 @@ export class PoliticsClanAnalyticsService {
     challengerJid: string,
     now: Date = new Date(),
   ): Promise<CoupResult> {
+    await this.hydratePoliticsState(groupJid);
     const normChallenger = normalizeUserJid(challengerJid);
     const nowMs = now.getTime();
     const president = this.getActivePresident(groupJid, now);
@@ -1245,6 +1452,7 @@ export class PoliticsClanAnalyticsService {
       };
       this.presidencies.set(groupJid, nextPresidency);
       pruneMapOldest(this.presidencies, MAX_POLITICS_GROUPS);
+      await this.persistPoliticsState(groupJid);
 
       return {
         success: true,
@@ -1261,6 +1469,7 @@ export class PoliticsClanAnalyticsService {
     }
 
     president.coupsRepelled += 1;
+    await this.persistPoliticsState(groupJid);
     return {
       success: false,
       challengerJid: normChallenger,
@@ -1924,6 +2133,7 @@ export class PoliticsClanAnalyticsService {
   // ==================== 4. TAHTA KEHORMATAN (.halloffame) ====================
 
   async getHallOfFame(groupJid: string, now: Date = new Date()): Promise<HallOfFameSnapshot> {
+    await this.hydratePoliticsState(groupJid);
     const [
       topWealthList,
       topXpList,

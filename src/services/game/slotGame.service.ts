@@ -10,6 +10,7 @@ import {
   scaleMoneyByLevel,
   toBigIntSafe,
 } from "../../utils/currency";
+import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { levelUpNotifierService } from "../member/levelUpNotifier.service";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { resolveRank } from "../member/rank.service";
@@ -181,6 +182,7 @@ export class SlotGameService {
       baseRewardMoney > 0n
         ? clampMoneyCredit(currentMoney, scaleMoneyByLevel(baseRewardMoney, level))
         : 0n;
+    rewardXp = applyGroupXpEvent(groupJid, rewardXp);
 
     // Net point change:
     const netPoints =

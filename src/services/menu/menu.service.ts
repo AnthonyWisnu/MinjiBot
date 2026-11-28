@@ -687,7 +687,10 @@ export class MenuService {
       title: "*── [ DOMPET & BANK ] ──*",
       items: [
         ".profile [@user]",
+        ".temaprofil [beli|pakai]",
         ".dompet [@user]",
+        ".ekonomigrup (Admin)",
+        ".eventxp [durasi] (Admin)",
         ".poin",
         ".limit",
         ".xp",
@@ -759,6 +762,9 @@ export class MenuService {
       items: [
         ".inventory / .inv",
         ".kandang",
+        ".petshop [beli <pet>]",
+        ".telurpet <biasa|langka|mitos>",
+        ".ekspedisipet [pet|klaim]",
         ".heal [jumlah]",
         ".adventure",
         ".nebang",

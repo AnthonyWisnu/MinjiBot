@@ -270,7 +270,7 @@ async function handleTraktir(context: CommandContext): Promise<void> {
 
 async function handleLotere(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
-  const state = arenaGiveawayShopService.getLotteryOverview(context.chatJid);
+  const state = await arenaGiveawayShopService.loadLotteryOverview(context.chatJid);
   const uniqueBuyers = new Set(state.tickets.map((t) => t.userJid)).size;
   const ticketList =
     state.tickets.length > 0
@@ -411,7 +411,7 @@ async function handleUndiLotere(context: CommandContext): Promise<void> {
 
 async function handleJackpot(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
-  const state = arenaGiveawayShopService.getLotteryOverview(context.chatJid);
+  const state = await arenaGiveawayShopService.loadLotteryOverview(context.chatJid);
   const lastWinnersText =
     state.lastWinners.length > 0
       ? `${state.lastWinners.map((j) => tagOf(j)).join(", ")} (${formatCompactRupiah(state.lastPayoutEach)})`

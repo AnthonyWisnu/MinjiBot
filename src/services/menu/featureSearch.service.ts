@@ -116,7 +116,16 @@ const KEYWORD_SYNONYMS: Record<string, readonly string[]> = {
   vcard: ["kontakowner", "buatkontak"],
   react: ["react"],
   waifu: ["waifu", "husbando", "neko", "kitsune"],
-  grup: ["setnamagrup", "setdeskripsigrup", "setppgrup", "revokelink", "pesansementara", "grup", "buatevent"],
+  grup: ["setnamagrup", "setdeskripsigrup", "setppgrup", "revokelink", "pesansementara", "grup", "buatevent", "ekonomigrup", "eventxp"],
+  pet: ["kandang", "petshop", "telurpet", "ekspedisipet", "feed", "ramuan", "sabungpet"],
+  telur: ["telurpet", "petshop", "kandang"],
+  ekspedisi: ["ekspedisipet", "kandang", "adventure"],
+  tema: ["temaprofil", "profile", "flex"],
+  inflasi: ["ekonomigrup", "pajaktop", "temaprofil"],
+  ekonomi: ["ekonomigrup", "dompet", "atm", "temaprofil", "eventxp"],
+  eventxp: ["eventxp", "xp", "daily", "levelup"],
+  doublexp: ["eventxp", "xp", "levelup"],
+  happyhour: ["eventxp", "xp"],
 };
 
 export class FeatureSearchService {

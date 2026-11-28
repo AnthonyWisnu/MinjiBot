@@ -115,6 +115,7 @@ model TenantGroup {
   isBlocked       Boolean      @default(false)
   treasuryBalance BigInt       @default(20000000000000)
   worldBossState  Json?
+  groupEventState Json?
   approvedAt      DateTime?
   activatedAt     DateTime?
   createdAt       DateTime     @default(now())

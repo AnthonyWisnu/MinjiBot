@@ -883,7 +883,7 @@ async function handleBounty(context: CommandContext): Promise<void> {
 async function handleListBounty(context: CommandContext): Promise<void> {
   if (!(await ensureActiveGroup(context))) return;
 
-  const list = raidFarmBuffBountyService.listBounties(context.chatJid);
+  const list = await raidFarmBuffBountyService.loadBounties(context.chatJid);
   if (list.length === 0) {
     await context.reply(
       "Papan buronan grup masih bersih! Pasang sayembara dengan *.bounty @user <uang>*.",

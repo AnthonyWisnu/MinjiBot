@@ -321,6 +321,135 @@ export const PET_LABELS: Record<PetType, string> = {
   phonix: "Phonix",
 };
 
+export const PET_TIER_WEIGHT: Record<PetType, number> = {
+  kucing: 1,
+  kyubi: 2,
+  centaur: 3,
+  griffin: 4,
+  naga: 5,
+  phonix: 6,
+};
+
+export interface PetShopSpec {
+  id: PetType;
+  label: string;
+  price: bigint;
+  minLevel: number;
+  desc: string;
+}
+
+export const PET_SHOP_CATALOG: readonly PetShopSpec[] = [
+  {
+    id: "kucing",
+    label: "Kucing Oren",
+    price: 15_000_000n,
+    minLevel: 1,
+    desc: "Pet pemula lincah & hemat pakan",
+  },
+  {
+    id: "kyubi",
+    label: "Kyubi Rubah",
+    price: 45_000_000n,
+    minLevel: 8,
+    desc: "Rubah berekor sembilan penuh hoki",
+  },
+  {
+    id: "centaur",
+    label: "Centaur Ksatria",
+    price: 110_000_000n,
+    minLevel: 16,
+    desc: "Pet menengah tangguh penambah Combat Power",
+  },
+] as const;
+
+export const PET_SHOP_MAP = new Map<PetType, PetShopSpec>(
+  PET_SHOP_CATALOG.map((spec) => [spec.id, spec]),
+);
+
+export type PetEggTier = "biasa" | "langka" | "mitos";
+
+export interface PetEggSpec {
+  id: PetEggTier;
+  label: string;
+  price: bigint;
+  minLevel: number;
+  xp: number;
+  pool: readonly { pet: PetType; weight: number }[];
+}
+
+export const PET_EGG_CATALOG: readonly PetEggSpec[] = [
+  {
+    id: "biasa",
+    label: "Telur Pet Biasa",
+    price: 12_000_000n,
+    minLevel: 1,
+    xp: 40,
+    pool: [
+      { pet: "kucing", weight: 55 },
+      { pet: "kyubi", weight: 35 },
+      { pet: "centaur", weight: 10 },
+    ],
+  },
+  {
+    id: "langka",
+    label: "Telur Pet Langka",
+    price: 40_000_000n,
+    minLevel: 5,
+    xp: 90,
+    pool: [
+      { pet: "kyubi", weight: 35 },
+      { pet: "centaur", weight: 35 },
+      { pet: "griffin", weight: 22 },
+      { pet: "naga", weight: 8 },
+    ],
+  },
+  {
+    id: "mitos",
+    label: "Telur Pet Mitos",
+    price: 120_000_000n,
+    minLevel: 15,
+    xp: 180,
+    pool: [
+      { pet: "griffin", weight: 40 },
+      { pet: "naga", weight: 38 },
+      { pet: "phonix", weight: 22 },
+    ],
+  },
+] as const;
+
+export const PET_EGG_MAP = new Map<PetEggTier, PetEggSpec>(
+  PET_EGG_CATALOG.map((spec) => [spec.id, spec]),
+);
+
+export interface PetExpeditionZoneSpec {
+  id: string;
+  name: string;
+  desc: string;
+}
+
+export const PET_EXPEDITION_ZONES: readonly PetExpeditionZoneSpec[] = [
+  { id: "lembah_bambu", name: "Lembah Bambu Berkabut", desc: "Kaya kayu, batu & pakan alami" },
+  { id: "gua_kristal", name: "Gua Kristal Utara", desc: "Sarang bijih besi & bongkahan emas" },
+  { id: "pulau_karang", name: "Pulau Karang Tersembunyi", desc: "Berpeluang membawa peti gacha & ramuan" },
+  { id: "kuil_langit", name: "Reruntuhan Kuil Langit", desc: "Zona harta kuno untuk pet pemberani" },
+  { id: "kawah_naga", name: "Pinggiran Kawah Naga", desc: "Panas ekstrem berhadiah mineral langka" },
+] as const;
+
+export const PET_EXPEDITION_ZONE_MAP = new Map<string, PetExpeditionZoneSpec>(
+  PET_EXPEDITION_ZONES.map((z) => [z.id, z]),
+);
+
+export const PET_EXPEDITION_DURATION_MS = 30 * 60 * 1000;
+export const PET_EXPEDITION_HUNGER_COST = 20;
+
+export function normalizePetEggTier(raw: string | undefined): PetEggTier | null {
+  const val = (raw ?? "").trim().toLowerCase();
+  if (val === "biasa" || val === "common" || val === "normal" || val === "starter") return "biasa";
+  if (val === "langka" || val === "rare" || val === "uncommon") return "langka";
+  if (val === "mitos" || val === "mythic" || val === "legend" || val === "legendary") return "mitos";
+  return null;
+}
+
 export function normalizeCrateType(raw: string | undefined): CrateType | null {
   const val = (raw ?? "").trim().toLowerCase();
   if (val === "common" || val === "uncommon" || val === "mythic" || val === "legendary") {

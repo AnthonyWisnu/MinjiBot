@@ -425,6 +425,13 @@ export class GroupMemberProfileRepository {
     });
   }
 
+  // Daftar seluruh profil member dalam satu grup - untuk .ekonomigrup
+  listAllByGroup(groupJid: string): Promise<GroupMemberProfile[]> {
+    return this.client.groupMemberProfile.findMany({
+      where: { groupJid },
+    });
+  }
+
   // Ambil daftar profil berdasarkan daftar userJid dalam satu grup - untuk .gengwar
   listByGroupAndUsers(
     groupJid: string,

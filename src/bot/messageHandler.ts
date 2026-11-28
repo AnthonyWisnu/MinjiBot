@@ -11,6 +11,7 @@ import {
   extractStickerFileSha256,
 } from "../services/group/customStickerCommand.service";
 import { classifyCommandUx } from "../services/group/baileysNative.service";
+import { syncGroupXpEventFromTenantState } from "../services/group/groupXpEvent.cache";
 import { isGroupJid } from "../utils/jid";
 import { extractSoundStickerMetadata } from "../utils/mediaTarget";
 import { formatUserSafeError } from "../utils/userSafeError";
@@ -153,6 +154,10 @@ async function handleIncomingMessage(
 
     if (tenantAccess.tenantGroup) {
       context.tenantGroup = tenantAccess.tenantGroup;
+      syncGroupXpEventFromTenantState(
+        tenantAccess.tenantGroup.groupJid,
+        tenantAccess.tenantGroup.groupEventState,
+      );
     }
 
     const featureAccess = await featureGuard.checkCommandFeature(context);

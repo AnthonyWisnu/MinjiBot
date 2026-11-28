@@ -7,7 +7,10 @@ import type {
   MemberProfileViewService,
   ProfileView,
 } from "../../services/member/memberProfileView.service";
-import { parseRpgState } from "../../services/rpg/rpgState";
+import { profileCardService } from "../../services/member/profileCard.service";
+import { getProfileThemeSpec } from "../../services/member/profileThemes";
+import { PET_LABELS } from "../../services/rpg/rpgCatalog";
+import { getFeaturedPet, parseRpgState } from "../../services/rpg/rpgState";
 import { rpgEconomyService } from "../../services/rpg/rpgEconomy.service";
 import { tenantAdminService } from "../../services/tenant/tenantAdmin.service";
 import type { CommandContext, CommandDefinition } from "../../types/command";
@@ -106,6 +109,13 @@ function formatProfileView(
   const nextLevelXp = xpRequiredForLevel(currentLevel + 1);
   const rpgState = parseRpgState(profile.rpgState);
   const titleLine = rpgState.customTitle ? `• Gelar: *${rpgState.customTitle}*` : null;
+  const featuredPet = getFeaturedPet(rpgState);
+  const petLine = featuredPet
+    ? `• Pet Andalan: *${PET_LABELS[featuredPet.id]}* (Lv.${String(featuredPet.level)} | Power ${String(featuredPet.power)})`
+    : "• Pet Andalan: Belum punya (.petshop)";
+  const themeSpec = getProfileThemeSpec(rpgState.profileTheme);
+  const themeLine =
+    themeSpec.id !== "midnight" ? `• Tema Kartu: *${themeSpec.name}*` : null;
   const partnerLine = rpgState.spouseJid
     ? `• Status: Menikah dengan @${rpgState.spouseJid.split("@")[0] ?? rpgState.spouseJid}`
     : profile.partnerJid
@@ -125,6 +135,8 @@ function formatProfileView(
     `• Limit: ${String(profile.limitBalance)}`,
     `• Daily Streak: ${String(profile.currentStreak)} hari`,
     `• Game Menang: ${winRate}`,
+    petLine,
+    ...(themeLine ? [themeLine] : []),
     partnerLine,
     `• Profil Dibuat: ${createdAtWib}`,
   ].join("\n");
@@ -423,9 +435,71 @@ async function executeProfileOrWallet(
   let text: string;
   if (mode === "wallet") {
     text = formatWalletView(view, label, isSuperOwner);
-  } else {
-    const role = await resolveMemberRole(context, resolvedInfo.userJid, resolvedInfo.mentions);
-    text = formatProfileView(view, label, role, isSuperOwner);
+    await sendProfileMessage(
+      context,
+      text,
+      resolvedInfo.userJid,
+      mentions,
+      resolvedInfo.avatarAltJids,
+    );
+    return;
+  }
+
+  const role = await resolveMemberRole(context, resolvedInfo.userJid, resolvedInfo.mentions);
+  text = formatProfileView(view, label, role, isSuperOwner);
+
+  const rpgState = parseRpgState(view.profile.rpgState);
+  const requestedCard = context.args.some((a) => {
+    const lower = a.trim().toLowerCase();
+    return lower === "card" || lower === "kartu";
+  });
+  const shouldRenderVisualCard = rpgState.profileTheme !== "midnight" || requestedCard;
+
+  const rawSocket = ((context as { socket?: unknown }).socket ?? {}) as {
+    sendMessage?: (
+      chatJid: string,
+      content: { image: Buffer; caption: string; mentions?: string[] },
+      options?: { quoted?: unknown },
+    ) => Promise<unknown>;
+  };
+
+  if (shouldRenderVisualCard && typeof rawSocket.sendMessage === "function") {
+    const avatar = await avatarService
+      .getAvatarWithFallback(context.socket, resolvedInfo.userJid, resolvedInfo.avatarAltJids)
+      .catch(() => null);
+    try {
+      const featured = getFeaturedPet(rpgState);
+      const isSelfTarget = senderCandidates.has(resolvedInfo.userJid);
+      const maybeMsg = (context as { message?: { pushName?: string | null } }).message;
+      const pushName = maybeMsg?.pushName?.trim();
+      const cardName = isSelfTarget && pushName && pushName.length > 0 ? pushName : resolvedInfo.phone;
+      const cardPng = await profileCardService.generateCard({
+        view,
+        label: cardName,
+        phone: resolvedInfo.phone,
+        role,
+        isSuperOwner,
+        avatarBuffer: avatar,
+        themeId: rpgState.profileTheme,
+        featuredPet: featured ? { label: PET_LABELS[featured.id], level: featured.level } : null,
+        customTitle: rpgState.customTitle,
+      });
+      await rawSocket.sendMessage(
+        context.chatJid,
+        { image: cardPng, caption: text, mentions },
+        { quoted: context.message },
+      );
+      return;
+    } catch {
+      if (avatar && avatar.length > 0) {
+        await rawSocket.sendMessage(
+          context.chatJid,
+          { image: avatar, caption: text, mentions },
+          { quoted: context.message },
+        );
+        return;
+      }
+    }
   }
 
   await sendProfileMessage(context, text, resolvedInfo.userJid, mentions, resolvedInfo.avatarAltJids);

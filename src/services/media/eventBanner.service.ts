@@ -6,6 +6,7 @@ import { mediaQueueService } from "../../utils/boundedQueue";
 import { formatCompactRupiah } from "../../utils/currency";
 import { MAX_SAFE_IMAGE_PIXELS } from "../../utils/imageSafety";
 import { clampText, escapeXml, stripInvalidXmlChars } from "../../utils/xml";
+import { getProfileThemeSpec, type ProfileThemeId } from "../member/profileThemes";
 
 export type EventBannerScene =
   | "kpk_ott"
@@ -145,6 +146,8 @@ export interface SultanBlackCardInput {
   investAndAssetValue: bigint;
   wealthPosition: number;
   avatarBuffer?: Buffer | null;
+  themeId?: ProfileThemeId | null;
+  featuredPet?: { label: string; level: number } | null;
 }
 
 async function createCircularAvatar(buffer: Buffer, size: number): Promise<Buffer> {
@@ -286,6 +289,18 @@ export class EventBannerService {
     const W = 700;
     const H = 420;
     const avatarDiameter = 104;
+    const theme = getProfileThemeSpec(input.themeId);
+    const isDefaultTheme = theme.id === "midnight";
+    const bg0 = isDefaultTheme ? "#09090B" : theme.bgStart;
+    const bg1 = isDefaultTheme ? "#18181B" : theme.bgMid;
+    const bg2 = isDefaultTheme ? "#09090B" : theme.bgEnd;
+    const trim0 = isDefaultTheme ? "#B45309" : theme.borderColor;
+    const trim1 = isDefaultTheme ? "#FDE047" : theme.accentPrimary;
+    const trim2 = isDefaultTheme ? "#CA8A04" : theme.accentSecondary;
+    const panelFill = isDefaultTheme ? "#27272A" : theme.boxStart;
+    const panelStroke = isDefaultTheme ? "#52525B" : theme.boxStroke;
+    const headlineLabel = escapeXml(theme.cardLabel);
+
     const safeName = escapeXml(clampText(stripInvalidXmlChars(input.memberName), 24, ""));
     const safeTitle = escapeXml(
       clampText(stripInvalidXmlChars(input.customTitle ?? "SULTAN MEMBER"), 28, ""),
@@ -297,6 +312,9 @@ export class EventBannerService {
         : "STANDARD TIER";
     const wealthRankText =
       input.wealthPosition > 0 ? `TOP #${String(input.wealthPosition)} TERKAYA` : "SULTAN GRUP";
+    const petFooterText = input.featuredPet
+      ? `PET: ${input.featuredPet.label.toUpperCase()} LV.${String(input.featuredPet.level)}`
+      : "VERIFIED SULTAN ASSET";
 
     return mediaQueueService.imageComputeQueue.run(async () => {
       let circularAvatar: Buffer | null = null;
@@ -313,40 +331,40 @@ export class EventBannerService {
           `<svg width="${String(W)}" height="${String(H)}" xmlns="http://www.w3.org/2000/svg">`,
           `  <defs>`,
           `    <linearGradient id="obsidian" x1="0%" y1="0%" x2="100%" y2="100%">`,
-          `      <stop offset="0%" stop-color="#09090B"/>`,
-          `      <stop offset="50%" stop-color="#18181B"/>`,
-          `      <stop offset="100%" stop-color="#09090B"/>`,
+          `      <stop offset="0%" stop-color="${bg0}"/>`,
+          `      <stop offset="50%" stop-color="${bg1}"/>`,
+          `      <stop offset="100%" stop-color="${bg2}"/>`,
           `    </linearGradient>`,
           `    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">`,
-          `      <stop offset="0%" stop-color="#B45309"/>`,
-          `      <stop offset="45%" stop-color="#FDE047"/>`,
-          `      <stop offset="100%" stop-color="#CA8A04"/>`,
+          `      <stop offset="0%" stop-color="${trim0}"/>`,
+          `      <stop offset="45%" stop-color="${trim1}"/>`,
+          `      <stop offset="100%" stop-color="${trim2}"/>`,
           `    </linearGradient>`,
           `  </defs>`,
           `  <rect width="700" height="420" rx="28" fill="url(#obsidian)"/>`,
           `  <rect x="10" y="10" width="680" height="400" rx="22" fill="none" stroke="url(#gold)" stroke-width="4"/>`,
-          `  <rect x="22" y="22" width="656" height="376" rx="16" fill="none" stroke="#CA8A04" stroke-width="1" opacity="0.45"/>`,
-          `  <circle cx="620" cy="70" r="140" fill="#FDE047" opacity="0.06"/>`,
+          `  <rect x="22" y="22" width="656" height="376" rx="16" fill="none" stroke="${trim2}" stroke-width="1" opacity="0.45"/>`,
+          `  <circle cx="620" cy="70" r="140" fill="${trim1}" opacity="0.08"/>`,
           `  <rect x="44" y="42" width="62" height="44" rx="8" fill="url(#gold)"/>`,
-          `  <line x1="44" y1="64" x2="106" y2="64" stroke="#422006" stroke-width="1.5"/>`,
-          `  <line x1="75" y1="42" x2="75" y2="86" stroke="#422006" stroke-width="1.5"/>`,
-          `  <text x="124" y="61" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="bold" fill="#FDE047" letter-spacing="3">MINJIBOT BLACK CARD</text>`,
+          `  <line x1="44" y1="64" x2="106" y2="64" stroke="#18181B" stroke-width="1.5"/>`,
+          `  <line x1="75" y1="42" x2="75" y2="86" stroke="#18181B" stroke-width="1.5"/>`,
+          `  <text x="124" y="61" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="bold" fill="${trim1}" letter-spacing="3">${headlineLabel}</text>`,
           `  <text x="124" y="83" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" fill="#A1A1AA">${escapeXml(stars)}  |  ${escapeXml(wealthRankText)}</text>`,
           `  <circle cx="604" cy="96" r="${String(avatarDiameter / 2 + 4)}" fill="none" stroke="url(#gold)" stroke-width="3.5"/>`,
-          `  <circle cx="604" cy="96" r="${String(avatarDiameter / 2)}" fill="#27272A"/>`,
+          `  <circle cx="604" cy="96" r="${String(avatarDiameter / 2)}" fill="${panelFill}"/>`,
           `  <text x="44" y="148" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="bold" fill="#A1A1AA" letter-spacing="2">TOTAL KEKAYAAN BERSIH (NET WORTH)</text>`,
-          `  <text x="44" y="204" font-family="DejaVu Sans, Arial, sans-serif" font-size="44" font-weight="bold" fill="#FEF08A">${escapeXml(formatCompactRupiah(input.netWorth))}</text>`,
-          `  <rect x="44" y="226" width="612" height="74" rx="14" fill="#27272A" fill-opacity="0.65" stroke="#52525B" stroke-width="1"/>`,
+          `  <text x="44" y="204" font-family="DejaVu Sans, Arial, sans-serif" font-size="44" font-weight="bold" fill="${trim1}">${escapeXml(formatCompactRupiah(input.netWorth))}</text>`,
+          `  <rect x="44" y="226" width="612" height="74" rx="14" fill="${panelFill}" fill-opacity="0.7" stroke="${panelStroke}" stroke-width="1"/>`,
           `  <text x="64" y="252" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" fill="#A1A1AA">DOMPET</text>`,
           `  <text x="64" y="282" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" fill="#F8FAFC">${escapeXml(formatCompactRupiah(input.cashBalance))}</text>`,
           `  <text x="266" y="252" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" fill="#A1A1AA">BANK &amp; DEPOSITO</text>`,
           `  <text x="266" y="282" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" fill="#F8FAFC">${escapeXml(formatCompactRupiah(input.bankBalance))}</text>`,
           `  <text x="478" y="252" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" fill="#A1A1AA">INVESTASI &amp; BISNIS</text>`,
-          `  <text x="478" y="282" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" fill="#FDE047">${escapeXml(formatCompactRupiah(input.investAndAssetValue))}</text>`,
+          `  <text x="478" y="282" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" fill="${trim1}">${escapeXml(formatCompactRupiah(input.investAndAssetValue))}</text>`,
           `  <text x="44" y="344" font-family="DejaVu Sans, Arial, sans-serif" font-size="26" font-weight="bold" fill="#FFFFFF">${safeName}</text>`,
-          `  <text x="44" y="372" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="bold" fill="#FACC15">${safeTitle}</text>`,
+          `  <text x="44" y="372" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="bold" fill="${trim1}">${safeTitle}</text>`,
           `  <text x="656" y="346" text-anchor="end" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" fill="#E4E4E7">${safeRank}</text>`,
-          `  <text x="656" y="372" text-anchor="end" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" fill="#A1A1AA">VERIFIED SULTAN ASSET</text>`,
+          `  <text x="656" y="372" text-anchor="end" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="bold" fill="${trim2}">${escapeXml(petFooterText)}</text>`,
           `</svg>`,
         ].join("\n"),
       );

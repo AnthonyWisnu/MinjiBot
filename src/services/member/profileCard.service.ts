@@ -4,6 +4,7 @@ import { MAX_SAFE_IMAGE_PIXELS } from "../../utils/imageSafety";
 import { clampText, escapeXml } from "../../utils/xml";
 import { avatarService } from "../media/avatar.service";
 import type { ProfileView } from "./memberProfileView.service";
+import { getProfileThemeSpec, type ProfileThemeId } from "./profileThemes";
 import { rankProgress } from "./rank.service";
 
 const CARD_WIDTH = 800;
@@ -27,6 +28,9 @@ export interface ProfileCardInput {
   role: string;
   isSuperOwner?: boolean;
   avatarBuffer?: Buffer | null;
+  themeId?: ProfileThemeId | null;
+  featuredPet?: { label: string; level: number } | null;
+  customTitle?: string | null;
 }
 
 export class ProfileCardService {
@@ -34,12 +38,23 @@ export class ProfileCardService {
     const { view, label, phone, role, isSuperOwner } = input;
     const { profile, rank } = view;
 
-    const rankColor = RANK_COLORS[rank] ?? "#38BDF8";
+    const theme = getProfileThemeSpec(input.themeId);
+    const isCustomTheme = theme.id !== "midnight";
+    const rankColor = RANK_COLORS[rank] ?? theme.accentPrimary;
+    const accentColor = isCustomTheme ? theme.accentPrimary : rankColor;
     const safeMaskedPhone = escapeXml(clampText(maskPhoneNumber(phone), 32, "..."));
     const safeName = escapeXml(clampText(label, 20, "..."));
-    const safeRole = escapeXml(clampText(role.toUpperCase(), 24, "..."));
+    const safeRole = escapeXml(clampText(role.toUpperCase(), 22, "..."));
     const safeRank = escapeXml(clampText(rank.toUpperCase(), 24, "..."));
+    const safeThemeName = escapeXml(clampText(theme.name.toUpperCase(), 20, "..."));
     const safeCreatedAtWib = escapeXml(clampText(view.createdAtWib, 40, "..."));
+    const petBadgeText = input.featuredPet
+      ? `PET: ${input.featuredPet.label.toUpperCase()} LV.${String(input.featuredPet.level)}`
+      : "BELUM ADA PET";
+    const safePetBadge = escapeXml(clampText(petBadgeText, 24, "..."));
+    const safeCustomTitle = input.customTitle
+      ? escapeXml(clampText(input.customTitle.toUpperCase(), 24, "..."))
+      : null;
 
     // XP calculation
     let xpText = "";
@@ -88,113 +103,123 @@ export class ProfileCardService {
 <svg width="${String(CARD_WIDTH)}" height="${String(CARD_HEIGHT)}" viewBox="0 0 ${String(CARD_WIDTH)} ${String(CARD_HEIGHT)}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0b0f19" />
-      <stop offset="60%" stop-color="#111827" />
-      <stop offset="100%" stop-color="#1e293b" />
+      <stop offset="0%" stop-color="${theme.bgStart}" />
+      <stop offset="60%" stop-color="${theme.bgMid}" />
+      <stop offset="100%" stop-color="${theme.bgEnd}" />
     </linearGradient>
 
     <linearGradient id="rankGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${rankColor}" stop-opacity="0.8" />
-      <stop offset="100%" stop-color="${rankColor}" stop-opacity="0.2" />
+      <stop offset="0%" stop-color="${accentColor}" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="${theme.accentSecondary}" stop-opacity="0.2" />
     </linearGradient>
 
     <linearGradient id="xpBar" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="${rankColor}" />
-      <stop offset="100%" stop-color="#38BDF8" />
+      <stop offset="0%" stop-color="${accentColor}" />
+      <stop offset="100%" stop-color="${theme.accentSecondary}" />
     </linearGradient>
 
     <linearGradient id="boxBg" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.9" />
-      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.9" />
+      <stop offset="0%" stop-color="${theme.boxStart}" stop-opacity="0.92" />
+      <stop offset="100%" stop-color="${theme.boxEnd}" stop-opacity="0.92" />
     </linearGradient>
   </defs>
 
   <!-- Background base -->
   <rect width="100%" height="100%" rx="24" fill="url(#cardBg)" />
-  <rect width="100%" height="100%" rx="24" fill="none" stroke="${rankColor}" stroke-opacity="0.3" stroke-width="2" />
+  <rect width="100%" height="100%" rx="24" fill="none" stroke="${theme.borderColor}" stroke-opacity="0.45" stroke-width="2.5" />
 
   <!-- Decorative ambient blur circles -->
-  <circle cx="120" cy="120" r="90" fill="${rankColor}" fill-opacity="0.1" filter="blur(40px)" />
-  <circle cx="700" cy="350" r="110" fill="#38BDF8" fill-opacity="0.08" filter="blur(50px)" />
+  <circle cx="120" cy="120" r="95" fill="${theme.glowColor}" fill-opacity="0.14" filter="blur(40px)" />
+  <circle cx="700" cy="350" r="115" fill="${theme.accentSecondary}" fill-opacity="0.1" filter="blur(50px)" />
 
   <!-- Avatar Ring & Rank Halo -->
-  <circle cx="130" cy="160" r="76" fill="none" stroke="${rankColor}" stroke-width="4" stroke-opacity="0.8" />
-  <circle cx="130" cy="160" r="82" fill="none" stroke="${rankColor}" stroke-width="1" stroke-dasharray="6,6" stroke-opacity="0.5" />
+  <circle cx="130" cy="155" r="76" fill="none" stroke="${accentColor}" stroke-width="4" stroke-opacity="0.85" />
+  <circle cx="130" cy="155" r="82" fill="none" stroke="${theme.accentSecondary}" stroke-width="1" stroke-dasharray="6,6" stroke-opacity="0.55" />
 
   <!-- Rank Badge Pill below avatar -->
-  <rect x="55" y="255" width="150" height="34" rx="17" fill="${rankColor}" />
-  <text x="130" y="278" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle">
+  <rect x="48" y="248" width="164" height="32" rx="16" fill="${rankColor}" />
+  <text x="130" y="269" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">
     ${safeRank}
   </text>
 
-  <!-- Left Header & Name Info -->
-  <text x="250" y="82" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#F8FAFC">
-    ${safeName}
-  </text>
-  <text x="250" y="110" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#94A3B8">
-    ${safeMaskedPhone}
+  <!-- Featured Pet Companion Pill -->
+  <rect x="42" y="292" width="176" height="30" rx="15" fill="url(#boxBg)" stroke="${input.featuredPet ? accentColor : theme.boxStroke}" stroke-width="1.2" />
+  <text x="130" y="311" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="${input.featuredPet ? theme.accentSecondary : "#94A3B8"}" text-anchor="middle">
+    ${safePetBadge}
   </text>
 
-  <!-- Role Badge -->
-  <rect x="250" y="125" width="140" height="24" rx="12" fill="#334155" />
-  <text x="320" y="142" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#E2E8F0" text-anchor="middle">
+  <!-- Left Header & Name Info -->
+  <text x="250" y="76" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#F8FAFC">
+    ${safeName}
+  </text>
+  <text x="250" y="104" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#94A3B8">
+    ${safeMaskedPhone}${safeCustomTitle ? `  •  ${safeCustomTitle}` : ""}
+  </text>
+
+  <!-- Role & Theme Badges -->
+  <rect x="250" y="120" width="148" height="24" rx="12" fill="${theme.boxStart}" stroke="${theme.boxStroke}" stroke-width="1" />
+  <text x="324" y="136" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#E2E8F0" text-anchor="middle">
     ${safeRole}
+  </text>
+  <rect x="408" y="120" width="168" height="24" rx="12" fill="${theme.boxEnd}" stroke="${accentColor}" stroke-opacity="0.65" stroke-width="1" />
+  <text x="492" y="136" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="bold" fill="${accentColor}" text-anchor="middle">
+    TEMA: ${safeThemeName}
   </text>
 
   <!-- XP Section -->
-  <text x="250" y="182" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#E2E8F0">
+  <text x="250" y="178" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#E2E8F0">
     PROGRES TIER
   </text>
-  <text x="730" y="182" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="${rankColor}" text-anchor="end">
+  <text x="730" y="178" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="${accentColor}" text-anchor="end">
     ${safeXpText}
   </text>
 
   <!-- Progress Bar Track & Fill -->
-  <rect x="250" y="194" width="480" height="14" rx="7" fill="#1e293b" stroke="#334155" stroke-width="1" />
-  <rect x="250" y="194" width="${String(progressBarWidth)}" height="14" rx="7" fill="url(#xpBar)" />
+  <rect x="250" y="190" width="480" height="14" rx="7" fill="${theme.boxEnd}" stroke="${theme.boxStroke}" stroke-width="1" />
+  <rect x="250" y="190" width="${String(progressBarWidth)}" height="14" rx="7" fill="url(#xpBar)" />
 
   <!-- 4 Stat Boxes (2x2 Grid) -->
   <!-- Box 1: Poin -->
-  <rect x="250" y="230" width="230" height="74" rx="14" fill="url(#boxBg)" stroke="#334155" stroke-width="1" />
-  <text x="270" y="256" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#94A3B8">
+  <rect x="250" y="226" width="230" height="74" rx="14" fill="url(#boxBg)" stroke="${theme.boxStroke}" stroke-width="1" />
+  <text x="270" y="252" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#94A3B8">
     POIN SALDO
   </text>
-  <text x="270" y="288" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="#FBBF24">
-    🪙 ${pointsStr}
+  <text x="270" y="284" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="#FBBF24">
+    ${pointsStr} Poin
   </text>
 
   <!-- Box 2: Limit -->
-  <rect x="500" y="230" width="230" height="74" rx="14" fill="url(#boxBg)" stroke="#334155" stroke-width="1" />
-  <text x="520" y="256" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#94A3B8">
+  <rect x="500" y="226" width="230" height="74" rx="14" fill="url(#boxBg)" stroke="${theme.boxStroke}" stroke-width="1" />
+  <text x="520" y="252" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#94A3B8">
     KUOTA LIMIT
   </text>
-  <text x="520" y="288" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="#38BDF8">
-    ⚡ ${limitStr}
+  <text x="520" y="284" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="${accentColor}">
+    ${limitStr}
   </text>
 
   <!-- Box 3: Streak -->
-  <rect x="250" y="320" width="230" height="74" rx="14" fill="url(#boxBg)" stroke="#334155" stroke-width="1" />
-  <text x="270" y="346" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#94A3B8">
+  <rect x="250" y="316" width="230" height="74" rx="14" fill="url(#boxBg)" stroke="${theme.boxStroke}" stroke-width="1" />
+  <text x="270" y="342" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#94A3B8">
     DAILY STREAK
   </text>
-  <text x="270" y="378" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="#FB923C">
-    🔥 ${streakStr}
+  <text x="270" y="374" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="#FB923C">
+    ${streakStr}
   </text>
 
   <!-- Box 4: Win Rate -->
-  <rect x="500" y="320" width="230" height="74" rx="14" fill="url(#boxBg)" stroke="#334155" stroke-width="1" />
-  <text x="520" y="346" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#94A3B8">
+  <rect x="500" y="316" width="230" height="74" rx="14" fill="url(#boxBg)" stroke="${theme.boxStroke}" stroke-width="1" />
+  <text x="520" y="342" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#94A3B8">
     GAME WIN RATE
   </text>
-  <text x="520" y="378" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="bold" fill="#A855F7">
-    🎮 ${winRateStr}
+  <text x="520" y="374" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="bold" fill="${theme.accentSecondary}">
+    ${winRateStr}
   </text>
 
   <!-- Footer Watermark -->
-  <text x="55" y="420" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#64748B">
+  <text x="55" y="420" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#94A3B8">
     MINJIBOT ECOSYSTEM • VERIFIED MEMBER CARD
   </text>
-  <text x="730" y="420" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#64748B" text-anchor="end">
+  <text x="730" y="420" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#94A3B8" text-anchor="end">
     Bergabung: ${safeCreatedAtWib}
   </text>
 </svg>
@@ -207,12 +232,12 @@ export class ProfileCardService {
       .png()
       .toBuffer();
 
-    // 4. Composite avatar onto base card at (x=55, y=85)
+    // 4. Composite avatar onto base card at (x=55, y=80)
     return sharp(cardBaseBuffer, { limitInputPixels: MAX_SAFE_IMAGE_PIXELS })
       .composite([
         {
           input: circularAvatar,
-          top: 85,
+          top: 80,
           left: 55,
         },
       ])

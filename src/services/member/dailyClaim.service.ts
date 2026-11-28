@@ -9,6 +9,7 @@ import { prisma } from "../../repositories/prismaClient";
 import { DuplicateOperationError } from "../../types/memberEconomy";
 import { clampMoneyCredit } from "../../utils/currency";
 import { isConsecutiveWibDay, toWibDateKey } from "../../utils/wibDate";
+import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { generateCorrelationId } from "./memberEconomy.service";
 import { defaultRandom } from "./randomProvider";
 import type { RandomProvider } from "./randomProvider";
@@ -125,7 +126,7 @@ export class DailyClaimService {
 
     const pointsGained = this.random.intBetween(DAILY_POINTS_MIN, DAILY_POINTS_MAX);
     const baseMoney = BigInt(this.random.intBetween(DAILY_MONEY_MIN, DAILY_MONEY_MAX));
-    const xpGained = DAILY_XP;
+    const xpGained = applyGroupXpEvent(groupJid, DAILY_XP, now.getTime());
     const bonusLimitGained = this.random.chance(DAILY_BONUS_LIMIT_PROBABILITY)
       ? DAILY_BONUS_LIMIT_AMOUNT
       : 0;

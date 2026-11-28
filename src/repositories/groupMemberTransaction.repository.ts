@@ -1,4 +1,4 @@
-import type { GroupMemberTransaction, Prisma } from "@prisma/client";
+import { MemberTransactionAsset, type GroupMemberTransaction, type MemberTransactionType, type Prisma } from "@prisma/client";
 
 import { prisma, type PrismaTransactionClient } from "./prismaClient";
 
@@ -41,6 +41,25 @@ export class GroupMemberTransactionRepository {
       where: { profileId },
       orderBy: { createdAt: "desc" },
       take: limit,
+    });
+  }
+
+  // Ambil transaksi uang/bank grup dalam jendela waktu tertentu - untuk .ekonomigrup
+  listMoneyTransactionsSince(
+    groupJid: string,
+    since: Date,
+  ): Promise<{ asset: MemberTransactionAsset; type: MemberTransactionType; amount: bigint }[]> {
+    return this.client.groupMemberTransaction.findMany({
+      where: {
+        groupJid,
+        asset: { in: [MemberTransactionAsset.MONEY, MemberTransactionAsset.BANK] },
+        createdAt: { gte: since },
+      },
+      select: {
+        asset: true,
+        type: true,
+        amount: true,
+      },
     });
   }
 }

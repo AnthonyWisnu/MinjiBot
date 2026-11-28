@@ -12,6 +12,7 @@ import { logger } from "../../config/logger";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../../repositories/groupMemberTransaction.repository";
 import { prisma } from "../../repositories/prismaClient";
+import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { levelUpNotifierService, type LevelUpNotification } from "./levelUpNotifier.service";
 import { resolveRank } from "./rank.service";
 import {
@@ -610,6 +611,10 @@ export class MemberEconomyService {
   // XP is permanent progression - cannot be spent or transferred.
   async creditXp(input: CreditXpInput): Promise<GroupMemberProfile> {
     validatePositiveAmount(input.amount);
+    const effectiveAmount = Math.min(
+      MAX_SAFE_ECONOMY_INT,
+      applyGroupXpEvent(input.groupJid, input.amount),
+    );
 
     if (input.idempotencyKey) {
       const existing = await this.txRepo.findByIdempotencyKey(input.idempotencyKey);
@@ -624,7 +629,7 @@ export class MemberEconomyService {
       const profile = await this.profileRepo.findOrCreate(input.groupJid, input.userJid, tx);
       oldExperience = profile.experience;
 
-      if (profile.experience + input.amount > MAX_SAFE_ECONOMY_INT) {
+      if (profile.experience + effectiveAmount > MAX_SAFE_ECONOMY_INT) {
         throw new InvalidAmountError(
           `Saldo XP melebihi batas maksimum (${MAX_SAFE_ECONOMY_INT.toLocaleString("id-ID")})`,
         );
@@ -632,7 +637,7 @@ export class MemberEconomyService {
 
       const updatedProfile = await tx.groupMemberProfile.update({
         where: { id: profile.id },
-        data: { experience: { increment: input.amount } },
+        data: { experience: { increment: effectiveAmount } },
       });
 
       await this.txRepo.create(
@@ -643,7 +648,7 @@ export class MemberEconomyService {
           actorJid: input.actorJid,
           asset: MemberTransactionAsset.EXPERIENCE,
           type: MemberTransactionType[input.type],
-          amount: input.amount,
+          amount: effectiveAmount,
           balanceBefore: profile.experience,
           balanceAfter: updatedProfile.experience,
           correlationId: input.correlationId,

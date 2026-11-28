@@ -1,8 +1,11 @@
 import { identityResolverService } from "../../services/identity/identityResolver.service";
 import {
   normalizeCrateType,
+  normalizePetEggTier,
   normalizePetType,
   normalizeToolType,
+  PET_EGG_CATALOG,
+  PET_SHOP_CATALOG,
   SHOP_ITEM_MAP,
   TOOL_SPECS,
 } from "../../services/rpg/rpgCatalog";
@@ -109,11 +112,22 @@ async function handleKandang(context: CommandContext): Promise<void> {
   try {
     const sender = await resolveSender(context);
     const pen = await rpgInfiniteService.getPetPen(context.chatJid, sender);
-    const petLines = pen.pets.map((p) =>
-      p.level > 0
-        ? `• *${p.label}* : Lv.${String(p.level)} | Power ${String(p.power)} | Kenyang ${String(p.hunger)}%`
-        : `• ${p.label} : Belum punya`,
-    );
+    const petLines = pen.pets.map((p) => {
+      if (p.level <= 0) return `• ${p.label} : Belum punya`;
+      const expTag =
+        pen.expedition?.pet === p.id
+          ? pen.expedition.ready
+            ? " [EKSPEDISI SIAP KLAIM!]"
+            : ` [EKSPEDISI: ${formatRemainingDuration(pen.expedition.remainingMs)}]`
+          : "";
+      return `• *${p.label}* : Lv.${String(p.level)} | Power ${String(p.power)} | Kenyang ${String(p.hunger)}%${expTag}`;
+    });
+
+    const expLine = pen.expedition
+      ? pen.expedition.ready
+        ? `• Ekspedisi   : *${pen.expedition.petLabel}* pulang dari ${pen.expedition.zoneName}! Ketik *.ekspedisipet klaim*`
+        : `• Ekspedisi   : *${pen.expedition.petLabel}* di ${pen.expedition.zoneName} (sisa ${formatRemainingDuration(pen.expedition.remainingMs)})`
+      : "• Ekspedisi   : Siap kirim (.ekspedisipet <pet>)";
 
     await context.reply(
       [
@@ -122,13 +136,251 @@ async function handleKandang(context: CommandContext): Promise<void> {
         "",
         ...petLines,
         "",
+        expLine,
         `• Stok Pakan  : ${String(pen.foodCount)} (.feed <pet>)`,
         `• Stok Ramuan : ${String(pen.elixirCount)} (.ramuan <pet>)`,
+        "",
+        "_Adopsi pet baru: .petshop | Gacha telur: .telurpet | Ekspedisi: .ekspedisipet_",
       ].join("\n"),
       { mentions: [sender] },
     );
   } catch (error: unknown) {
     await context.reply(formatUserSafeError(error, "Gagal melihat kandang pet."));
+  }
+}
+
+async function handlePetShop(context: CommandContext): Promise<void> {
+  if (!(await ensureActiveGroup(context))) return;
+  const arg0 = (context.args[0] ?? "").trim().toLowerCase();
+  const arg1 = (context.args[1] ?? "").trim().toLowerCase();
+
+  if (!arg0 || arg0 === "list" || arg0 === "daftar" || arg0 === "katalog") {
+    const shopLines = PET_SHOP_CATALOG.map(
+      (p) =>
+        `• *${p.id}* (${p.label}) — ${formatCompactRupiah(p.price)} | Min Lv.${String(p.minLevel)}\n  _${p.desc}_`,
+    );
+    const eggLines = PET_EGG_CATALOG.map(
+      (e) =>
+        `• *${e.id}* (${e.label}) — ${formatCompactRupiah(e.price)} | Min Lv.${String(e.minLevel)} (100% menetas!)`,
+    );
+
+    await context.reply(
+      [
+        "*── [ PET SHOP & TELUR PET ] ──*",
+        "",
+        "*Adopsi Langsung (.petshop beli <pet>):*",
+        ...shopLines,
+        "",
+        "*Gacha Telur Pet (.telurpet <tier>):*",
+        ...eggLines,
+        "",
+        "Pet mitos (Griffin/Naga/Phonix) juga bisa didapat dari *.telurpet mitos*, *.open*, atau *.fight*!",
+        "Contoh: *.petshop beli kucing* atau *.telurpet biasa*",
+      ].join("\n"),
+    );
+    return;
+  }
+
+  const rawPet = arg0 === "beli" || arg0 === "buy" || arg0 === "adopsi" ? arg1 : arg0;
+  const pet = normalizePetType(rawPet);
+  if (!pet) {
+    await context.reply(
+      "Pet tidak dikenal. Gunakan *.petshop* untuk melihat daftar, atau *.petshop beli kucing*.",
+    );
+    return;
+  }
+
+  try {
+    const sender = await resolveSender(context);
+    const res = await rpgInfiniteService.adoptPet(context.chatJid, sender, pet);
+    await context.reply(
+      [
+        "*── [ ADOPSI PET BERHASIL! ] ──*",
+        `Pemilik   : ${tagOf(sender)}`,
+        `Pet Baru  : *${res.petLabel}* (Lv.1 | Kenyang 100%)`,
+        `Biaya     : -${formatRupiah(res.pricePaid)}`,
+        `Bonus XP  : +${String(res.xpGained)} XP`,
+        `Dompetmu  : ${formatRupiah(res.currentMoney)}`,
+        "",
+        `_Rawat dengan .feed ${res.pet}, kirim ekspedisi lewat .ekspedisipet ${res.pet}, dan cek .profile!_`,
+      ].join("\n"),
+      { mentions: [sender] },
+    );
+  } catch (error: unknown) {
+    await context.reply(formatUserSafeError(error, "Gagal mengadopsi pet."));
+  }
+}
+
+async function handleTelurPet(context: CommandContext): Promise<void> {
+  if (!(await ensureActiveGroup(context))) return;
+  const rawTier = (context.args[0] ?? "").trim().toLowerCase();
+
+  if (!rawTier || rawTier === "list" || rawTier === "info") {
+    const lines = PET_EGG_CATALOG.map((e) => {
+      const poolText = e.pool.map((p) => `${p.pet} ${String(p.weight)}%`).join(", ");
+      return `• *${e.id}* (${e.label}) — *${formatCompactRupiah(e.price)}* (Min Lv.${String(e.minLevel)})\n  Isi: ${poolText}`;
+    });
+    await context.reply(
+      [
+        "*── [ PENETASAN TELUR PET ] ──*",
+        ...lines,
+        "",
+        "Cara menetas: *.telurpet <biasa|langka|mitos>*",
+        "_Duplikat pet otomatis menaikkan +1 Level pet (maks Lv.20)!_",
+      ].join("\n"),
+    );
+    return;
+  }
+
+  const tier = normalizePetEggTier(rawTier);
+  if (!tier) {
+    await context.reply("Tier telur tidak dikenal. Pilih: *biasa*, *langka*, atau *mitos*.");
+    return;
+  }
+
+  try {
+    const sender = await resolveSender(context);
+    const res = await rpgInfiniteService.hatchPetEgg(context.chatJid, sender, tier);
+    const outcomeLine =
+      res.outcome === "unlocked"
+        ? `PET BARU! *${res.petLabel}* (Lv.1) resmi masuk kandangmu!`
+        : res.outcome === "leveled_up"
+          ? `PET DUPLIKAT! *${res.petLabel}* naik level: Lv.${String(res.oldLevel)} -> *Lv.${String(res.newLevel)}*!`
+          : `PET SUDAH MAX (Lv.20)! Kompensasi: *${formatItemList(res.bonusItems)}*`;
+
+    await context.reply(
+      [
+        "*── [ TELUR PET MENETAS! ] ──*",
+        `Pemilik  : ${tagOf(sender)}`,
+        `Telur    : *${res.eggLabel}* (-${formatRupiah(res.pricePaid)})`,
+        `Hasil    : ${outcomeLine}`,
+        `Bonus XP : +${String(res.xpGained)} XP`,
+        `Dompetmu : ${formatRupiah(res.currentMoney)}`,
+      ].join("\n"),
+      { mentions: [sender] },
+    );
+  } catch (error: unknown) {
+    await context.reply(formatUserSafeError(error, "Gagal menetaskan telur pet."));
+  }
+}
+
+async function handleEkspedisiPet(context: CommandContext): Promise<void> {
+  if (!(await ensureActiveGroup(context))) return;
+  const sub = (context.args[0] ?? "").trim().toLowerCase();
+
+  try {
+    const sender = await resolveSender(context);
+
+    if (sub === "klaim" || sub === "claim" || sub === "ambil" || sub === "selesai") {
+      const res = await rpgInfiniteService.claimPetExpedition(context.chatJid, sender);
+      const lvNote =
+        res.petNewLevel > res.petOldLevel
+          ? `Lv.${String(res.petOldLevel)} -> *Lv.${String(res.petNewLevel)}* (NAIK LEVEL!)`
+          : `Lv.${String(res.petNewLevel)} (+${String(res.petExpGained)} EXP Pet)`;
+      await context.reply(
+        [
+          "*── [ EKSPEDISI PET SELESAI! ] ──*",
+          `Pet     : *${res.petLabel}* (${lvNote})`,
+          `Lokasi  : ${res.zoneName}`,
+          "",
+          `• Uang     : +${formatRupiah(res.moneyGained)}`,
+          `• XP Kamu  : +${String(res.xpGained)} XP`,
+          `• Bawaan   : ${formatItemList(res.itemsFound)}`,
+          `• Peti     : ${res.crateFound ? `1x ${res.crateFound} crate` : "-"}`,
+          `• Dompetmu : ${formatRupiah(res.currentMoney)}`,
+        ].join("\n"),
+        { mentions: [sender] },
+      );
+      return;
+    }
+
+    if (!sub || sub === "status" || sub === "cek") {
+      const st = await rpgInfiniteService.getPetExpeditionStatus(context.chatJid, sender);
+      if (st.active) {
+        if (st.active.ready) {
+          const res = await rpgInfiniteService.claimPetExpedition(context.chatJid, sender);
+          const lvNote =
+            res.petNewLevel > res.petOldLevel
+              ? `Lv.${String(res.petOldLevel)} -> *Lv.${String(res.petNewLevel)}* (NAIK LEVEL!)`
+              : `Lv.${String(res.petNewLevel)} (+${String(res.petExpGained)} EXP Pet)`;
+          await context.reply(
+            [
+              "*── [ EKSPEDISI PET SELESAI! ] ──*",
+              `Pet     : *${res.petLabel}* (${lvNote})`,
+              `Lokasi  : ${res.zoneName}`,
+              "",
+              `• Uang     : +${formatRupiah(res.moneyGained)}`,
+              `• XP Kamu  : +${String(res.xpGained)} XP`,
+              `• Bawaan   : ${formatItemList(res.itemsFound)}`,
+              `• Peti     : ${res.crateFound ? `1x ${res.crateFound} crate` : "-"}`,
+              `• Dompetmu : ${formatRupiah(res.currentMoney)}`,
+            ].join("\n"),
+            { mentions: [sender] },
+          );
+          return;
+        }
+        await context.reply(
+          [
+            "*── [ STATUS EKSPEDISI PET ] ──*",
+            `Pet    : *${st.active.petLabel}* (Lv.${String(st.active.petLevel)})`,
+            `Lokasi : ${st.active.zoneName}`,
+            `Sisa   : *${formatRemainingDuration(st.active.remainingMs)}*`,
+            "",
+            "Ketik *.ekspedisipet klaim* setelah waktu selesai!",
+          ].join("\n"),
+        );
+        return;
+      }
+
+      const petSummary =
+        st.ownedPets.length > 0
+          ? st.ownedPets
+              .map((p) => `• *${p.id}* (${p.label} Lv.${String(p.level)} | Kenyang ${String(p.hunger)}%)`)
+              .join("\n")
+          : "Belum punya pet. Adopsi dulu di *.petshop* atau *.telurpet*!";
+
+      await context.reply(
+        [
+          "*── [ EKSPEDISI PET OTOMATIS ] ──*",
+          "Kirim pet selama 30 menit untuk mencari pakan, material craft, ramuan & peti!",
+          "",
+          "*Pet Siap Berangkat:*",
+          petSummary,
+          "",
+          "Cara kirim : *.ekspedisipet <pet>* atau *.ekspedisipet mulai*",
+          "Ambil hasil: *.ekspedisipet klaim*",
+        ].join("\n"),
+      );
+      return;
+    }
+
+    const chosenPet = sub === "mulai" || sub === "start" || sub === "auto" ? undefined : normalizePetType(sub);
+    if (sub !== "mulai" && sub !== "start" && sub !== "auto" && !chosenPet) {
+      await context.reply(
+        "Format: *.ekspedisipet <kucing|kyubi|centaur|griffin|naga|phonix>* atau *.ekspedisipet klaim*",
+      );
+      return;
+    }
+
+    const res = await rpgInfiniteService.startPetExpedition(
+      context.chatJid,
+      sender,
+      chosenPet ?? undefined,
+    );
+    await context.reply(
+      [
+        "*── [ EKSPEDISI PET DIMULAI! ] ──*",
+        `${tagOf(sender)} mengirim *${res.petLabel}* (Lv.${String(res.petLevel)})!`,
+        `• Tujuan       : *${res.zoneName}*`,
+        `• Durasi       : ${formatRemainingDuration(res.durationMs)}`,
+        `• Sisa Kenyang : ${String(res.hungerAfter)}%`,
+        "",
+        "Ketik *.ekspedisipet klaim* setelah 30 menit untuk memanen hasil bawaannya!",
+      ].join("\n"),
+      { mentions: [sender] },
+    );
+  } catch (error: unknown) {
+    await context.reply(formatUserSafeError(error, "Gagal memproses ekspedisi pet."));
   }
 }
 
@@ -735,6 +987,9 @@ async function handleAttack(context: CommandContext): Promise<void> {
 export const rpgInfiniteCommands: CommandDefinition[] = [
   { name: "inventory", aliases: ["inv", "tas"], execute: handleInventory },
   { name: "kandang", aliases: ["pet", "pets"], execute: handleKandang },
+  { name: "petshop", aliases: ["tokopet", "adopsipet"], execute: handlePetShop },
+  { name: "telurpet", aliases: ["tetaspet", "eggpet"], execute: handleTelurPet },
+  { name: "ekspedisipet", aliases: ["petekspedisi", "kirimpet"], execute: handleEkspedisiPet },
   { name: "heal", execute: handleHeal },
   { name: "adventure", aliases: ["petualangan", "adv"], execute: handleAdventure },
   { name: "nebang", execute: (ctx) => handleGather(ctx, "nebang") },

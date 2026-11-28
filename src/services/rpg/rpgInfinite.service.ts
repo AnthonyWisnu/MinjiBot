@@ -14,6 +14,7 @@ import {
   formatRupiah,
   scaleMoneyByLevel,
 } from "../../utils/currency";
+import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
 import {
@@ -21,13 +22,22 @@ import {
   COOK_RECIPES,
   COOK_RECIPE_MAP,
   CRATE_LOOT_SPECS,
+  PET_EGG_MAP,
+  PET_EXPEDITION_DURATION_MS,
+  PET_EXPEDITION_HUNGER_COST,
+  PET_EXPEDITION_ZONE_MAP,
+  PET_EXPEDITION_ZONES,
   PET_LABELS,
+  PET_SHOP_MAP,
+  PET_TIER_WEIGHT,
   SHOP_CATALOG,
   SHOP_ITEM_MAP,
   TOOL_SPECS,
+  type PetEggTier,
 } from "./rpgCatalog";
 import {
   CRATE_TYPES,
+  getFeaturedPet,
   getRemainingCooldownMs,
   getRemainingUgdMs,
   MAX_PLAYER_HP,
@@ -39,6 +49,7 @@ import {
   withHp,
   withItemDelta,
   withItemsDelta,
+  withPetExpedition,
   withPetState,
   withToolState,
   withUpdatedCooldown,
@@ -92,6 +103,70 @@ export interface PetPenSnapshot {
   pets: { id: PetType; label: string; level: number; exp: number; hunger: number; power: number }[];
   foodCount: number;
   elixirCount: number;
+  expedition: {
+    pet: PetType;
+    petLabel: string;
+    zoneName: string;
+    remainingMs: number;
+    ready: boolean;
+  } | null;
+}
+
+export interface PetAdoptResult {
+  pet: PetType;
+  petLabel: string;
+  pricePaid: bigint;
+  xpGained: number;
+  currentMoney: bigint;
+}
+
+export interface PetEggHatchResult {
+  tier: PetEggTier;
+  eggLabel: string;
+  pricePaid: bigint;
+  pet: PetType;
+  petLabel: string;
+  outcome: "unlocked" | "leveled_up" | "max_compensated";
+  oldLevel: number;
+  newLevel: number;
+  bonusItems: Record<string, number>;
+  xpGained: number;
+  currentMoney: bigint;
+}
+
+export interface PetExpeditionStatus {
+  active: {
+    pet: PetType;
+    petLabel: string;
+    petLevel: number;
+    zoneName: string;
+    remainingMs: number;
+    ready: boolean;
+  } | null;
+  ownedPets: { id: PetType; label: string; level: number; hunger: number }[];
+}
+
+export interface PetExpeditionStartResult {
+  pet: PetType;
+  petLabel: string;
+  petLevel: number;
+  zoneName: string;
+  durationMs: number;
+  hungerAfter: number;
+}
+
+export interface PetExpeditionClaimResult {
+  pet: PetType;
+  petLabel: string;
+  zoneName: string;
+  moneyGained: bigint;
+  xpGained: number;
+  itemsFound: Record<string, number>;
+  crateFound: CrateType | null;
+  petExpGained: number;
+  petOldLevel: number;
+  petNewLevel: number;
+  currentMoney: bigint;
 }
 
 export interface HealResult {
@@ -309,9 +384,14 @@ export class RpgInfiniteService {
     };
   }
 
-  async getPetPen(groupJid: string, userJid: string): Promise<PetPenSnapshot> {
+  async getPetPen(
+    groupJid: string,
+    userJid: string,
+    now: Date = new Date(),
+  ): Promise<PetPenSnapshot> {
     const profile = await this.profileRepo.findOrCreate(groupJid, userJid);
     const state = parseRpgState(profile.rpgState);
+    const nowMs = now.getTime();
 
     const pets = PET_TYPES.map((id) => {
       const p = state.pets[id];
@@ -325,11 +405,450 @@ export class RpgInfiniteService {
       };
     });
 
+    let expedition: PetPenSnapshot["expedition"] = null;
+    if (state.petExpedition) {
+      const exp = state.petExpedition;
+      const zone = PET_EXPEDITION_ZONE_MAP.get(exp.zoneId);
+      const remainingMs = Math.max(0, exp.endsAt - nowMs);
+      expedition = {
+        pet: exp.pet,
+        petLabel: PET_LABELS[exp.pet],
+        zoneName: zone?.name ?? "Zona Petualangan",
+        remainingMs,
+        ready: remainingMs <= 0,
+      };
+    }
+
     return {
       pets,
       foodCount: state.items.makananpet ?? 0,
       elixirCount: state.items.ramuanpet ?? 0,
+      expedition,
     };
+  }
+
+  async adoptPet(groupJid: string, userJid: string, pet: PetType): Promise<PetAdoptResult> {
+    const spec = PET_SHOP_MAP.get(pet);
+    if (!spec) {
+      throw new AppUserError(
+        `Pet *${PET_LABELS[pet]}* tidak dijual langsung di Pet Shop! Dapatkan lewat *.telurpet mitos*, *.open*, atau *.fight${pet}*.`,
+      );
+    }
+
+    const xpGained = applyGroupXpEvent(groupJid, 50);
+    const correlationId = generateCorrelationId();
+
+    return this.db.$transaction(async (tx) => {
+      const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
+      const state = parseRpgState(profile.rpgState);
+      const playerLevel = Math.max(1, profile.level);
+
+      if (playerLevel < spec.minLevel) {
+        throw new AppUserError(
+          `Syarat adopsi *${spec.label}* minimal Level ${String(spec.minLevel)} (levelmu saat ini Lv.${String(playerLevel)}).`,
+        );
+      }
+      if (state.pets[pet].level > 0) {
+        throw new AppUserError(
+          `Kamu sudah memiliki pet *${PET_LABELS[pet]}* (Lv.${String(state.pets[pet].level)})! Naikkan levelnya lewat *.feed ${pet}*, *.ramuan ${pet}*, atau *.telurpet*.`,
+        );
+      }
+      if (profile.moneyBalance < spec.price) {
+        throw new AppUserError(
+          `Biaya adopsi *${spec.label}* sebesar ${formatRupiah(spec.price)}, dompetmu baru ${formatRupiah(profile.moneyBalance)}.`,
+        );
+      }
+
+      const nextState = withPetState(state, pet, { level: 1, exp: 0, hunger: 100 });
+      const debitRes = await tx.groupMemberProfile.updateMany({
+        where: { id: profile.id, moneyBalance: { gte: spec.price } },
+        data: {
+          moneyBalance: { decrement: spec.price },
+          experience: { increment: xpGained },
+          rpgState: serializeRpgState(nextState),
+        },
+      });
+      if (debitRes.count === 0) {
+        throw new AppUserError("Saldo dompet tidak cukup saat memproses adopsi pet.");
+      }
+
+      const updated = await tx.groupMemberProfile.findUniqueOrThrow({ where: { id: profile.id } });
+      await this.txRepo.create(
+        {
+          profileId: profile.id,
+          groupJid,
+          userJid,
+          asset: MemberTransactionAsset.MONEY,
+          type: MemberTransactionType.RPG_LOSS,
+          amount: -spec.price,
+          balanceBefore: profile.moneyBalance,
+          balanceAfter: updated.moneyBalance,
+          correlationId,
+          note: `petshop_adopt_${pet}`,
+        },
+        tx,
+      );
+
+      return {
+        pet,
+        petLabel: PET_LABELS[pet],
+        pricePaid: spec.price,
+        xpGained,
+        currentMoney: updated.moneyBalance,
+      };
+    });
+  }
+
+  async hatchPetEgg(
+    groupJid: string,
+    userJid: string,
+    tier: PetEggTier,
+  ): Promise<PetEggHatchResult> {
+    const spec = PET_EGG_MAP.get(tier);
+    if (!spec) {
+      throw new AppUserError("Tier telur tersedia: biasa, langka, mitos.");
+    }
+
+    const totalWeight = spec.pool.reduce((sum, entry) => sum + entry.weight, 0);
+    const roll = this.random.intBetween(1, Math.max(1, totalWeight));
+    let cursor = 0;
+    let hatchedPet: PetType = spec.pool[0]?.pet ?? "kucing";
+    for (const entry of spec.pool) {
+      cursor += entry.weight;
+      if (roll <= cursor) {
+        hatchedPet = entry.pet;
+        break;
+      }
+    }
+
+    const xpGained = applyGroupXpEvent(groupJid, spec.xp);
+    const correlationId = generateCorrelationId();
+
+    return this.db.$transaction(async (tx) => {
+      const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
+      const state = parseRpgState(profile.rpgState);
+      const playerLevel = Math.max(1, profile.level);
+
+      if (playerLevel < spec.minLevel) {
+        throw new AppUserError(
+          `Syarat menetas *${spec.label}* minimal Level ${String(spec.minLevel)} (levelmu saat ini Lv.${String(playerLevel)}).`,
+        );
+      }
+      if (profile.moneyBalance < spec.price) {
+        throw new AppUserError(
+          `Harga *${spec.label}* adalah ${formatRupiah(spec.price)}, dompetmu: ${formatRupiah(profile.moneyBalance)}.`,
+        );
+      }
+
+      const cur = state.pets[hatchedPet];
+      const oldLevel = cur.level;
+      let newLevel = oldLevel;
+      let outcome: PetEggHatchResult["outcome"] = "unlocked";
+      const bonusItems: Record<string, number> = {};
+      let nextState = state;
+
+      if (oldLevel <= 0) {
+        newLevel = 1;
+        outcome = "unlocked";
+        nextState = withPetState(state, hatchedPet, { level: 1, exp: 0, hunger: 100 });
+      } else if (oldLevel < MAX_PET_LEVEL) {
+        newLevel = oldLevel + 1;
+        outcome = "leveled_up";
+        nextState = withPetState(state, hatchedPet, {
+          level: newLevel,
+          exp: cur.exp,
+          hunger: 100,
+        });
+      } else {
+        outcome = "max_compensated";
+        bonusItems.ramuanpet = 3;
+        bonusItems.makananpet = 5;
+        nextState = withItemsDelta(state, bonusItems);
+      }
+
+      const debitRes = await tx.groupMemberProfile.updateMany({
+        where: { id: profile.id, moneyBalance: { gte: spec.price } },
+        data: {
+          moneyBalance: { decrement: spec.price },
+          experience: { increment: xpGained },
+          rpgState: serializeRpgState(nextState),
+        },
+      });
+      if (debitRes.count === 0) {
+        throw new AppUserError("Saldo dompet tidak cukup membeli telur pet.");
+      }
+
+      const updated = await tx.groupMemberProfile.findUniqueOrThrow({ where: { id: profile.id } });
+      await this.txRepo.create(
+        {
+          profileId: profile.id,
+          groupJid,
+          userJid,
+          asset: MemberTransactionAsset.MONEY,
+          type: MemberTransactionType.RPG_LOSS,
+          amount: -spec.price,
+          balanceBefore: profile.moneyBalance,
+          balanceAfter: updated.moneyBalance,
+          correlationId,
+          note: `telurpet_${tier}_${hatchedPet}`,
+        },
+        tx,
+      );
+
+      return {
+        tier,
+        eggLabel: spec.label,
+        pricePaid: spec.price,
+        pet: hatchedPet,
+        petLabel: PET_LABELS[hatchedPet],
+        outcome,
+        oldLevel,
+        newLevel,
+        bonusItems,
+        xpGained,
+        currentMoney: updated.moneyBalance,
+      };
+    });
+  }
+
+  async getPetExpeditionStatus(
+    groupJid: string,
+    userJid: string,
+    now: Date = new Date(),
+  ): Promise<PetExpeditionStatus> {
+    const profile = await this.profileRepo.findOrCreate(groupJid, userJid);
+    const state = parseRpgState(profile.rpgState);
+    const nowMs = now.getTime();
+
+    const ownedPets = PET_TYPES.filter((id) => state.pets[id].level > 0).map((id) => ({
+      id,
+      label: PET_LABELS[id],
+      level: state.pets[id].level,
+      hunger: state.pets[id].hunger,
+    }));
+
+    if (!state.petExpedition) {
+      return { active: null, ownedPets };
+    }
+
+    const exp = state.petExpedition;
+    const zone = PET_EXPEDITION_ZONE_MAP.get(exp.zoneId);
+    const remainingMs = Math.max(0, exp.endsAt - nowMs);
+
+    return {
+      active: {
+        pet: exp.pet,
+        petLabel: PET_LABELS[exp.pet],
+        petLevel: state.pets[exp.pet].level,
+        zoneName: zone?.name ?? "Zona Petualangan",
+        remainingMs,
+        ready: remainingMs <= 0,
+      },
+      ownedPets,
+    };
+  }
+
+  async startPetExpedition(
+    groupJid: string,
+    userJid: string,
+    requestedPet?: PetType,
+    now: Date = new Date(),
+  ): Promise<PetExpeditionStartResult> {
+    const nowMs = now.getTime();
+    const zone = PET_EXPEDITION_ZONES[this.random.intBetween(0, PET_EXPEDITION_ZONES.length - 1)] ?? {
+      id: "lembah_bambu",
+      name: "Lembah Bambu Berkabut",
+      desc: "Kaya kayu, batu & pakan alami",
+    };
+
+    return this.db.$transaction(async (tx) => {
+      const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
+      const state = parseRpgState(profile.rpgState);
+
+      if (state.petExpedition) {
+        const rem = Math.max(0, state.petExpedition.endsAt - nowMs);
+        if (rem <= 0) {
+          throw new AppUserError(
+            `Ekspedisi *${PET_LABELS[state.petExpedition.pet]}* sudah selesai! Ketik *.ekspedisipet klaim* dulu untuk ambil hadiahnya.`,
+          );
+        }
+        throw new AppUserError(
+          `Pet *${PET_LABELS[state.petExpedition.pet]}* masih dalam ekspedisi (sisa *${formatRemainingDuration(rem)}*).`,
+        );
+      }
+
+      const chosenPet: PetType | null = requestedPet ?? getFeaturedPet(state)?.id ?? null;
+      if (!chosenPet || state.pets[chosenPet].level <= 0) {
+        throw new AppUserError(
+          requestedPet
+            ? `Kamu belum memiliki pet *${PET_LABELS[requestedPet]}*. Dapatkan lewat *.petshop* atau *.telurpet*!`
+            : "Kamu belum memiliki pet di kandang! Adopsi dulu di *.petshop* atau *.telurpet*.",
+        );
+      }
+
+      const petState = state.pets[chosenPet];
+      if (petState.hunger < PET_EXPEDITION_HUNGER_COST) {
+        throw new AppUserError(
+          `Pet *${PET_LABELS[chosenPet]}* terlalu lapar (${String(petState.hunger)}%). Beri makan dulu lewat *.feed ${chosenPet}*!`,
+        );
+      }
+
+      const hungerAfter = Math.max(0, petState.hunger - PET_EXPEDITION_HUNGER_COST);
+      let nextState = withPetState(state, chosenPet, {
+        ...petState,
+        hunger: hungerAfter,
+      });
+      nextState = withPetExpedition(nextState, {
+        pet: chosenPet,
+        zoneId: zone.id,
+        startedAt: nowMs,
+        endsAt: nowMs + PET_EXPEDITION_DURATION_MS,
+      });
+
+      await tx.groupMemberProfile.update({
+        where: { id: profile.id },
+        data: { rpgState: serializeRpgState(nextState) },
+      });
+
+      return {
+        pet: chosenPet,
+        petLabel: PET_LABELS[chosenPet],
+        petLevel: petState.level,
+        zoneName: zone.name,
+        durationMs: PET_EXPEDITION_DURATION_MS,
+        hungerAfter,
+      };
+    });
+  }
+
+  async claimPetExpedition(
+    groupJid: string,
+    userJid: string,
+    now: Date = new Date(),
+  ): Promise<PetExpeditionClaimResult> {
+    const nowMs = now.getTime();
+    const correlationId = generateCorrelationId();
+
+    return this.db.$transaction(async (tx) => {
+      const profile = await this.profileRepo.findOrCreate(groupJid, userJid, tx);
+      const state = parseRpgState(profile.rpgState);
+
+      if (!state.petExpedition) {
+        throw new AppUserError(
+          "Tidak ada pet yang sedang menjalankan ekspedisi. Kirim pet dulu dengan *.ekspedisipet <pet>*!",
+        );
+      }
+
+      const exp = state.petExpedition;
+      const remainingMs = Math.max(0, exp.endsAt - nowMs);
+      if (remainingMs > 0) {
+        throw new AppUserError(
+          `Pet *${PET_LABELS[exp.pet]}* masih menjelajah! Kembali dalam *${formatRemainingDuration(remainingMs)}*.`,
+        );
+      }
+
+      const petState = state.pets[exp.pet];
+      const tier = PET_TIER_WEIGHT[exp.pet];
+      const petOldLevel = Math.max(1, petState.level);
+      const zone = PET_EXPEDITION_ZONE_MAP.get(exp.zoneId);
+
+      // Loot skala tier & level pet (uang tetap skala 60% anti-inflasi)
+      const itemsFound: Record<string, number> = {
+        makananpet: this.random.intBetween(1, 2 + (tier >= 4 ? 1 : 0)),
+        kayu: this.random.intBetween(2, 4 + tier),
+        batu: this.random.intBetween(2, 4 + tier),
+        besi: this.random.intBetween(1, 2 + Math.floor(tier / 2)),
+      };
+      if (this.random.chance(Math.min(0.75, 0.25 + tier * 0.08))) {
+        itemsFound.emas = this.random.intBetween(1, 1 + Math.floor(tier / 3));
+      }
+      if (tier >= 4 && this.random.chance(0.25 + (tier - 4) * 0.1)) {
+        itemsFound.berlian = 1;
+      }
+      if (this.random.chance(Math.min(0.45, 0.12 + tier * 0.04 + petOldLevel * 0.01))) {
+        itemsFound.ramuanpet = 1;
+      }
+
+      let crateFound: CrateType | null = null;
+      const crateRollChance = Math.min(0.55, 0.18 + tier * 0.05 + petOldLevel * 0.01);
+      if (this.random.chance(crateRollChance)) {
+        if (tier >= 5 && this.random.chance(0.3)) {
+          crateFound = "mythic";
+        } else if (tier >= 3 && this.random.chance(0.45)) {
+          crateFound = "uncommon";
+        } else {
+          crateFound = "common";
+        }
+      }
+
+      const basePocket = BigInt(this.random.intBetween(1_200_000, 2_400_000));
+      const petFactorPct = BigInt(100 + tier * 30 + petOldLevel * 5);
+      const scaledMoney = (basePocket * petFactorPct) / 100n;
+      const moneyGained = clampMoneyCredit(
+        profile.moneyBalance,
+        scaleMoneyByLevel(scaledMoney, profile.level),
+      );
+      const xpGained = applyGroupXpEvent(groupJid, 75 + tier * 15);
+
+      const petExpGained = 60 + tier * 10 + petOldLevel * 5;
+      let nextPetLevel = petOldLevel;
+      let nextPetExp = petState.exp + petExpGained;
+      while (nextPetLevel < MAX_PET_LEVEL && nextPetExp >= nextPetLevel * 100) {
+        nextPetExp -= nextPetLevel * 100;
+        nextPetLevel += 1;
+      }
+
+      let nextState = withPetExpedition(state, null);
+      nextState = withPetState(nextState, exp.pet, {
+        level: nextPetLevel,
+        exp: nextPetExp,
+        hunger: petState.hunger,
+      });
+      nextState = withItemsDelta(nextState, itemsFound);
+      if (crateFound) {
+        nextState = withCrateDelta(nextState, crateFound, 1);
+      }
+
+      const updated = await tx.groupMemberProfile.update({
+        where: { id: profile.id },
+        data: {
+          moneyBalance: { increment: moneyGained },
+          totalMoneyEarned: { increment: moneyGained },
+          experience: { increment: xpGained },
+          rpgState: serializeRpgState(nextState),
+        },
+      });
+
+      await this.txRepo.create(
+        {
+          profileId: profile.id,
+          groupJid,
+          userJid,
+          asset: MemberTransactionAsset.MONEY,
+          type: MemberTransactionType.RPG_EARN,
+          amount: moneyGained,
+          balanceBefore: profile.moneyBalance,
+          balanceAfter: updated.moneyBalance,
+          correlationId,
+          note: `pet_expedition_${exp.pet}`,
+        },
+        tx,
+      );
+
+      return {
+        pet: exp.pet,
+        petLabel: PET_LABELS[exp.pet],
+        zoneName: zone?.name ?? "Zona Petualangan",
+        moneyGained,
+        xpGained,
+        itemsFound,
+        crateFound,
+        petExpGained,
+        petOldLevel,
+        petNewLevel: nextPetLevel,
+        currentMoney: updated.moneyBalance,
+      };
+    });
   }
 
   async healPlayer(groupJid: string, userJid: string, requestedCount?: number): Promise<HealResult> {
@@ -382,7 +901,7 @@ export class RpgInfiniteService {
     const zone =
       ADVENTURE_ZONES[this.random.intBetween(0, ADVENTURE_ZONES.length - 1)] ?? ADVENTURE_ZONES[0];
     const baseMoney = BigInt(this.random.intBetween(1_500_000, 4_500_000));
-    const xpGained = this.random.intBetween(90, 180);
+    const xpGained = applyGroupXpEvent(groupJid, this.random.intBetween(90, 180), nowMs);
     const rawDamage = this.random.intBetween(15, 32);
     const correlationId = generateCorrelationId();
 
@@ -519,7 +1038,7 @@ export class RpgInfiniteService {
         profile.moneyBalance,
         scaleMoneyByLevel(boosted, profile.level),
       );
-      const xpGained = 65 + toolLevel * 5;
+      const xpGained = applyGroupXpEvent(groupJid, 65 + toolLevel * 5, nowMs);
 
       const itemsGained: Record<string, number> = {};
       if (action === "nebang") {
@@ -1243,12 +1762,13 @@ export class RpgInfiniteService {
         });
       }
 
+      const xpGained = applyGroupXpEvent(groupJid, spec.xp, nowMs);
       const updated = await tx.groupMemberProfile.update({
         where: { id: profile.id },
         data: {
           moneyBalance: { increment: moneyGained },
           totalMoneyEarned: { increment: moneyGained },
-          experience: { increment: spec.xp },
+          experience: { increment: xpGained },
           rpgState: serializeRpgState(nextState),
         },
       });
@@ -1278,7 +1798,7 @@ export class RpgInfiniteService {
         hpLost,
         hpAfter,
         moneyGained,
-        xpGained: spec.xp,
+        xpGained,
         crateGained: spec.crateDrop,
         petDropped,
         petNewLevel,

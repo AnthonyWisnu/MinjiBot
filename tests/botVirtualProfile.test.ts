@@ -18,6 +18,8 @@ function buildTenantGroup(overrides: Partial<TenantGroup> = {}): TenantGroup {
     expiresAt: null,
     isBlocked: false,
     treasuryBalance: 50_000_000n,
+    worldBossState: null,
+    groupEventState: null,
     approvedAt: new Date("2026-01-15T04:00:00.000Z"),
     activatedAt: new Date("2026-01-15T04:00:00.000Z"),
     createdAt: new Date("2026-01-15T04:00:00.000Z"),

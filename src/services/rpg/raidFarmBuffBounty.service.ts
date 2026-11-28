@@ -7,6 +7,11 @@ import {
 } from "@prisma/client";
 
 import { AppUserError } from "../../errors/appUserError";
+import {
+  readGroupEventSection,
+  writeGroupEventSection,
+} from "../group/groupEventState.store";
+import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { GroupMemberProfileRepository } from "../../repositories/groupMemberProfile.repository";
 import { GroupMemberTransactionRepository } from "../../repositories/groupMemberTransaction.repository";
 import { prisma } from "../../repositories/prismaClient";
@@ -645,10 +650,17 @@ function buildDamageRankings(
   }));
 }
 
-function applyXpMultipliers(baseXp: number, intStat: number, hasXpBuff: boolean): number {
+function applyXpMultipliers(
+  baseXp: number,
+  intStat: number,
+  hasXpBuff: boolean,
+  groupJid?: string,
+  nowMs: number = Date.now(),
+): number {
   const intMult = 1 + intStat * 0.03;
   const buffMult = hasXpBuff ? 1.5 : 1;
-  return Math.max(1, Math.round(baseXp * intMult * buffMult));
+  const computed = Math.max(1, Math.round(baseXp * intMult * buffMult));
+  return groupJid ? applyGroupXpEvent(groupJid, computed, nowMs) : computed;
 }
 
 const WORLD_BOSS_SPEC_MAP = new Map<string, WorldBossSpec>(
@@ -789,12 +801,69 @@ function serializePersistedWorldBossState(
   };
 }
 
+function parsePersistedBountiesSection(
+  groupJid: string,
+  raw: unknown,
+): Map<string, BountyEntry> {
+  const board = new Map<string, BountyEntry>();
+  if (!Array.isArray(raw)) return board;
+  for (const item of raw) {
+    if (board.size >= MAX_BOUNTIES_PER_GROUP) break;
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const b = item as Record<string, unknown>;
+    if (
+      typeof b.targetJid === "string" &&
+      b.targetJid.length > 0 &&
+      typeof b.amount === "string" &&
+      /^\d+$/.test(b.amount) &&
+      typeof b.expiresAt === "number" &&
+      Number.isFinite(b.expiresAt)
+    ) {
+      const amount = BigInt(b.amount);
+      if (amount <= 0n) continue;
+      board.set(b.targetJid, {
+        groupJid,
+        targetJid: b.targetJid,
+        amount,
+        postersCount:
+          typeof b.postersCount === "number" && Number.isInteger(b.postersCount) && b.postersCount > 0
+            ? b.postersCount
+            : 1,
+        lastPosterJid: typeof b.lastPosterJid === "string" ? b.lastPosterJid : "",
+        createdAt:
+          typeof b.createdAt === "number" && Number.isFinite(b.createdAt)
+            ? Math.floor(b.createdAt)
+            : 0,
+        expiresAt: Math.floor(b.expiresAt),
+      });
+    }
+  }
+  return board;
+}
+
+function serializePersistedBountiesSection(
+  board: Map<string, BountyEntry> | undefined,
+): Prisma.InputJsonValue {
+  if (!board || board.size === 0) return [];
+  return Array.from(board.values())
+    .slice(0, MAX_BOUNTIES_PER_GROUP)
+    .map((entry) => ({
+      targetJid: entry.targetJid,
+      amount: entry.amount.toString(),
+      postersCount: entry.postersCount,
+      lastPosterJid: entry.lastPosterJid,
+      createdAt: entry.createdAt,
+      expiresAt: entry.expiresAt,
+    }));
+}
+
 export class RaidFarmBuffBountyService {
   private readonly activeBossByGroup = new Map<string, ActiveWorldBoss>();
   private readonly bossHistoryByGroup = new Map<string, DefeatedBossRecord[]>();
   private readonly bossRespawnAtByGroup = new Map<string, number>();
   private readonly hydratedBossGroups = new Set<string>();
   private readonly bountiesByGroup = new Map<string, Map<string, BountyEntry>>();
+  private readonly hydratedBountyGroups = new Set<string>();
 
   constructor(
     private readonly profileRepo: RaidProfileStore = new GroupMemberProfileRepository(),
@@ -802,6 +871,28 @@ export class RaidFarmBuffBountyService {
     private readonly random: RandomProvider = defaultRandom,
     private readonly db: RaidDb = prisma,
   ) {}
+
+  private async hydrateGroupBountyState(groupJid: string): Promise<void> {
+    if (this.hydratedBountyGroups.has(groupJid)) return;
+    this.hydratedBountyGroups.add(groupJid);
+
+    const raw = await readGroupEventSection(this.db.tenantGroup, groupJid, "bounties");
+    if (!raw) return;
+    const board = parsePersistedBountiesSection(groupJid, raw);
+    if (board.size > 0) {
+      this.bountiesByGroup.set(groupJid, board);
+      evictOldestIfNeeded(this.bountiesByGroup, MAX_ACTIVE_GROUPS);
+    }
+  }
+
+  private async persistGroupBountyState(groupJid: string): Promise<void> {
+    await writeGroupEventSection(
+      this.db.tenantGroup,
+      groupJid,
+      "bounties",
+      serializePersistedBountiesSection(this.bountiesByGroup.get(groupJid)),
+    );
+  }
 
   private async hydrateGroupBossState(groupJid: string): Promise<void> {
     if (this.hydratedBossGroups.has(groupJid)) return;
@@ -1113,6 +1204,8 @@ export class RaidFarmBuffBountyService {
         45,
         state.skills.int,
         isBuffActive(state, "ramuanxp", nowMs),
+        groupJid,
+        nowMs,
       );
 
       let updatedState = withUpdatedCooldown(withHp(state, hpAfter), "worldboss_hit", nowMs);
@@ -1183,6 +1276,8 @@ export class RaidFarmBuffBountyService {
           rawXp,
           memberState.skills.int,
           isBuffActive(memberState, "ramuanxp", nowMs),
+          groupJid,
+          nowMs,
         );
 
         const crateGained: CrateType = i < 3 ? activeBoss.spec.crateDrop : "common";
@@ -1571,6 +1666,8 @@ export class RaidFarmBuffBountyService {
         25 * wateredCount,
         state.skills.int,
         isBuffActive(state, "ramuanxp", nowMs),
+        groupJid,
+        nowMs,
       );
       const nextState = withFarm(state, { plots: nextPlots, harvest: state.farm.harvest });
 
@@ -1629,6 +1726,8 @@ export class RaidFarmBuffBountyService {
         40 * harvestedPlots,
         state.skills.int,
         isBuffActive(state, "ramuanxp", nowMs),
+        groupJid,
+        nowMs,
       );
       const nextState = withFarm(state, { plots: remainingPlots, harvest: nextHarvest });
 
@@ -1862,6 +1961,7 @@ export class RaidFarmBuffBountyService {
     amount: bigint,
     nowMs: number = Date.now(),
   ): Promise<PostBountyResult> {
+    await this.hydrateGroupBountyState(groupJid);
     this.sweepBounties(nowMs);
     const normPoster = normalizeUserJid(posterJid);
     const normTarget = normalizeUserJid(targetJid);
@@ -1883,7 +1983,7 @@ export class RaidFarmBuffBountyService {
 
     const correlationId = generateCorrelationId();
 
-    return this.db.$transaction(async (tx) => {
+    const result = await this.db.$transaction(async (tx) => {
       const poster = await this.profileRepo.findOrCreate(groupJid, normPoster, tx);
       if (poster.moneyBalance < amount) {
         throw new AppUserError(
@@ -1950,6 +2050,9 @@ export class RaidFarmBuffBountyService {
         expiresAt: nextEntry.expiresAt,
       };
     });
+
+    await this.persistGroupBountyState(groupJid);
+    return result;
   }
 
   listBounties(groupJid: string, nowMs: number = Date.now()): BountyEntry[] {
@@ -1961,13 +2064,26 @@ export class RaidFarmBuffBountyService {
     );
   }
 
+  async loadBounties(groupJid: string, nowMs: number = Date.now()): Promise<BountyEntry[]> {
+    await this.hydrateGroupBountyState(groupJid);
+    const changed = this.sweepBounties(nowMs);
+    if (changed) {
+      await this.persistGroupBountyState(groupJid);
+    }
+    return this.listBounties(groupJid, nowMs);
+  }
+
   async huntBounty(
     groupJid: string,
     hunterJid: string,
     targetJid: string,
     nowMs: number = Date.now(),
   ): Promise<HuntBountyResult> {
-    this.sweepBounties(nowMs);
+    await this.hydrateGroupBountyState(groupJid);
+    const expiredChanged = this.sweepBounties(nowMs);
+    if (expiredChanged) {
+      await this.persistGroupBountyState(groupJid);
+    }
     const normHunter = normalizeUserJid(hunterJid);
     const normTarget = normalizeUserJid(targetJid);
     if (!normHunter || !normTarget || normHunter === normTarget) {
@@ -1984,7 +2100,7 @@ export class RaidFarmBuffBountyService {
 
     const correlationId = generateCorrelationId();
 
-    return this.db.$transaction(async (tx) => {
+    const huntResult = await this.db.$transaction(async (tx) => {
       const hunter = await this.profileRepo.findOrCreate(groupJid, normHunter, tx);
       const target = await this.profileRepo.findOrCreate(groupJid, normTarget, tx);
       const hunterState = parseRpgState(hunter.rpgState);
@@ -2036,6 +2152,8 @@ export class RaidFarmBuffBountyService {
           120,
           hunterState.skills.int,
           isBuffActive(hunterState, "ramuanxp", nowMs),
+          groupJid,
+          nowMs,
         );
 
         const nextHunterState = withUpdatedCooldown(hunterState, "bounty_hunt", nowMs);
@@ -2168,6 +2286,15 @@ export class RaidFarmBuffBountyService {
         hunterMoneyAfter: updatedHunter.moneyBalance,
       };
     });
+
+    if (huntResult.won) {
+      if (board?.size === 0) {
+        this.bountiesByGroup.delete(groupJid);
+      }
+      await this.persistGroupBountyState(groupJid);
+    }
+
+    return huntResult;
   }
 
   private sweepBosses(nowMs: number): boolean {
@@ -2199,17 +2326,21 @@ export class RaidFarmBuffBountyService {
     return changed;
   }
 
-  private sweepBounties(nowMs: number): void {
+  private sweepBounties(nowMs: number): boolean {
+    let changed = false;
     for (const [gJid, board] of this.bountiesByGroup.entries()) {
       for (const [target, entry] of board.entries()) {
         if (entry.expiresAt <= nowMs) {
           board.delete(target);
+          changed = true;
         }
       }
       if (board.size === 0) {
         this.bountiesByGroup.delete(gJid);
+        changed = true;
       }
     }
+    return changed;
   }
 }
 

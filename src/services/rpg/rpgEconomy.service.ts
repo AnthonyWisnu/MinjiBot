@@ -23,6 +23,7 @@ import {
   scaleMoneyByLevel,
 } from "../../utils/currency";
 import { normalizeUserJid } from "../../utils/jid";
+import { applyGroupXpEvent } from "../group/groupXpEvent.cache";
 import { generateCorrelationId } from "../member/memberEconomy.service";
 import { defaultRandom, type RandomProvider } from "../member/randomProvider";
 import {
@@ -513,7 +514,7 @@ export class RpgEconomyService {
         ? this.random.intBetween(def.rareMinMoney, def.rareMaxMoney)
         : this.random.intBetween(def.minMoney, def.maxMoney),
     );
-    const xpGained = isRare ? def.rareXp : def.xp;
+    const xpGained = applyGroupXpEvent(groupJid, isRare ? def.rareXp : def.xp, nowMs);
     const storyPool = isRare ? def.rareStories : def.stories;
     const story = storyPool[this.random.intBetween(0, storyPool.length - 1)] ?? def.title;
     const correlationId = generateCorrelationId();
